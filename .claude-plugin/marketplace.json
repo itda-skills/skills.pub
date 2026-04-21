@@ -1,0 +1,24 @@
+{
+  "name": "itda-skills-pub",
+  "owner": {
+    "name": "스킬.잇다",
+    "email": "allieuslee@gmail.com"
+  },
+  "metadata": {
+    "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
+    "version": "2.0.0",
+    "language": "ko"
+  },
+  "plugins": [
+    {
+      "name": "itda-work",
+      "source": "./itda-work",
+      "description": "직장인 생산성 스킬팩"
+    },
+    {
+      "name": "itda-gov",
+      "source": "./itda-gov",
+      "description": "정부 공공데이터 API 스킬팩"
+    }
+  ]
+}

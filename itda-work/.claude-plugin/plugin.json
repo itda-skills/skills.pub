@@ -1,0 +1,18 @@
+{
+  "name": "itda-work",
+  "description": "대한민국 직장인을 위한 AI 코치 스킬팩",
+  "version": "2.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "productivity",
+    "finance",
+    "직장인",
+    "AI코치"
+  ]
+}
