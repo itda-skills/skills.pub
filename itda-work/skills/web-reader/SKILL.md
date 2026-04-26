@@ -12,10 +12,10 @@ allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "2.6.0"
+  version: "2.7.0"
   created_at: "2026-03-18"
   updated_at: "2026-04-26"
-  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security, spa, adapter, hometax, wetax, gov_kr, websquare, nexacro, capture"
+  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security, spa, adapter, websquare, nexacro, capture"
 ---
 
 # web-reader
@@ -123,8 +123,8 @@ CLI: fetch_dynamic.py --url URL [--output FILE] [--timeout N] [--user-agent UA]
 --hook-script PATH        멀티스텝 자동화를 위한 Python 훅 스크립트 경로
                           스크립트는 run(page: BrowserDriver, args: dict) 함수를 정의해야 함
 --hook-arg KEY=VALUE      훅 스크립트에 전달할 인자 (여러 번 지정 가능)
---adapter NAME            사전 정의 어댑터 사용 (hometax / wetax / gov_kr)
-                          한국 공공 SPA(홈택스·위택스·정부24) entry path 자동 실행
+--adapter NAME            사용자 정의 어댑터 사용 (manifest에 등록된 어댑터).
+                          빈 매니페스트가 기본이며 사용자가 자체 어댑터를 등록할 수 있다.
 --adapter-page KEY        어댑터 내 화면 선택 (기본값: 어댑터 manifest의 default_page)
 --capture-api PATTERN     네트워크 응답 캡처 — 정규식 패턴에 매칭되는 API 응답을 JSONL로 저장
                           (예: --capture-api 'wqAction\.do.*UTXPPBAA27')
@@ -135,31 +135,32 @@ Exit codes: 0=success, 1=navigation error/timeout, 2=invalid args/SSRF/Playwrigh
 SSRF 방지: fetch_html.py와 동일한 url_validator 적용
 ```
 
-### 한국 공공 SPA 어댑터 예제
+### 사용자 정의 SPA 어댑터 사용법
 
 ```bash
-# 홈택스 공지사항 추출 (macOS/Linux)
+# 사용 가능한 어댑터 목록 확인 (기본 매니페스트는 빈 상태)
+python3 scripts/fetch_dynamic.py --list-adapters
+
+# 사용자 정의 어댑터로 캡처 (myadapter를 manifest에 등록한 경우)
 python3 scripts/fetch_dynamic.py \
-  --url "https://www.hometax.go.kr/websquare/websquare.html?w2xPath=/ui/pp/index.xml" \
-  --adapter hometax \
-  --adapter-page notice \
-  --capture-api 'wqAction\.do' \
+  --url "https://www.example.go.kr/" \
+  --adapter myadapter \
+  --adapter-page main \
+  --capture-api 'apiAction\.do' \
   --output capture_result.html
 
 # 캡처된 JSONL → Markdown 변환
 python3 scripts/extract_content.py \
   --from-capture .itda-skills/web-reader/captures/YYYYMMDDTHHMMSS.jsonl \
-  --adapter hometax \
-  --adapter-page notice \
+  --adapter myadapter \
   --format markdown
 
-# 사용 가능한 어댑터 목록 확인
-python3 scripts/fetch_dynamic.py --list-adapters
-
 # Windows
-py -3 scripts/fetch_dynamic.py --url "URL" --adapter hometax --adapter-page notice
-py -3 scripts/extract_content.py --from-capture .itda-skills\web-reader\captures\YYYYMMDDTHHMMSS.jsonl --adapter hometax --adapter-page notice --format markdown
+py -3 scripts/fetch_dynamic.py --url "URL" --adapter myadapter --adapter-page main
+py -3 scripts/extract_content.py --from-capture .itda-skills\web-reader\captures\YYYYMMDDTHHMMSS.jsonl --adapter myadapter --format markdown
 ```
+
+> 도메인 특화 어댑터(홈택스·위택스·정부24 등)는 별도 hyve 프로젝트에서 관리됩니다.
 
 ### browser_driver.py
 ```

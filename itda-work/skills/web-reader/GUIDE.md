@@ -75,53 +75,89 @@ py -3 scripts/fetch_dynamic.py --url "URL" --stealth --profile myprofile --outpu
 - **자동 retry 완화**: 추출된 본문이 짧으면 스킬이 스스로 selector·hidden element·content scoring을 단계적으로 해제하며 재시도합니다. 별도 옵션 지정 없이 부족한 추출을 자동 보완합니다.
 - **훅 스크립트로 멀티스텝 자동화**: 로그인 폼 입력 → 페이지네이션 순회 같은 복잡한 흐름은 `fetch_dynamic.py --hook-script hook.py` 로 Python 훅을 전달해 자동화합니다. 훅은 `run(page, args)` 함수로 정의됩니다.
 
-## 한국 공공 SPA 어댑터
+## SPA 어댑터 인프라
 
-홈택스·위택스·정부24 같은 한국 공공기관 사이트는 일반 방식으로 읽으면 내용이 0건입니다. 이 섹션에서는 사전 정의된 어댑터로 해결하는 방법을 설명합니다.
+WebSquare5/Nexacro 같은 SPA 기반 사이트는 일반 방식으로 읽으면 내용이 0건입니다. `--adapter` 옵션과 사용자 정의 어댑터로 이 문제를 해결할 수 있습니다.
 
-### 어떤 사이트에서 사용하나요?
+> 도메인 특화 어댑터(홈택스·위택스·정부24 등)는 별도 hyve 프로젝트에서 관리됩니다. 본 저장소의 매니페스트는 빈 상태이며, 사용자가 자체 어댑터를 작성해 등록할 수 있습니다.
 
-1차 지원 대상:
-- **홈택스** (hometax.go.kr) — 공지사항·세금 일정
-- **위택스** (wetax.go.kr) — 공지사항·자료실 (placeholder, 1차 지원)
-- **정부24** (gov.kr) — 보도자료 (placeholder, 1차 지원)
+### 사용자 정의 어댑터 작성법
 
-### 어떻게 사용하나요?
+**1단계: 어댑터 파일 작성**
 
-**1단계: Playwright 설치 확인**
+`scripts/spa_adapters/myadapter.py`를 만들고 `Adapter` 베이스 클래스를 상속합니다.
+
+```python
+# scripts/spa_adapters/myadapter.py
+from spa_adapters.base import Adapter, PageDef, run_entry_steps
+
+class MyAdapter(Adapter):
+    domain_pattern = r"^(www\.)?example\.go\.kr$"
+    framework = "websquare5"
+    pages = {
+        "main": PageDef(entry_url="https://www.example.go.kr/"),
+    }
+
+    def entry(self, driver, page_key: str = "main") -> None:
+        run_entry_steps(driver, self.pages[page_key])
+
+    def extract(self, driver, captures=None) -> dict:
+        return {"items": captures or []}
+```
+
+**2단계: manifest.json 등록**
+
+`scripts/spa_adapters/manifest.json`에 어댑터를 등록합니다.
+
+```json
+{
+  "adapters": [
+    {
+      "name": "myadapter",
+      "module": "spa_adapters.myadapter",
+      "domain_pattern": "^(www\\.)?example\\.go\\.kr$",
+      "framework": "websquare5",
+      "default_page": "main",
+      "pages": ["main"],
+      "available": true
+    }
+  ]
+}
+```
+
+**3단계: Playwright 설치 확인**
 
 ```bash
 uv pip install --system playwright && playwright install chromium
 ```
 
-**2단계: 어댑터로 페이지 방문 + 응답 캡처**
+**4단계: 어댑터로 페이지 방문 + 응답 캡처**
 
 ```bash
-# macOS/Linux — 홈택스 공지사항 캡처
+# macOS/Linux
 python3 scripts/fetch_dynamic.py \
-  --url "https://www.hometax.go.kr/" \
-  --adapter hometax \
-  --adapter-page notice \
-  --capture-api 'wqAction\.do'
+  --url "https://www.example.go.kr/" \
+  --adapter myadapter \
+  --adapter-page main \
+  --capture-api 'apiAction\.do'
 
 # Windows
-py -3 scripts/fetch_dynamic.py --url "https://www.hometax.go.kr/" --adapter hometax --adapter-page notice --capture-api "wqAction\.do"
+py -3 scripts/fetch_dynamic.py --url "https://www.example.go.kr/" --adapter myadapter --adapter-page main --capture-api "apiAction\.do"
 ```
 
 캡처된 응답은 `.itda-skills/web-reader/captures/YYYYMMDDTHHMMSS.jsonl`에 저장됩니다.
 
-**3단계: 캡처 파일을 마크다운으로 변환**
+**5단계: 캡처 파일을 마크다운으로 변환**
 
 ```bash
 # macOS/Linux
 python3 scripts/extract_content.py \
-  --from-capture .itda-skills/web-reader/captures/20260426T120000.jsonl \
-  --adapter hometax \
-  --adapter-page notice \
+  --from-capture .itda-skills/web-reader/captures/YYYYMMDDTHHMMSS.jsonl \
+  --adapter myadapter \
   --format markdown
 
 # Windows
-py -3 scripts/extract_content.py --from-capture .itda-skills\web-reader\captures\20260426T120000.jsonl --adapter hometax --adapter-page notice --format markdown
+py -3 scripts/extract_content.py --from-capture .itda-skills\web-reader\captures\YYYYMMDDTHHMMSS.jsonl --adapter myadapter --format markdown
 ```
 
 **사용 가능한 어댑터 목록 확인**
@@ -132,19 +168,17 @@ python3 scripts/fetch_dynamic.py --list-adapters
 
 ### 한계
 
-- **wetax / gov_kr는 1차 placeholder** — 실제 entry path는 추후 업데이트 예정입니다.
-- **사이트 개편 리스크** — 공공 사이트 UI 변경 시 어댑터 셀렉터가 깨질 수 있습니다. 그 경우 `--hook-script`로 직접 자동화를 정의해 주세요.
-- **인증·SSO 필요 페이지 미지원** — 로그인이 필요한 세금 신고·조회 기능은 이 어댑터로 처리되지 않습니다. `--profile` + `--interactive`로 수동 로그인 후 세션을 유지하는 방식을 사용하세요.
-- **WebSquare5 / Nexacro 전용** — React/Vue/Next.js 기반 SPA는 기존 `fetch_dynamic.py`로 충분합니다.
+- **사이트 개편 리스크** — 사이트 UI 변경 시 어댑터 셀렉터가 깨질 수 있습니다. 그 경우 `--hook-script`로 직접 자동화를 정의해 주세요.
+- **인증·SSO 필요 페이지 미지원** — 로그인이 필요한 페이지는 이 어댑터로 처리되지 않습니다. `--profile` + `--interactive`로 수동 로그인 후 세션을 유지하는 방식을 사용하세요.
+- **WebSquare5 / Nexacro 전용 인프라** — React/Vue/Next.js 기반 SPA는 기존 `fetch_dynamic.py`로 충분합니다.
 
 ### 사용 정책
 
 어댑터를 사용할 때는 다음 사항을 반드시 준수하세요:
 
-- **실험·1회성 조회 용도**로만 사용하세요. 반복 자동화로 공공 서버에 과도한 부하를 주지 마세요.
+- **실험·1회성 조회 용도**로만 사용하세요. 반복 자동화로 서버에 과도한 부하를 주지 마세요.
 - 대상 사이트의 **이용약관에 자동화 도구 사용 금지** 조항이 있으면, 사용자 책임 하에 판단하세요.
 - **인증·세션이 필요한 페이지**에는 이 어댑터를 사용할 수 없습니다.
-- 크롤링 결과를 재배포할 때는 해당 기관의 **공공데이터 라이선스** 및 저작권 정책을 확인하세요.
 
 ---
 
