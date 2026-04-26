@@ -5,6 +5,15 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- **`slide-ai`, `stt` 스킬을 `itda-egg`(인큐베이팅 비공개 스킬팩)로 이전** (SPEC-INCUBATE-001)
+  - `git mv`로 히스토리 보존: `itda-work/skills/{slide-ai,stt}` → `itda-egg/skills/{slide-ai,stt}`
+  - `itda-egg`는 marketplace.json 미등록 비공개 플러그인. 안정화 검증 후 공식 스킬팩으로 졸업 가능
+  - 기존 `itda-work` 사용자: 두 스킬이 v3.0.0 업그레이드와 함께 사라짐. 필요 시 itda-egg를 로컬 `claude plugin install`로 추가 등록
+  - `itda-work` 스킬 수: 14개 → 12개
+  - `itda-work` 버전 bump: 2.0.0 → **3.0.0** (Breaking)
+
 ### Added
 
 - **itda-email v0.15.0: 증분 수집 (`--since-last-run`) + 폴더 처리 호환성 수정** (SPEC-EMAIL-007 + post-release fixes)
