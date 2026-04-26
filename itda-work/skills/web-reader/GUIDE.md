@@ -75,110 +75,38 @@ py -3 scripts/fetch_dynamic.py --url "URL" --stealth --profile myprofile --outpu
 - **자동 retry 완화**: 추출된 본문이 짧으면 스킬이 스스로 selector·hidden element·content scoring을 단계적으로 해제하며 재시도합니다. 별도 옵션 지정 없이 부족한 추출을 자동 보완합니다.
 - **훅 스크립트로 멀티스텝 자동화**: 로그인 폼 입력 → 페이지네이션 순회 같은 복잡한 흐름은 `fetch_dynamic.py --hook-script hook.py` 로 Python 훅을 전달해 자동화합니다. 훅은 `run(page, args)` 함수로 정의됩니다.
 
-## SPA 어댑터 인프라
+## JS로 그려지는 페이지가 잘 안 읽힐 때
 
-WebSquare5/Nexacro 같은 SPA 기반 사이트는 일반 방식으로 읽으면 내용이 0건입니다. `--adapter` 옵션과 사용자 정의 어댑터로 이 문제를 해결할 수 있습니다.
+일부 웹사이트는 JavaScript로만 콘텐츠를 렌더링합니다. 이런 페이지에서 내용이 0건으로 나올 때는 다음 순서로 시도해 보세요.
 
-> 도메인 특화 어댑터(홈택스·위택스·정부24 등)는 별도 hyve 프로젝트에서 관리됩니다. 본 저장소의 매니페스트는 빈 상태이며, 사용자가 자체 어댑터를 작성해 등록할 수 있습니다.
+**1단계: 동적 렌더링으로 읽기 (가장 먼저 시도)**
 
-### 사용자 정의 어댑터 작성법
+평범한 SPA(React/Vue/Next.js 등)는 이 한 줄로 충분합니다.
 
-**1단계: 어댑터 파일 작성**
-
-`scripts/spa_adapters/myadapter.py`를 만들고 `Adapter` 베이스 클래스를 상속합니다.
-
-```python
-# scripts/spa_adapters/myadapter.py
-from spa_adapters.base import Adapter, PageDef, run_entry_steps
-
-class MyAdapter(Adapter):
-    domain_pattern = r"^(www\.)?example\.go\.kr$"
-    framework = "websquare5"
-    pages = {
-        "main": PageDef(entry_url="https://www.example.go.kr/"),
-    }
-
-    def entry(self, driver, page_key: str = "main") -> None:
-        run_entry_steps(driver, self.pages[page_key])
-
-    def extract(self, driver, captures=None) -> dict:
-        return {"items": captures or []}
+```
+이 페이지는 자바스크립트로 그려져서 잘 안 읽혀, 동적으로 읽어줘
 ```
 
-**2단계: manifest.json 등록**
+내부적으로는 `python3 scripts/fetch_dynamic.py --url "URL" --stealth` 가 실행됩니다.
 
-`scripts/spa_adapters/manifest.json`에 어댑터를 등록합니다.
+**2단계: 클릭·입력 같은 상호작용이 필요할 때 (훅 스크립트)**
 
-```json
-{
-  "adapters": [
-    {
-      "name": "myadapter",
-      "module": "spa_adapters.myadapter",
-      "domain_pattern": "^(www\\.)?example\\.go\\.kr$",
-      "framework": "websquare5",
-      "default_page": "main",
-      "pages": ["main"],
-      "available": true
-    }
-  ]
-}
-```
-
-**3단계: Playwright 설치 확인**
+로그인 폼 채우기, 페이지네이션 순회, 검색어 입력 후 결과 수집처럼 여러 단계가 필요하면 훅 스크립트로 자동화합니다. 작성 방법은 [references/browser-driver.md](references/browser-driver.md)를 참조하세요.
 
 ```bash
-uv pip install --system playwright && playwright install chromium
+python3 scripts/fetch_dynamic.py --url "URL" --hook-script hook.py
 ```
 
-**4단계: 어댑터로 페이지 방문 + 응답 캡처**
+**3단계: 그래도 0건일 때 (네트워크 응답 캡처)**
 
-```bash
-# macOS/Linux
-python3 scripts/fetch_dynamic.py \
-  --url "https://www.example.go.kr/" \
-  --adapter myadapter \
-  --adapter-page main \
-  --capture-api 'apiAction\.do'
+위 두 방법으로도 본문이 비어 있다면, 페이지가 별도 API로 데이터를 받아와 화면에 그리는 구조일 수 있습니다. 이 경우 네트워크 응답을 직접 캡처해 마크다운으로 변환하는 방법이 있습니다. 사이트별로 어댑터가 필요할 수 있으며, 어댑터 작성·등록 방법은 [references/spa-adapters.md](references/spa-adapters.md)를 참조하세요.
 
-# Windows
-py -3 scripts/fetch_dynamic.py --url "https://www.example.go.kr/" --adapter myadapter --adapter-page main --capture-api "apiAction\.do"
-```
+## 고급 사용 (개발자용)
 
-캡처된 응답은 `.itda-skills/web-reader/captures/YYYYMMDDTHHMMSS.jsonl`에 저장됩니다.
+복잡한 자동화가 필요하거나 SPA 어댑터를 직접 작성하려는 개발자는 다음 문서를 참조하세요:
 
-**5단계: 캡처 파일을 마크다운으로 변환**
-
-```bash
-# macOS/Linux
-python3 scripts/extract_content.py \
-  --from-capture .itda-skills/web-reader/captures/YYYYMMDDTHHMMSS.jsonl \
-  --adapter myadapter \
-  --format markdown
-
-# Windows
-py -3 scripts/extract_content.py --from-capture .itda-skills\web-reader\captures\YYYYMMDDTHHMMSS.jsonl --adapter myadapter --format markdown
-```
-
-**사용 가능한 어댑터 목록 확인**
-
-```bash
-python3 scripts/fetch_dynamic.py --list-adapters
-```
-
-### 한계
-
-- **사이트 개편 리스크** — 사이트 UI 변경 시 어댑터 셀렉터가 깨질 수 있습니다. 그 경우 `--hook-script`로 직접 자동화를 정의해 주세요.
-- **인증·SSO 필요 페이지 미지원** — 로그인이 필요한 페이지는 이 어댑터로 처리되지 않습니다. `--profile` + `--interactive`로 수동 로그인 후 세션을 유지하는 방식을 사용하세요.
-- **WebSquare5 / Nexacro 전용 인프라** — React/Vue/Next.js 기반 SPA는 기존 `fetch_dynamic.py`로 충분합니다.
-
-### 사용 정책
-
-어댑터를 사용할 때는 다음 사항을 반드시 준수하세요:
-
-- **실험·1회성 조회 용도**로만 사용하세요. 반복 자동화로 서버에 과도한 부하를 주지 마세요.
-- 대상 사이트의 **이용약관에 자동화 도구 사용 금지** 조항이 있으면, 사용자 책임 하에 판단하세요.
-- **인증·세션이 필요한 페이지**에는 이 어댑터를 사용할 수 없습니다.
+- **SPA 어댑터 개발**: [references/spa-adapters.md](references/spa-adapters.md) — 웹스쿼어, 넥사크로 같은 SPA 프레임워크 처리
+- **브라우저 드라이버 API**: [references/browser-driver.md](references/browser-driver.md) — Playwright 기반 페이지 제어 상세 API
 
 ---
 

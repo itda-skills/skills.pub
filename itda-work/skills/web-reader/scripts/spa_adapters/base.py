@@ -11,13 +11,13 @@ from dataclasses import dataclass, field
 from typing import Any, Union
 
 # @MX:ANCHOR: [AUTO] Adapter — 모든 SPA 어댑터의 공통 베이스 클래스
-# @MX:REASON: [AUTO] SPEC-WEBREADER-006 FR-ADAPT-01; hometax, wetax, gov_kr 등
-#             모든 어댑터가 상속하므로 fan_in >= 3 확정. 인터페이스 시그니처 변경 시
+# @MX:REASON: [AUTO] SPEC-WEBREADER-006 FR-ADAPT-01, SPEC-WEBREADER-007; 사용자 정의
+#             어댑터가 모두 상속하므로 fan_in >= 3 확정. 인터페이스 시그니처 변경 시
 #             전체 어댑터 재검토 필요.
 
 # @MX:ANCHOR: [AUTO] AdapterEntryError — 모든 어댑터의 공통 예외 클래스
-# @MX:REASON: [AUTO] SPEC-WEBREADER-006 FR-ADAPT-03; hometax/wetax/gov_kr/fetch_dynamic
-#             등 모든 어댑터 및 CLI 분기에서 참조 (fan_in >= 3).
+# @MX:REASON: [AUTO] SPEC-WEBREADER-006 FR-ADAPT-03, SPEC-WEBREADER-007; 모든 어댑터
+#             및 fetch_dynamic.py CLI 분기에서 참조 (fan_in >= 3).
 #             이 클래스를 변경하면 전체 어댑터에 영향.
 
 # GitHub issue URL — entry 실패 시 사용자 안내용 (FR-ADAPT-03)

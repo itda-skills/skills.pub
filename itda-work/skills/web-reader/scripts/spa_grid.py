@@ -23,8 +23,8 @@ class WidgetUnavailableError(Exception):
 
 
 # @MX:ANCHOR: [AUTO] read_w2grid_rows — w2grid 가상 그리드 추출 헬퍼
-# @MX:REASON: [AUTO] SPEC-WEBREADER-006 FR-GRID-01; wetax/hometax 어댑터 및
-#             fetch_dynamic.py에서 호출 예정 (fan_in >= 3).
+# @MX:REASON: [AUTO] SPEC-WEBREADER-006 FR-GRID-01, SPEC-WEBREADER-007; SPA 인프라가
+#             사용자 정의 어댑터 및 fetch_dynamic.py에서 호출 예정 (fan_in >= 3).
 def read_w2grid_rows(driver: Any, grid_id: str) -> list[dict[str, Any]]:
     """WebSquare w2grid widget에서 모든 행 데이터를 추출한다.
 

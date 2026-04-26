@@ -511,7 +511,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     # SPEC-WEBREADER-MULTISTEP-001: hook-script 지원
     # @MX:NOTE: [AUTO] --adapter와 --hook-script는 상호배타.
-    #           --adapter는 Sprint 3에서 hometax 등 내장 어댑터를 사용하고,
+    #           --adapter는 manifest.json에 등록된 사용자 정의 어댑터를 사용하고,
     #           --hook-script는 외부 .py 파일을 사용하는 기존 방식.
     #           두 경로는 서로 다른 페이지 진입 전략이므로 동시 사용 불가.
     exclusive_group = parser.add_mutually_exclusive_group()
@@ -526,7 +526,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--adapter",
         default=None,
         metavar="NAME",
-        help="SPA 어댑터 이름 (--hook-script와 상호배타). 예: hometax",
+        help="SPA 어댑터 이름 (--list-adapters로 사용 가능 목록 확인. --hook-script와 상호배타).",
     )
     parser.add_argument(
         "--hook-arg",
@@ -1004,7 +1004,7 @@ def main(argv: list[str] | None = None) -> int:
             }
 
         except Exception as exc:
-            # NotImplementedError: 미완성 어댑터 (wetax, gov_kr 등) — exit 5
+            # NotImplementedError: 미완성 어댑터 — exit 5
             if isinstance(exc, NotImplementedError):
                 print(
                     f"Error: 어댑터 '{args.adapter}' 미구현 — {exc}",
