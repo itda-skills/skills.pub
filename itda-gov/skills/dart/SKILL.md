@@ -12,12 +12,10 @@ argument-hint: "[search|info|finance|employees|profile] [--name 회사명] [--co
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.0"
-  created_at: "2026-03-29"
-  updated_at: "2026-03-29"
-  tags: "기업정보, 재무제표, DART, 전자공시, 경쟁사분석, 제안서, 직원현황, 매출, 영업이익, 사업보고서, company, financial, DART, disclosure, competitor"
-  updated_at: "2026-04-18"
   version: "0.9.2"
+  created_at: "2026-03-29"
+  updated_at: "2026-04-18"
+  tags: "기업정보, 재무제표, DART, 전자공시, 경쟁사분석, 제안서, 직원현황, 매출, 영업이익, 사업보고서, company, financial, DART, disclosure, competitor"
 env_vars:
   - name: "DART_API_KEY"
     service: "금융감독원 DART"

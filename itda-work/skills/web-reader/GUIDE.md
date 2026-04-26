@@ -75,6 +75,79 @@ py -3 scripts/fetch_dynamic.py --url "URL" --stealth --profile myprofile --outpu
 - **자동 retry 완화**: 추출된 본문이 짧으면 스킬이 스스로 selector·hidden element·content scoring을 단계적으로 해제하며 재시도합니다. 별도 옵션 지정 없이 부족한 추출을 자동 보완합니다.
 - **훅 스크립트로 멀티스텝 자동화**: 로그인 폼 입력 → 페이지네이션 순회 같은 복잡한 흐름은 `fetch_dynamic.py --hook-script hook.py` 로 Python 훅을 전달해 자동화합니다. 훅은 `run(page, args)` 함수로 정의됩니다.
 
+## 한국 공공 SPA 어댑터
+
+홈택스·위택스·정부24 같은 한국 공공기관 사이트는 일반 방식으로 읽으면 내용이 0건입니다. 이 섹션에서는 사전 정의된 어댑터로 해결하는 방법을 설명합니다.
+
+### 어떤 사이트에서 사용하나요?
+
+1차 지원 대상:
+- **홈택스** (hometax.go.kr) — 공지사항·세금 일정
+- **위택스** (wetax.go.kr) — 공지사항·자료실 (placeholder, 1차 지원)
+- **정부24** (gov.kr) — 보도자료 (placeholder, 1차 지원)
+
+### 어떻게 사용하나요?
+
+**1단계: Playwright 설치 확인**
+
+```bash
+uv pip install --system playwright && playwright install chromium
+```
+
+**2단계: 어댑터로 페이지 방문 + 응답 캡처**
+
+```bash
+# macOS/Linux — 홈택스 공지사항 캡처
+python3 scripts/fetch_dynamic.py \
+  --url "https://www.hometax.go.kr/" \
+  --adapter hometax \
+  --adapter-page notice \
+  --capture-api 'wqAction\.do'
+
+# Windows
+py -3 scripts/fetch_dynamic.py --url "https://www.hometax.go.kr/" --adapter hometax --adapter-page notice --capture-api "wqAction\.do"
+```
+
+캡처된 응답은 `.itda-skills/web-reader/captures/YYYYMMDDTHHMMSS.jsonl`에 저장됩니다.
+
+**3단계: 캡처 파일을 마크다운으로 변환**
+
+```bash
+# macOS/Linux
+python3 scripts/extract_content.py \
+  --from-capture .itda-skills/web-reader/captures/20260426T120000.jsonl \
+  --adapter hometax \
+  --adapter-page notice \
+  --format markdown
+
+# Windows
+py -3 scripts/extract_content.py --from-capture .itda-skills\web-reader\captures\20260426T120000.jsonl --adapter hometax --adapter-page notice --format markdown
+```
+
+**사용 가능한 어댑터 목록 확인**
+
+```bash
+python3 scripts/fetch_dynamic.py --list-adapters
+```
+
+### 한계
+
+- **wetax / gov_kr는 1차 placeholder** — 실제 entry path는 추후 업데이트 예정입니다.
+- **사이트 개편 리스크** — 공공 사이트 UI 변경 시 어댑터 셀렉터가 깨질 수 있습니다. 그 경우 `--hook-script`로 직접 자동화를 정의해 주세요.
+- **인증·SSO 필요 페이지 미지원** — 로그인이 필요한 세금 신고·조회 기능은 이 어댑터로 처리되지 않습니다. `--profile` + `--interactive`로 수동 로그인 후 세션을 유지하는 방식을 사용하세요.
+- **WebSquare5 / Nexacro 전용** — React/Vue/Next.js 기반 SPA는 기존 `fetch_dynamic.py`로 충분합니다.
+
+### 사용 정책
+
+어댑터를 사용할 때는 다음 사항을 반드시 준수하세요:
+
+- **실험·1회성 조회 용도**로만 사용하세요. 반복 자동화로 공공 서버에 과도한 부하를 주지 마세요.
+- 대상 사이트의 **이용약관에 자동화 도구 사용 금지** 조항이 있으면, 사용자 책임 하에 판단하세요.
+- **인증·세션이 필요한 페이지**에는 이 어댑터를 사용할 수 없습니다.
+- 크롤링 결과를 재배포할 때는 해당 기관의 **공공데이터 라이선스** 및 저작권 정책을 확인하세요.
+
+---
+
 ## 제한사항
 
 - **SSRF 차단**: 내부망 IP(`127.x`, `10.x`, `192.168.x` 등) 호출은 기본 차단됩니다. 명시적 우회는 `--allow-private` 플래그로만 허용됩니다.

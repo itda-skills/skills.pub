@@ -12,12 +12,10 @@ user-invocable: true
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.12.0"
-  created_at: "2026-03-18"
-  updated_at: "2026-03-30"
-  tags: "law, korean, legislation, 법령, 법제처, 조문, 법률, 판례, 행정규칙, 자치법규, 체계도"
-  updated_at: "2026-04-04"
   version: "0.12.1"
+  created_at: "2026-03-18"
+  updated_at: "2026-04-04"
+  tags: "law, korean, legislation, 법령, 법제처, 조문, 법률, 판례, 행정규칙, 자치법규, 체계도"
 env_vars:
   - name: "LAW_API_OC"
     service: "법제처 국가법령정보 Open API"

@@ -585,6 +585,30 @@ def main(argv: list[str] | None = None) -> int:
 
     content = str(result["content"])
 
+    # FR-DETECT-01: SPA 감지 + deep-link 차단 안내 (fetch_html도 동일 advisory 제공)
+    try:
+        spa_mod = _load_local_module("spa_detector")
+        _framework = spa_mod.detect_spa_framework(content)
+        if _framework is not None:
+            print(
+                f"[web-reader] {_framework.capitalize() if _framework != 'websquare5' else 'WebSquare5'} "
+                "SPA가 감지되었습니다. 직접 URL 추출이 불완전할 수 있습니다. "
+                "--adapter 옵션 또는 fetch_dynamic.py 사용을 권장합니다.",
+                file=sys.stderr,
+            )
+            _is_blocked = spa_mod.detect_deep_link_block(args.url, final_url)
+            if _is_blocked:
+                print(
+                    f"[web-reader] deep-link 차단을 감지했습니다 "
+                    f"(입력 URL → {final_url}). "
+                    "사이트 어댑터 또는 fetch_dynamic.py --hook-script로 "
+                    "정상 진입 경로를 정의해 주세요.",
+                    file=sys.stderr,
+                )
+    except Exception as exc:
+        # SPA 감지 모듈 로드/실행 실패 — 정상 흐름은 차단하지 않고 경고만 출력
+        print(f"[web-reader] SPA 감지 비활성화: {exc}", file=sys.stderr)
+
     if args.output:
         # REQ-3.6: 파일 쓰기 에러를 적절히 처리한다
         try:

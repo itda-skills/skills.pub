@@ -20,6 +20,28 @@ title: "law-korean 상세 가이드"
 
 이렇게 요청하면 스킬이 법령명/판례/행정규칙을 식별해 `search_*`와 `get_*` 스크립트를 연결 실행하고, 조문 원문 마크다운과 검색 결과 테이블을 반환합니다.
 
+## 사전 준비
+
+`LAW_API_OC` 환경변수 등록이 필요합니다. (다른 API와 달리 OC = "사용자 ID"입니다)
+
+1. **API 키 발급처**: [법제처 국가법령정보 Open API](https://open.law.go.kr/LSO/openApi/openApiInfo.do)
+2. **발급 절차**:
+   - 법제처 Open API 포털 회원가입
+   - **Open API 사용 신청** → 사용 목적 입력 후 제출
+   - 승인 후 발급되는 **OC(사용자ID)** 확인
+3. **환경변수 등록** (택 1):
+   ```bash
+   # 권장: Claude Code 설정에 등록
+   claude config set env.LAW_API_OC "발급받은_OC"
+   ```
+   또는 `CLAUDE.md`·`.env` 파일에 다음 줄을 추가합니다.
+   ```
+   LAW_API_OC=발급받은_OC
+   ```
+   CLI 호출 시 `--oc` 인자로 일회성 전달도 가능합니다.
+
+> OC가 없으면 모든 조회가 실패합니다. `search_law` 같은 검색 스크립트도 마찬가지입니다.
+
 ## 활용 시나리오
 
 ### 민원 답변 — 조문 원문 인용

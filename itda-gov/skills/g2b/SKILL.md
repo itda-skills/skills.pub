@@ -12,12 +12,10 @@ argument-hint: "[--keyword 키워드] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--f
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.0"
-  created_at: "2026-03-29"
-  updated_at: "2026-03-29"
-  tags: "나라장터, 입찰공고, 조달청, G2B, 입찰, 공고, 조달, 입찰검색, procurement, tender, bid announcement, G2B, narajangteo"
-  updated_at: "2026-04-18"
   version: "0.9.2"
+  created_at: "2026-03-29"
+  updated_at: "2026-04-18"
+  tags: "나라장터, 입찰공고, 조달청, G2B, 입찰, 공고, 조달, 입찰검색, procurement, tender, bid announcement, G2B, narajangteo"
 env_vars:
   - name: "KO_DATA_API_KEY"
     service: "공공데이터포털"

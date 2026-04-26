@@ -181,6 +181,7 @@ def fetch_with_js(
     headless: bool = True,
     viewport: dict[str, int] | None = None,
     allow_private: bool = False,
+    capture_handler: Any = None,
 ) -> dict[str, object]:
     """headless Chromium으로 URL을 fetch한다.
 
@@ -195,6 +196,7 @@ def fetch_with_js(
         headless: True이면 headless 모드. 기본 True.
         viewport: 뷰포트 크기 dict (width, height). None이면 기본값 사용.
         allow_private: True이면 private/loopback IP 허용. 기본 False.
+        capture_handler: page.on("response") 핸들러. None이면 미등록 (ISS-CAPTURE-023).
 
     Returns:
         content, url, size 키를 가진 dict.
@@ -224,6 +226,9 @@ def fetch_with_js(
         browser = pw.chromium.launch(headless=headless)
         context = browser.new_context(**ctx_kwargs)
         page = context.new_page()
+        # --capture-api 핸들러 등록 (ISS-CAPTURE-023: standalone --url + --capture-api 지원)
+        if capture_handler is not None:
+            page.on("response", capture_handler)
         # wait_until 전략: 기본 domcontentloaded로 long-polling hang 방지
         page.goto(url, timeout=timeout_ms, wait_until=wait_until)
         try:
@@ -356,6 +361,7 @@ def _fetch_ephemeral_with_options(
     interactive: bool = False,
     viewport: dict[str, int] | None = None,
     allow_private: bool = False,
+    capture_handler: Any = None,
 ) -> dict[str, object]:
     """stealth/interactive 옵션을 지원하는 ephemeral context fetch.
 
@@ -400,6 +406,9 @@ def _fetch_ephemeral_with_options(
             stealth_mod.apply_stealth(context)
 
         page = context.new_page()
+        # --capture-api 핸들러 등록 (ISS-CAPTURE-023: standalone --url + --capture-api 지원)
+        if capture_handler is not None:
+            page.on("response", capture_handler)
         page.goto(url, timeout=timeout_ms, wait_until=wait_until)
         try:
             page.wait_for_load_state("networkidle", timeout=settle_ms)
@@ -501,11 +510,23 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="private/loopback IP 허용 (SSRF 보호 비활성화)",
     )
     # SPEC-WEBREADER-MULTISTEP-001: hook-script 지원
-    parser.add_argument(
+    # @MX:NOTE: [AUTO] --adapter와 --hook-script는 상호배타.
+    #           --adapter는 Sprint 3에서 hometax 등 내장 어댑터를 사용하고,
+    #           --hook-script는 외부 .py 파일을 사용하는 기존 방식.
+    #           두 경로는 서로 다른 페이지 진입 전략이므로 동시 사용 불가.
+    exclusive_group = parser.add_mutually_exclusive_group()
+    exclusive_group.add_argument(
         "--hook-script",
         default=None,
         metavar="PATH",
         help="hook-script 경로 (.py). run(page, args) 동기 함수를 실행한다.",
+    )
+    # SPEC-WEBREADER-006: adapter 지원 옵션
+    exclusive_group.add_argument(
+        "--adapter",
+        default=None,
+        metavar="NAME",
+        help="SPA 어댑터 이름 (--hook-script와 상호배타). 예: hometax",
     )
     parser.add_argument(
         "--hook-arg",
@@ -513,6 +534,27 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=[],
         metavar="KEY=VALUE",
         help="hook-script에 전달할 인자 (KEY=VALUE 형식, 복수 지정 가능)",
+    )
+    parser.add_argument(
+        "--adapter-page",
+        default=None,
+        metavar="KEY",
+        dest="adapter_page",
+        help="어댑터에서 사용할 페이지 키 (기본: 어댑터 매니페스트 default_page)",
+    )
+    parser.add_argument(
+        "--capture-api",
+        default=None,
+        metavar="PATTERN",
+        dest="capture_api",
+        help="API 응답 캡처 정규식 패턴 (FR-CAPTURE-01). 예: 'api/v1'",
+    )
+    parser.add_argument(
+        "--list-adapters",
+        action="store_true",
+        default=False,
+        dest="list_adapters",
+        help="사용 가능한 SPA 어댑터 목록 출력 후 종료",
     )
     return parser.parse_args(argv)
 
@@ -624,6 +666,24 @@ def _load_hook_script(path: Path) -> types.ModuleType:
 
 
 # ---------------------------------------------------------------------------
+# list-adapters 위임 헬퍼 (테스트에서 mock 가능)
+# ---------------------------------------------------------------------------
+
+
+def _list_adapters_main() -> int:
+    """list_adapters.main()을 argv=[] 로 위임 호출한다.
+
+    테스트에서 patch.object(fetch_dynamic, "_list_adapters_main", ...) 형태로 mock 가능.
+    argv=[]를 전달하여 fetch_dynamic의 sys.argv가 list_adapters에 넘어가지 않도록 한다.
+
+    Returns:
+        list_adapters.main() 반환값 (exit code).
+    """
+    list_adapters_mod = _load_local_module("list_adapters")
+    return list_adapters_mod.main([])  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
 # CLI 진입점
 # ---------------------------------------------------------------------------
 
@@ -636,7 +696,11 @@ def main(argv: list[str] | None = None) -> int:
     """
     args = _parse_args(argv)
 
-    if args.url is None:
+    # --list-adapters: 어댑터 목록 출력 후 종료 (다른 인자 무시)
+    if args.list_adapters:
+        return _list_adapters_main()
+
+    if args.url is None and args.adapter is None:
         print("Error: --url이 필요합니다", file=sys.stderr)
         return 2
 
@@ -677,6 +741,17 @@ def main(argv: list[str] | None = None) -> int:
         use_stealth = True
 
     stealth_label = "active" if use_stealth else "disabled"
+
+    # --capture-api 핸들러 생성 — 어댑터/hook-script 분기 공통 (ISS-CAPTURE-023)
+    # 패턴 검증을 분기 진입 전에 수행하여 standalone --url + --capture-api도 동작하게 함.
+    capture_handler = None
+    if args.capture_api is not None:
+        try:
+            from spa_capture import CaptureHandler
+            capture_handler = CaptureHandler(pattern=args.capture_api)
+        except Exception as exc:
+            print(f"Error: --capture-api 패턴 오류 — {exc}", file=sys.stderr)
+            return 2
 
     # --hook-script 분기 처리
     if args.hook_script is not None:
@@ -732,6 +807,9 @@ def main(argv: list[str] | None = None) -> int:
                     stealth_mod.apply_stealth(context)
 
                 page = context.new_page()
+                # --capture-api 핸들러를 hook-script 분기에도 연결 (ISS-CAPTURE-023)
+                if capture_handler is not None:
+                    page.on("response", capture_handler)
                 driver = BrowserDriver(page, allow_private=args.allow_private)
 
                 try:
@@ -796,6 +874,172 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
         else:
             return _run_hook_inline()
+
+    # --adapter 분기 처리 (Sprint 3: 실제 어댑터 entry() 호출 구현)
+    if args.adapter is not None:
+        # ISS-LATEIMPORT-021: 분기 내 산재된 late import를 분기 시작부에 집중
+        try:
+            from spa_adapters._loader import (
+                load_adapter,
+                get_default_page,
+                AdapterNotFoundError,
+                AdapterManifestError,
+            )
+            from spa_adapters.base import AdapterEntryError
+            from browser_driver import BrowserDriver
+        except ImportError as _import_exc:
+            print(
+                f"[web-reader] 어댑터 실행에 필요한 모듈을 로드할 수 없습니다: {_import_exc}",
+                file=sys.stderr,
+            )
+            return 2
+
+        try:
+            adapter = load_adapter(args.adapter)
+        except AdapterNotFoundError as exc:
+            print(f"Error: 어댑터 로드 실패 — {exc}", file=sys.stderr)
+            return 2
+        except AdapterManifestError as exc:
+            print(f"Error: 어댑터 매니페스트 오류 — {exc}", file=sys.stderr)
+            return 2
+
+        # page_key 결정: --adapter-page > manifest default_page > 첫 번째 pages 키
+        page_key = args.adapter_page
+        if page_key is None:
+            page_key = get_default_page(args.adapter)
+            if page_key is None:
+                pages = getattr(adapter, "pages", {})
+                page_key = next(iter(pages), None)
+
+        # 도메인 불일치 경고 (FR-ENTRY-02 안내만, 차단 없음)
+        if args.url is not None:
+            import re as _re
+            from urllib.parse import urlparse as _urlparse
+            _netloc = _urlparse(args.url).netloc.lower()
+            _host_no_www = _netloc.removeprefix("www.")
+            _domain_pat = getattr(adapter, "domain_pattern", "")
+            if _domain_pat and isinstance(_domain_pat, str):
+                _matched = (
+                    _re.match(_domain_pat, _netloc)
+                    or _re.match(_domain_pat, _host_no_www)
+                )
+                if not _matched:
+                    print(
+                        f"[web-reader] 경고: 입력 URL 도메인 '{_netloc}'이(가) "
+                        f"어댑터 '{args.adapter}'의 도메인 패턴과 일치하지 않습니다. "
+                        "어댑터가 예상대로 동작하지 않을 수 있습니다.",
+                        file=sys.stderr,
+                    )
+
+        # entry_url 결정 (--url 미지정 시 어댑터 PageDef의 entry_url 사용)
+        if args.url is not None:
+            effective_url = args.url
+        else:
+            try:
+                pages = getattr(adapter, "pages", {})
+                if page_key and page_key in pages:
+                    page_def = pages[page_key]
+                    # PageDef 데이터클래스: .entry_url 속성
+                    effective_url = getattr(page_def, "entry_url", None) or ""
+                else:
+                    effective_url = ""
+            except Exception:
+                effective_url = ""
+
+            if not effective_url:
+                print(
+                    f"Error: 어댑터 '{args.adapter}'에서 entry_url을 찾을 수 없습니다. "
+                    "--url을 명시적으로 지정하세요.",
+                    file=sys.stderr,
+                )
+                return 2
+
+        # capture_handler는 분기 공통으로 상단에서 이미 생성됨 (ISS-CAPTURE-023)
+
+        # Sprint 3: 어댑터 entry() 호출 (FR-ENTRY-01)
+        try:
+            with sync_playwright() as pw:
+                browser = pw.chromium.launch(headless=True)
+                context = browser.new_context(
+                    user_agent=args.user_agent,
+                    locale="ko-KR",
+                    extra_http_headers={
+                        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+                    },
+                )
+                page = context.new_page()
+
+                if capture_handler is not None:
+                    page.on("response", capture_handler)
+
+                # BrowserDriver로 감싸서 어댑터 entry() 위임
+                driver = BrowserDriver(page, allow_private=args.allow_private)
+
+                if page_key is not None:
+                    # 실제 어댑터 entry() 실행 (FR-ENTRY-01)
+                    adapter.entry(driver, page_key)
+                else:
+                    # page_key 없음: 일반 goto fallback
+                    page.goto(
+                        effective_url,
+                        timeout=args.timeout * 1000,
+                        wait_until="domcontentloaded",
+                    )
+                    try:
+                        page.wait_for_load_state(
+                            "networkidle",
+                            timeout=int(args.settle_time * 1000),
+                        )
+                    except Exception:
+                        pass
+
+                html = page.content()
+                final_url = page.url
+                context.close()
+
+            result: dict[str, object] = {
+                "content": html,
+                "url": final_url,
+                "size": len(html.encode("utf-8")),
+            }
+
+        except Exception as exc:
+            # NotImplementedError: 미완성 어댑터 (wetax, gov_kr 등) — exit 5
+            if isinstance(exc, NotImplementedError):
+                print(
+                    f"Error: 어댑터 '{args.adapter}' 미구현 — {exc}",
+                    file=sys.stderr,
+                )
+                return 5
+            # AdapterEntryError 포함 모든 예외: FR-ADAPT-03 — exit 5
+            if isinstance(exc, AdapterEntryError):
+                print(str(exc), file=sys.stderr)
+                return 5
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+
+        final_url = str(result["url"])
+        size = int(result["size"])  # type: ignore[arg-type]
+        content = str(result["content"])
+
+        print(f"Profile: ephemeral", file=sys.stderr)
+        print(f"Adapter: {args.adapter}", file=sys.stderr)
+        print(f"URL: {final_url}", file=sys.stderr)
+        print(f"Size: {size}", file=sys.stderr)
+        if capture_handler is not None:
+            print(f"CaptureFile: {capture_handler.output_path}", file=sys.stderr)
+
+        if args.output:
+            try:
+                with open(args.output, "w", encoding="utf-8") as f:
+                    f.write(content)
+            except (OSError, IOError, PermissionError) as e:
+                print(f"Error: 출력 파일 쓰기 실패: {e}", file=sys.stderr)
+                return 1
+        else:
+            sys.stdout.write(content)
+
+        return 0
 
     if args.profile is not None:
         # ---------- persistent context 경로 ----------
@@ -873,6 +1117,7 @@ def main(argv: list[str] | None = None) -> int:
                     interactive=args.interactive,
                     viewport=viewport,
                     allow_private=args.allow_private,
+                    capture_handler=capture_handler,
                 )
             else:
                 result = fetch_with_js(
@@ -884,6 +1129,7 @@ def main(argv: list[str] | None = None) -> int:
                     headless=headless,
                     viewport=viewport,
                     allow_private=args.allow_private,
+                    capture_handler=capture_handler,
                 )
 
         except Exception as exc:
@@ -897,6 +1143,58 @@ def main(argv: list[str] | None = None) -> int:
 
     final_url = str(result["url"])
     size = int(result["size"])  # type: ignore[arg-type]
+
+    # FR-DETECT-02 / FR-ENTRY-02 / FR-ENTRY-03: SPA 감지 + deep-link 차단 안내
+    # --url 만 지정된 일반 경로에서만 실행 (--adapter, --hook-script 경로에서는 실행 안 함)
+    _spa_advisory_url = args.url  # args.url이 None이면 이미 위에서 처리됨
+    if _spa_advisory_url is not None:
+        _content = str(result.get("content", ""))
+        try:
+            from spa_detector import detect_spa_framework, detect_deep_link_block
+            _framework = detect_spa_framework(_content)
+            if _framework is not None:
+                # FR-DETECT-02: SPA 감지 메시지
+                print(
+                    f"[web-reader] {_framework.capitalize() if _framework != 'websquare5' else 'WebSquare5'} SPA가 감지되었습니다. "
+                    "직접 URL 추출이 불완전할 수 있습니다. --adapter 옵션 또는 hook-script 사용을 권장합니다.",
+                    file=sys.stderr,
+                )
+                # FR-ENTRY-03: deep-link 차단 감지
+                _is_blocked = detect_deep_link_block(_spa_advisory_url, final_url)
+                if _is_blocked:
+                    print(
+                        f"[web-reader] deep-link 차단을 감지했습니다 "
+                        f"(입력 URL → {final_url}). "
+                        "사이트 어댑터 또는 hook-script로 정상 진입 경로를 정의해 주세요.",
+                        file=sys.stderr,
+                    )
+                    # FR-ENTRY-02: 매니페스트 매칭 시 어댑터 추천
+                    try:
+                        from urllib.parse import urlparse as _urlparse
+                        import re as _re
+                        from spa_adapters._loader import load_manifest
+                        _manifest = load_manifest()
+                        _input_host = _urlparse(_spa_advisory_url).netloc.lower()
+                        for _adapter_entry in _manifest.get("adapters", []):
+                            # available=false인 placeholder 어댑터는 추천하지 않음 (ISS-AVAIL-022)
+                            if not _adapter_entry.get("available", True):
+                                continue
+                            _pattern = _adapter_entry.get("domain_pattern", "")
+                            _name = _adapter_entry.get("name", "")
+                            if _pattern and _name:
+                                # www. 제거 후 비교
+                                _host_no_www = _input_host.removeprefix("www.")
+                                if _re.match(_pattern, _host_no_www) or _re.match(_pattern, _input_host):
+                                    print(
+                                        f"[web-reader] 이 도메인에는 사전 정의된 어댑터 '{_name}'이(가) 있습니다. "
+                                        f"--adapter {_name} 사용을 고려하세요.",
+                                        file=sys.stderr,
+                                    )
+                                    break
+                    except Exception:
+                        pass  # 매니페스트 로딩 실패는 무시 (안내 메시지 전용 로직)
+        except Exception:
+            pass  # SPA 감지 실패는 무시 (기존 동작 보장)
 
     # stderr 리포트 (Profile: 및 Stealth: 라인 포함)
     print(f"Profile: {profile_label}", file=sys.stderr)

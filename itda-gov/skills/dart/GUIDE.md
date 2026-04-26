@@ -12,11 +12,25 @@ DART 전자공시 시스템에서 기업정보를 조회하는 가장 간단한 
 
 이 한 줄이면 스킬이 DART에서 법인 검색 → 재무제표 → 직원현황을 차례로 조회해 정리해 줍니다.
 
-최초 1회 `DART_API_KEY` 환경변수 설정이 필요합니다. opendart.fss.or.kr 회원가입 후 40자리 키가 즉시 발급됩니다.
+## 사전 준비
 
-```bash
-claude config set env.DART_API_KEY "발급받은_키"
-```
+`DART_API_KEY` 환경변수 등록이 필요합니다.
+
+1. **API 키 발급처**: [금융감독원 DART](https://opendart.fss.or.kr)
+2. **발급 절차**:
+   - DART 회원가입
+   - **오픈 API** → **인증키 신청/관리** → 사용 목적 입력 후 신청
+   - 40자리 키 즉시 발급 (승인 대기 없음)
+3. **환경변수 등록** (택 1):
+   ```bash
+   # 권장: Claude Code 설정에 등록
+   claude config set env.DART_API_KEY "발급받은_키"
+   ```
+   또는 `CLAUDE.md`·`.env` 파일에 다음 줄을 추가합니다.
+   ```
+   DART_API_KEY=발급받은_키
+   ```
+   CLI 호출 시 `--api-key` 인자로 일회성 전달도 가능합니다.
 
 ## 활용 시나리오
 

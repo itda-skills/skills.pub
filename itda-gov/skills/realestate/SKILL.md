@@ -12,12 +12,10 @@ argument-hint: "[trade|rent|regions] [--region 지역명] [--year-month YYYYMM] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.0"
-  created_at: "2026-03-29"
-  updated_at: "2026-03-29"
-  tags: "부동산, 실거래가, 아파트, 전월세, 매매가, 전세, 월세, 오피스텔, 국토교통부, 집값, realestate, apartment, rent, trade price"
-  updated_at: "2026-04-18"
   version: "0.9.2"
+  created_at: "2026-03-29"
+  updated_at: "2026-04-18"
+  tags: "부동산, 실거래가, 아파트, 전월세, 매매가, 전세, 월세, 오피스텔, 국토교통부, 집값, realestate, apartment, rent, trade price"
 env_vars:
   - name: "KO_DATA_API_KEY"
     service: "공공데이터포털"

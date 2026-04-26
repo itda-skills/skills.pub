@@ -12,12 +12,10 @@ argument-hint: "[search|data] [--keyword 키워드] [--org-id ID] [--tbl-id ID] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.0"
-  created_at: "2026-03-29"
-  updated_at: "2026-03-29"
-  tags: "통계, 국가통계, KOSIS, 인구, 산업통계, 시장규모, 제안서, statistics, KOSIS, population, market"
-  updated_at: "2026-04-18"
   version: "0.9.2"
+  created_at: "2026-03-29"
+  updated_at: "2026-04-18"
+  tags: "통계, 국가통계, KOSIS, 인구, 산업통계, 시장규모, 제안서, statistics, KOSIS, population, market"
 env_vars:
   - name: "KOSIS_API_KEY"
     service: "국가통계포털 KOSIS"

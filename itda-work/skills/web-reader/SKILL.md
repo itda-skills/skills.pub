@@ -12,10 +12,10 @@ allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "2.5.1"
+  version: "2.6.0"
   created_at: "2026-03-18"
-  updated_at: "2026-04-18"
-  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security"
+  updated_at: "2026-04-26"
+  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security, spa, adapter, hometax, wetax, gov_kr, websquare, nexacro, capture"
 ---
 
 # web-reader
@@ -117,14 +117,48 @@ CLI: fetch_dynamic.py --url URL [--output FILE] [--timeout N] [--user-agent UA]
                        [--profile NAME] [--stealth] [--headed] [--interactive]
                        [--viewport WxH] [--allow-private]
                        [--hook-script PATH] [--hook-arg KEY=VALUE ...]
+                       [--adapter NAME] [--adapter-page KEY]
+                       [--capture-api PATTERN] [--list-adapters]
 
 --hook-script PATH        멀티스텝 자동화를 위한 Python 훅 스크립트 경로
                           스크립트는 run(page: BrowserDriver, args: dict) 함수를 정의해야 함
 --hook-arg KEY=VALUE      훅 스크립트에 전달할 인자 (여러 번 지정 가능)
+--adapter NAME            사전 정의 어댑터 사용 (hometax / wetax / gov_kr)
+                          한국 공공 SPA(홈택스·위택스·정부24) entry path 자동 실행
+--adapter-page KEY        어댑터 내 화면 선택 (기본값: 어댑터 manifest의 default_page)
+--capture-api PATTERN     네트워크 응답 캡처 — 정규식 패턴에 매칭되는 API 응답을 JSONL로 저장
+                          (예: --capture-api 'wqAction\.do.*UTXPPBAA27')
+--list-adapters           사용 가능한 어댑터 목록을 출력하고 종료
 
 Exit codes: 0=success, 1=navigation error/timeout, 2=invalid args/SSRF/Playwright 미설치,
             3=profile lock conflict, 4=--interactive requires TTY
 SSRF 방지: fetch_html.py와 동일한 url_validator 적용
+```
+
+### 한국 공공 SPA 어댑터 예제
+
+```bash
+# 홈택스 공지사항 추출 (macOS/Linux)
+python3 scripts/fetch_dynamic.py \
+  --url "https://www.hometax.go.kr/websquare/websquare.html?w2xPath=/ui/pp/index.xml" \
+  --adapter hometax \
+  --adapter-page notice \
+  --capture-api 'wqAction\.do' \
+  --output capture_result.html
+
+# 캡처된 JSONL → Markdown 변환
+python3 scripts/extract_content.py \
+  --from-capture .itda-skills/web-reader/captures/YYYYMMDDTHHMMSS.jsonl \
+  --adapter hometax \
+  --adapter-page notice \
+  --format markdown
+
+# 사용 가능한 어댑터 목록 확인
+python3 scripts/fetch_dynamic.py --list-adapters
+
+# Windows
+py -3 scripts/fetch_dynamic.py --url "URL" --adapter hometax --adapter-page notice
+py -3 scripts/extract_content.py --from-capture .itda-skills\web-reader\captures\YYYYMMDDTHHMMSS.jsonl --adapter hometax --adapter-page notice --format markdown
 ```
 
 ### browser_driver.py
@@ -152,9 +186,15 @@ BrowserDriver: Playwright sync_playwright Page를 감싼 재사용 가능한 동
 ```
 CLI: extract_content.py [INPUT_FILE] [--output FILE]
                         [--format html|markdown|json] [--url URL] [--lang CODE]
+                        [--from-capture FILE] [--adapter NAME] [--adapter-page KEY]
      (reads stdin if INPUT_FILE omitted)
      --url과 INPUT_FILE은 상호 배타적 (동시 지정 시 에러)
      YouTube URL이 --url에 주어지면 자동으로 fetch_youtube에 위임
+
+--from-capture FILE       어댑터가 생성한 캡처 JSONL 파일 → 정규화된 Markdown으로 변환
+                          INPUT_FILE 없이 단독 사용 가능
+--adapter NAME            캡처 변환 시 필드 매핑 적용 (--from-capture 사용 시)
+--adapter-page KEY        어댑터 페이지 키 (기본값: 어댑터의 default_page)
 
 Exit codes: 0=success, 1=I/O or parse error, 2=invalid args
 ```

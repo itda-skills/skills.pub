@@ -1,0 +1,31 @@
+{
+  "adapters": [
+    {
+      "name": "hometax",
+      "module": "spa_adapters.hometax",
+      "domain_pattern": "^(www\\.)?hometax\\.go\\.kr$",
+      "framework": "websquare5",
+      "default_page": "notice",
+      "pages": ["notice"],
+      "available": true
+    },
+    {
+      "name": "wetax",
+      "module": "spa_adapters.wetax",
+      "domain_pattern": "^(www\\.)?wetax\\.go\\.kr$",
+      "framework": "websquare5",
+      "default_page": "notice",
+      "pages": ["notice", "data"],
+      "available": false
+    },
+    {
+      "name": "gov_kr",
+      "module": "spa_adapters.gov_kr",
+      "domain_pattern": "^(www\\.)?gov\\.kr$",
+      "framework": "custom",
+      "default_page": "press",
+      "pages": ["press"],
+      "available": false
+    }
+  ]
+}
