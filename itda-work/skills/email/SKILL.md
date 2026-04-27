@@ -6,7 +6,7 @@ description: >
   "이 메일 피싱인지 확인해줘" 같은 요청에 사용하세요.
   네이버·Gmail·다음/카카오·커스텀 SMTP/IMAP을 지원하고 피싱 탐지가 내장되어 있습니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Code. Python 3.10+. No external dependencies."
+compatibility: "Designed for Claude Cowork. Python 3.10+. No external dependencies."
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
@@ -52,7 +52,7 @@ Send and read emails via Naver, Google (Gmail), Daum/Kakao, or custom SMTP/IMAP 
 NAVER_EMAIL=your-id@naver.com
 NAVER_APP_PASSWORD=your-app-password
 ```
-Claude Code가 자동으로 참조합니다.
+Claude Cowork가 자동으로 참조합니다.
 
 **방법 B — 개인 맞춤 설정 (settings.json)**:
 ```bash

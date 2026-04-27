@@ -23,7 +23,7 @@ DART 전자공시 시스템에서 기업정보를 조회하는 가장 간단한 
    - 40자리 키 즉시 발급 (승인 대기 없음)
 3. **환경변수 등록** (택 1):
    ```bash
-   # 권장: Claude Code 설정에 등록
+   # 권장: Claude Cowork 설정에 등록
    claude config set env.DART_API_KEY "발급받은_키"
    ```
    또는 `CLAUDE.md`·`.env` 파일에 다음 줄을 추가합니다.

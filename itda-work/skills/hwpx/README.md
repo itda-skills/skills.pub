@@ -1,6 +1,6 @@
-# hwpx — HWP/HWPX 문서 리더 for Claude Code
+# hwpx — HWP/HWPX 문서 리더 for Claude Cowork
 
-한글(HWP5, HWPX) 문서를 Markdown/HTML로 변환하는 Claude Code 스킬입니다.
+한글(HWP5, HWPX) 문서를 Markdown/HTML로 변환하는 Claude Cowork 스킬입니다.
 
 ```
 "이 HWP 파일 읽어줘" → Claude가 자동으로 변환 + 내용 요약

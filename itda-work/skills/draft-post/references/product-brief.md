@@ -66,13 +66,13 @@ target: "{타겟 고객}"
 ```markdown
 # itda-skills
 
-**Claude Code를 위한 실무 스킬 마켓플레이스**
+**Claude Cowork를 위한 실무 스킬 마켓플레이스**
 
 ---
 
 ## 이런 불편함, 겪어보셨나요?
 
-○ Claude Code에 같은 지시를 매번 반복 입력
+○ Claude Cowork에 같은 지시를 매번 반복 입력
 ○ 팀원마다 다른 프롬프트 품질 → 일관성 없는 결과
 ○ 유용한 워크플로우를 공유할 방법이 없음
 ```

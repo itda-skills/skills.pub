@@ -29,7 +29,7 @@ title: "funding 상세 가이드"
    - 마이페이지 → 개발계정 → **Decoding** 키(일반 인증키) 복사
 3. **환경변수 등록** (택 1):
    ```bash
-   # 권장: Claude Code 설정에 등록
+   # 권장: Claude Cowork 설정에 등록
    claude config set env.KO_DATA_API_KEY "발급받은_키"
    ```
    또는 `CLAUDE.md`·`.env` 파일에 다음 줄을 추가합니다.

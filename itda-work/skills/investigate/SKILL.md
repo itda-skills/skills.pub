@@ -6,7 +6,7 @@ description: >
   "뭔가 이상한데 뭔지 모르겠어", "이 방식이 맞는지 모르겠어" 같은 상황에 사용하세요.
   경쟁 가설을 세우고 반증 실험으로 증거 기반 결론을 도출합니다.
 license: Apache-2.0
-compatibility: Designed for Claude Code
+compatibility: Designed for Claude Cowork
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 user-invocable: true
 argument-hint: '<topic> [--depth simple|full] [--save <path>] [--type bug|perf|arch|verify|interpret]'

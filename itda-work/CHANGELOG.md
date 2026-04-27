@@ -131,7 +131,7 @@
   - `nano-banana-models.md`: 모델 카탈로그 (조건부 로드: `**/itda-nano-banana/**`)
   - `nano-banana-guide.md`: 이미지 생성 가이드 (조건부 로드: `**/itda-nano-banana/**`)
 - **`scripts/sync_models.py`**: Gemini 모델 문서 실시간 동기화 CLI (stdlib-only HTTP)
-- **`update-skill-nano-banana` 스킬**: 모델 정보 신선도 유지 Claude Code 스킬
+- **`update-skill-nano-banana` 스킬**: 모델 정보 신선도 유지 Claude Cowork 스킬
 
 ### Changed
 

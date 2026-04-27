@@ -20,13 +20,13 @@
 #### 환경변수 설정 예시
 
 ```bash
-# .env 파일 또는 Claude Code 설정
+# .env 파일 또는 Claude Cowork 설정
 NAVER_SEARCHAD_ACCESS_KEY=0100000000ce65858dc66b713511f2...
 NAVER_SEARCHAD_SECRET_KEY=AQAAAADOZYWNxmtxNRHyJC98gUQ9FN...
 NAVER_SEARCHAD_CUSTOMER_ID=4332056
 ```
 
-Claude Code에 영구 등록:
+Claude Cowork에 영구 등록:
 
 ```bash
 claude config set env.NAVER_SEARCHAD_ACCESS_KEY "발급받은_Access_License"
@@ -60,12 +60,12 @@ claude config set env.NAVER_SEARCHAD_CUSTOMER_ID "고객ID_숫자"
 #### 환경변수 설정 예시
 
 ```bash
-# .env 파일 또는 Claude Code 설정
+# .env 파일 또는 Claude Cowork 설정
 NAVER_CLIENT_ID=42yH7hKOPe_eKqEmu4ZS
 NAVER_CLIENT_SECRET=y6NehxewNp
 ```
 
-Claude Code에 영구 등록:
+Claude Cowork에 영구 등록:
 
 ```bash
 claude config set env.NAVER_CLIENT_ID "발급받은_Client_ID"

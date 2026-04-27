@@ -198,7 +198,7 @@ GET https://apis.data.go.kr/1230000/ao/PubDataOpnStdService/getDataSetOpnStdBidP
 
 **설정 방법 (택 1):**
 ```bash
-# Claude Code 설정 (권장)
+# Claude Cowork 설정 (권장)
 claude config set env.KO_DATA_API_KEY "발급받은_키"
 
 # .env 파일

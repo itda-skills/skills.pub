@@ -39,13 +39,17 @@ hwpx version
 | HWP5 → HTML | `hwpx convert doc.hwp -o doc.html --format html` | Base64 임베디드 이미지 |
 | HWPX → Markdown | `hwpx convert doc.hwpx -o doc.md --format md` | 이미지 추출 포함 |
 | HWPX → HTML | `hwpx convert doc.hwpx -o doc.html --format html` | 스타일 보존 |
-| HWPX → HWPX | `hwpx convert doc.hwpx -o out.hwpx --format hwpx` | Round-trip |
-| Markdown → HWPX | `hwpx convert doc.md -o out.hwpx --format hwpx` | 신규 문서 생성 |
 
-### 미지원 변환 경로
+> **참고**: `hwpx` CLI 자체는 `Markdown → HWPX`, `HWPX → HWPX` (round-trip) 변환도 지원하지만,
+> 본 스킬은 **읽기·변환 전용**으로 동작하므로 워크플로에서 다루지 않습니다.
+> HWPX 신규 생성이 필요하면 사용자가 CLI를 직접 호출해야 합니다.
+
+### 미지원 변환 경로 (이 스킬 기준)
 
 | 변환 | 이유 |
 |------|------|
+| Markdown → HWPX | 이 스킬은 읽기·변환 전용 (CLI 자체는 지원하나 스킬 워크플로 외) |
+| HWPX → HWPX (round-trip) | 동일. 검증 목적이면 사용자가 CLI 직접 호출 |
 | HWP5 → HWPX | HWP5 바이너리 포맷에서 직접 HWPX 변환 미구현 |
 | Markdown → HWP5 | HWP5 쓰기 미지원 |
 | HTML → 모든 포맷 | HTML 입력 미지원 |

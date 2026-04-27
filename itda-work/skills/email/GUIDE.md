@@ -61,7 +61,7 @@ report.pdf 와 analysis.xlsx 를 Gmail 로 김대리에게 보내줘
 
 ## 팁
 
-- **CLAUDE.md 환경변수 삽입 (권장)**: `NAVER_EMAIL`, `GOOGLE_EMAIL`, `DAUM_EMAIL` 과 대응하는 `*_APP_PASSWORD` 를 프로젝트 `CLAUDE.md` 에 선언해두면 Claude Code 가 자동으로 로드합니다. `.env` 나 `settings.json` 보다 우선 권장되는 방식입니다.
+- **CLAUDE.md 환경변수 삽입 (권장)**: `NAVER_EMAIL`, `GOOGLE_EMAIL`, `DAUM_EMAIL` 과 대응하는 `*_APP_PASSWORD` 를 프로젝트 `CLAUDE.md` 에 선언해두면 Claude Cowork 가 자동으로 로드합니다. `.env` 나 `settings.json` 보다 우선 권장되는 방식입니다.
 - **`--since-last-run` 로 점진 동기화**: 주기 실행에는 `--since-last-run` 이 전제입니다. 첫 실행은 최근 `--count` 건으로 커서를 시드하고, 이후부터는 신규 UID 만 반환합니다. 필요하면 `--reset-state` 로 특정 `(provider, email, folder)` 커서만 초기화할 수 있습니다.
 - **폴더는 `list_folders.py` 로 먼저 확인**: 프로바이더마다 이름이 다릅니다 — Naver `Sent Messages`, Gmail `[Gmail]/Sent Mail`, Daum `보낸편지함`. 한글 폴더는 v0.15.0+ 에서 Modified UTF-7 자동 인코딩되므로 사람이 읽는 이름을 그대로 `--folder` 에 넘기면 됩니다.
 - **피싱 경고 해석**: `warnings` 배열이 비어있지 않은 메일은 사용자에게 경고 표시. `dmarc_fail + spf_fail` 동시 발생은 강한 위조 신호이고, `reply_to_differs=true` 는 회신 경로 조작 패턴입니다.

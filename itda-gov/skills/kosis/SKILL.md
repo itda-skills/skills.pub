@@ -5,7 +5,7 @@ description: >
   "농업 생산 통계 찾아줘" 같은 요청에 사용하세요.
   통계청 KOSIS API로 인구·산업·경제 등 국가 공식 통계를 조회합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Code. Python 3.10+"
+compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
 argument-hint: "[search|data] [--keyword 키워드] [--org-id ID] [--tbl-id ID] [--recent N]"
@@ -40,7 +40,7 @@ env_vars:
 | `KOSIS_API_KEY` | https://kosis.kr/openapi/ | 서비스 신청 후 자동 승인 |
 
 ```bash
-# Claude Code 설정 (권장)
+# Claude Cowork 설정 (권장)
 claude config set env.KOSIS_API_KEY "발급받은_키"
 
 # 또는 .env 파일

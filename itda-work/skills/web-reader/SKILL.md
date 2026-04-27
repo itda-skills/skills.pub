@@ -7,7 +7,7 @@ description: >
   "로그인 필요한 페이지 쿠키 넣어서 읽어줘" 같은 요청에 사용하세요.
   한국어 사이트(EUC-KR/CP949)와 동적 렌더링 페이지까지 처리합니다.
 license: Apache-2.0
-compatibility: Designed for Claude Code
+compatibility: Designed for Claude Cowork
 allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"

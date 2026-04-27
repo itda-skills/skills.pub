@@ -6,15 +6,15 @@ description: >
   "환경변수 설정해줘", "스킬팩 초기 세팅해줘" 같은 요청에 사용하세요.
   설치된 스킬팩이 요구하는 미설정 키를 자동 감지해 .env 파일에 저장합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Code. Prompt-only, no Python scripts required."
+compatibility: "Designed for Claude Cowork. Prompt-only, no Python scripts required."
 allowed-tools: Bash, Read, Write, Glob
 user-invocable: true
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "setup"
-  version: "0.9.1"
+  version: "0.9.2"
   created_at: "2026-04-04"
-  updated_at: "2026-04-18"
+  updated_at: "2026-04-27"
   tags: "설정, API키, 온보딩, 초기설정, 환경설정, setup, api-key, onboarding, env"
 ---
 
@@ -81,7 +81,6 @@ else:
 
 이미 설정된 키:
   - DART_API_KEY (dart 그룹)
-  - GEMINI_API_KEY (gemini 그룹)
 
 설정이 필요한 키 (3그룹):
   1. data-go-kr 그룹: KO_DATA_API_KEY (funding, g2b, realestate 스킬 공용)

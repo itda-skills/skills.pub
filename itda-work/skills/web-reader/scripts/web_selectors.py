@@ -4,7 +4,9 @@ Ported from Defuddle v0.13.0 (TypeScript) to Python.
 """
 from __future__ import annotations
 
+import fnmatch
 import re
+from urllib.parse import urlparse
 
 # Entry point selectors for main content detection (priority order)
 # More specific selectors come first; 'body' is the final fallback.
@@ -183,3 +185,81 @@ NAV_KEYWORD_PATTERNS: re.Pattern[str] = re.compile(
     r"|sponsor"
     r")\b"
 )
+
+# ---------------------------------------------------------------------------
+# SITE_PATTERNS — 도메인별 옵트인 우선 셀렉터 레지스트리
+# SPEC-WEBREADER-008 REQ-6
+# ---------------------------------------------------------------------------
+
+# @MX:NOTE: [AUTO] SITE_PATTERNS — 도메인별 옵트인 우선 셀렉터, 일반 fallback 보존.
+# SPEC-WEBREADER-008 REQ-6. 추가 도메인 등록은 후속 PR로 확장.
+# @MX:NOTE: [AUTO] SPEC-WEBREADER-007 도메인 중립화 정책과의 관계 —
+# SITE_PATTERNS는 어댑터(SPEC-006 영역)가 아니라 "이 도메인에는 이런 본문 셀렉터가 통한다"는
+# 옵트인 hint. 어댑터 레이어와 다른 추상화 수준.
+# @MX:NOTE: [AUTO] fnmatch 한계 — medium.com과 *.medium.com 모두 등록 필요 (REQ-6.5).
+# fnmatch.fnmatch('medium.com', '*.medium.com')는 False를 반환함.
+SITE_PATTERNS: dict[str, dict] = {
+    # Naver 모바일 뉴스
+    "n.news.naver.com": {
+        "content_selectors": ["#dic_area", ".article_body", "._article_content"],
+        "title_fallback": "h2.media_end_head_headline",
+        "dynamic": True,
+    },
+    # Naver 뉴스 (일반)
+    "news.naver.com": {
+        "content_selectors": ["#dic_area", ".article_body", "._article_content"],
+        "title_fallback": "h2.media_end_head_headline",
+        "dynamic": True,
+    },
+    # Medium 본 도메인 — exact match 필요 (D14: fnmatch('medium.com', '*.medium.com')는 False)
+    "medium.com": {
+        "content_selectors": ["article", "section[data-field='body']"],
+        "title_fallback": "h1",
+        "dynamic": False,
+    },
+    # Medium 서브도메인 (username.medium.com 형태) — wildcard match
+    "*.medium.com": {
+        "content_selectors": ["article", "section[data-field='body']"],
+        "title_fallback": "h1",
+        "dynamic": False,
+    },
+    # Hacker News
+    "news.ycombinator.com": {
+        "content_selectors": [".athing", ".storytext", "table.fatitem"],
+        "title_fallback": "title",
+        "dynamic": False,
+    },
+}
+
+
+def match_site_pattern(url: str) -> dict | None:
+    """URL의 도메인을 SITE_PATTERNS에 매칭하여 site pattern dict를 반환한다.
+
+    매칭 알고리즘 (REQ-6.5):
+      1. 정확 매칭 우선 (domain == pattern_key)
+      2. 와일드카드 fallback (fnmatch.fnmatch 사용)
+      3. 매칭 없으면 None 반환
+
+    Args:
+        url: 처리할 URL 문자열.
+
+    Returns:
+        매칭된 site pattern dict, 또는 None.
+    """
+    try:
+        domain = urlparse(url).hostname
+    except Exception:
+        return None
+    if not domain:
+        return None
+
+    # 1) 정확 매칭 우선
+    if domain in SITE_PATTERNS:
+        return SITE_PATTERNS[domain]
+
+    # 2) 와일드카드 fallback (패턴에 * 포함된 것만 시도)
+    for pattern_key, pattern_val in SITE_PATTERNS.items():
+        if "*" in pattern_key and fnmatch.fnmatch(domain, pattern_key):
+            return pattern_val
+
+    return None

@@ -5,7 +5,7 @@ description: >
   "이미지 크기 줄여줘", "사진 정보 알려줘", "여백 크롭해줘", "DPI 300으로 변경해줘",
   "PNG를 JPG로 변환해줘", "사진 90도 회전해줘", "사진 뒤집기" 같은 요청에 사용하세요.
 license: Apache-2.0
-compatibility: Designed for Claude Code
+compatibility: Designed for Claude Cowork
 allowed-tools: Bash, Read
 user-invocable: true
 metadata:

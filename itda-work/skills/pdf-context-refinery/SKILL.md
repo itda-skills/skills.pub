@@ -5,7 +5,7 @@ description: >
   "이 교재를 지식베이스로 만들어줘", "PDF OCR 정리해줘" 같은 요청에 사용하세요.
   OCR 정리, 표 재구성, 섹션 분할, 한국어 정규화까지 포함합니다.
 license: Apache-2.0
-compatibility: Designed for Claude Code
+compatibility: Designed for Claude Cowork
 user-invocable: true
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 metadata:

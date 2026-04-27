@@ -20,7 +20,7 @@ Claude가 자연어 요청을 `--keyword`, `--from`, `--to`, `--format`, `--deta
 공공데이터포털(https://www.data.go.kr) 회원가입 후 `나라장터 입찰공고정보서비스` 활용신청이 필요합니다. 승인(수시간~수일)이 완료되면 마이페이지에서 인증키가 발급됩니다.
 
 ```bash
-# Claude Code 환경변수 등록 (권장)
+# Claude Cowork 환경변수 등록 (권장)
 claude config set env.KO_DATA_API_KEY "발급받은_키"
 
 # 또는 .env 파일

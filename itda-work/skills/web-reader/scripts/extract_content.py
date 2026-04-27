@@ -473,11 +473,20 @@ def main() -> None:
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8")
 
+    # @MX:NOTE: [AUTO] 사이트 패턴 우선 → 일반 fallback → 진단 에러 — REQ-5, REQ-6, REQ-7.
+    # CLI 표면은 안정적 유지: 새 인자는 옵션으로만 추가, 기존 호출 호환.
+    # Backward-compat: test_url_and_file_are_mutually_exclusive (test_extract_content.py:971-987) 보존.
+    # --url과 INPUT_FILE은 mutually-exclusive (REQ-7.1, REQ-7.3).
     parser = argparse.ArgumentParser(
-        description="Extract main content from HTML files"
+        description=(
+            "Extract main content from HTML files.\n\n"
+            "NOTE: --url and INPUT_FILE are mutually exclusive. "
+            "Provide only one of them at a time."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "input", nargs="?", help="Input HTML file (default: stdin)"
+        "input", nargs="?", help="Input HTML file (default: stdin). Mutually exclusive with --url."
     )
     parser.add_argument(
         "--output", "-o", help="Output file (default: stdout)"
@@ -491,7 +500,12 @@ def main() -> None:
         "--metadata", action="store_true", help="Include metadata in output"
     )
     parser.add_argument(
-        "--url", help="Base URL for resolving relative URLs"
+        "--url",
+        help=(
+            "Base URL to fetch and extract content from. "
+            "Mutually exclusive with INPUT_FILE. "
+            "Triggers automatic static→dynamic fallback unless --static-only or --dynamic-only is set."
+        ),
     )
     parser.add_argument(
         "--lang", help="자막 언어 코드 (YouTube 전용, 기본값: 자동 선택)"
@@ -513,6 +527,48 @@ def main() -> None:
         dest="adapter_page",
         metavar="KEY",
         help="어댑터 페이지 키 (기본값: 어댑터의 default_page)",
+    )
+
+    # REQ-2.4: 폴백 동작 비활성화 플래그 (SPEC-WEBREADER-008)
+    fallback_group = parser.add_mutually_exclusive_group()
+    fallback_group.add_argument(
+        "--static-only",
+        dest="static_only",
+        action="store_true",
+        default=False,
+        help="정적 fetch만 실행. 품질 미달이어도 동적 시도 안 함.",
+    )
+    fallback_group.add_argument(
+        "--dynamic-only",
+        dest="dynamic_only",
+        action="store_true",
+        default=False,
+        help="동적 fetch만 실행. 정적 시도 없이 곧장 Playwright 호출.",
+    )
+    # --no-fallback은 --static-only의 alias (legacy 호환 별칭)
+    parser.add_argument(
+        "--no-fallback",
+        dest="no_fallback",
+        action="store_true",
+        default=False,
+        help="--static-only의 alias (legacy 호환). 정적 fetch만 실행.",
+    )
+    # REQ-3.3: 품질 임계값 오버라이드
+    parser.add_argument(
+        "--min-text-length",
+        dest="min_text_length",
+        type=int,
+        default=None,
+        metavar="INT",
+        help="정적 품질 판정 텍스트 길이 임계값 (기본 500). 환경변수 WEBREADER_MIN_TEXT_LENGTH보다 우선.",
+    )
+    parser.add_argument(
+        "--min-meaningful-tags",
+        dest="min_meaningful_tags",
+        type=int,
+        default=None,
+        metavar="INT",
+        help="정적 품질 판정 의미 태그 수 임계값 (기본 3). 환경변수 WEBREADER_MIN_MEANINGFUL_TAGS보다 우선.",
     )
 
     try:
@@ -539,13 +595,34 @@ def main() -> None:
             print(output, end="")
         sys.exit(exit_code)
 
-    # REQ-3.2: --url과 positional input은 상호 배타적
+    # REQ-7.1: --url과 positional input은 상호 배타적 (Codex finding: backward-compat 보존)
     if args.url and args.input:
         print(
             "Error: --url과 INPUT_FILE은 동시에 사용할 수 없습니다. 하나만 지정하세요.",
             file=sys.stderr,
         )
         sys.exit(1)
+
+    # --no-fallback은 --static-only의 alias (REQ-2.4)
+    effective_static_only = getattr(args, "static_only", False) or getattr(args, "no_fallback", False)
+    effective_dynamic_only = getattr(args, "dynamic_only", False)
+
+    # REQ-3.3: 품질 임계값 우선순위 (CLI > env > default)
+    import os as _os_env
+    min_text_length = (
+        getattr(args, "min_text_length", None)
+        or int(_os_env.environ.get("WEBREADER_MIN_TEXT_LENGTH", 0) or 0)
+        or 500
+    )
+    min_meaningful_tags = (
+        getattr(args, "min_meaningful_tags", None)
+        or int(_os_env.environ.get("WEBREADER_MIN_MEANINGFUL_TAGS", 0) or 0)
+        or 3
+    )
+
+    # 최종 URL 추적 (redirect 후 final URL)
+    final_url: str | None = None
+    fetch_pipeline_result = None  # fetch_pipeline.FetchResult or None
 
     # Read input
     try:
@@ -572,14 +649,31 @@ def main() -> None:
                 )
                 sys.exit(0)
 
-            # YouTube가 아닌 URL: 기존 fetch_html 파이프라인 사용
-            _fh = _load_module("fetch_html")
-            fetch_result = _fh.fetch_url(args.url)
-            if not fetch_result.get("content") or fetch_result.get("error"):
-                error_msg = fetch_result.get("error", "empty response")
-                print(f"Error fetching URL: {error_msg}", file=sys.stderr)
-                sys.exit(1)
-            html = str(fetch_result["content"])
+            # YouTube가 아닌 URL: fetch_pipeline orchestrator 사용 (REQ-2, WI-2)
+            try:
+                _fp = _load_module("fetch_pipeline")
+                _ws = _load_module("web_selectors")
+                site_pattern = _ws.match_site_pattern(args.url)
+                fetch_pipeline_result = _fp.fetch_with_fallback(
+                    args.url,
+                    static_only=effective_static_only,
+                    dynamic_only=effective_dynamic_only,
+                    min_text_length=min_text_length,
+                    min_meaningful_tags=min_meaningful_tags,
+                    site_pattern=site_pattern,
+                )
+                html = fetch_pipeline_result.html
+                final_url = fetch_pipeline_result.final_url or args.url
+            except Exception as _fp_err:
+                # fetch_pipeline 미사용 환경 폴백: 기존 fetch_html 직접 호출
+                _fh = _load_module("fetch_html")
+                fetch_result = _fh.fetch_url(args.url)
+                if not fetch_result.get("content") or fetch_result.get("error"):
+                    error_msg = fetch_result.get("error", "empty response")
+                    print(f"Error fetching URL: {error_msg}", file=sys.stderr)
+                    sys.exit(1)
+                html = str(fetch_result["content"])
+                final_url = str(fetch_result.get("url") or args.url)
         elif args.input:
             with open(args.input, encoding="utf-8") as f:
                 html = f.read()
@@ -593,6 +687,7 @@ def main() -> None:
     try:
         result = extract_with_retry(html, args.url, args.format)
     except Exception as e:
+        # REQ-5.5: 진단을 stderr로 출력하며 stdout JSON 오염 없음
         print(f"Error extracting content: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -615,15 +710,11 @@ def main() -> None:
         )
         return f'"{escaped}"'
 
-    # 최종 URL (redirect 후) 사용 - REQ-3.3
-    # fetch_result는 args.url이 있을 때만 존재한다 (fetch_html 파이프라인)
-    final_url: str | None = None
-    if args.url:
-        try:
-            _fetched_url = fetch_result.get("url")  # type: ignore[name-defined]
-            final_url = str(_fetched_url) if _fetched_url else args.url
-        except NameError:
-            final_url = args.url
+    # 최종 URL (redirect 후) 사용 - REQ-7.2 (REQ-3.3에서 이어짐)
+    # final_url은 fetch 단계에서 이미 결정됨 (fetch_pipeline_result 또는 fetch_html 폴백)
+    # final_url이 아직 None인 경우(INPUT_FILE 모드): args.url은 없음
+    if final_url is None and args.url:
+        final_url = args.url
 
     if args.format == "json":
         output_data = {

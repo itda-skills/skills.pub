@@ -5,7 +5,7 @@ description: >
   "창업 지원사업 모집 공고 알려줘", "중소기업 보조금 공고 검색해줘"
   같은 요청에 사용하세요. K-Startup 공공데이터 API로 창업·중소기업 지원사업 공고를 검색합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Code. Python 3.10+"
+compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
 argument-hint: "[search|overview] [--keyword 키워드] [--active] [--year 연도]"
@@ -40,7 +40,7 @@ K-Startup 공공데이터 API로 정부 창업·중소기업 지원사업 공고
 | `KO_DATA_API_KEY` | https://www.data.go.kr | 'K-Startup 통합공고 지원사업' 활용 신청 필요 |
 
 ```bash
-# Claude Code 설정 (권장)
+# Claude Cowork 설정 (권장)
 claude config set env.KO_DATA_API_KEY "발급받은_키"
 
 # 또는 .env 파일

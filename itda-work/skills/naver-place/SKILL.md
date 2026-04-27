@@ -5,7 +5,7 @@ description: >
   "이 가게 리뷰 모아줘", "네이버 플레이스에서 맛집 찾아줘",
   "placeId 1288902633 리뷰 수집해줘" 같은 요청에 사용하세요.
 license: Apache-2.0
-compatibility: Designed for Claude Code
+compatibility: Designed for Claude Cowork
 user-invocable: true
 allowed-tools: Bash, Read, Write, Agent
 argument-hint:

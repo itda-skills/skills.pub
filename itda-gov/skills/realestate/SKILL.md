@@ -5,7 +5,7 @@ description: >
   "분당 전세 시세 조회해줘", "서울 아파트 실거래가 정리해줘"
   같은 요청에 사용하세요. 아파트·오피스텔 매매·전월세 실거래 데이터를 조회합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Code. Python 3.10+"
+compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
 argument-hint: "[trade|rent|regions] [--region 지역명] [--year-month YYYYMM] [--summary]"
@@ -40,7 +40,7 @@ env_vars:
 | `KO_DATA_API_KEY` | https://www.data.go.kr | '국토교통부 아파트 매매 실거래 정보' 활용 신청 필요 |
 
 ```bash
-# Claude Code 설정 (권장)
+# Claude Cowork 설정 (권장)
 claude config set env.KO_DATA_API_KEY "발급받은_키"
 
 # 또는 .env 파일

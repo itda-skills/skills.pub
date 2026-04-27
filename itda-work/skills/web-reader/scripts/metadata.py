@@ -366,6 +366,12 @@ def extract_metadata(
 ) -> dict[str, Any]:
     """Extract all metadata fields from HTML document.
 
+    # @MX:NOTE: [AUTO] None-safe 메타 접근 — REQ-1.1, REQ-1.2, REQ-1.3, REQ-1.4.
+    # Singular extractor 시그니처 보존 (str | None), aggregator dict shape 안정 (9개 키 항상 present).
+    # extract_content.py:631-639의 .get(key, "") or "" 패턴 의존 — 변경 시 다운스트림 영향.
+    # 9개 키: title, author, published, description, image, language, favicon, site, domain.
+    # metadata 추출 실패는 절대 hard-error 일으키지 않음 (REQ-1.4: silent skip → None 반환).
+
     Args:
         soup: Parsed HTML document.
         url: Base URL string for resolving domain, or HTTP response headers dict

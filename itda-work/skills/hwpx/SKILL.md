@@ -8,15 +8,19 @@ license: Apache-2.0
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   tags: "hwp, hwpx, 한글, 한컴, 문서, document, convert, markdown, html"
-  version: "2.4.1"
+  version: "2.4.2"
   category: "document"
   created_at: "2026-03-20"
-  updated_at: "2026-04-18"
+  updated_at: "2026-04-27"
 ---
 
 # HWP/HWPX 문서 처리 (hwpx)
 
-HWP5(.hwp) 및 HWPX(.hwpx) 문서를 읽고 Markdown/HTML로 변환합니다. 쓰기/수정 기능은 제공하지 않습니다.
+HWP5(.hwp) 및 HWPX(.hwpx) 문서를 읽고 Markdown/HTML로 변환합니다.
+
+이 스킬은 **읽기·변환 전용**입니다. HWPX 신규 생성·편집은 지원하지 않습니다.
+(`hwpx` CLI 자체는 `Markdown → HWPX` 변환을 지원하나, 본 스킬 워크플로에서는 다루지 않습니다.
+신규 생성이 필요하면 사용자가 CLI를 직접 호출하세요.)
 
 ## 설계 원칙
 
@@ -266,9 +270,9 @@ $HWPX_BIN convert .itda-skills/<파일명> -o .itda-skills/<파일명>.html --fo
 | HWPX → HTML | `hwpx convert doc.hwpx -o out.html --format html` |
 
 **미지원 변환** — 요청 시 아래와 같이 안내:
-- Markdown → HWPX: "쓰기 기능은 지원하지 않습니다."
-- HWP/HWPX 수정: "수정 기능은 지원하지 않습니다. 읽기와 Markdown/HTML 변환만 가능합니다."
-- PDF, DOCX 등 기타: "현재 hwpx CLI는 HWP/HWPX → Markdown/HTML 변환만 지원합니다."
+- Markdown → HWPX: "이 스킬은 읽기·변환 전용입니다. HWPX 신규 생성은 지원하지 않습니다. (`hwpx` CLI 자체는 지원하므로 직접 호출은 가능합니다.)"
+- HWP/HWPX 수정: "이 스킬은 읽기·변환 전용입니다. HWP/HWPX 편집은 지원하지 않습니다."
+- PDF, DOCX 등 기타: "이 스킬은 HWP/HWPX → Markdown/HTML 변환만 지원합니다."
 
 ---
 

@@ -78,6 +78,44 @@ def is_playwright_available() -> bool:
         return False
 
 
+# REQ-4: 모듈 로드 시점 가용성 플래그 (테스트/조건부 분기에 사용)
+# @MX:NOTE: [AUTO] PLAYWRIGHT_AVAILABLE — 모듈 import 시 1회 평가. 설치 후엔 reload 필요.
+PLAYWRIGHT_AVAILABLE: bool = is_playwright_available()
+
+
+def _attempt_user_local_install(*, stderr_out=None) -> tuple[bool, str]:
+    """Playwright 설치를 fetch_pipeline._attempt_playwright_install에 위임한다.
+
+    fetch_dynamic.py는 단일 책임(동적 fetch)을 유지하고,
+    설치 로직은 fetch_pipeline.py에 집중한다 (SPEC-WEBREADER-008 REQ-4).
+
+    # @MX:WARN: [AUTO] fetch_pipeline 순환 import 위험 — importlib로 lazy load.
+    # @MX:REASON: fetch_pipeline → fetch_dynamic → fetch_pipeline 순환 방지.
+    # 직접 import 대신 importlib.util로 런타임 로드.
+
+    Args:
+        stderr_out: 메시지를 출력할 파일 객체 (기본: sys.stderr).
+
+    Returns:
+        (success: bool, reason: str) 튜플.
+    """
+    import importlib.util as _ilu
+
+    fp_path = _os.path.join(_scripts_dir, "fetch_pipeline.py")
+    try:
+        _spec = _ilu.spec_from_file_location("fetch_pipeline", fp_path)
+        if _spec is None or _spec.loader is None:
+            return False, "fetch_pipeline module not found"
+        fp = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(fp)  # type: ignore[union-attr]
+        install_fn = getattr(fp, "_attempt_playwright_install", None)
+        if install_fn is None:
+            return False, "_attempt_playwright_install not found in fetch_pipeline"
+        return install_fn(stderr_out=stderr_out)
+    except Exception as e:
+        return False, f"install delegation failed: {e}"
+
+
 # ---------------------------------------------------------------------------
 # Playwright wrapper (테스트에서 mock 가능)
 # ---------------------------------------------------------------------------

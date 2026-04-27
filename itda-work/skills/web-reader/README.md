@@ -7,7 +7,7 @@
 
 ## WebSearch · WebFetch와 무엇이 다른가?
 
-Claude Code에는 `WebSearch`와 `WebFetch`라는 내장 도구가 있다.
+Claude Cowork에는 `WebSearch`와 `WebFetch`라는 내장 도구가 있다.
 `web-reader`는 이 둘과 **역할이 겹치지 않고 상호보완** 관계에 있다.
 
 ### 한눈에 비교

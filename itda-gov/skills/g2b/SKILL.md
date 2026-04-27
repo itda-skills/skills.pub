@@ -5,7 +5,7 @@ description: >
   "조달청 공고 확인해줘", "소프트웨어 개발 입찰 공고 찾아줘"
   같은 요청에 사용하세요. 조달청 G2B API로 정부 입찰공고를 검색·조회합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Code. Python 3.10+"
+compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
 argument-hint: "[--keyword 키워드] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--format json|table] [--detail]"
@@ -40,7 +40,7 @@ env_vars:
 | `KO_DATA_API_KEY` | https://www.data.go.kr | '나라장터 입찰공고정보서비스' 활용 신청 필요 |
 
 ```bash
-# Claude Code 설정 (권장)
+# Claude Cowork 설정 (권장)
 claude config set env.KO_DATA_API_KEY "발급받은_키"
 
 # 또는 .env 파일

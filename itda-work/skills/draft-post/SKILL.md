@@ -5,7 +5,7 @@ description: >
   "이 주제로 기획서 만들어줘", "보도자료 초안 작성해줘", "뉴스레터 써줘"
   같은 요청에 사용하세요. 인터뷰로 맥락을 수집한 뒤 도메인에 맞춘 마크다운 초안을 만듭니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Code"
+compatibility: "Designed for Claude Cowork"
 user-invocable: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 argument-hint: "<topic> [--style <style>] [--save <path>] [--analyze <file>] [--list-styles]"
@@ -26,7 +26,7 @@ metadata:
 
 ## Arguments
 
-- `<topic>` (필수): 글의 주제. 예: "Claude Code MCP 연동 가이드"
+- `<topic>` (필수): 글의 주제. 예: "Claude Cowork MCP 연동 가이드"
 - `--style <style>` (선택): 글쓰기 스타일. `references/` 내 빌트인 스타일 또는 사용자 정의 스타일명. 기본값: `blog`
 - `--save <path>` (선택): 초안을 저장할 파일 경로. 생략 시 대화창에 출력만 함
 - `--analyze <file>` (선택): 기존 자료를 분석하여 새 reference 스타일을 생성. "스타일 확장 가이드" 참조
@@ -61,7 +61,7 @@ metadata:
 
 1. `CLAUDE_CODE_IS_COWORK` 환경변수 확인:
    - Bash 도구로 `echo $CLAUDE_CODE_IS_COWORK` 실행
-   - 값이 없으면 → **Claude Code** 환경
+   - 값이 없으면 → **Claude Cowork** 환경
 
 2. `CLAUDE_CODE_IS_COWORK=1`이면, `./mnt/` 디렉토리 존재 여부 확인:
    - Bash 도구로 `[ -d "./mnt" ] && echo "MOUNTED" || echo "NOT_MOUNTED"` 실행
@@ -70,7 +70,7 @@ metadata:
 
    | 환경 | USER_STYLES_DIR | 영속성 |
    |------|-----------------|--------|
-   | Claude Code | `.itda-skills/draft-post/styles/` | 프로젝트 단위 영구 |
+   | Claude Cowork | `.itda-skills/draft-post/styles/` | 프로젝트 단위 영구 |
    | Cowork + 마운트 (`./mnt/` 존재) | `./mnt/.itda-skills/draft-post/styles/` | 호스트 영구 |
    | Cowork + 마운트 없음 | `.itda-skills/draft-post/styles/` | 세션 한정 |
 

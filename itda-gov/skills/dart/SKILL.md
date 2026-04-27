@@ -5,7 +5,7 @@ description: >
   "경쟁사 직원수 알려줘", "기업 매출 현황 정리해줘" 같은 요청에 사용하세요.
   금융감독원 DART API로 기업 프로필, 재무제표, 직원현황을 조회합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Code. Python 3.10+"
+compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
 argument-hint: "[search|info|finance|employees|profile] [--name 회사명] [--corp-code 코드] [--year 연도]"
@@ -41,7 +41,7 @@ env_vars:
 | `DART_API_KEY` | https://opendart.fss.or.kr | 즉시 발급 (40자리) |
 
 ```bash
-# Claude Code 설정 (권장)
+# Claude Cowork 설정 (권장)
 claude config set env.DART_API_KEY "발급받은_키"
 
 # 또는 .env 파일

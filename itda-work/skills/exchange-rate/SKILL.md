@@ -5,7 +5,7 @@ description: >
   "이번 달 엔화 평균 환율 보여줘" 같은 요청에 사용하세요.
   일별·월평균 매매기준율을 제공하고, 휴일에는 직전 영업일로 자동 폴백합니다.
 license: Apache-2.0
-compatibility: Designed for Claude Code
+compatibility: Designed for Claude Cowork
 user-invocable: true
 argument-hint: "[YYYY-MM-DD|YYYY-MM] [currency] - Date/month and optional currency code (default: USD)"
 allowed-tools: Read WebFetch Bash(python3:* date:*)
