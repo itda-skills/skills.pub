@@ -1,1 +1,1 @@
-{"adapters": []}
+{"adapters": [{"name": "naver_land", "module": "spa_adapters.naver_land", "class": "NaverLandAdapter", "default_page": "complexes", "domain_pattern": "^(www\\.)?new\\.land\\.naver\\.com$", "framework": "custom", "pages": ["complexes", "complex_detail"]}]}

@@ -2,17 +2,19 @@
 
 대한민국 직장인을 위한 AI 코치 스킬팩입니다.
 
-환율·ETF 분석, 웹 읽기, 이메일, 이미지 처리, PDF 정제, 폰트 추천, 명찰 생성까지 — 직장인의 반복 업무를 자동화합니다.
+환율·ETF 분석, 웹 읽기, 이메일, 이미지 처리, PDF 정제까지 — 직장인의 반복 업무를 자동화합니다.
 
 ## 이 플러그인이 뭔가요?
 
 **itda-skills**는 Claude Code, Cowork에 유용한 스킬을 추가하는 플러그인입니다.
 
-현재 **11개 스킬**을 제공합니다.
+현재 **8개 스킬**을 제공합니다.
 
 > ℹ️ **v3.0.0 변경 안내**: `itda-slide-ai`, `itda-stt`는 인큐베이팅(비공개) 스킬팩 `itda-egg`로 이전되었습니다. 안정화 검증 후 itda-work로 졸업할 수 있습니다.
 >
 > ℹ️ **2026-04-27 변경 안내**: `itda-emoticon`(Gemini 기반)·`itda-font-guide`도 `itda-egg`로 이전되었습니다. 사용하려면 [itda-egg/README](../itda-egg/README.md) 참고.
+>
+> ℹ️ **2026-04-28 변경 안내(SPEC-INCUBATE-003, itda-work 슬림화)**: `itda-name-badge`·`itda-naver-place`·`itda-hyve-pptx`도 `itda-egg`로 이전되었습니다. 직장인 핵심 생산성에 집중도를 높이기 위한 정리이며, 사용은 [itda-egg/README](../itda-egg/README.md) 참고.
 
 ### 웹·미디어
 
@@ -28,7 +30,6 @@
 |------|------|:----:|
 | **itda-pdf-context-refinery** | PDF를 LLM 컨텍스트용 마크다운으로 정제 (OCR 정리, 테이블 복원, 한국어 띄어쓰기) | 📦 🔧 |
 | **itda-hwpx** | HWP/HWPX 문서 읽기 → Markdown 변환 | 📦 |
-| **itda-name-badge** | Excel/CSV 명단과 PPTX 템플릿으로 명찰 자동 생성 | 📦 |
 
 ### 투자·경제
 
@@ -56,7 +57,6 @@
 | itda-web-reader | `requests` | — | Playwright 선택 |
 | itda-email | — | 메일 서비스별 앱 비밀번호 | — |
 | itda-imagekit | `Pillow` | — | — |
-| itda-name-badge | `python-pptx` `openpyxl` | — | — |
 | itda-exchange-rate | — | — | — |
 | itda-etf-naver | — | — | — |
 | itda-blog-seo | — | — | 네이버 데이터 조회 |
@@ -85,9 +85,6 @@ NAVER_APP_PASSWORD=...
 ```bash
 # 이미지 처리 (itda-imagekit)
 uv pip install --system Pillow
-
-# 명찰 생성 (itda-name-badge)
-uv pip install --system python-pptx openpyxl
 
 # 웹 리더 (itda-web-reader)
 uv pip install --system requests
@@ -165,18 +162,6 @@ Naver/Gmail/Daum·Kakao/커스텀 SMTP로 **이메일을 전송하고 IMAP으로
 - `rotate` — 90/180/270도 회전, 수평/수직 반전
 
 **필요 패키지:** `Pillow`
-
-### itda-name-badge — 명찰 PPTX 자동 생성
-
-Excel/CSV 명단과 PPTX 템플릿으로 **명찰(이름표) PPTX**를 자동 생성합니다.
-
-**주요 기능:**
-
-- Excel(`.xlsx`) / CSV 명단 파일 지원
-- PPTX 템플릿 기반 — 사용자가 디자인한 템플릿을 그대로 활용
-- placeholder(`{이름}`, `{부서}` 등) 자동 치환
-
-**필요 패키지:** `python-pptx`, `openpyxl`
 
 ### itda-pdf-context-refinery — PDF 컨텍스트 정제
 
@@ -298,12 +283,11 @@ PDF 교재를 지식베이스로 만들어줘
 p.50~80 구간만 마크다운으로 정리해줘
 ```
 
-**폰트·이미지·명찰**
+**이미지**
 
 ```
-보고서에 어울리는 폰트 추천해줘
 photo.jpg 가로 1920px로 줄여줘
-이 Excel 명단으로 명찰 PPTX 만들어줘
+PNG를 JPEG로 변환해줘
 ```
 
 **환율·ETF**
@@ -316,7 +300,7 @@ photo.jpg 가로 1920px로 줄여줘
 
 ## 설정
 
-📦 표시 스킬(imagekit, name-badge 등)은 별도 설정 없이 바로 사용할 수 있습니다.
+📦 표시 스킬(imagekit 등)은 별도 설정 없이 바로 사용할 수 있습니다.
 
 🔑 API 키가 필요한 스킬은 [사전 준비](#사전-준비) 섹션을 참고하세요.
 

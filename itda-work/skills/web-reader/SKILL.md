@@ -12,10 +12,10 @@ allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "2.8.0"
+  version: "2.9.0"
   created_at: "2026-03-18"
-  updated_at: "2026-04-26"
-  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security, spa, adapter, capture"
+  updated_at: "2026-04-28"
+  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security, spa, adapter, capture, naver-land, real-estate"
 ---
 
 # web-reader
@@ -71,6 +71,27 @@ python3 scripts/fetch_dynamic.py --url "URL" --stealth --output page.html
 # 로그인 필요 시 프로필 사용
 python3 scripts/fetch_dynamic.py --url "URL" --profile myprofile --output page.html
 ```
+
+### Naver Land(부동산) 단지/매물 캡처 (`naver_land` 어댑터)
+
+```bash
+# 지도 영역 단지 목록 (좌표=서울 시청)
+python3 scripts/fetch_dynamic.py --adapter naver_land --adapter-page complexes \
+  --url "https://new.land.naver.com/complexes?ms=37.5665,126.9780,15" \
+  --capture-api "^https://new\.land\.naver\.com/api/(complexes|articles|cortars|regions|developmentplan)" \
+  --stealth
+
+# 단지 상세 + 매물
+python3 scripts/fetch_dynamic.py --adapter naver_land --adapter-page complex_detail \
+  --url "https://new.land.naver.com/complexes/104917" \
+  --capture-api "^https://new\.land\.naver\.com/api/(complexes|articles)" \
+  --stealth
+
+# 캡처 JSONL → 정규화된 dict (PII 자동 마스킹)
+python3 scripts/extract_content.py --from-capture <jsonl> --adapter naver_land --format json
+```
+
+비인증 단발성 조회 한정 — robots.txt 자동 확인, 매물 등록자 정보 마스킹, 한국 좌표 범위 검증 포함. 자세한 사양은 `.moai/specs/SPEC-WEB-NAVERLAND-001/` 참조.
 
 ### 출력 포맷
 
