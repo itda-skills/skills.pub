@@ -13,6 +13,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 import sys
 from typing import Any
@@ -69,16 +71,21 @@ def cmd_search(args: argparse.Namespace) -> int:
     results = dart_api.find_corp_code(api_key, args.name, cache_path=_get_cache_path())
 
     if not results:
-        print(json.dumps(
-            {"status": "ok", "query": args.name, "count": 0, "results": []},
-            ensure_ascii=False, indent=2,
-        ))
+        if args.format == "csv":
+            _write_csv([], ["corp_code", "corp_name", "corp_name_eng", "stock_code"])
+        else:
+            print(json.dumps(
+                {"status": "ok", "query": args.name, "count": 0, "results": []},
+                ensure_ascii=False, indent=2,
+            ))
         return 0
 
     # 상장사 우선 정렬 (stock_code가 있는 기업 먼저)
     results.sort(key=lambda x: (0 if x.get("stock_code") else 1, x["corp_name"]))
 
-    if args.format == "table":
+    if args.format == "csv":
+        _write_csv(results, ["corp_code", "corp_name", "corp_name_eng", "stock_code", "modify_date"])
+    elif args.format == "table":
         _print_search_table(results, args.name)
     else:
         print(json.dumps(
@@ -93,7 +100,13 @@ def cmd_info(args: argparse.Namespace) -> int:
     api_key = _get_api_key(args.api_key)
     data = dart_api.get_company_info(api_key, args.corp_code)
 
-    if args.format == "table":
+    if args.format == "csv":
+        _info_fields = [
+            "corp_name", "ceo_nm", "induty_code", "est_dt",
+            "adres", "hm_url", "corp_cls", "stock_code",
+        ]
+        _write_csv([{k: data.get(k, "") for k in _info_fields}], _info_fields)
+    elif args.format == "table":
         _print_info_table(data)
     else:
         print(json.dumps(
@@ -103,24 +116,132 @@ def cmd_info(args: argparse.Namespace) -> int:
 
 
 def cmd_finance(args: argparse.Namespace) -> int:
-    """재무제표 주요계정 조회."""
+    """재무제표 주요계정 조회.
+
+    --year 미지정 시 find_latest_report()로 자동 폴백.
+    prefer 옵션에 따라 사업/반기/분기 폴백 범위 결정.
+    """
     api_key = _get_api_key(args.api_key)
     reprt_code = dart_api.REPRT_CODES.get(args.report, "11011")
 
+    year = getattr(args, "year", None)
+    prefer = getattr(args, "prefer", "annual")
+
+    if not year:
+        # REQ-DART-004-001: 자동 폴백 — prefer에 따라 범위 결정
+        report_info = dart_api.find_latest_report(api_key, args.corp_code, prefer=prefer)
+        year = report_info["bsns_year"]
+        report_type = report_info.get("report_type", "annual")
+        # stderr 메시지: 어떤 보고서 채택됐는지 명시 (UX 모호성 방지)
+        _type_labels = {
+            "annual": "사업보고서",
+            "half": "반기보고서",
+            "q1": "1분기보고서",
+            "q3": "3분기보고서",
+        }
+        label = _type_labels.get(report_type, report_type)
+        print(
+            f"[자동 폴백] {label} {year} 사용 (rcept_no={report_info['rcept_no']})",
+            file=sys.stderr,
+        )
+
     statements = dart_api.get_financial_statements(
-        api_key, args.corp_code, args.year, reprt_code,
+        api_key, args.corp_code, year, reprt_code,
     )
     key_items = dart_api.filter_key_financials(statements, args.fs_div)
 
-    if args.format == "table":
-        _print_finance_table(key_items, args.year)
+    if args.format == "csv":
+        _write_csv(
+            [{"account_nm": i["account_nm"], "thstrm_amount": i["thstrm_amount"],
+              "frmtrm_amount": i["frmtrm_amount"], "currency": i.get("currency", "KRW")}
+             for i in key_items],
+            ["account_nm", "thstrm_amount", "frmtrm_amount", "currency"],
+        )
+    elif args.format == "table":
+        _print_finance_table(key_items, year)
     else:
         print(json.dumps(
-            {"status": "ok", "corp_code": args.corp_code, "year": args.year,
+            {"status": "ok", "corp_code": args.corp_code, "year": year,
              "report": args.report, "fs_div": args.fs_div,
              "count": len(key_items), "items": key_items},
             ensure_ascii=False, indent=2,
         ))
+    return 0
+
+
+def cmd_disclosure(args: argparse.Namespace) -> int:
+    """공시 목록 조회 (REQ-001).
+
+    list.json 호출 → rcept_no, report_nm, rcept_dt, flr_nm, corp_name 출력.
+    status=013(결과 없음)은 정상 케이스로 처리.
+    """
+    api_key = _get_api_key(args.api_key)
+
+    result = dart_api.list_disclosures(
+        api_key,
+        args.corp_code,
+        args.bgn,
+        args.end,
+        pblntf_ty=getattr(args, "type", None) or None,
+        page_no=args.page,
+        page_count=args.page_count,
+    )
+
+    items = result.get("list", [])
+    total = int(result.get("total_count", len(items)))
+
+    if args.format == "csv":
+        _write_csv(
+            items,
+            ["rcept_no", "report_nm", "rcept_dt", "flr_nm", "corp_name"],
+        )
+    elif args.format == "table":
+        _print_disclosure_table(items, total)
+    else:
+        msg = "조회된 공시 없음" if not items else "ok"
+        print(json.dumps(
+            {"status": "ok", "corp_code": args.corp_code,
+             "total_count": total, "count": len(items),
+             "message": msg, "items": items},
+            ensure_ascii=False, indent=2,
+        ))
+    return 0
+
+
+def cmd_business(args: argparse.Namespace) -> int:
+    """사업보고서 텍스트 추출 (REQ-002/003).
+
+    --rcept-no 미지정 + --corp-code만 → 최신 사업보고서 자동 폴백.
+    """
+    api_key = _get_api_key(args.api_key)
+
+    rcept_no = getattr(args, "rcept_no", None)
+
+    if not rcept_no:
+        # REQ-003: 자동 폴백
+        report_info = dart_api.find_latest_business_report(api_key, args.corp_code)
+        rcept_no = report_info["rcept_no"]
+        bsns_year = report_info["bsns_year"]
+        print(
+            f"[자동 폴백] 사업보고서 {bsns_year} 사용 (rcept_no={rcept_no})",
+            file=sys.stderr,
+        )
+
+    text = dart_api.get_document_text(
+        api_key,
+        rcept_no,
+        section_pattern=getattr(args, "section", None) or None,
+        max_chars=args.max_chars,
+    )
+
+    if args.format == "csv":
+        section = getattr(args, "section", None) or ""
+        _write_csv(
+            [{"rcept_no": rcept_no, "section": section, "content": text}],
+            ["rcept_no", "section", "content"],
+        )
+    else:
+        print(text)
     return 0
 
 
@@ -133,7 +254,13 @@ def cmd_employees(args: argparse.Namespace) -> int:
         api_key, args.corp_code, args.year, reprt_code,
     )
 
-    if args.format == "table":
+    if args.format == "csv":
+        _write_csv(
+            data,
+            ["fo_bbm", "sexdstn", "rgllbr_co", "cnttk_co", "sm",
+             "avrg_cnwk_sdytrn", "jan_salary_am"],
+        )
+    elif args.format == "table":
         _print_employee_table(data)
     else:
         print(json.dumps(
@@ -201,11 +328,218 @@ def cmd_profile(args: argparse.Namespace) -> int:
         "employees": employees,
     }
 
-    print(json.dumps(profile, ensure_ascii=False, indent=2))
+    if args.format == "csv":
+        # profile CSV: 기업개황 필드를 단일 행으로
+        info_fields = ["corp_name", "ceo_nm", "induty_code", "est_dt",
+                       "adres", "hm_url", "corp_cls", "stock_code"]
+        row = {k: company_info.get(k, "") for k in info_fields}
+        row["corp_code"] = corp_code
+        row["year"] = args.year
+        _write_csv([row], ["corp_code", "year"] + info_fields)
+    else:
+        print(json.dumps(profile, ensure_ascii=False, indent=2))
     return 0
 
 
+# --- CSV 출력 헬퍼 ---
+
+def _write_csv(rows: list[dict], headers: list[str]) -> None:
+    """rows를 UTF-8 BOM CSV로 stdout에 출력.
+
+    RFC 4180 준수: \\r\\n 줄바꿈, 헤더 행 포함, QUOTE_MINIMAL.
+    엑셀 한글 호환을 위해 UTF-8 BOM(\\xef\\xbb\\xbf) 선행 출력.
+
+    Args:
+        rows: 출력할 딕셔너리 목록.
+        headers: CSV 헤더 컬럼명 목록.
+    """
+    # BOM 출력 (엑셀 한글 호환)
+    sys.stdout.buffer.write('﻿'.encode('utf-8'))
+    writer = csv.DictWriter(
+        sys.stdout,
+        fieldnames=headers,
+        extrasaction='ignore',
+        quoting=csv.QUOTE_MINIMAL,
+        lineterminator='\r\n',
+    )
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(row)
+
+
+# --- compare 커맨드 ---
+
+# 기업 비교에서 표시할 단위: 백만 원
+_MILLION = 1_000_000
+
+
+def _format_compare_amount(val: str, currency: str = "KRW") -> str:
+    """비교 테이블용 금액 포맷: 원본 값 + 천 단위 콤마 + 백만 단위.
+
+    Args:
+        val: 금액 문자열 (원 단위).
+        currency: 통화 코드.
+
+    Returns:
+        "258,935,488M KRW" 형식의 문자열. 파싱 불가 시 원본 반환.
+    """
+    if not val or val == "-":
+        return "-"
+    try:
+        num = int(val.replace(",", ""))
+    except ValueError:
+        return val
+    millions = num // _MILLION
+    suffix = f"M {currency}" if currency != "KRW" else "M KRW"
+    return f"{millions:,}{suffix}"
+
+
+def cmd_compare(args: argparse.Namespace) -> int:
+    """다기업 재무 비교 커맨드.
+
+    --names 또는 --corp-codes로 기업 지정, --year와 --accounts로 조회.
+    """
+    api_key = _get_api_key(args.api_key)
+    reprt_code = dart_api.REPRT_CODES.get(getattr(args, "report", "annual"), "11011")
+
+    # 기업 코드 목록 결정
+    corp_codes: list[str] = []
+    corp_names: dict[str, str] = {}  # corp_code → 표시 이름
+
+    if getattr(args, "corp_codes", None):
+        for code in args.corp_codes.split(","):
+            code = code.strip()
+            if code:
+                corp_codes.append(code)
+                corp_names[code] = code
+    elif getattr(args, "names", None):
+        for name in args.names.split(","):
+            name = name.strip()
+            if not name:
+                continue
+            matches = dart_api.find_corp_code(api_key, name, cache_path=_get_cache_path())
+            if not matches:
+                print(f"[경고] '{name}' 검색 결과 없음 — 스킵", file=sys.stderr)
+                continue
+            # 상장사 우선, 2+건이면 첫 결과 + 경고
+            matches.sort(key=lambda x: (0 if x.get("stock_code") else 1))
+            if len(matches) > 1:
+                print(
+                    f"[경고] '{name}' 검색 결과 {len(matches)}건 — '{matches[0]['corp_name']}' 채택",
+                    file=sys.stderr,
+                )
+            corp = matches[0]
+            corp_codes.append(corp["corp_code"])
+            corp_names[corp["corp_code"]] = corp["corp_name"]
+
+    # 계정 목록 결정
+    accounts_str = getattr(args, "accounts", None)
+    if accounts_str:
+        accounts = [a.strip() for a in accounts_str.split(",") if a.strip()]
+    else:
+        accounts = list(dart_api.KEY_ACCOUNTS)
+
+    # 비교 조회
+    data = dart_api.compare_financials(api_key, corp_codes, args.year, accounts, reprt_code)
+
+    if args.format == "csv":
+        _print_compare_csv(data, corp_codes, corp_names, accounts, args.year)
+    elif args.format == "table":
+        _print_compare_table(data, corp_codes, corp_names, accounts, args.year, args.report)
+    else:
+        print(json.dumps(
+            {"status": "ok", "year": args.year, "report": getattr(args, "report", "annual"),
+             "corp_codes": corp_codes, "accounts": accounts, "data": data},
+            ensure_ascii=False, indent=2,
+        ))
+    return 0
+
+
+def _print_compare_table(
+    data: dict[str, dict],
+    corp_codes: list[str],
+    corp_names: dict[str, str],
+    accounts: list[str],
+    year: str,
+    report: str = "annual",
+) -> None:
+    """비교 결과 테이블 출력."""
+    _report_labels = {
+        "annual": "사업보고서",
+        "half": "반기보고서",
+        "q1": "1분기보고서",
+        "q3": "3분기보고서",
+    }
+    label = _report_labels.get(report, report)
+    names = [corp_names.get(c, c) for c in corp_codes]
+
+    print(f"\n비교 — {year}년 {label} (CFS)\n")
+    col_w = 20
+    name_w = col_w * len(corp_codes)
+    header = f"{'계정':<16}" + "".join(f"{n:<{col_w}}" for n in names)
+    print(header)
+    print("-" * (16 + col_w * len(corp_codes)))
+
+    for acct in accounts:
+        row = f"{acct:<16}"
+        for corp_code in corp_codes:
+            corp_data = data.get(corp_code, {})
+            acct_data = corp_data.get(acct)
+            if acct_data:
+                amt = _format_compare_amount(
+                    acct_data.get("thstrm_amount", ""),
+                    acct_data.get("currency", "KRW"),
+                )
+            else:
+                amt = "-"
+            row += f"{amt:<{col_w}}"
+        print(row)
+    print()
+
+
+def _print_compare_csv(
+    data: dict[str, dict],
+    corp_codes: list[str],
+    corp_names: dict[str, str],
+    accounts: list[str],
+    year: str,
+) -> None:
+    """비교 결과 CSV 출력: (account, corp_code, corp_name, thstrm_amount, currency)."""
+    rows = []
+    for acct in accounts:
+        for corp_code in corp_codes:
+            corp_data = data.get(corp_code, {})
+            acct_data = corp_data.get(acct) or {}
+            rows.append({
+                "account": acct,
+                "corp_code": corp_code,
+                "corp_name": corp_names.get(corp_code, corp_code),
+                "year": year,
+                "thstrm_amount": acct_data.get("thstrm_amount", ""),
+                "currency": acct_data.get("currency", ""),
+            })
+    _write_csv(rows, ["account", "corp_code", "corp_name", "year", "thstrm_amount", "currency"])
+
+
 # --- 테이블 출력 헬퍼 ---
+
+def _print_disclosure_table(items: list[dict[str, Any]], total: int) -> None:
+    """공시 목록을 테이블로 출력."""
+    if not items:
+        print("\n조회된 공시 없음\n")
+        return
+    print(f"\n공시 목록 — {total}건\n")
+    print(f"{'접수번호':<16} {'보고서명':<30} {'접수일':<10} {'제출인':<15} {'회사명':<20}")
+    print("-" * 95)
+    for item in items:
+        rcept_no = item.get("rcept_no", "")
+        report_nm = item.get("report_nm", "")[:28]
+        rcept_dt = item.get("rcept_dt", "")
+        flr_nm = item.get("flr_nm", "")[:13]
+        corp_name = item.get("corp_name", "")[:18]
+        print(f"{rcept_no:<16} {report_nm:<30} {rcept_dt:<10} {flr_nm:<15} {corp_name:<20}")
+    print()
+
 
 def _print_search_table(results: list[dict[str, str]], query: str) -> None:
     """검색 결과를 테이블로 출력."""
@@ -289,7 +623,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--api-key", default=None, help="DART API 키 (직접 전달)"
     )
     parser.add_argument(
-        "--format", choices=["json", "table"], default="json",
+        "--format", choices=["json", "table", "csv"], default="json",
         help="출력 형식 (기본: json)",
     )
 
@@ -306,7 +640,10 @@ def build_parser() -> argparse.ArgumentParser:
     # finance
     p_fin = sub.add_parser("finance", help="재무제표 주요계정 조회")
     p_fin.add_argument("--corp-code", "-c", required=True, help="8자리 고유번호")
-    p_fin.add_argument("--year", "-y", required=True, help="사업연도 (예: 2024)")
+    p_fin.add_argument(
+        "--year", "-y", default=None,
+        help="사업연도 (예: 2024). 미지정 시 최신 사업보고서 자동 선택",
+    )
     p_fin.add_argument(
         "--report", "-r", choices=list(dart_api.REPRT_CODES.keys()),
         default="annual", help="보고서 유형 (기본: annual)",
@@ -315,6 +652,31 @@ def build_parser() -> argparse.ArgumentParser:
         "--fs-div", choices=["CFS", "OFS"], default="CFS",
         help="연결(CFS)/개별(OFS) (기본: CFS)",
     )
+    p_fin.add_argument(
+        "--prefer", choices=["annual", "latest"], default="annual",
+        help="폴백 범위: annual=사업보고서만, latest=분기·반기 포함 (기본: annual)",
+    )
+
+    # disclosure (신규)
+    p_disc = sub.add_parser("disclosure", help="공시 목록 조회")
+    p_disc.add_argument("--corp-code", "-c", required=True, help="8자리 고유번호")
+    p_disc.add_argument("--bgn", required=True, help="시작일 (YYYYMMDD)")
+    p_disc.add_argument("--end", required=True, help="종료일 (YYYYMMDD)")
+    p_disc.add_argument("--type", default=None, help="공시 유형 (A=정기, B=주요사항, None=전체)")
+    p_disc.add_argument("--page", type=int, default=1, help="페이지 번호 (기본: 1)")
+    p_disc.add_argument("--page-count", type=int, default=10, dest="page_count",
+                        help="페이지당 건수 (기본: 10, 최대: 100)")
+
+    # business (신규)
+    p_biz = sub.add_parser("business", help="사업보고서 텍스트 추출")
+    p_biz_group = p_biz.add_mutually_exclusive_group(required=True)
+    p_biz_group.add_argument("--rcept-no", dest="rcept_no", default=None,
+                             help="접수번호 (14자리). 미지정 시 --corp-code로 자동 검색")
+    p_biz_group.add_argument("--corp-code", "-c", dest="corp_code", default=None,
+                             help="8자리 고유번호. --rcept-no 없을 때 자동 폴백용")
+    p_biz.add_argument("--section", default=None, help="추출할 섹션 정규식 (예: '사업의 내용')")
+    p_biz.add_argument("--max-chars", type=int, default=5000, dest="max_chars",
+                       help="최대 출력 문자수 (기본: 5000, 0=무제한)")
 
     # employees
     p_emp = sub.add_parser("employees", help="직원현황 조회")
@@ -334,6 +696,27 @@ def build_parser() -> argparse.ArgumentParser:
         default="annual", help="보고서 유형",
     )
 
+    # compare (신규)
+    p_cmp = sub.add_parser("compare", help="다기업 재무 비교")
+    p_cmp_group = p_cmp.add_mutually_exclusive_group(required=True)
+    p_cmp_group.add_argument(
+        "--names", default=None,
+        help="회사명 (쉼표 구분, 예: '삼성전자,LG전자')",
+    )
+    p_cmp_group.add_argument(
+        "--corp-codes", dest="corp_codes", default=None,
+        help="8자리 고유번호 (쉼표 구분, 예: '00126380,00401731')",
+    )
+    p_cmp.add_argument("--year", "-y", required=True, help="사업연도 (예: 2024)")
+    p_cmp.add_argument(
+        "--accounts", default=None,
+        help="계정명 (쉼표 구분, 기본: 매출액/영업이익/당기순이익/자산총계)",
+    )
+    p_cmp.add_argument(
+        "--report", "-r", choices=list(dart_api.REPRT_CODES.keys()),
+        default="annual", help="보고서 유형 (기본: annual)",
+    )
+
     return parser
 
 
@@ -349,6 +732,9 @@ def main(argv: list[str] | None = None) -> int:
             "finance": cmd_finance,
             "employees": cmd_employees,
             "profile": cmd_profile,
+            "disclosure": cmd_disclosure,
+            "business": cmd_business,
+            "compare": cmd_compare,
         }
         return commands[args.command](args)
 
