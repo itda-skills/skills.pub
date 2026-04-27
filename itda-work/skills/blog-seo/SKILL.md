@@ -12,12 +12,10 @@ argument-hint: "[시드 키워드] [--min-volume 500] [--min-grade B] [--trend] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "seo"
-  version: "0.10.0"
-  created_at: "2026-03-26"
-  updated_at: "2026-03-28"
-  tags: "블루키워드, 키워드분석, SEO, 블로그최적화, 포화지수, KEI, 네이버, 검색광고, 트렌드, blue keyword, keyword analysis, naver, blog seo, saturation index"
-  updated_at: "2026-04-18"
   version: "0.10.2"
+  created_at: "2026-03-26"
+  updated_at: "2026-04-18"
+  tags: "블루키워드, 키워드분석, SEO, 블로그최적화, 포화지수, KEI, 네이버, 검색광고, 트렌드, blue keyword, keyword analysis, naver, blog seo, saturation index"
 env_vars:
   - name: "NAVER_SEARCHAD_ACCESS_KEY"
     service: "네이버 검색광고 API"

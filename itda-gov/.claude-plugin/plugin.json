@@ -1,7 +1,7 @@
 {
   "name": "itda-gov",
   "description": "한국 정부 공공데이터 API 스킬팩 — 전자공시, 통계, 경제지표, 부동산, 지원사업, 입찰공고",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
