@@ -12,28 +12,32 @@
 ## API 키 발급
 
 1. [공공데이터포털](https://www.data.go.kr) 회원가입
-2. 'K-Startup 통합공고 지원사업 정보 서비스' 활용 신청
-3. 발급된 일반 인증키(Encoding) 사용
+2. [창업진흥원_K-Startup(사업소개,사업공고,콘텐츠 등)_조회서비스](https://www.data.go.kr/data/15125364/openapi.do) 활용신청
+3. 마이페이지 → 개발계정 → 일반 인증키(Decoding) 복사
 
 ## 엔드포인트
 
-Base URL: `https://apis.data.go.kr/B552735/kisedKstartupService01`
+Base URL: `https://nidapi.k-startup.go.kr/api/kisedKstartupService/v1`
 
 | 서비스 | 엔드포인트 | 설명 |
 |-------|-----------|------|
-| 지원사업 공고 | `/getAnnouncementInformation01` | 통합공고 지원사업 공고 검색 |
-| 통합공고 사업 현황 | `/getBusinessInformation01` | 연도별 사업 현황 조회 |
+| 지원사업 공고 | `/getAnnouncementInformation` | 통합공고 지원사업 공고 검색 |
+| 통합공고 사업 현황 | `/getBusinessInformation` | 연도별 사업 현황 조회 |
+
+> 참고: data.go.kr 활용신청 페이지에 표기된 `apis.data.go.kr/B552735/...` 게이트웨이 URL은 이 서비스에서 동작하지 않으며, 실제 호출은 K-Startup 도메인(`nidapi.k-startup.go.kr`)으로 이루어진다.
 
 ## 요청 파라미터 (공통)
 
 | 파라미터 | 필수 | 설명 | 예시 |
 |---------|------|------|------|
-| `serviceKey` | Y | API 인증키 | - |
+| `serviceKey` | Y | API 인증키 (Decoding 키, URL 인코딩 후 전송) | - |
 | `returnType` | Y | 응답 형식 | `json` |
-| `pageNo` | N | 페이지 번호 (기본 1) | `1` |
-| `numOfRows` | N | 페이지당 건수 (기본 10) | `100` |
+| `page` | N | 페이지 번호 (기본 1) | `1` |
+| `perPage` | N | 페이지당 건수 (기본 10) | `100` |
 
 ## 검색 조건 파라미터 (cond 방식)
+
+### 지원사업 공고 (`getAnnouncementInformation`)
 
 | 파라미터 | 설명 | 연산자 |
 |---------|------|-------|
@@ -42,7 +46,13 @@ Base URL: `https://apis.data.go.kr/B552735/kisedKstartupService01`
 | `cond[supt_biz_clsfc::LIKE]` | 지원 분야 | 부분 일치 |
 | `cond[pbanc_rcpt_bgng_dt::GTE]` | 접수 시작일 하한 | YYYYMMDD |
 | `cond[pbanc_rcpt_end_dt::LTE]` | 접수 종료일 상한 | YYYYMMDD |
-| `cond[biz_enyy::LIKE]` | 사업 연도 (overview용) | 연도 |
+
+### 통합공고 사업 현황 (`getBusinessInformation`)
+
+| 파라미터 | 설명 | 연산자 |
+|---------|------|-------|
+| `cond[supt_biz_titl_nm::LIKE]` | 사업명 키워드 | 부분 일치 |
+| `cond[biz_yr::EQ]` | 사업 연도 | 정확 일치 |
 
 ## 응답 필드 (지원사업 공고)
 
@@ -61,12 +71,15 @@ Base URL: `https://apis.data.go.kr/B552735/kisedKstartupService01`
 
 | 필드명 | 설명 |
 |-------|------|
-| `biz_enyy` | 사업 연도 |
-| `pbanc_nm` | 공고명 |
-| `biz_nm` | 사업명 |
-| `supt_biz_clsfc` | 지원 분야 |
-| `aply_trgt` | 신청 대상 |
-| `tot_supt_amt` | 지원 총액 |
+| `biz_yr` | 사업 연도 |
+| `supt_biz_titl_nm` | 사업명 |
+| `biz_category_cd` | 사업 분류 코드 (예: `cmrczn_Tab1`) |
+| `supt_biz_chrct` | 사업 특성 |
+| `supt_biz_intrd_info` | 사업 소개 |
+| `biz_supt_trgt_info` | 지원 대상 정보 |
+| `biz_supt_ctnt` | 지원 내용 |
+| `biz_supt_bdgt_info` | 예산·지원규모 정보 |
+| `detl_pg_url` | 상세 페이지 URL |
 
 ## 지원 분야 분류
 

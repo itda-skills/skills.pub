@@ -4,8 +4,9 @@
     - 통합공고 지원사업 공고 정보 조회 (getAnnouncementInformation01)
     - 통합공고 사업 현황 조회 (getBusinessInformation01)
 
-엔드포인트: https://apis.data.go.kr/B552735/kisedKstartupService01
+엔드포인트: https://nidapi.k-startup.go.kr/api/kisedKstartupService/v1
 인증: serviceKey 쿼리 파라미터 (공공데이터포털 발급)
+활용신청: https://www.data.go.kr/data/15125364/openapi.do
 
 참고: https://www.k-startup.go.kr
 """
@@ -20,11 +21,11 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_BASE_URL = "https://apis.data.go.kr/B552735/kisedKstartupService01"
+_BASE_URL = "https://nidapi.k-startup.go.kr/api/kisedKstartupService/v1"
 _TIMEOUT = 15
 
-_ENDPOINT_ANNOUNCEMENT = f"{_BASE_URL}/getAnnouncementInformation01"
-_ENDPOINT_BUSINESS = f"{_BASE_URL}/getBusinessInformation01"
+_ENDPOINT_ANNOUNCEMENT = f"{_BASE_URL}/getAnnouncementInformation"
+_ENDPOINT_BUSINESS = f"{_BASE_URL}/getBusinessInformation"
 
 
 class FundingAPIError(Exception):
@@ -102,8 +103,8 @@ def search_announcements(
     params: dict[str, str] = {
         "serviceKey": api_key,
         "returnType": "json",
-        "pageNo": str(page),
-        "numOfRows": str(rows),
+        "page": str(page),
+        "perPage": str(rows),
     }
 
     # 검색 조건 파라미터 추가
@@ -133,8 +134,8 @@ def get_business_overview(
 
     Args:
         api_key: 공공데이터포털 API 키.
-        keyword: 사업명 키워드 검색.
-        year: 사업 연도 (예: "2026"). cond[biz_enyy::LIKE] 매핑.
+        keyword: 사업명 키워드 검색 (cond[supt_biz_titl_nm::LIKE] 매핑).
+        year: 사업 연도 (예: "2026"). cond[biz_yr::EQ] 매핑.
         page: 페이지 번호.
         rows: 페이지당 건수.
 
@@ -147,14 +148,14 @@ def get_business_overview(
     params: dict[str, str] = {
         "serviceKey": api_key,
         "returnType": "json",
-        "pageNo": str(page),
-        "numOfRows": str(rows),
+        "page": str(page),
+        "perPage": str(rows),
     }
 
     if keyword:
-        params["cond[biz_pbanc_nm::LIKE]"] = keyword
+        params["cond[supt_biz_titl_nm::LIKE]"] = keyword
     if year:
-        params["cond[biz_enyy::LIKE]"] = year
+        params["cond[biz_yr::EQ]"] = year
 
     data = _request_json(_ENDPOINT_BUSINESS, params)
     return _normalize_response(data)

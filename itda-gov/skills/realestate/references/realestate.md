@@ -12,10 +12,23 @@
 ## API 키 발급
 
 1. [공공데이터포털](https://www.data.go.kr) 회원가입
-2. 아파트 매매 실거래 정보 서비스 활용 신청
-3. 발급된 일반 인증키(Encoding) 사용
+2. **아파트 매매 실거래가 자료** 활용신청 → <https://www.data.go.kr/data/15126469/openapi.do>
+3. 자동승인 (즉시 승인되지만 게이트웨이 동기화에 **5~30분, 최대 1시간** 소요)
+4. 마이페이지 > Open API > 활용신청 현황 → **일반 인증키(Decoding)** 복사
 
-> 인코딩 키 사용 권장. URL 인코딩이 중복 적용되지 않도록 주의.
+> **Decoding 키 권장**: URL 인코딩 함수(`urllib.parse.quote`)가 키 내 `+`, `/`, `=` 를 안전하게 처리.
+> 자동승인 직후 즉시 호출 시 HTTP 403 + body `Forbidden` 응답이 올 수 있으나 게이트웨이 캐시 미반영이 원인이며 시간이 지나면 정상화됨.
+
+### 4개 데이터셋 활용신청 (각각 신청 필요)
+
+공공데이터포털은 데이터셋 단위로 권한을 발급합니다. 동일 일반 인증키를 쓰더라도 사용하려는 데이터셋마다 활용신청해야 합니다. 전부 자동승인.
+
+| 서비스 키 | publicDataPk | 활용신청 URL |
+|---------|-------------|-------------|
+| `apt_trade` (아파트 매매) | 15126469 | <https://www.data.go.kr/data/15126469/openapi.do> |
+| `apt_rent` (아파트 전월세) | 15126474 | <https://www.data.go.kr/data/15126474/openapi.do> |
+| `offi_trade` (오피스텔 매매) | 15126464 | <https://www.data.go.kr/data/15126464/openapi.do> |
+| `offi_rent` (오피스텔 전월세) | 15126475 | <https://www.data.go.kr/data/15126475/openapi.do> |
 
 ## 엔드포인트
 
@@ -38,20 +51,45 @@ Base URL: `https://apis.data.go.kr/1613000/{서비스명}/{엔드포인트}`
 | `pageNo` | N | 페이지 번호 (기본 1) | `1` |
 | `numOfRows` | N | 페이지당 건수 (기본 10, 최대 100) | `100` |
 
-## 응답 필드 (아파트 매매)
+## 응답 필드 (아파트 매매, 신규 v1.0 — 2024-07-17 배포)
 
-| 필드명 | 설명 |
-|-------|------|
-| `aptNm` | 단지명 |
-| `excluUseAr` | 전용면적 (㎡) |
-| `dealAmount` | 거래금액 (만원, 쉼표 포함) |
-| `dealYear` | 계약년도 |
-| `dealMonth` | 계약월 |
-| `dealDay` | 계약일 |
-| `floor` | 층 |
-| `buildYear` | 건축년도 |
-| `umdNm` | 법정동 |
-| `jibun` | 지번 |
+PDF 명세서 기준 22개 필드. 출처: `references/molit-realestate-api-guide.pdf`.
+
+| 필드명 | 국문 | 크기 | 필수 | 비고 |
+|-------|------|-----|-----|------|
+| `resultCode` | 결과코드 | 3 | Y | 정상 시 `000` |
+| `resultMsg` | 결과메시지 | 100 | Y | `OK` |
+| `sggCd` | 지역코드 | 5 | Y | LAWD_CD와 동일 |
+| `umdNm` | 법정동 | 60 | Y | |
+| `aptNm` | 단지명 | 100 | Y | |
+| `jibun` | 지번 | 20 | N | |
+| `excluUseAr` | 전용면적(㎡) | 22 | N | |
+| `dealYear` | 계약년도 | 4 | Y | |
+| `dealMonth` | 계약월 | 2 | Y | |
+| `dealDay` | 계약일 | 2 | Y | |
+| `dealAmount` | 거래금액(만원) | 40 | Y | 쉼표 포함 문자열 |
+| `floor` | 층 | 10 | N | |
+| `buildYear` | 건축년도 | 4 | N | |
+| `cdealType` | 해제여부 | 1 | N | 해제 시 `O` |
+| `cdealDay` | 해제사유발생일 | 8 | N | YYYYMMDD |
+| `dealingGbn` | 거래유형 | 10 | N | `중개거래` / `직거래` |
+| `estateAgentSggNm` | 중개사소재지(시군구) | 3000 | N | |
+| `rgstDate` | 등기일자 | 8 | N | |
+| `aptDong` | 아파트 동명 | 400 | N | |
+| `slerGbn` | 매도자 구분 | 100 | N | 개인/법인/공공기관/기타 |
+| `buyerGbn` | 매수자 구분 | 100 | N | 개인/법인/공공기관/기타 |
+| `landLeaseholdGbn` | 토지임대부 아파트 여부 | 1 | N | `Y`/`N` |
+
+### 신구 컬럼 대조 (구 API 마이그레이션 참고)
+
+| 구 API | 신규 API | 의미 |
+|--------|---------|------|
+| `aptname` | `aptNm` | 단지명 |
+| `dealamount` | `dealAmount` | 거래금액 |
+| `excluusear` | `excluUseAr` | 전용면적 |
+| `reqgbn` | `dealingGbn` | 거래유형 |
+| `rdealerlawdnm` | `estateAgentSggNm` | 중개사소재지 |
+| `hllandgbn` | `landLeaseholdGbn` | 토지임대부 여부 |
 
 ## 응답 필드 (아파트 전월세)
 
@@ -116,15 +154,31 @@ python3 scripts/collect_realestate.py --format table trade --region "강남구" 
 
 Windows: `python3` → `py -3`
 
-## 에러 코드
+## 에러 코드 (PDF II장 정본)
 
-| resultCode | 원인 | 대처 |
-|-----------|------|------|
-| 00 | 성공 | - |
-| 10 | 잘못된 파라미터 | LAWD_CD, DEAL_YMD 형식 확인 |
-| 20 | 서비스 미신청 | 공공데이터포털에서 활용신청 |
-| 30 | 일일 트래픽 초과 | 다음 날 재시도 |
-| 99 | 서비스 오류 | 잠시 후 재시도 |
+`realestate_api.py`는 아래 코드별 한글 의미·조치를 자동 부착해 `RealEstateAPIError`를 발생시킵니다.
+
+| code | 의미 | 조치 |
+|------|------|------|
+| 000 | 성공 | — |
+| 01 | Application Error | 서비스 제공기관 관리자 문의 |
+| 02 | DB Error | 서비스 제공기관 관리자 문의 |
+| 03 | No Data | 데이터 없음 — 다른 년월/지역으로 재시도 |
+| 04 | HTTP Error | 서비스 제공기관 관리자 문의 |
+| 05 | Service Time Out | 잠시 후 재시도 |
+| 10 | 잘못된 요청 파라미터 (ServiceKey 누락) | URL 확인 |
+| 11 | 필수 파라미터 누락 | 기술문서 재확인 |
+| 12 | OpenAPI 서비스 없음/폐기 | 활용신청 URL 재확인 |
+| 20 | 서비스 접근 거부 (활용 미승인) | 마이페이지 승인 상태 확인 — 자동승인이라도 게이트웨이 동기화에 5~30분 소요 |
+| 22 | 일일 트래픽 초과 | 일일 한도 확인 또는 변경신청 |
+| 30 | 등록되지 않은 서비스키 | Decoding 키 재확인 + URL 인코딩 누락 점검 |
+| 31 | 기간 만료된 서비스키 | 활용연장신청 |
+| 32 | 등록되지 않은 도메인/IP | 도메인·IP 변경신청 |
+
+### HTTP 403 + body `Forbidden` (PDF에 정의되지 않은 응답)
+
+게이트웨이 단계에서 키 권한이 동기화되지 않은 상태. 정상 거부면 XML로 `resultCode 20/30`이 내려옴.
+자동승인 활용신청 직후 흔히 발생하며, 시간이 지나면 정상화됨.
 
 ## API 래퍼 함수
 

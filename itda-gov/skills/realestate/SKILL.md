@@ -12,9 +12,9 @@ argument-hint: "[trade|rent|regions] [--region 지역명] [--year-month YYYYMM] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.2"
+  version: "0.10.0"
   created_at: "2026-03-29"
-  updated_at: "2026-04-18"
+  updated_at: "2026-04-28"
   tags: "부동산, 실거래가, 아파트, 전월세, 매매가, 전세, 월세, 오피스텔, 국토교통부, 집값, realestate, apartment, rent, trade price"
 env_vars:
   - name: "KO_DATA_API_KEY"
@@ -37,7 +37,22 @@ env_vars:
 
 | 환경변수 | 발급처 | 비고 |
 |---------|-------|------|
-| `KO_DATA_API_KEY` | https://www.data.go.kr | '국토교통부 아파트 매매 실거래 정보' 활용 신청 필요 |
+| `KO_DATA_API_KEY` | https://www.data.go.kr | 활용신청 필요 (자동승인) |
+
+### 활용신청 (필수)
+
+공공데이터포털은 데이터셋 단위로 권한을 부여합니다. 동일 일반 인증키(`KO_DATA_API_KEY`)를 쓰더라도 사용하려는 4개 API는 **각각 활용신청** 해야 합니다. 전부 자동승인.
+
+| 서비스 | CLI 서브커맨드 | 활용신청 링크 |
+|-------|---------------|-------------|
+| 아파트 매매 실거래가 | `trade` (기본) | <https://www.data.go.kr/data/15126469/openapi.do> |
+| 아파트 전월세 실거래가 | `rent` (기본) | <https://www.data.go.kr/data/15126474/openapi.do> |
+| 오피스텔 매매 실거래가 | `trade --type offi` | <https://www.data.go.kr/data/15126464/openapi.do> |
+| 오피스텔 전월세 실거래가 | `rent --type offi` | <https://www.data.go.kr/data/15126475/openapi.do> |
+
+> 자동승인이지만 **게이트웨이 동기화에 5~30분 (드물게 1시간)** 소요. 신청 직후 호출 시 HTTP 403 `Forbidden`이 나올 수 있습니다.
+
+### 키 등록
 
 ```bash
 # Claude Cowork 설정 (권장)
@@ -47,7 +62,14 @@ claude config set env.KO_DATA_API_KEY "발급받은_키"
 KO_DATA_API_KEY=발급받은_키
 ```
 
-> **주의**: 공공데이터포털에서 `Decoding` 키(일반 인증키)를 사용하세요.
+> **Decoding 키(일반 인증키) 사용**: 마이페이지 > Open API > 활용신청 현황 > 해당 API 상세에서 표시된 일반 인증키(Decoding)를 그대로 복사. 스크립트가 URL 인코딩을 처리합니다.
+
+### 첫 호출 실패 시 점검 순서
+
+1. 마이페이지에서 해당 API 상태가 **승인** 인지 확인
+2. 표시된 Decoding 키와 `.env`의 값이 동일한지 확인
+3. 신청 직후라면 **30분 후 재시도** (게이트웨이 캐시 미반영)
+4. 그래도 실패하면 `regions` 서브커맨드로 키 없이 동작 검증 후, 다시 `trade` 호출
 
 ## 사용법
 
@@ -124,12 +146,19 @@ realestate/
 
 ## 오류 처리
 
-| 오류 | 원인 | 해결 방법 |
-|------|------|-----------|
-| `KO_DATA_API_KEY가 설정되지 않았습니다` | API 키 미설정 | `claude config set env.KO_DATA_API_KEY "키"` |
+| 오류 메시지 / 코드 | 원인 | 해결 방법 |
+|-------------------|------|-----------|
+| `KO_DATA_API_KEY가 설정되지 않았습니다` | 환경변수 미설정 | `claude config set env.KO_DATA_API_KEY "키"` |
 | `지역 코드를 찾을 수 없습니다` | 지역명 불일치 | `regions` 서브커맨드로 정확한 지역명 확인 |
-| `데이터가 없습니다` | 해당 기간 거래 없음 | 다른 년월로 재시도 |
+| HTTP 403 + `Forbidden` (텍스트) | 게이트웨이 키 미반영 | 30분 후 재시도 (자동승인 동기화 지연) |
+| `resultCode=20` 활용 미승인 | 활용신청 미완료/대기 | 마이페이지 승인 상태 확인 |
+| `resultCode=30` 등록되지 않은 서비스키 | Decoding 키 오류 | 마이페이지 일반 인증키 재복사 |
+| `resultCode=03` No Data | 해당 기간 거래 없음 | 다른 년월/지역으로 재시도 |
+| `resultCode=22` 트래픽 초과 | 일일 한도 도달 | 다음 날 재시도 또는 변경신청 |
+
+전체 에러 코드는 [references/realestate.md](references/realestate.md#에러-코드-pdf-ii장-정본) 참고.
 
 ## 상세 API 가이드
 
-[references/realestate.md](references/realestate.md)
+- [references/realestate.md](references/realestate.md) — 응답 필드 명세, 에러 코드, CLI 사용 예시
+- [references/molit-realestate-api-guide.pdf](references/molit-realestate-api-guide.pdf) — 국토교통부 정본 PDF (2024-07-17 신규 v1.0)

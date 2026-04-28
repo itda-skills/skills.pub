@@ -31,8 +31,43 @@ _SERVICES: dict[str, tuple[str, str]] = {
     "offi_rent":  ("RTMSDataSvcOffiRent",  "getRTMSDataSvcOffiRent"),
 }
 
+# 데이터셋별 활용신청 URL (data.go.kr publicDataPk 기준)
+# 각 서비스는 독립적으로 활용신청 필요. 자동승인.
+_APPLY_URL: dict[str, str] = {
+    "apt_trade":  "https://www.data.go.kr/data/15126469/openapi.do",
+    "apt_rent":   "https://www.data.go.kr/data/15126474/openapi.do",
+    "offi_trade": "https://www.data.go.kr/data/15126464/openapi.do",
+    "offi_rent":  "https://www.data.go.kr/data/15126475/openapi.do",
+}
+
 # API 성공 응답 코드 집합
-_SUCCESS_CODES = {"00", "0000"}
+# PDF 명세 기준 정상 응답: <resultCode>000</resultCode>
+# 일부 공공데이터 API는 "00" 또는 "0000"을 반환하므로 함께 허용.
+_SUCCESS_CODES = {"000", "00", "0000"}
+
+# PDF II장 OPEN API 에러 코드 매핑 (코드 → (의미, 조치))
+# 참고: references/molit-realestate-api-guide.pdf
+_ERROR_CODE_HINTS: dict[str, tuple[str, str]] = {
+    "01": ("Application Error", "서비스 제공기관 관리자 문의"),
+    "02": ("DB Error", "서비스 제공기관 관리자 문의"),
+    "03": ("No Data", "데이터 없음 — 다른 년월/지역으로 재시도"),
+    "04": ("HTTP Error", "서비스 제공기관 관리자 문의"),
+    "05": ("Service Time Out", "잠시 후 재시도"),
+    "10": ("잘못된 요청 파라미터", "ServiceKey 파라미터 누락 — URL 확인"),
+    "11": ("필수 요청 파라미터 누락", "기술문서(references/molit-realestate-api-guide.pdf) 확인"),
+    "12": ("해당 OpenAPI 서비스 없음/폐기", "활용신청한 API URL 재확인"),
+    "20": (
+        "서비스 접근 거부 (활용 미승인)",
+        "마이페이지 활용신청 승인 상태 확인 — 자동승인이라도 게이트웨이 동기화에 5~30분 소요",
+    ),
+    "22": ("일일 트래픽 초과", "활용신청 상세에서 일일 트래픽 한도 확인 또는 변경신청"),
+    "30": (
+        "등록되지 않은 서비스키",
+        "마이페이지에서 발급받은 일반 인증키(Decoding) 재확인 — URL 인코딩 누락 가능성",
+    ),
+    "31": ("기간 만료된 서비스키", "활용연장신청 후 재시도"),
+    "32": ("등록되지 않은 도메인/IP", "활용신청정보의 도메인·IP 변경신청"),
+}
 
 # 법정동코드(LAWD_CD) 매핑 — 전국 시군구
 # 중복 이름은 "광역시/도 구명" 형태로 구분
@@ -382,17 +417,18 @@ def resolve_lawd_cd(region: str) -> str:
     raise ValueError(f"지역명을 찾을 수 없습니다: '{region}'. 전국 시군구명 또는 '부산 중구' 형식으로 입력하세요.")
 
 
-def _parse_xml(xml_bytes: bytes) -> dict[str, Any]:
+def _parse_xml(xml_bytes: bytes, service_key: str | None = None) -> dict[str, Any]:
     """공공데이터 API XML 응답을 파싱.
 
     Args:
         xml_bytes: API 응답 XML 바이트.
+        service_key: _SERVICES 키 (선택). 권한 오류 시 활용신청 URL을 hint에 부착.
 
     Returns:
         {"total_count": N, "items": [...]} 딕셔너리.
 
     Raises:
-        RealEstateAPIError: resultCode가 "00"이 아닌 경우, XML 파싱 실패.
+        RealEstateAPIError: resultCode가 성공 코드가 아닌 경우, XML 파싱 실패.
     """
     try:
         root = ET.fromstring(xml_bytes)
@@ -405,9 +441,18 @@ def _parse_xml(xml_bytes: bytes) -> dict[str, Any]:
         result_code = header.findtext("resultCode", "").strip()
         if result_code and result_code not in _SUCCESS_CODES:
             result_msg = header.findtext("resultMsg", "오류")
-            raise RealEstateAPIError(
-                f"API 오류 (resultCode={result_code}): {result_msg}"
-            )
+            hint = _ERROR_CODE_HINTS.get(result_code)
+            if hint:
+                meaning, action = hint
+                detail = f"API 오류 (resultCode={result_code}): {result_msg} — {meaning}. 조치: {action}"
+            else:
+                detail = f"API 오류 (resultCode={result_code}): {result_msg}"
+            # 권한 관련 코드는 해당 서비스 활용신청 URL 부착
+            if result_code in {"20", "30"} and service_key:
+                apply_url = _APPLY_URL.get(service_key)
+                if apply_url:
+                    detail += f" 활용신청: {apply_url}"
+            raise RealEstateAPIError(detail)
 
     body = root.find("body")
     if body is None:
@@ -519,10 +564,21 @@ def _fetch(
     try:
         with urllib.request.urlopen(url, timeout=_TIMEOUT) as resp:
             raw = resp.read()
+    except urllib.error.HTTPError as exc:
+        # 403은 일반적으로 게이트웨이 단계의 권한 거부 (활용 미승인 또는 동기화 지연)
+        detail = f"네트워크 오류: HTTP Error {exc.code}: {exc.reason}"
+        if exc.code == 403:
+            apply_url = _APPLY_URL.get(service_key)
+            if apply_url:
+                detail += (
+                    f" — 게이트웨이 권한 거부. 활용신청 확인: {apply_url}"
+                    " (자동승인이라도 동기화에 5~30분 소요)"
+                )
+        raise RealEstateAPIError(detail) from exc
     except urllib.error.URLError as exc:
         raise RealEstateAPIError(f"네트워크 오류: {exc}") from exc
 
-    return _parse_xml(raw)
+    return _parse_xml(raw, service_key=service_key)
 
 
 def fetch_trade(
