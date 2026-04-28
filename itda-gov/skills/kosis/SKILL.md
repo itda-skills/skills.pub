@@ -12,9 +12,9 @@ argument-hint: "[search|data] [--keyword 키워드] [--org-id ID] [--tbl-id ID] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.10.0"
+  version: "0.10.1"
   created_at: "2026-03-29"
-  updated_at: "2026-04-28"
+  updated_at: "2026-04-29"
   tags: "통계, 국가통계, KOSIS, 인구, 산업통계, 시장규모, 제안서, statistics, KOSIS, population, market"
 env_vars:
   - name: "KOSIS_API_KEY"
@@ -172,6 +172,26 @@ kosis/
 ```
 
 > 코드 `kosis_api.py`는 KOSIS가 비표준 JSON으로 반환하는 오류도 자동 파싱합니다. 인증키 관련 오류(10/11/42)는 활용신청 URL이 자동 부착되며, HTTP 403 게이트웨이 거부도 동일하게 처리됩니다.
+
+## Troubleshooting
+
+### 한글 경로가 인식되지 않을 때
+
+Cowork sandbox 등 일부 환경의 bash는 `LANG`/`LC_ALL` 미설정 시 한글 디렉토리명을 직접 인자로 받지 못합니다.
+
+**증상:** `/sessions/.../mnt/실습-클로드-1기/` 경로에서 `No such file or directory`.
+
+**해결 — 변수 캡처 우회:**
+
+```bash
+WORKSPACE=$(ls /sessions/*/mnt/ | grep -v '^lost+found$' | head -1)
+WORKSPACE_PATH=$(ls -d /sessions/*/mnt/"$WORKSPACE" 2>/dev/null | head -1)
+
+python3 collect_stats.py search --keyword "인구" > "$WORKSPACE_PATH/result.json"
+```
+
+> 이 패턴은 스크립트 코드 결함이 아니라 sandbox bash의 locale 설정 문제입니다.
+> macOS native bash 및 Windows PowerShell에서는 한글 경로가 정상 동작합니다.
 
 ## 상세 API 가이드
 

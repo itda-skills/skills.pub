@@ -615,12 +615,21 @@ def _format_amount(val: str) -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """CLI 인자 파서 생성."""
+    """CLI 인자 파서 생성.
+
+    공용 옵션(--api-key, --format)을 _add_common() 헬퍼로 메인 파서와 모든 서브파서에
+    동시 등록하여 서브커맨드 앞/뒤 양쪽 위치에서 모두 동작하도록 한다 (REQ-1).
+
+    구현 주의사항:
+    - 서브파서 공용 옵션은 default=argparse.SUPPRESS로 두어 메인 파서 기본값을 보존한다.
+    - parents=[common] 패턴 사용 금지 — default 충돌 문제 (plan.md Risk-2 참고).
+    """
+    # 메인 파서: 서브커맨드 앞 위치 공용 옵션 (REQ-1.2, 하위 호환)
     parser = argparse.ArgumentParser(
         description="기업 정보 수집 — DART 전자공시시스템",
     )
     parser.add_argument(
-        "--api-key", default=None, help="DART API 키 (직접 전달)"
+        "--api-key", default=None, dest="api_key", help="DART API 키 (직접 전달)",
     )
     parser.add_argument(
         "--format", choices=["json", "table", "csv"], default="json",
@@ -629,16 +638,32 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = parser.add_subparsers(dest="command", required=True)
 
+    # 서브파서 공용 옵션은 default=argparse.SUPPRESS로 두어 메인 파서 기본값을 보존한다.
+    # SUPPRESS: 미지정 시 Namespace에 속성을 추가하지 않으므로 메인 파서 기본값이 유지됨.
+    def _add_common(p: argparse.ArgumentParser) -> None:
+        """서브파서에 공용 옵션 추가 (SUPPRESS default로 메인 파서 값 보존)."""
+        p.add_argument(
+            "--api-key", default=argparse.SUPPRESS, dest="api_key",
+            help="DART API 키 (직접 전달)",
+        )
+        p.add_argument(
+            "--format", choices=["json", "table", "csv"], default=argparse.SUPPRESS,
+            help="출력 형식 (기본: json)",
+        )
+
     # search
     p_search = sub.add_parser("search", help="회사명으로 고유번호 검색")
+    _add_common(p_search)
     p_search.add_argument("--name", "-n", required=True, help="회사명 (부분 일치)")
 
     # info
     p_info = sub.add_parser("info", help="기업개황 조회")
+    _add_common(p_info)
     p_info.add_argument("--corp-code", "-c", required=True, help="8자리 고유번호")
 
     # finance
     p_fin = sub.add_parser("finance", help="재무제표 주요계정 조회")
+    _add_common(p_fin)
     p_fin.add_argument("--corp-code", "-c", required=True, help="8자리 고유번호")
     p_fin.add_argument(
         "--year", "-y", default=None,
@@ -657,8 +682,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="폴백 범위: annual=사업보고서만, latest=분기·반기 포함 (기본: annual)",
     )
 
-    # disclosure (신규)
+    # disclosure
     p_disc = sub.add_parser("disclosure", help="공시 목록 조회")
+    _add_common(p_disc)
     p_disc.add_argument("--corp-code", "-c", required=True, help="8자리 고유번호")
     p_disc.add_argument("--bgn", required=True, help="시작일 (YYYYMMDD)")
     p_disc.add_argument("--end", required=True, help="종료일 (YYYYMMDD)")
@@ -667,8 +693,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_disc.add_argument("--page-count", type=int, default=10, dest="page_count",
                         help="페이지당 건수 (기본: 10, 최대: 100)")
 
-    # business (신규)
+    # business
     p_biz = sub.add_parser("business", help="사업보고서 텍스트 추출")
+    _add_common(p_biz)
     p_biz_group = p_biz.add_mutually_exclusive_group(required=True)
     p_biz_group.add_argument("--rcept-no", dest="rcept_no", default=None,
                              help="접수번호 (14자리). 미지정 시 --corp-code로 자동 검색")
@@ -680,6 +707,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # employees
     p_emp = sub.add_parser("employees", help="직원현황 조회")
+    _add_common(p_emp)
     p_emp.add_argument("--corp-code", "-c", required=True, help="8자리 고유번호")
     p_emp.add_argument("--year", "-y", required=True, help="사업연도")
     p_emp.add_argument(
@@ -689,6 +717,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # profile (종합)
     p_prof = sub.add_parser("profile", help="기업 프로필 종합 조회")
+    _add_common(p_prof)
     p_prof.add_argument("--name", "-n", required=True, help="회사명")
     p_prof.add_argument("--year", "-y", required=True, help="사업연도")
     p_prof.add_argument(
@@ -696,8 +725,9 @@ def build_parser() -> argparse.ArgumentParser:
         default="annual", help="보고서 유형",
     )
 
-    # compare (신규)
+    # compare
     p_cmp = sub.add_parser("compare", help="다기업 재무 비교")
+    _add_common(p_cmp)
     p_cmp_group = p_cmp.add_mutually_exclusive_group(required=True)
     p_cmp_group.add_argument(
         "--names", default=None,

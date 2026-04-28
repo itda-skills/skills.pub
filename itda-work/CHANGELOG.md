@@ -16,6 +16,15 @@
 
 ### Added
 
+- **itda-web-reader v2.11.1: selector 도메인 예외 + hidden 일관성 + PARTIAL 보호** (SPEC-WEBREADER-010)
+  - `extract()` 라이브러리 호출 시 selector 입력 오류로 호출자 프로세스 종료 차단 (도메인 예외 계층 도입)
+  - `exceptions.py`: `SelectorError`, `SelectorNoMatchError`, `SelectorSyntaxError` 클래스 추가
+  - selector 경로의 hidden 요소 제거 누락 (자동 본문 탐지 경로와 정책 일관)
+  - 사용자 명시 selector가 PARTIAL_REMOVE_PATTERNS와 매칭 시 결과 소실 방지 (직속 자식 보호)
+  - YouTube URL + `--selector` 시 명시적 warning 출력 후 selector 무시 (exit 0)
+  - CLI 가시 메시지 및 exit code는 SPEC-009 AC-3/AC-4와 byte-level 동일 유지
+  - 신규 테스트 4 파일 29 passed, 전체 web-reader 회귀 227 passed / 0 failed
+
 - **itda-email v0.15.0: 증분 수집 (`--since-last-run`) + 폴더 처리 호환성 수정** (SPEC-EMAIL-007 + post-release fixes)
   - `email_state.py`: IMAP UID 커서 영속화 — `load_state` / `save_state` (원자적 쓰기) / `get_account_state` / `update_account_state` / `reset_account_state` / `make_account_key` 6개 순수 함수
   - `read_email.py --since-last-run`: `(provider, email, folder)` 트리플별로 마지막 본 UID를 기억해 새 메일만 반환. 첫 실행 시 최신 `--count` 개로 커서 seed, 이후 `UID prev+1:*` 조회

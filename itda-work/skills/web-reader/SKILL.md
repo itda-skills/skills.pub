@@ -12,10 +12,10 @@ allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "2.9.0"
+  version: "2.11.1"
   created_at: "2026-03-18"
-  updated_at: "2026-04-28"
-  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security, spa, adapter, capture, naver-land, real-estate"
+  updated_at: "2026-04-29"
+  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security, spa, adapter, capture, naver-land, real-estate, css-selector, instagram, twitter, threads, sns"
 ---
 
 # web-reader
@@ -72,6 +72,8 @@ python3 scripts/fetch_dynamic.py --url "URL" --stealth --output page.html
 python3 scripts/fetch_dynamic.py --url "URL" --profile myprofile --output page.html
 ```
 
+**SNS/SPA 자동 동적 진입**: instagram.com, x.com/twitter.com, threads.net, tiktok.com, linkedin.com, facebook.com 도메인은 정적 HTML이 빈 셸이므로 `extract_content.py`가 자동으로 동적 fetch로 진입한다 (정적 시도 우회). 팔로워/게시물 수 등 핵심 수치는 og:description meta에서 추출됨.
+
 ### Naver Land(부동산) 단지/매물 캡처 (`naver_land` 어댑터)
 
 ```bash
@@ -100,6 +102,37 @@ python3 scripts/extract_content.py --from-capture <jsonl> --adapter naver_land -
 | HTML | `--format html` | 정제된 HTML (기본값) |
 | Markdown | `--format markdown` | YAML frontmatter 포함 |
 | JSON | `--format json` | 메타데이터 + 콘텐츠 구조화 |
+
+## 특정 영역만 추출하기 (--selector)
+
+본문 selector를 알고 있을 때 `--selector`로 자동 탐지를 우회하고 해당 요소만 추출한다.
+노이즈(광고, 스크립트)는 selector 지정 시에도 자동 제거된다.
+
+```bash
+# 뉴스 기사 본문만 (nav/footer 제외)
+python3 scripts/fetch_html.py --url "https://example.com/article" --output page.html
+python3 scripts/extract_content.py page.html --selector "article.post" --format markdown
+
+# 표 데이터만 JSON으로 추출
+python3 scripts/extract_content.py page.html --selector "table.price" --format json
+
+# 동적 페이지의 특정 컴포넌트 (Playwright 렌더링 후 추출)
+python3 scripts/fetch_dynamic.py --url "https://example.com" --selector "#main-content"
+
+# 매칭 0건 — exit code 1 (fallback 없음, 명시적 에러)
+# python3 scripts/extract_content.py page.html --selector "div.does-not-exist"
+# → Error: CSS selector 'div.does-not-exist' matched 0 elements in the document.
+
+# 문법 오류 — exit code 2
+# python3 scripts/extract_content.py page.html --selector "div::["
+# → Error: Invalid CSS selector syntax: ...
+```
+
+| exit code | 의미 |
+|-----------|------|
+| 0 | 정상 추출 |
+| 1 | selector 매칭 0건 (fallback 없음) |
+| 2 | selector 문법 오류 또는 잘못된 인자 |
 
 ## 인증 및 쿠키
 
@@ -140,6 +173,7 @@ CLI: fetch_dynamic.py --url URL [--output FILE] [--timeout N] [--user-agent UA]
                        [--hook-script PATH] [--hook-arg KEY=VALUE ...]
                        [--adapter NAME] [--adapter-page KEY]
                        [--capture-api PATTERN] [--list-adapters]
+                       [--selector CSS]
 
 --hook-script PATH        멀티스텝 자동화를 위한 Python 훅 스크립트 경로
                           스크립트는 run(page: BrowserDriver, args: dict) 함수를 정의해야 함
@@ -149,8 +183,12 @@ CLI: fetch_dynamic.py --url URL [--output FILE] [--timeout N] [--user-agent UA]
 --adapter-page KEY        어댑터 내 화면 선택 (기본값: 어댑터 manifest의 default_page)
 --capture-api PATTERN     네트워크 응답 캡처 — 정규식 패턴에 매칭되는 API 응답을 JSONL로 저장
 --list-adapters           사용 가능한 어댑터 목록을 출력하고 종료
+--selector CSS            CSS selector로 렌더링된 페이지에서 특정 요소만 추출.
+                          --adapter/--capture-api와 함께 사용 시 무시(warning 출력).
+                          매칭 0건 → exit 1, 문법 오류 → exit 2.
 
-Exit codes: 0=success, 1=navigation error/timeout, 2=invalid args/SSRF/Playwright 미설치,
+Exit codes: 0=success, 1=navigation error/timeout/selector 매칭 0건,
+            2=invalid args/SSRF/Playwright 미설치/selector 문법 오류,
             3=profile lock conflict, 4=--interactive requires TTY
 SSRF 방지: fetch_html.py와 동일한 url_validator 적용
 ```
@@ -183,6 +221,7 @@ BrowserDriver: Playwright sync_playwright Page를 감싼 재사용 가능한 동
 CLI: extract_content.py [INPUT_FILE] [--output FILE]
                         [--format html|markdown|json] [--url URL] [--lang CODE]
                         [--from-capture FILE] [--adapter NAME] [--adapter-page KEY]
+                        [--selector CSS]
      (reads stdin if INPUT_FILE omitted)
      --url과 INPUT_FILE은 상호 배타적 (동시 지정 시 에러)
      YouTube URL이 --url에 주어지면 자동으로 fetch_youtube에 위임
@@ -191,8 +230,13 @@ CLI: extract_content.py [INPUT_FILE] [--output FILE]
                           INPUT_FILE 없이 단독 사용 가능
 --adapter NAME            캡처 변환 시 필드 매핑 적용 (--from-capture 사용 시)
 --adapter-page KEY        어댑터 페이지 키 (기본값: 어댑터의 default_page)
+--selector CSS            CSS selector로 추출 범위를 한정한다.
+                          지정 시 자동 본문 탐지(ENTRY_POINT_SELECTORS)를 건너뛴다.
+                          노이즈 제거(EXACT_REMOVE_SELECTORS, PARTIAL_REMOVE_PATTERNS)는 여전히 적용.
+                          매칭 0건 → exit 1, 문법 오류(SelectorSyntaxError) → exit 2.
 
-Exit codes: 0=success, 1=I/O or parse error, 2=invalid args
+Exit codes: 0=success, 1=I/O or parse error or selector 매칭 0건,
+            2=invalid args or selector 문법 오류
 ```
 
 ### fetch_youtube.py
@@ -284,3 +328,7 @@ playwright install chromium
 ```
 
 상세 활용 예시, 한국 웹사이트 팁, 프로필 관리 가이드, 변경 이력은 README.md를 참조.
+
+<!-- SPEC-WEBREADER-010: --selector 경로의 노이즈 정책 정합화 + 라이브러리 임포트 안전성 보강.
+     sys.exit() → 도메인 예외(SelectorNoMatchError/SelectorSyntaxError), hidden 제거 통합,
+     PARTIAL 직속 자식 보호, YouTube + selector warning. -->

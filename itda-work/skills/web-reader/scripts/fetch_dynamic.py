@@ -124,8 +124,13 @@ def _attempt_user_local_install(*, stderr_out=None) -> tuple[bool, str]:
 def sync_playwright():  # type: ignore[return]
     """sync_playwright context manager를 반환한다. 테스트에서 mock 가능."""
     # Playwright 바이너리 영속성 보장 (Cowork 환경)
-    from itda_path import ensure_playwright_env
-    ensure_playwright_env()
+    # _load_local_module을 사용하여 빌드/개발 환경 모두에서 itda_path를 로드한다.
+    try:
+        itda_path_mod = _load_local_module("itda_path")
+        itda_path_mod.ensure_playwright_env()
+    except (FileNotFoundError, ImportError, AttributeError):
+        # itda_path가 빌드 시 주입되지 않은 환경 — 환경변수 미설정 시 Playwright 기본값 사용
+        pass
     from playwright.sync_api import sync_playwright as _sp  # type: ignore[import]
     return _sp()
 
@@ -220,6 +225,7 @@ def fetch_with_js(
     viewport: dict[str, int] | None = None,
     allow_private: bool = False,
     capture_handler: Any = None,
+    selector: str | None = None,
 ) -> dict[str, object]:
     """headless Chromium으로 URL을 fetch한다.
 
@@ -235,6 +241,8 @@ def fetch_with_js(
         viewport: 뷰포트 크기 dict (width, height). None이면 기본값 사용.
         allow_private: True이면 private/loopback IP 허용. 기본 False.
         capture_handler: page.on("response") 핸들러. None이면 미등록 (ISS-CAPTURE-023).
+        selector: CSS selector. 지정 시 BrowserDriver.extract_html()으로 단일 요소 추출.
+                  None이면 전체 페이지 HTML 반환.
 
     Returns:
         content, url, size 키를 가진 dict.
@@ -273,7 +281,16 @@ def fetch_with_js(
             page.wait_for_load_state("networkidle", timeout=settle_ms)
         except Exception:
             pass  # 로드된 내용으로 진행
-        html = page.content()
+
+        # REQ-5 (SPEC-WEBREADER-009): selector 지정 시 page가 살아있는 동안 BrowserDriver로 추출
+        # ISS-SEMANTIC-ASYMMETRY: all_matches=True로 extract_content.py의 soup.select()와 동일하게 동작
+        if selector is not None:
+            from browser_driver import BrowserDriver
+            driver = BrowserDriver(page)
+            html = driver.extract_html(selector=selector, all_matches=True)
+        else:
+            html = page.content()
+
         final_url = page.url
         context.close()
 
@@ -315,6 +332,7 @@ def _fetch_with_profile(
     interactive: bool = False,
     viewport: dict[str, int] | None = None,
     allow_private: bool = False,
+    selector: str | None = None,
 ) -> dict[str, object]:
     """persistent context로 URL을 fetch한다.
 
@@ -330,6 +348,8 @@ def _fetch_with_profile(
         interactive: True이면 stdin.readline()으로 사용자 Enter 대기.
         viewport: 뷰포트 크기 dict (width, height).
         allow_private: True이면 private/loopback IP 허용. 기본 False.
+        selector: CSS selector. 지정 시 모든 매칭 요소 outerHTML 결합 반환.
+                  None이면 전체 페이지 HTML 반환.
 
     Returns:
         content, url, size 키를 가진 dict.
@@ -372,7 +392,16 @@ def _fetch_with_profile(
         if interactive:
             _wait_for_user_input()
 
-        html = page.content()
+        # ISS-PROFILE-DROP: selector 지정 시 page가 살아있는 동안 BrowserDriver로 추출
+        if selector is not None:
+            from browser_driver import BrowserDriver, BrowserDriverError
+            driver = BrowserDriver(page)
+            try:
+                html = driver.extract_html(selector=selector, all_matches=True)
+            except BrowserDriverError:
+                raise
+        else:
+            html = page.content()
         final_url = page.url
         context.close()
 
@@ -400,6 +429,7 @@ def _fetch_ephemeral_with_options(
     viewport: dict[str, int] | None = None,
     allow_private: bool = False,
     capture_handler: Any = None,
+    selector: str | None = None,
 ) -> dict[str, object]:
     """stealth/interactive 옵션을 지원하는 ephemeral context fetch.
 
@@ -414,6 +444,8 @@ def _fetch_ephemeral_with_options(
         interactive: True이면 stdin.readline()으로 Enter 대기.
         viewport: 뷰포트 크기 dict.
         allow_private: True이면 private/loopback IP 허용. 기본 False.
+        selector: CSS selector. 지정 시 BrowserDriver.extract_html()으로 단일 요소 추출.
+                  None이면 전체 페이지 HTML 반환.
 
     Returns:
         content, url, size 키를 가진 dict.
@@ -456,7 +488,14 @@ def _fetch_ephemeral_with_options(
         if interactive:
             _wait_for_user_input()
 
-        html = page.content()
+        # REQ-5 (SPEC-WEBREADER-009): selector 지정 시 page가 살아있는 동안 BrowserDriver로 추출
+        if selector is not None:
+            from browser_driver import BrowserDriver
+            driver = BrowserDriver(page)
+            html = driver.extract_html(selector=selector)
+        else:
+            html = page.content()
+
         final_url = page.url
         context.close()
 
@@ -593,6 +632,18 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=False,
         dest="list_adapters",
         help="사용 가능한 SPA 어댑터 목록 출력 후 종료",
+    )
+    # REQ-5 (SPEC-WEBREADER-009): CSS selector로 특정 요소만 추출
+    parser.add_argument(
+        "--selector",
+        type=str,
+        default=None,
+        metavar="CSS",
+        help=(
+            "CSS selector로 추출 범위를 한정한다. 렌더링 후 해당 요소의 outerHTML을 출력. "
+            "--adapter/--capture-api와 함께 사용 시 무시(warning 출력). "
+            "매칭 0건 → exit 1, 문법 오류 → exit 2."
+        ),
     )
     return parser.parse_args(argv)
 
@@ -742,6 +793,15 @@ def main(argv: list[str] | None = None) -> int:
         print("Error: --url이 필요합니다", file=sys.stderr)
         return 2
 
+    # ISS-EMPTY-LATE: 빈 selector 조기 거부 — 모든 경로(profile/adapter/hook-script/ephemeral) 공통
+    user_selector = getattr(args, "selector", None)
+    if user_selector is not None and not user_selector.strip():
+        print(
+            "Error: Invalid CSS selector syntax: --selector cannot be empty.",
+            file=sys.stderr,
+        )
+        return 2
+
     if not is_playwright_available():
         print(
             "Error: playwright가 설치되지 않았습니다. "
@@ -793,6 +853,19 @@ def main(argv: list[str] | None = None) -> int:
 
     # --hook-arg 파싱 (--hook-script / --adapter 양쪽에서 공유)
     hook_args_dict = _parse_hook_args(args.hook_arg)
+
+    # REQ-5 / ISS-HOOK-DROP / ISS-CAPTURE-MISMATCH:
+    # --adapter/--capture-api/--hook-script와 --selector 충돌 경고.
+    # 분기 진입 전에 출력하여 파일 존재 여부와 관계없이 항상 표시.
+    if (
+        args.adapter is not None
+        or args.capture_api is not None
+        or args.hook_script is not None
+    ) and user_selector:
+        print(
+            "Warning: --selector ignored when --adapter, --hook-script, or --capture-api is used",
+            file=sys.stderr,
+        )
 
     # --hook-script 분기 처리
     if args.hook_script is not None:
@@ -1112,6 +1185,7 @@ def main(argv: list[str] | None = None) -> int:
                     interactive=args.interactive,
                     viewport=viewport,
                     allow_private=args.allow_private,
+                    selector=user_selector,
                 )
 
                 meta = pm.read_profile_meta(profile_dir)
@@ -1134,6 +1208,15 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 3
+            # ISS-PROFILE-DROP: BrowserDriverError → selector 매칭 0건 (exit 1)
+            exc_type_name = type(e).__name__
+            if exc_type_name == "BrowserDriverError":
+                _sel = getattr(e, "selector", user_selector) or user_selector
+                print(
+                    f"Error: CSS selector '{_sel}' matched 0 elements on the rendered page.",
+                    file=sys.stderr,
+                )
+                return 1
             # SSRF 에러 처리
             uv = _get_url_validator()
             if isinstance(e, uv.SSRFError) or isinstance(e, ValueError):
@@ -1144,6 +1227,18 @@ def main(argv: list[str] | None = None) -> int:
 
     else:
         # ---------- 기존 ephemeral 경로 (하위 호환) ----------
+        # ISS-CAPTURE-MISMATCH: capture_api가 set되면 selector를 무시 (warning은 이미 위에서 출력)
+        _effective_selector = (
+            user_selector
+            if (
+                user_selector
+                and args.adapter is None
+                and args.hook_script is None
+                and args.capture_api is None
+            )
+            else None
+        )
+
         try:
             if use_stealth or args.interactive:
                 # stealth + interactive: persistent context 없이 ephemeral로 실행
@@ -1159,6 +1254,7 @@ def main(argv: list[str] | None = None) -> int:
                     viewport=viewport,
                     allow_private=args.allow_private,
                     capture_handler=capture_handler,
+                    selector=_effective_selector,
                 )
             else:
                 result = fetch_with_js(
@@ -1171,9 +1267,28 @@ def main(argv: list[str] | None = None) -> int:
                     viewport=viewport,
                     allow_private=args.allow_private,
                     capture_handler=capture_handler,
+                    selector=_effective_selector,
                 )
 
         except Exception as exc:
+            # REQ-5: BrowserDriverError → 매칭 0건 (exit 1)
+            # BrowserDriverError는 browser_driver 모듈에서 import하므로 타입명으로 판별
+            exc_type_name = type(exc).__name__
+            if exc_type_name == "BrowserDriverError":
+                _sel = getattr(exc, "selector", _effective_selector) or _effective_selector
+                print(
+                    f"Error: CSS selector '{_sel}' matched 0 elements on the rendered page.",
+                    file=sys.stderr,
+                )
+                return 1
+            # REQ-5: Playwright selector 문법 오류 → exit 2
+            _exc_msg = str(exc)
+            if any(
+                k in _exc_msg
+                for k in ("Failed to parse selector", "is not a valid selector")
+            ):
+                print(f"Error: Invalid CSS selector syntax: {exc}", file=sys.stderr)
+                return 2
             # SSRF 에러 처리
             uv = _get_url_validator()
             if isinstance(exc, uv.SSRFError) or isinstance(exc, ValueError):

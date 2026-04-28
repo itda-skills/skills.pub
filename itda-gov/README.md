@@ -132,6 +132,63 @@ KO_DATA_API_KEY=...
 5. 신청 일정 정리 및 자금 조달 계획서 작성
 ```
 
+## 신규 Collector 추가 시 패턴 가이드
+
+신규 collector 스크립트(`itda-gov/skills/{name}/scripts/collect_{name}.py`)는 기존 4개(`funding`/`dart`/`kosis`/`ecos`)와 동일한 CLI 인자 구조를 따릅니다 (SPEC-COLLECTOR-CLI-001).
+
+### `--format` 등 공용 옵션은 서브커맨드 앞/뒤 양쪽에서 동작해야 함
+
+`argparse` `parents=[...]` 패턴은 **사용 금지**. 메인 파서와 서브파서 양쪽에 등록하면 서브파서 default가 메인 파싱 결과를 덮어쓰는 충돌이 발생합니다.
+
+대신 `_add_common()` 헬퍼 + `default=argparse.SUPPRESS` + `parser.set_defaults()` 조합 사용:
+
+```python
+def _add_common(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--api-key", default=argparse.SUPPRESS, help="...")
+    p.add_argument("--format", choices=["json", "table"], default=argparse.SUPPRESS, help="...")
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="...")
+    parser.set_defaults(api_key=None, format="json")
+    _add_common(parser)                    # 메인 — 앞쪽 위치 호환
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_search = sub.add_parser("search", help="...")
+    _add_common(p_search)                  # 서브 — 뒤쪽 위치 허용
+    p_search.add_argument("--keyword", required=True)
+    # ... 모든 서브커맨드에 _add_common(p_xxx) 빠짐없이 부착
+```
+
+### 회귀 테스트는 `parametrize`로 일괄 검증
+
+서브커맨드가 여러 개일 때 양방향 위치를 한 번에 검증:
+
+```python
+@pytest.mark.parametrize("subcmd_args", [
+    ["search", "--keyword", "x"],
+    ["info", "--corp-code", "y"],
+    # ... 전체 서브커맨드 enumerate
+])
+class TestFormatArgPosition:
+    def test_format_after(self, subcmd_args):
+        args = build_parser().parse_args([*subcmd_args, "--format", "table"])
+        assert args.format == "table"
+    def test_format_before(self, subcmd_args):
+        args = build_parser().parse_args(["--format", "table", *subcmd_args])
+        assert args.format == "table"
+```
+
+### `sys.modules` 글로벌 stub 금지
+
+테스트에서 `env_loader` 등 빌드 시 주입되는 모듈을 stub할 때, top-level `sys.modules.setdefault(...)` 사용 금지 — 다른 테스트 모듈을 오염시켜 회귀 발생.
+대신 `monkeypatch.setitem(sys.modules, ...)` 또는 fixture scope 격리 사용.
+
+### SKILL.md Troubleshooting 섹션
+
+Cowork sandbox 등에서 한글 경로가 인식 안 되는 케이스를 SKILL.md에 명시. 4개 collector 모두 동일 가이드 보유 (SPEC-COLLECTOR-CLI-001 REQ-2).
+
+> 5번째 collector 추가 시점에 `shared/cli_builder.py` 공통 헬퍼화를 재평가합니다. 현재 4개는 코드 중복이 단순(`_add_common` 8~15줄)하므로 헬퍼화 ROI가 낮습니다.
+
 ## 개발
 
 ```bash

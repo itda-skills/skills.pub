@@ -229,6 +229,55 @@ SITE_PATTERNS: dict[str, dict] = {
         "title_fallback": "title",
         "dynamic": False,
     },
+    # ---------- JS-필수 SNS/SPA 도메인 (정적 HTML이 빈 셸) ----------
+    # @MX:NOTE: [AUTO] SNS 도메인은 정적 fetch가 거의 빈 페이지를 반환 →
+    # 자동 폴백을 거치며 한 라운드 낭비. dynamic=True로 즉시 동적 진입.
+    # 본문 추출 가치는 og:description (metadata.py)에서 회수.
+    "www.instagram.com": {
+        "content_selectors": ["main", "article"],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
+    "instagram.com": {
+        "content_selectors": ["main", "article"],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
+    "x.com": {
+        "content_selectors": ['article[data-testid="tweet"]', "main"],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
+    "twitter.com": {
+        "content_selectors": ['article[data-testid="tweet"]', "main"],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
+    "www.threads.net": {
+        "content_selectors": ["main", "article"],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
+    "threads.net": {
+        "content_selectors": ["main", "article"],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
+    "www.tiktok.com": {
+        "content_selectors": ["main", '[data-e2e="user-post-item"]'],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
+    "www.linkedin.com": {
+        "content_selectors": ["main", "article"],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
+    "www.facebook.com": {
+        "content_selectors": ['div[role="main"]', "article"],
+        "title_fallback": "title",
+        "dynamic": True,
+    },
 }
 
 

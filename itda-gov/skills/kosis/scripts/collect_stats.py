@@ -142,11 +142,18 @@ def _print_data_table(data: list[dict[str, Any]]) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """CLI 인자 파서 생성."""
+    """CLI 인자 파서 생성.
+
+    공용 옵션(--api-key, --format)을 _add_common() 헬퍼로 메인 파서와 모든 서브파서에
+    동시 등록하여 서브커맨드 앞/뒤 양쪽 위치에서 모두 동작하도록 한다 (REQ-1).
+    """
+    # 메인 파서: 서브커맨드 앞 위치 공용 옵션 (REQ-1.2, 하위 호환)
     parser = argparse.ArgumentParser(
         description="국가통계 수집 — KOSIS 국가통계포털",
     )
-    parser.add_argument("--api-key", default=None, help="KOSIS API 키")
+    parser.add_argument(
+        "--api-key", default=None, dest="api_key", help="KOSIS API 키",
+    )
     parser.add_argument(
         "--format", choices=["json", "table"], default="json",
         help="출력 형식 (기본: json)",
@@ -154,13 +161,27 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = parser.add_subparsers(dest="command", required=True)
 
+    # 서브파서 공용 옵션은 default=argparse.SUPPRESS로 두어 메인 파서 기본값을 보존한다.
+    def _add_common(p: argparse.ArgumentParser) -> None:
+        """서브파서에 공용 옵션 추가 (SUPPRESS default로 메인 파서 값 보존)."""
+        p.add_argument(
+            "--api-key", default=argparse.SUPPRESS, dest="api_key",
+            help="KOSIS API 키",
+        )
+        p.add_argument(
+            "--format", choices=["json", "table"], default=argparse.SUPPRESS,
+            help="출력 형식 (기본: json)",
+        )
+
     # search
     p_search = sub.add_parser("search", help="키워드로 통계표 검색")
+    _add_common(p_search)
     p_search.add_argument("--keyword", "-k", required=True, help="검색 키워드")
     p_search.add_argument("--count", "-n", type=int, default=10, help="결과 수 (기본 10)")
 
     # data
     p_data = sub.add_parser("data", help="통계자료 조회")
+    _add_common(p_data)
     p_data.add_argument("--org-id", required=True, help="기관 코드 (예: 101)")
     p_data.add_argument("--tbl-id", required=True, help="통계표 ID (예: DT_1B04005N)")
     p_data.add_argument("--item", default=None, help="항목 ID (기본: ALL)")

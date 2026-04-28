@@ -158,6 +158,7 @@ def extract(
     url: str | None = None,
     fmt: str = "html",
     options: dict[str, Any] | None = None,
+    user_selector: str | None = None,
 ) -> dict[str, Any]:
     """Main extraction function combining all pipeline phases.
 
@@ -166,16 +167,112 @@ def extract(
         url: Base URL for resolving relative URLs and domain extraction.
         fmt: Output format ('html', 'markdown', 'json').
         options: Pipeline options (e.g., skip_partial_selectors, skip_hidden_removal).
+        user_selector: CSS selector. 지정 시 자동 본문 탐지를 건너뛰고 해당 요소만 추출.
+                       매칭 0건 → SelectorNoMatchError raise.
+                       문법 오류 → SelectorSyntaxError raise (alias: DomainSelectorSyntaxError).
+                       호출자 프로세스를 종료하지 않음 (REQ-006).
 
     Returns:
         Dict with 'content', 'metadata', 'word_count', 'parse_time_ms'.
     """
+    # @MX:NOTE: [AUTO] user_selector 분기 — 지정 시 자동 탐지 우회, 노이즈 제거는 유지.
+    # REQ-001/006 (SPEC-WEBREADER-010): 도메인 예외 raise (프로세스 종료 없음).
+    # main()에서 catch → exit code 1/2 매핑. 라이브러리 호출자는 예외로 수신.
+    from exceptions import SelectorNoMatchError
+    from exceptions import SelectorSyntaxError as DomainSelectorSyntaxError
+
     _init_modules()
     options = options or {}
     t0 = time.time()
 
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
+
+    if user_selector is not None:
+        # selector 유효성 및 매칭 검사 (노이즈 제거 전에 수행)
+        try:
+            from soupsieve import SelectorSyntaxError as _SelectorSyntaxError
+        except ImportError:
+            try:
+                from soupsieve.util import SelectorSyntaxError as _SelectorSyntaxError  # type: ignore[assignment]
+            except ImportError:
+                _SelectorSyntaxError = Exception  # type: ignore[assignment,misc]
+
+        # 빈 문자열은 문법 오류로 처리 (REQ-001)
+        if not user_selector.strip():
+            raise DomainSelectorSyntaxError(selector=user_selector, cause="empty selector")
+
+        try:
+            matched = soup.select(user_selector)
+        except _SelectorSyntaxError as e:
+            raise DomainSelectorSyntaxError(selector=user_selector, cause=str(e)) from e
+        except Exception as e:
+            # soupsieve가 다른 예외를 raise하는 경우 대비
+            msg = str(e)
+            if any(k in msg.lower() for k in ("syntax", "invalid", "parse")):
+                raise DomainSelectorSyntaxError(selector=user_selector, cause=str(e)) from e
+            raise
+
+        if not matched:
+            raise SelectorNoMatchError(selector=user_selector, target="document")
+
+        # 매칭된 요소들을 새 wrapper div에 복사 (원본 tree 보존)
+        import copy
+        wrapper = BeautifulSoup("<div></div>", "html.parser")
+        root = wrapper.div  # type: ignore[union-attr]
+        for el in matched:
+            root.append(copy.copy(el))
+
+        # 메타데이터는 전체 soup에서 추출 (head의 meta 태그 접근)
+        metadata = _meta.extract_metadata(soup, url)
+
+        # 노이즈 제거를 wrapper subtree에 적용
+        for sel in _sel.EXACT_REMOVE_SELECTORS:
+            try:
+                for el in root.select(sel):
+                    el.decompose()
+            except Exception:
+                pass
+
+        # hidden 요소 제거 — selector 경로와 자동 탐지 경로 정책 일관 (REQ-003)
+        _remove_hidden_elements(root)
+
+        # PARTIAL_REMOVE_PATTERNS 적용 — 사용자 명시 선택 직속 자식은 보호 (REQ-004)
+        if _sel.PARTIAL_REMOVE_PATTERNS:
+            for tag in list(root.find_all(True)):
+                if not hasattr(tag, "attrs") or tag.attrs is None:
+                    continue
+                # 사용자가 명시 선택한 직속 자식은 보호 — 자손은 제거 허용 (방식 B)
+                if tag.parent is root:
+                    continue
+                classes = " ".join(tag.get("class", []))
+                el_id = tag.get("id", "") or ""
+                combined = f"{classes} {el_id}"
+                if combined.strip() and _sel.PARTIAL_REMOVE_PATTERNS.search(combined):
+                    if not tag.find_parent(["pre", "code"]):
+                        tag.decompose()
+
+        content_soup = root
+        _standardize.standardize_content(content_soup, metadata.get("title"))
+        content_html = str(content_soup)
+        word_count = _scorer.count_words(content_soup.get_text())
+        parse_time_ms = int((time.time() - t0) * 1000)
+
+        if fmt in ("markdown", "json"):
+            md = _md_convert.html_to_markdown(content_html, metadata.get("title"))
+            content = _md_convert.post_process_markdown(md, metadata.get("title"))
+        else:
+            content = content_html
+
+        return {
+            "content": content,
+            "metadata": metadata,
+            "word_count": word_count,
+            "parse_time_ms": parse_time_ms,
+        }
+
+    # --- 기존 자동 탐지 경로 (user_selector=None) ---
 
     # Step 1: Remove exact selectors
     for selector in _sel.EXACT_REMOVE_SELECTORS:
@@ -570,6 +667,17 @@ def main() -> None:
         metavar="INT",
         help="정적 품질 판정 의미 태그 수 임계값 (기본 3). 환경변수 WEBREADER_MIN_MEANINGFUL_TAGS보다 우선.",
     )
+    # REQ-1/2/3 (SPEC-WEBREADER-009): CSS selector 직접 지정
+    parser.add_argument(
+        "--selector",
+        type=str,
+        default=None,
+        metavar="CSS",
+        help=(
+            "CSS selector로 추출 범위를 한정한다. 지정 시 자동 본문 탐지를 건너뛴다. "
+            "매칭 0건 → exit 1, 문법 오류 → exit 2."
+        ),
+    )
 
     try:
         args = parser.parse_args()
@@ -630,10 +738,17 @@ def main() -> None:
             # YouTube URL이면 fetch_youtube 모듈에 위임
             _fy = _load_module("fetch_youtube")
             if _fy.is_youtube_url(args.url):
+                # REQ-005 (SPEC-WEBREADER-010): YouTube URL + --selector 충돌 warning
+                user_selector_yt = getattr(args, "selector", None)
+                if user_selector_yt:
+                    print(
+                        f"Warning: --selector ignored for YouTube URL ('{user_selector_yt}'). "
+                        "YouTube transcript extraction does not use CSS selectors.",
+                        file=sys.stderr,
+                    )
                 lang = getattr(args, "lang", None)
                 yt_result = _fy.fetch_youtube(args.url, args.format, lang)
                 content = yt_result["content"]
-                yt_meta = yt_result["metadata"]
 
                 if args.output:
                     with open(args.output, "w", encoding="utf-8") as f:
@@ -684,8 +799,29 @@ def main() -> None:
         sys.exit(1)
 
     # Extract content
+    # REQ-4 (SPEC-WEBREADER-009): selector 지정 시 retry 전략 건너뛰고 직접 호출
+    # REQ-002 (SPEC-WEBREADER-010): 도메인 예외 → exit code 매핑. SystemExit 핸들러 제거 (D13).
+    from exceptions import SelectorNoMatchError
+    from exceptions import SelectorSyntaxError as DomainSelectorSyntaxError
+    user_selector = getattr(args, "selector", None)
     try:
-        result = extract_with_retry(html, args.url, args.format)
+        if user_selector is not None:
+            # selector 경로: extract() 직접 호출 (retry 우회)
+            result = extract(html, args.url, args.format, user_selector=user_selector)
+        else:
+            result = extract_with_retry(html, args.url, args.format)
+    except DomainSelectorSyntaxError as e:
+        # REQ-002: 문법 오류 → exit 2 + SPEC-009 AC-4 형식 메시지
+        print(f"Error: Invalid CSS selector syntax: {e.cause}", file=sys.stderr)
+        sys.exit(2)
+    except SelectorNoMatchError as e:
+        # REQ-002: 매칭 0건 → exit 1 + SPEC-009 AC-3 메시지 byte-level 동일
+        print(
+            f"Error: CSS selector '{e.selector}' matched 0 elements in the document.",
+            file=sys.stderr,
+        )
+        print("Verify the selector against the source HTML.", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
         # REQ-5.5: 진단을 stderr로 출력하며 stdout JSON 오염 없음
         print(f"Error extracting content: {e}", file=sys.stderr)

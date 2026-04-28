@@ -146,6 +146,50 @@ def assess_static_quality(
 # WI-4 보조: Playwright 설치 시도 (REQ-4)
 # ---------------------------------------------------------------------------
 
+def _resolve_effective_browsers_path() -> tuple[str, bool]:
+    """런타임/설치에서 공통 사용할 PLAYWRIGHT_BROWSERS_PATH를 결정한다.
+
+    # @MX:NOTE: [AUTO] 설치-런타임 경로 일치 보장 — Codex 리뷰(2026-04-29).
+    # @MX:REASON: ensure_playwright_env()가 sync_playwright() 호출 시점에 설정하는 경로와
+    # _attempt_playwright_install()가 subprocess install 시 사용하는 경로가 다르면
+    # 설치 성공 후에도 "Executable doesnt exist" 가 재발한다.
+
+    Returns:
+        (effective_path, was_externally_set) 튜플.
+        was_externally_set=True면 호출 측이 부모 os.environ을 덮어쓰면 안 된다.
+    """
+    external = os.environ.get(_PLAYWRIGHT_BROWSERS_PATH_ENV)
+    if external:
+        return external, True
+    # ensure_playwright_env()와 동일한 경로 사용 (itda_path.pick_cache_location)
+    # 1순위: 이미 로드된 itda_path 모듈 (sync_playwright wrapper가 먼저 import한 경우)
+    if "itda_path" in sys.modules:
+        try:
+            return str(sys.modules["itda_path"].pick_cache_location("browser/playwright")), False
+        except Exception:
+            pass
+    # 2순위: scripts/ 디렉토리에 빌드 시 주입된 itda_path.py
+    # 3순위: 개발 환경 — shared/itda_path.py
+    candidate_paths = [
+        os.path.join(_scripts_dir, "itda_path.py"),
+        os.path.normpath(os.path.join(_scripts_dir, os.pardir, os.pardir, os.pardir, os.pardir, "shared", "itda_path.py")),
+    ]
+    for _path in candidate_paths:
+        if not os.path.isfile(_path):
+            continue
+        try:
+            import importlib.util as _ilu
+            _spec = _ilu.spec_from_file_location("itda_path", _path)
+            if _spec and _spec.loader:
+                _itda_path = _ilu.module_from_spec(_spec)
+                _spec.loader.exec_module(_itda_path)  # type: ignore[union-attr]
+                return str(_itda_path.pick_cache_location("browser/playwright")), False
+        except Exception:
+            continue
+    # itda_path.py 로드 실패 시 fallback
+    return _DEFAULT_BROWSERS_PATH, False
+
+
 def _attempt_playwright_install(*, stderr_out=None) -> tuple[bool, str]:
     """Playwright 설치를 3단계로 시도한다.
 
@@ -153,6 +197,7 @@ def _attempt_playwright_install(*, stderr_out=None) -> tuple[bool, str]:
     # @MX:REASON: Cowork sandbox에서 /usr/local/lib에 대한 Permission denied 사고(2026-04-27).
     # SPEC-WEBREADER-008 REQ-4.3 / CLAUDE.local.md "관리자 권한 정책" / "Python 패키지 설치 정책" 준수.
     # sudo / pip install (uv 외 직접) / 관리자 권한 / 시스템 경로 쓰기 절대 호출 금지.
+    # 모든 tier는 _resolve_effective_browsers_path()의 단일 경로를 사용해 런타임과 설치 경로 일치를 보장한다 (Codex 리뷰 2026-04-29).
 
     Args:
         stderr_out: 메시지를 출력할 파일 객체 (기본: sys.stderr).
@@ -166,7 +211,14 @@ def _attempt_playwright_install(*, stderr_out=None) -> tuple[bool, str]:
     def _print(msg: str) -> None:
         print(msg, file=_out)
 
-    browsers_path = str(Path.home() / ".cache" / "playwright")
+    browsers_path, externally_set = _resolve_effective_browsers_path()
+
+    def _propagate_to_parent() -> None:
+        """설치 성공 시 부모 os.environ을 동일 경로로 갱신한다.
+        외부에서 설정된 경우는 존중하여 덮어쓰지 않는다 (respect-external-env)."""
+        if not externally_set:
+            os.environ[_PLAYWRIGHT_BROWSERS_PATH_ENV] = browsers_path
+
     env_with_browsers = {**os.environ, _PLAYWRIGHT_BROWSERS_PATH_ENV: browsers_path}
 
     # 1차 시도: uv pip install --system playwright (CLAUDE.local.md 권장)
@@ -187,7 +239,8 @@ def _attempt_playwright_install(*, stderr_out=None) -> tuple[bool, str]:
                 env=env_with_browsers,
             )
             if result_chromium.returncode == 0:
-                _print("[web-reader] Playwright + chromium 설치 완료 (1차).")
+                _propagate_to_parent()
+                _print(f"[web-reader] Playwright + chromium 설치 완료 (1차, {browsers_path}).")
                 return True, ""
             else:
                 _print(f"[web-reader] chromium binary 설치 실패: {result_chromium.stderr[:200]}")
@@ -205,74 +258,42 @@ def _attempt_playwright_install(*, stderr_out=None) -> tuple[bool, str]:
     except FileNotFoundError:
         _print("[web-reader] uv 명령을 찾을 수 없음. 2차 시도...")
 
-    # 2차 시도: uv venv 사용자 로컬 venv 폴백
-    venv_path = Path.home() / ".cache" / "web-reader-venv"
-    _print(f"[web-reader] Playwright 설치 시도 2차: uv venv {venv_path}")
+    # 2차 시도: 현재 Python 인터프리터로 chromium 바이너리만 재시도 (parent-import 보존)
+    # @MX:NOTE: [AUTO] 이전 venv 기반 fallback은 부모 프로세스 import path에 영향이 없어 무용했음
+    # (Codex 리뷰 2026-04-29). 현재 인터프리터 컨텍스트에서 -m playwright 호출하여
+    # parent가 실제로 사용할 수 있는 바이너리를 동일 경로에 설치한다.
+    _print("[web-reader] Playwright 설치 시도 2차: 현재 인터프리터로 chromium 재시도")
     try:
-        result_venv = subprocess.run(
-            ["uv", "venv", str(venv_path)],
+        result_chromium2 = subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium"],
             capture_output=True,
             text=True,
+            env=env_with_browsers,
         )
-        if result_venv.returncode == 0:
-            venv_python = str(venv_path / "bin" / "python")
-            venv_env = {
-                **os.environ,
-                "VIRTUAL_ENV": str(venv_path),
-                "PATH": str(venv_path / "bin") + os.pathsep + os.environ.get("PATH", ""),
-                _PLAYWRIGHT_BROWSERS_PATH_ENV: browsers_path,
-            }
-            result_install = subprocess.run(
-                ["uv", "pip", "install", "--python", venv_python, "playwright"],
-                capture_output=True,
-                text=True,
-                env=venv_env,
-            )
-            if result_install.returncode == 0:
-                result_chromium2 = subprocess.run(
-                    [venv_python, "-m", "playwright", "install", "chromium"],
-                    capture_output=True,
-                    text=True,
-                    env=venv_env,
-                )
-                if result_chromium2.returncode == 0:
-                    _print("[web-reader] Playwright + chromium 설치 완료 (2차 venv).")
-                    return True, ""
-                else:
-                    _print("[web-reader] 2차 chromium 설치 실패. 3차 시도...")
-            else:
-                _print("[web-reader] 2차 pip install 실패. 3차 시도...")
+        if result_chromium2.returncode == 0:
+            _propagate_to_parent()
+            _print(f"[web-reader] chromium 설치 완료 (2차, {browsers_path}).")
+            return True, ""
         else:
-            _print("[web-reader] uv venv 생성 실패. 3차 시도...")
+            _print(f"[web-reader] 2차 chromium 설치 실패: {result_chromium2.stderr[:200]}")
     except FileNotFoundError:
-        _print("[web-reader] uv 명령을 찾을 수 없음 (2차). 3차 시도...")
+        _print("[web-reader] python -m playwright 실행 불가 (2차). 3차 시도...")
 
-    # 3차 시도: browser binary 설치 경로 대체 (non-writable ~/.cache 대응)
-    _print("[web-reader] Playwright 설치 시도 3차: --browsers-path 대체 경로")
+    # 3차 시도: --browsers-path 명시 (env 미반영 환경 대비). 경로는 tier 1/2와 동일 effective path 사용.
+    # @MX:NOTE: [AUTO] tier 3 경로를 effective_browsers_path로 통일 — Codex 리뷰 2026-04-29.
+    # 이전엔 resolve_data_dir("web-reader", ...) 별도 경로를 썼으나, 런타임 env와 불일치하여
+    # 설치 성공 후에도 "executable doesnt exist" 가 재발했다.
+    _print(f"[web-reader] Playwright 설치 시도 3차: --browsers-path {browsers_path}")
     try:
-        try:
-            # shared/itda_path.py 경로 사용 (CLAUDE.local.md 데이터 경로 정책)
-            _shared_dir = os.path.join(_scripts_dir)
-            import importlib.util as _ilu
-            _spec = _ilu.spec_from_file_location("itda_path", os.path.join(_shared_dir, "itda_path.py"))
-            if _spec and _spec.loader:
-                _itda_path = _ilu.module_from_spec(_spec)
-                _spec.loader.exec_module(_itda_path)  # type: ignore[union-attr]
-                alt_browsers_path = str(_itda_path.resolve_data_dir("web-reader", "playwright-browsers"))
-            else:
-                raise ImportError("itda_path not found")
-        except Exception:
-            alt_browsers_path = os.path.join(os.getcwd(), ".itda-skills", "web-reader", "playwright-browsers")
-
-        alt_env = {**os.environ, _PLAYWRIGHT_BROWSERS_PATH_ENV: alt_browsers_path}
         result3 = subprocess.run(
-            ["playwright", "install", "chromium", "--browsers-path", alt_browsers_path],
+            ["playwright", "install", "chromium", "--browsers-path", browsers_path],
             capture_output=True,
             text=True,
-            env=alt_env,
+            env=env_with_browsers,
         )
         if result3.returncode == 0:
-            _print(f"[web-reader] Playwright chromium 설치 완료 (3차, {alt_browsers_path}).")
+            _propagate_to_parent()
+            _print(f"[web-reader] Playwright chromium 설치 완료 (3차, {browsers_path}).")
             return True, ""
         else:
             _print(f"[web-reader] 3차 browser binary 설치 실패: {result3.stderr[:200]}")
@@ -509,10 +530,16 @@ def _do_dynamic_fetch(
     if not fd.is_playwright_available():
         raise _PlaywrightNotAvailable("playwright not installed")
 
-    # fetch_dynamic의 fetch_page 함수 호출
-    fetch_func = getattr(fd, "fetch_page", None) or getattr(fd, "fetch_url", None)
+    # fetch_dynamic의 진입 함수 호출 — 실제 이름은 fetch_with_js (legacy 별칭 fetch_page/fetch_url도 시도)
+    fetch_func = (
+        getattr(fd, "fetch_with_js", None)
+        or getattr(fd, "fetch_page", None)
+        or getattr(fd, "fetch_url", None)
+    )
     if fetch_func is None:
-        raise _PlaywrightNotAvailable("fetch_dynamic has no fetch_page/fetch_url function")
+        raise _PlaywrightNotAvailable(
+            "fetch_dynamic has no fetch_with_js/fetch_page/fetch_url function"
+        )
 
     fetch_result = fetch_func(url)
     if not fetch_result or not fetch_result.get("content"):

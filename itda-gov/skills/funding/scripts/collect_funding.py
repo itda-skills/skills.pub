@@ -144,12 +144,22 @@ def _print_overview_table(result: dict[str, Any]) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """CLI 인자 파서 생성."""
+    """CLI 인자 파서 생성.
+
+    공용 옵션(--api-key, --format)을 parents 패턴으로 등록하여
+    서브커맨드 앞/뒤 양쪽 위치에서 모두 동작하도록 한다 (REQ-1).
+
+    구현 주의사항:
+    - 서브파서 공용 옵션은 default=None/SUPPRESS로 두어 메인 파서 값을 덮어쓰지 않도록 한다.
+    - main()에서 서브커맨드 뒤 값이 None이면 메인 파서에서 파싱된 값을 사용한다.
+    """
+    # 메인 파서: 서브커맨드 앞 위치 공용 옵션 (REQ-1.2, 하위 호환)
     parser = argparse.ArgumentParser(
         description="정부 지원사업 수집 — K-Startup 공공데이터",
     )
     parser.add_argument(
-        "--api-key", default=None, help="공공데이터포털 API 키 (직접 전달)"
+        "--api-key", default=None, dest="api_key",
+        help="공공데이터포털 API 키 (직접 전달)",
     )
     parser.add_argument(
         "--format", choices=["json", "table"], default="json",
@@ -158,8 +168,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    # search
+    # 서브파서 공용 옵션은 default=argparse.SUPPRESS로 두어 메인 파서 값을 보존한다
+    # argparse.SUPPRESS: 지정하지 않으면 Namespace에 속성 자체를 추가하지 않음 →
+    # setattr fallback으로 메인 파서 기본값이 유지됨
+    def _add_common(p: argparse.ArgumentParser) -> None:
+        """서브파서에 공용 옵션 추가 (SUPPRESS default로 메인 파서 값 보존)."""
+        p.add_argument(
+            "--api-key", default=argparse.SUPPRESS, dest="api_key",
+            help="공공데이터포털 API 키 (직접 전달)",
+        )
+        p.add_argument(
+            "--format", choices=["json", "table"], default=argparse.SUPPRESS,
+            help="출력 형식 (기본: json)",
+        )
+
+    # search: 서브커맨드 뒤 위치 허용 (REQ-1.1)
     p_search = sub.add_parser("search", help="지원사업 공고 검색")
+    _add_common(p_search)
     p_search.add_argument("--keyword", required=True, help="검색 키워드")
     p_search.add_argument("--active", action="store_true", help="모집 중인 공고만 조회")
     p_search.add_argument("--field", default=None, help="지원 분야 필터 (예: 사업화, R&D)")
@@ -169,8 +194,9 @@ def build_parser() -> argparse.ArgumentParser:
                           help="접수 종료일 상한 (YYYYMMDD)")
     p_search.add_argument("--rows", type=int, default=100, help="조회 건수 (기본: 100)")
 
-    # overview
+    # overview: 서브커맨드 뒤 위치 허용 (REQ-1.1)
     p_overview = sub.add_parser("overview", help="통합공고 사업 현황 조회")
+    _add_common(p_overview)
     p_overview.add_argument("--keyword", required=True, help="검색 키워드")
     p_overview.add_argument("--year", default=None, help="사업 연도 (예: 2026)")
     p_overview.add_argument("--rows", type=int, default=100, help="조회 건수 (기본: 100)")

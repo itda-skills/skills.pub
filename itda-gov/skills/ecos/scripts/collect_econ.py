@@ -235,10 +235,18 @@ def _print_word_table(rows: list[dict[str, Any]], query: str) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """CLI 인자 파서 생성.
+
+    공용 옵션(--api-key, --format)을 _add_common() 헬퍼로 메인 파서와 모든 서브파서에
+    동시 등록하여 서브커맨드 앞/뒤 양쪽 위치에서 모두 동작하도록 한다 (REQ-1).
+    """
+    # 메인 파서: 서브커맨드 앞 위치 공용 옵션 (REQ-1.2, 하위 호환)
     parser = argparse.ArgumentParser(
         description="경제지표 수집 — 한국은행 ECOS",
     )
-    parser.add_argument("--api-key", default=None, help="ECOS API 키")
+    parser.add_argument(
+        "--api-key", default=None, dest="api_key", help="ECOS API 키",
+    )
     parser.add_argument(
         "--format", choices=["json", "table"], default="json",
         help="출력 형식 (기본: json)",
@@ -246,11 +254,25 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = parser.add_subparsers(dest="command", required=True)
 
+    # 서브파서 공용 옵션은 default=argparse.SUPPRESS로 두어 메인 파서 기본값을 보존한다.
+    def _add_common(p: argparse.ArgumentParser) -> None:
+        """서브파서에 공용 옵션 추가 (SUPPRESS default로 메인 파서 값 보존)."""
+        p.add_argument(
+            "--api-key", default=argparse.SUPPRESS, dest="api_key",
+            help="ECOS API 키",
+        )
+        p.add_argument(
+            "--format", choices=["json", "table"], default=argparse.SUPPRESS,
+            help="출력 형식 (기본: json)",
+        )
+
     # key - 100대 주요 경제지표
-    sub.add_parser("key", help="100대 주요 경제지표 조회")
+    p_key = sub.add_parser("key", help="100대 주요 경제지표 조회")
+    _add_common(p_key)
 
     # search - 통계 데이터 조회
     p_search = sub.add_parser("search", help="통계 데이터 조회")
+    _add_common(p_search)
     p_search.add_argument("--stat", "-s", required=True, help="통계표코드 (예: 021Y125)")
     p_search.add_argument("--start", required=True, help="시작일 (예: 2020)")
     p_search.add_argument("--end", required=True, help="종료일 (예: 2024)")
@@ -263,14 +285,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     # items - 세부항목 목록
     p_items = sub.add_parser("items", help="통계표 세부항목 목록")
+    _add_common(p_items)
     p_items.add_argument("--stat", "-s", required=True, help="통계표코드")
 
     # tables - 통계표 목록
     p_tables = sub.add_parser("tables", help="전체 통계표 목록")
+    _add_common(p_tables)
     p_tables.add_argument("--count", "-n", type=int, default=100, help="조회 건수 (기본 100)")
 
     # word - 통계용어사전
     p_word = sub.add_parser("word", help="통계용어사전 검색")
+    _add_common(p_word)
     p_word.add_argument("--word", "-w", required=True, help="검색할 용어")
 
     return parser

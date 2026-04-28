@@ -296,11 +296,14 @@ class BrowserDriver:
             return self._page.evaluate(js, arg)  # type: ignore[union-attr]
         return self._page.evaluate(js)  # type: ignore[union-attr]
 
-    def extract_html(self, *, selector: str | None = None) -> str:
+    def extract_html(self, *, selector: str | None = None, all_matches: bool = False) -> str:
         """현재 페이지 또는 특정 selector의 HTML을 반환한다.
 
         Args:
             selector: CSS selector. None이면 전체 페이지 HTML 반환.
+            all_matches: True이면 querySelectorAll로 모든 매칭 요소의 outerHTML을
+                         개행으로 결합하여 반환한다. False(기본)이면 querySelector로
+                         첫 번째 매칭 요소만 반환한다 (하위 호환 유지).
 
         Returns:
             HTML 문자열.
@@ -312,11 +315,23 @@ class BrowserDriver:
         if selector is None:
             return self._page.content()  # type: ignore[union-attr]
 
-        result = self._page.evaluate(  # type: ignore[union-attr]
-            "selector => { const el = document.querySelector(selector); "
-            "return el ? el.outerHTML : null; }",
-            selector,
-        )
+        if all_matches:
+            # ISS-SEMANTIC-ASYMMETRY: extract_content.py의 soup.select()와 동일하게
+            # 모든 매칭 요소 outerHTML을 결합한다.
+            result = self._page.evaluate(  # type: ignore[union-attr]
+                """selector => {
+                    const els = document.querySelectorAll(selector);
+                    if (els.length === 0) return null;
+                    return Array.from(els).map(el => el.outerHTML).join('\\n');
+                }""",
+                selector,
+            )
+        else:
+            result = self._page.evaluate(  # type: ignore[union-attr]
+                "selector => { const el = document.querySelector(selector); "
+                "return el ? el.outerHTML : null; }",
+                selector,
+            )
         if result is None:
             raise BrowserDriverError(
                 stage="extract_html", selector=selector, cause=None

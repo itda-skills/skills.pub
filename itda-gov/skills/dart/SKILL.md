@@ -12,9 +12,9 @@ argument-hint: "[search|info|finance|employees|profile|disclosure|business|compa
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.13.0"
+  version: "0.13.1"
   created_at: "2026-03-29"
-  updated_at: "2026-04-28"
+  updated_at: "2026-04-29"
   tags: "기업정보, 재무제표, DART, 전자공시, 경쟁사분석, 제안서, 직원현황, 매출, 영업이익, 사업보고서, 공시목록, 사업보고서텍스트, 다기업비교, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
 env_vars:
   - name: "DART_API_KEY"
@@ -268,6 +268,26 @@ dart/
 
 권한 관련 오류(010/011/012/101/901)는 시스템이 활용신청 URL(`https://opendart.fss.or.kr`)을
 자동 부착합니다. HTTP 403 게이트웨이 거부도 동일하게 처리됩니다.
+
+## Troubleshooting
+
+### 한글 경로가 인식되지 않을 때
+
+Cowork sandbox 등 일부 환경의 bash는 `LANG`/`LC_ALL` 미설정 시 한글 디렉토리명을 직접 인자로 받지 못합니다.
+
+**증상:** `/sessions/.../mnt/실습-클로드-1기/` 경로에서 `No such file or directory`.
+
+**해결 — 변수 캡처 우회:**
+
+```bash
+WORKSPACE=$(ls /sessions/*/mnt/ | grep -v '^lost+found$' | head -1)
+WORKSPACE_PATH=$(ls -d /sessions/*/mnt/"$WORKSPACE" 2>/dev/null | head -1)
+
+python3 collect_company.py search --name "삼성전자" > "$WORKSPACE_PATH/result.json"
+```
+
+> 이 패턴은 스크립트 코드 결함이 아니라 sandbox bash의 locale 설정 문제입니다.
+> macOS native bash 및 Windows PowerShell에서는 한글 경로가 정상 동작합니다.
 
 ## 상세 API 가이드
 
