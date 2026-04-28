@@ -12,9 +12,9 @@ argument-hint: "[search|info|finance|employees|profile|disclosure|business|compa
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.12.0"
+  version: "0.13.0"
   created_at: "2026-03-29"
-  updated_at: "2026-04-27"
+  updated_at: "2026-04-28"
   tags: "기업정보, 재무제표, DART, 전자공시, 경쟁사분석, 제안서, 직원현황, 매출, 영업이익, 사업보고서, 공시목록, 사업보고서텍스트, 다기업비교, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
 env_vars:
   - name: "DART_API_KEY"
@@ -43,9 +43,9 @@ uv pip install --system "defusedxml>=0.7.1"
 
 ## API 키 설정
 
-| 환경변수 | 발급처 | 비고 |
-|---------|-------|------|
-| `DART_API_KEY` | https://opendart.fss.or.kr | 즉시 발급 (40자리) |
+| 환경변수 | 발급처 | 승인 방식 |
+|---------|-------|----------|
+| `DART_API_KEY` | https://opendart.fss.or.kr | 회원가입 → 오픈API → 인증키 신청/관리 → **즉시 발급** (40자리, 수동 승인 없음) |
 
 ```bash
 # Claude Cowork 설정 (권장)
@@ -54,6 +54,13 @@ claude config set env.DART_API_KEY "발급받은_키"
 # 또는 .env 파일
 DART_API_KEY=발급받은_키
 ```
+
+### 첫 호출 실패 시 점검 절차
+
+1. **키 문자열 정확성**: 40자리 영숫자, 앞뒤 공백 없는지 확인
+2. **URL 인코딩**: 본 스크립트가 자동 처리 (수동 인코딩 불필요)
+3. **시간 후 재시도**: 발급 직후 일시적 미반영 가능 — 수 분 대기 후 재시도
+4. **권한 오류 (HTTP 403)**: 게이트웨이 단계 거부 → 동일 발급처에서 활용 상태 확인
 
 ## 사용법
 
@@ -222,10 +229,18 @@ dart/
       test_collect_company.py
       test_env_loader.py
   references/
-    dart.md             # DART API 상세 가이드
+    dart.md             # 요약 가이드
+    공시정보/                  # DS001 (4)
+    정기보고서-주요정보/         # DS002 (28)
+    정기보고서-재무정보/         # DS003 (7)
+    지분공시-종합정보/           # DS004 (2)
+    주요사항보고서-주요정보/      # DS005 (36)
+    증권신고서-주요정보/         # DS006 (6)
 ```
 
 ## 오류 처리
+
+### 일반 오류
 
 | 오류 | 원인 | 해결 방법 |
 |------|------|-----------|
@@ -233,6 +248,38 @@ dart/
 | `기업을 찾을 수 없습니다` | 회사명 불일치 | 공식 법인명 전체로 재검색 |
 | `재무 데이터가 없습니다` | 해당 연도 미공시 | 이전 연도로 재시도 |
 
+### 정본 status 코드 (DART API)
+
+| 코드 | 의미 | 권장 조치 |
+|------|------|----------|
+| 000 | 정상 | — |
+| 010 | 등록되지 않은 키 | 활용신청 URL 확인 |
+| 011 | 사용할 수 없는 키 (일시 중지) | 활용신청 URL 확인 |
+| 012 | 접근할 수 없는 IP | DART 콘솔에서 IP 등록 |
+| 013 | 조회된 데이터 없음 | 정상 응답 (결과 0건) |
+| 014 | 파일이 존재하지 않습니다 | 접수번호 재확인 |
+| 020 | 요청 제한 초과 (일 20,000건) | 자동 재시도(1s, 2s) |
+| 021 | 조회 가능 회사 개수 초과 (최대 100건) | 분할 호출 |
+| 100 | 필드의 부적절한 값 | 인자 형식 확인 |
+| 101 | 부적절한 접근 | 활용신청 URL 확인 |
+| 800 | 시스템 점검으로 인한 서비스 중지 | 잠시 후 재시도 |
+| 900 | 정의되지 않은 오류 | 재시도 또는 문의 |
+| 901 | 사용자 계정 개인정보 보유기간 만료 | 재가입 또는 갱신 |
+
+권한 관련 오류(010/011/012/101/901)는 시스템이 활용신청 URL(`https://opendart.fss.or.kr`)을
+자동 부착합니다. HTTP 403 게이트웨이 거부도 동일하게 처리됩니다.
+
 ## 상세 API 가이드
 
-[references/dart.md](references/dart.md)
+`references/` 디렉토리에 OpenDART 공식 가이드 6개 분류 · 83개 API의 정본 명세를 보관합니다.
+
+| 분류 | API 수 | 위치 |
+|------|--------|------|
+| 공시정보 | 4 | [references/공시정보/](references/공시정보/) |
+| 정기보고서 주요정보 | 28 | [references/정기보고서-주요정보/](references/정기보고서-주요정보/) |
+| 정기보고서 재무정보 | 7 | [references/정기보고서-재무정보/](references/정기보고서-재무정보/) |
+| 지분공시 종합정보 | 2 | [references/지분공시-종합정보/](references/지분공시-종합정보/) |
+| 주요사항보고서 주요정보 | 36 | [references/주요사항보고서-주요정보/](references/주요사항보고서-주요정보/) |
+| 증권신고서 주요정보 | 6 | [references/증권신고서-주요정보/](references/증권신고서-주요정보/) |
+
+기존 요약본: [references/dart.md](references/dart.md)

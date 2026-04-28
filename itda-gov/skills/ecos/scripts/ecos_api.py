@@ -22,6 +22,39 @@ logger = logging.getLogger(__name__)
 _BASE_URL = "https://ecos.bok.or.kr/api"
 _TIMEOUT = 15
 
+# 활용신청 페이지 — 인증키 관련 오류 시 사용자에게 자동 부착
+_ECOS_APPLY_URL = "https://ecos.bok.or.kr/api/"
+
+_ECOS_SETUP_GUIDE = (
+    "\n[설정 안내] ECOS_API_KEY를 확인하세요:\n"
+    f"  1. {_ECOS_APPLY_URL} 접속 → 회원가입 → 인증키 신청\n"
+    "  2. 인증키 즉시 발급 (가입 시 자동 부여)\n"
+    "  3. 환경변수 설정:\n"
+    "     claude config set env.ECOS_API_KEY \"발급받은_키\"\n"
+    "  4. 첫 호출 실패 시 점검 절차:\n"
+    "     - 키 문자열 정확성 확인 (앞뒤 공백 제거)\n"
+    "     - URL 인코딩 이슈는 본 스크립트에서 자동 처리됨\n"
+    "     - 잠시(수 분) 후 재시도 — 발급 직후 일시적 미반영 가능\n"
+)
+
+# 정본 에러 코드 매핑 (출처: 한국은행 ECOS API개발명세서 6종 공통)
+# references/ecos-매뉴얼/README.md 참조
+# 키 형식: "{TYPE}-{CODE}" (TYPE = INFO | ERROR)
+_ERROR_CODE_HINTS: dict[str, dict[str, Any]] = {
+    "INFO-100": {"desc": "인증키가 유효하지 않습니다", "category": "setup", "needs_apply_url": True},
+    "INFO-200": {"desc": "해당하는 데이터가 없습니다", "category": "data", "needs_apply_url": False},
+    "ERROR-100": {"desc": "필수 값이 누락되어 있습니다", "category": "setup", "needs_apply_url": False},
+    "ERROR-101": {"desc": "주기와 다른 형식의 날짜 형식입니다", "category": "setup", "needs_apply_url": False},
+    "ERROR-200": {"desc": "파일타입 값이 누락 혹은 유효하지 않습니다", "category": "setup", "needs_apply_url": False},
+    "ERROR-300": {"desc": "조회건수 값이 누락되어 있습니다", "category": "setup", "needs_apply_url": False},
+    "ERROR-301": {"desc": "조회건수 값의 타입이 유효하지 않습니다 (정수 입력)", "category": "setup", "needs_apply_url": False},
+    "ERROR-400": {"desc": "검색범위 초과 (60초 TIMEOUT)", "category": "transient", "needs_apply_url": False},
+    "ERROR-500": {"desc": "서버 오류 (해당 서비스를 찾을 수 없음)", "category": "transient", "needs_apply_url": False},
+    "ERROR-600": {"desc": "DB Connection 오류", "category": "transient", "needs_apply_url": False},
+    "ERROR-601": {"desc": "SQL 오류", "category": "transient", "needs_apply_url": False},
+    "ERROR-602": {"desc": "과도한 OpenAPI 호출로 이용 제한", "category": "transient", "needs_apply_url": False},
+}
+
 # 주기 코드
 PERIOD_CODES = {
     "year": "A",
@@ -30,6 +63,54 @@ PERIOD_CODES = {
     "month": "M",
     "day": "D",
 }
+
+
+def _classify_ecos_error(error_code: str) -> tuple[str, str]:
+    """ECOS API 오류 코드를 사용자 메시지와 카테고리로 분류.
+
+    정본 매핑(_ERROR_CODE_HINTS)에서 한글 설명을 가져오고, 인증키 관련
+    오류(INFO-100)는 활용신청 URL을 자동 부착한다.
+
+    Args:
+        error_code: ECOS API CODE 값 (예: "INFO-100", "ERROR-602").
+
+    Returns:
+        (사용자 메시지, 카테고리) 튜플.
+        카테고리: "setup" | "transient" | "data" | "general"
+    """
+    hint = _ERROR_CODE_HINTS.get(error_code)
+    if hint is None:
+        return (
+            f"ECOS API 오류 (코드: {error_code}) — 요청 파라미터 또는 서버 상태를 확인하세요.",
+            "general",
+        )
+
+    if error_code == "INFO-100":
+        return (
+            f"인증키 무효 ({error_code}, {hint['desc']}){_ECOS_SETUP_GUIDE}",
+            "setup",
+        )
+    if error_code == "ERROR-602":
+        return (
+            f"{hint['desc']} ({error_code}) — 잠시 후 재시도하세요.",
+            hint["category"],
+        )
+    if error_code == "ERROR-400":
+        return (
+            f"{hint['desc']} ({error_code}) — 검색 범위를 줄여서 다시 시도하세요.",
+            hint["category"],
+        )
+    if error_code == "ERROR-101":
+        return (
+            f"{hint['desc']} ({error_code}) — 주기/날짜 형식 확인 (A:2024, Q:2024Q1, M:202401, D:20240101)",
+            hint["category"],
+        )
+
+    suffix = f" — 활용신청 URL: {_ECOS_APPLY_URL}" if hint["needs_apply_url"] else ""
+    return (
+        f"ECOS API 오류 ({error_code}, {hint['desc']}){suffix}",
+        hint["category"],
+    )
 
 # 제안서에서 자주 참조하는 주요 통계표
 KEY_STAT_CODES = {
@@ -78,6 +159,15 @@ def _request(url: str) -> dict[str, Any]:
     try:
         with urllib.request.urlopen(url, timeout=_TIMEOUT) as resp:
             raw = resp.read()
+    except urllib.error.HTTPError as exc:
+        # @MX:NOTE: HTTP 403은 게이트웨이 단계 권한 거부 — 활용신청 안내 부착.
+        if exc.code == 403:
+            raise ECOSAPIError(
+                f"권한 거부 (HTTP 403) — 활용신청이 필요할 수 있습니다."
+                f"{_ECOS_SETUP_GUIDE}",
+                error_code="HTTP_403",
+            ) from exc
+        raise ECOSAPIError(f"네트워크 오류: {exc}") from exc
     except urllib.error.URLError as exc:
         raise ECOSAPIError(f"네트워크 오류: {exc}") from exc
 
@@ -86,31 +176,21 @@ def _request(url: str) -> dict[str, Any]:
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise ECOSAPIError(f"JSON 파싱 실패: {exc}") from exc
 
-    # 에러 응답 확인
+    # 에러 응답 확인 — 정본 한글 hint + 활용신청 URL 자동 부착
     if "RESULT" in data:
         code = data["RESULT"].get("CODE", "")
         msg = data["RESULT"].get("MESSAGE", "알 수 없는 오류")
 
-        # 정보 100: 인증키 유효하지 않음
-        if code == "INFO-100":
-            raise ECOSAPIError(
-                "인증키가 유효하지 않습니다. ECOS_API_KEY를 확인하세요.",
-                error_code=code,
-            )
         # INFO-200: 데이터 없음 (에러가 아닌 정상 응답)
         if code == "INFO-200":
             return {"_empty": True, "_message": msg}
 
-        # ERROR 계열
-        if code.startswith("ERROR"):
-            # 주요 에러에 사용자 친화적 안내 추가
-            hints = {
-                "ERROR-101": " → 주기와 날짜 형식이 맞는지 확인하세요 (A:2024, Q:2024Q1, M:202401, D:20240101).",
-                "ERROR-400": " → 검색 범위를 줄여서 다시 시도하세요.",
-                "ERROR-602": " → 과도한 호출로 제한되었습니다. 잠시 후 재시도하세요.",
-            }
-            hint = hints.get(code, "")
-            raise ECOSAPIError(f"ECOS API 오류 ({code}): {msg}{hint}", error_code=code)
+        # 그 외 모든 INFO/ERROR 코드는 _classify_ecos_error로 처리
+        hint_msg, _category = _classify_ecos_error(code)
+        raise ECOSAPIError(
+            f"{hint_msg} | 원본 메시지: {msg}",
+            error_code=code,
+        )
 
     return data
 

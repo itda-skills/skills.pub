@@ -1,7 +1,10 @@
 """API 키 및 OC 인증 정보 resolver — 한국 공공데이터 API 공통 모듈.
 
 조회 우선순위:
-    CLI 인자 > 환경변수 > CWD의 .env 파일 > Cowork mnt/.env
+    CLI 인자 > 환경변수 > .env 파일 (find_env_files()로 다중 경로 탐색)
+
+단일 경로 탐색 헬퍼를 제거하고 itda_path.find_env_files()를 사용하여
+모든 후보 경로의 .env를 병합한다 (SPEC-DATAPATH-002).
 
 지원 스킬:
     - API 계열 (DART, KOSIS, ECOS, 부동산, 복지급여, 나라장터):
@@ -14,6 +17,8 @@ from __future__ import annotations
 import os
 import urllib.parse
 from pathlib import Path
+
+from itda_path import find_env_files
 
 # ---------------------------------------------------------------------------
 # law-korean 전용 상수
@@ -106,61 +111,42 @@ def load_env(env_path: str | Path | None = None) -> dict[str, str]:
 
 
 def merged_env(env_path: str | Path | None = None) -> dict[str, str]:
-    """환경변수와 .env 파일을 병합하여 반환.
+    """환경변수와 .env 파일들을 병합하여 반환.
 
-    우선순위: os.environ > .env 파일 (환경변수가 .env 값을 덮어씀)
+    병합 우선순위 (높음 → 낮음):
+        1. os.environ (항상 최우선)
+        2. 후순위 .env 파일 (나중에 발견된 파일이 선순위를 덮어씀)
+        3. 선순위 .env 파일
+
+    env_path가 명시되면 그 파일만 사용한다 (기존 호환성 유지).
+    None이면 find_env_files()로 다중 경로를 탐색하여 모두 병합한다.
 
     Args:
-        env_path: .env 파일 경로. None이면 CWD의 .env 자동 감지.
+        env_path: .env 파일 경로. None이면 find_env_files()로 자동 탐색.
 
     Returns:
         병합된 환경변수 딕셔너리.
     """
-    # 환경변수 복사로 시작
-    result: dict[str, str] = dict(os.environ)
+    # 빈 딕셔너리부터 시작하여 나중에 적재된 것이 이전 것을 덮어씀
+    dotenv_merged: dict[str, str] = {}
 
-    # env_path 결정 (None이면 자동 감지)
-    if env_path is None:
-        env_path = _find_env_path()
+    if env_path is not None:
+        # 명시적 경로: 해당 파일만 사용
+        dotenv_merged = load_env(Path(env_path))
     else:
-        env_path = Path(env_path)
+        # 자동 탐색: 발견 순서대로 적재 (나중 발견이 먼저 발견을 덮어씀)
+        for env_file in find_env_files():
+            dotenv_merged.update(load_env(env_file))
 
-    # .env 파일 로드 및 병합 (환경변수가 우선)
-    dotenv_values = load_env(env_path)
-    for key, value in dotenv_values.items():
-        # 환경변수에 없는 경우만 .env 값 사용 (os.environ 우선)
-        if key not in result:
-            result[key] = value
-
+    # os.environ을 마지막 적재 — 항상 최우선 승리
+    result = dict(dotenv_merged)
+    result.update(os.environ)
     return result
 
 
 # ---------------------------------------------------------------------------
 # API 계열 (DART / KOSIS / ECOS / 부동산 / 복지급여 / 나라장터)
 # ---------------------------------------------------------------------------
-
-def _find_env_path() -> Path | None:
-    """Determine .env file path based on environment.
-
-    Priority:
-        1. CWD/.env (local development)
-        2. parent(CLAUDE_CONFIG_DIR)/.env (Cowork with host mount)
-
-    Returns:
-        Path to .env if found, None otherwise.
-    """
-    cwd_env = Path.cwd() / ".env"
-    if cwd_env.exists():
-        return cwd_env
-
-    config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
-    if config_dir:
-        mnt_env = Path(config_dir).parent / ".env"
-        if mnt_env.exists():
-            return mnt_env
-
-    return None
-
 
 def normalize_service_key(key: str) -> str:
     """공공데이터포털 인증키의 URL 인코딩 상태를 감지하여 정규화.
@@ -186,7 +172,7 @@ def normalize_service_key(key: str) -> str:
 
 
 # @MX:ANCHOR: [AUTO] API key resolution entry point used by all skill scripts.
-# @MX:REASON: fan_in >= 5; lookup priority order (cli > environ > cwd-env > mnt-env) is a contract.
+# @MX:REASON: fan_in >= 5; lookup priority order (cli > environ > env-files) is a contract.
 def resolve_api_key(
     var_name: str,
     cli_arg: str | None = None,
@@ -195,7 +181,7 @@ def resolve_api_key(
 ) -> str:
     """API 키를 해석.
 
-    조회 우선순위: CLI 인자 > 환경변수 > .env 파일.
+    조회 우선순위: CLI 인자 > 환경변수 > .env 파일 (find_env_files() 사용).
 
     Args:
         var_name: 환경변수 이름.
@@ -215,8 +201,13 @@ def resolve_api_key(
     elif env_val := os.environ.get(var_name):
         resolved = env_val
     else:
-        env_path = _find_env_path()
-        dotenv_val = load_env(env_path).get(var_name) if env_path else None
+        # find_env_files()로 다중 경로 탐색
+        dotenv_val = None
+        for env_file in find_env_files():
+            val = load_env(env_file).get(var_name)
+            if val:
+                dotenv_val = val
+                # 마지막 발견이 이기므로 계속 탐색
         if dotenv_val:
             resolved = dotenv_val
         else:
@@ -239,7 +230,7 @@ def resolve_oc(cli_arg: str | None = None) -> str:
     Lookup priority:
         1. cli_arg (--oc flag)
         2. LAW_API_OC environment variable
-        3. LAW_API_OC in .env file at CWD
+        3. LAW_API_OC in .env file (find_env_files() 사용)
 
     내부적으로 resolve_api_key()를 호출하되, MissingAPIKeyError를
     MissingOCError로 변환하여 기존 law-korean 코드 호환성을 유지.

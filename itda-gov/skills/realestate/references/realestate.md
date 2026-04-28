@@ -51,6 +51,34 @@ Base URL: `https://apis.data.go.kr/1613000/{서비스명}/{엔드포인트}`
 | `pageNo` | N | 페이지 번호 (기본 1) | `1` |
 | `numOfRows` | N | 페이지당 건수 (기본 10, 최대 100) | `100` |
 
+## 정본 PDF 명세
+
+| 서비스 | PDF 파일 |
+|-------|---------|
+| 아파트 매매 (`apt_trade`) | [molit-realestate-api-guide.pdf](molit-realestate-api-guide.pdf) |
+| 아파트 전월세 (`apt_rent`) | [molit-apt-rent-api-guide.pdf](molit-apt-rent-api-guide.pdf) |
+| 오피스텔 매매 (`offi_trade`) | [molit-offi-trade-api-guide.pdf](molit-offi-trade-api-guide.pdf) |
+| 오피스텔 전월세 (`offi_rent`) | [molit-offi-rent-api-guide.pdf](molit-offi-rent-api-guide.pdf) |
+
+모두 한국부동산원 운영, 2024-07-17 배포 v1.0, 일 1회 갱신, XML 응답.
+
+## 응답 필드 핵심 차이 (PDF 4종 비교)
+
+응답 XML tag는 그대로 dict key로 보존됩니다. 서비스별 주요 필드 차이:
+
+| 카테고리 | apt_trade | apt_rent | offi_trade | offi_rent |
+|---------|-----------|----------|------------|-----------|
+| 단지명 키 | `aptNm` | `aptNm` | **`offiNm`** | **`offiNm`** |
+| 시군구명(`sggNm`) | — | — | ✅ | ✅ |
+| 거래금액(`dealAmount`) | ✅ | — | ✅ | — |
+| 보증금/월세(`deposit`/`monthlyRent`) | — | ✅ | — | ✅ |
+| 도로명·단지번호 9개(`roadnm`*, `aptSeq`) | — | ✅ (신규) | — | — |
+| 갱신요구권(`useRRRight`, `preDeposit`, `preMonthlyRent`, `contractTerm`, `contractType`) | — | ✅ | — | ✅ |
+| 거래주체 등 매매 메타(`dealingGbn`, `estateAgentSggNm`, `slerGbn`, `buyerGbn`, `cdealType`, `cdealDay`) | ✅ | — | ✅ | — |
+| 매매 추가(`rgstDate`, `aptDong`, `landLeaseholdGbn`) | ✅ | — | — | — |
+
+> `collect_realestate.py` 정규화는 `apt_nm`을 `aptNm` 우선, 부재 시 `offiNm` 으로 채웁니다.
+
 ## 응답 필드 (아파트 매매, 신규 v1.0 — 2024-07-17 배포)
 
 PDF 명세서 기준 22개 필드. 출처: `references/molit-realestate-api-guide.pdf`.

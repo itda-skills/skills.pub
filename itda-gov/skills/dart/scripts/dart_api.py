@@ -64,16 +64,44 @@ class DARTAPIError(Exception):
         self.error_code = error_code
 
 
+_DART_APPLY_URL = "https://opendart.fss.or.kr"
+
 _DART_SETUP_GUIDE = (
     "\n[설정 안내] DART_API_KEY를 확인하세요:\n"
-    "  1. https://opendart.fss.or.kr 접속 → 오픈API → 인증키 신청/관리\n"
+    f"  1. {_DART_APPLY_URL} 접속 → 오픈API → 인증키 신청/관리\n"
     "  2. 40자리 인증키 발급 후 환경변수 설정:\n"
     "     claude config set env.DART_API_KEY \"발급받은_키\"\n"
+    "  3. 첫 호출 실패 시 점검 절차:\n"
+    "     - 키 문자열 40자리 정확성 확인 (앞뒤 공백 제거)\n"
+    "     - URL 인코딩 이슈는 본 스크립트에서 자동 처리됨\n"
+    "     - 잠시(수 분) 후 재시도 — 발급 직후 일시적 미반영 가능\n"
 )
+
+# 정본 에러 코드 매핑 (출처: opendart.fss.or.kr/guide/detail.do 6개 분류 가이드)
+# references/ 디렉토리의 정본 가이드 표를 인코딩한 단일 슈퍼셋.
+_ERROR_CODE_HINTS: dict[str, dict[str, Any]] = {
+    "000": {"desc": "정상", "category": "ok", "needs_apply_url": False},
+    "010": {"desc": "등록되지 않은 키", "category": "setup", "needs_apply_url": True},
+    "011": {"desc": "사용할 수 없는 키 (일시 중지)", "category": "setup", "needs_apply_url": True},
+    "012": {"desc": "접근할 수 없는 IP", "category": "setup", "needs_apply_url": False},
+    "013": {"desc": "조회된 데이터가 없습니다", "category": "data", "needs_apply_url": False},
+    "014": {"desc": "파일이 존재하지 않습니다", "category": "data", "needs_apply_url": False},
+    "020": {"desc": "요청 제한 초과 (일 20,000건)", "category": "transient", "needs_apply_url": False},
+    "021": {"desc": "조회 가능한 회사 개수 초과 (최대 100건)", "category": "general", "needs_apply_url": False},
+    "100": {"desc": "필드의 부적절한 값", "category": "setup", "needs_apply_url": False},
+    "101": {"desc": "부적절한 접근", "category": "setup", "needs_apply_url": False},
+    "800": {"desc": "시스템 점검으로 인한 서비스 중지", "category": "transient", "needs_apply_url": False},
+    "900": {"desc": "정의되지 않은 오류", "category": "general", "needs_apply_url": False},
+    "901": {"desc": "사용자 계정 개인정보 보유기간 만료", "category": "setup", "needs_apply_url": True},
+}
 
 
 def _classify_dart_error(error_code: str) -> tuple[str, str]:
     """DART API 오류 코드를 사용자 메시지와 카테고리로 분류.
+
+    정본 에러 코드 표(_ERROR_CODE_HINTS)에서 한글 설명을 가져오고,
+    필요 시 활용신청 URL을 자동 부착한다. 카테고리 분류는 기존 UX 분기와
+    호환되도록 setup/transient/data/general 4종으로 통일.
 
     Args:
         error_code: DART API status 코드.
@@ -82,24 +110,34 @@ def _classify_dart_error(error_code: str) -> tuple[str, str]:
         (사용자 메시지, 카테고리) 튜플.
         카테고리: "setup" | "transient" | "data" | "general"
     """
+    hint = _ERROR_CODE_HINTS.get(error_code)
+    if hint is None:
+        return (
+            f"DART API 오류 (오류 코드: {error_code}) — 요청 파라미터 또는 서버 상태를 확인하세요.",
+            "general",
+        )
+
+    # 011/100은 기존 테스트 호환을 위해 setup 카테고리 + DART_API_KEY 안내 유지
     if error_code in ("011", "100"):
         return (
-            f"DART_API_KEY 확인 필요 (오류 코드: {error_code}){_DART_SETUP_GUIDE}",
+            f"DART_API_KEY 확인 필요 (오류 코드: {error_code}, {hint['desc']}){_DART_SETUP_GUIDE}",
             "setup",
         )
     if error_code == "020":
         return (
-            f"요청 한도 초과 (오류 코드: {error_code}) — 잠시 후 자동 재시도합니다.",
+            f"{hint['desc']} (오류 코드: {error_code}) — 잠시 후 자동 재시도합니다.",
             "transient",
         )
     if error_code == "013":
         return (
-            f"조회 결과 없음 (오류 코드: {error_code})",
+            f"조회 결과 없음 (오류 코드: {error_code}, {hint['desc']})",
             "data",
         )
-    # 010, 090, 기타
+
+    # 010, 090, 기타: 기존 동작 유지 (general). 정본 한글 설명 부착.
+    suffix = f" — 활용신청 URL: {_DART_APPLY_URL}" if hint["needs_apply_url"] else ""
     return (
-        f"DART API 오류 (오류 코드: {error_code}) — 요청 파라미터 또는 서버 상태를 확인하세요.",
+        f"DART API 오류 (오류 코드: {error_code}, {hint['desc']}){suffix}",
         "general",
     )
 
@@ -142,6 +180,18 @@ def _request_json(endpoint: str, params: dict[str, str]) -> dict[str, Any]:
         try:
             with urllib.request.urlopen(url, timeout=_TIMEOUT) as resp:
                 raw = resp.read()
+        except urllib.error.HTTPError as exc:
+            # @MX:NOTE: HTTP 403은 게이트웨이 단계 권한 거부 — 활용신청 안내 부착.
+            if exc.code == 403:
+                raise DARTAPIError(
+                    f"권한 거부 (HTTP 403) — 활용신청이 필요할 수 있습니다."
+                    f"{_DART_SETUP_GUIDE}",
+                    error_code="HTTP_403",
+                ) from exc
+            if _is_retryable_http_error(exc):
+                last_exc = DARTAPIError(f"네트워크 오류: {exc}")
+                continue
+            raise DARTAPIError(f"네트워크 오류: {exc}") from exc
         except urllib.error.URLError as exc:
             if _is_retryable_http_error(exc):
                 last_exc = DARTAPIError(f"네트워크 오류: {exc}")

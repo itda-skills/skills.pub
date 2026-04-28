@@ -12,16 +12,16 @@ argument-hint: "[search|data] [--keyword 키워드] [--org-id ID] [--tbl-id ID] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.2"
+  version: "0.10.0"
   created_at: "2026-03-29"
-  updated_at: "2026-04-18"
+  updated_at: "2026-04-28"
   tags: "통계, 국가통계, KOSIS, 인구, 산업통계, 시장규모, 제안서, statistics, KOSIS, population, market"
 env_vars:
   - name: "KOSIS_API_KEY"
     service: "국가통계포털 KOSIS"
     url: "https://kosis.kr/openapi/"
     guide: |
-      회원가입 → Open API 신청 → 통계청 승인 (영업일 기준 1~2일) → 인증키 발급
+      회원가입 → Open API → 활용신청 → 자동 승인(즉시 이용) → 마이페이지에서 인증키 확인
     required: true
     group: "kosis"
 ---
@@ -35,9 +35,9 @@ env_vars:
 
 ## API 키 설정
 
-| 환경변수 | 발급처 | 비고 |
-|---------|-------|------|
-| `KOSIS_API_KEY` | https://kosis.kr/openapi/ | 서비스 신청 후 자동 승인 |
+| 환경변수 | 발급처 | 승인 방식 |
+|---------|-------|----------|
+| `KOSIS_API_KEY` | https://kosis.kr/openapi/ | 회원가입 → Open API → 활용신청 → **자동 승인 (즉시 이용)**, 마이페이지에서 인증키 확인 |
 
 ```bash
 # Claude Cowork 설정 (권장)
@@ -48,6 +48,13 @@ KOSIS_API_KEY=발급받은_키
 ```
 
 > **주의**: Base64 형태 키의 끝 `=` 패딩이 잘리지 않도록 전체 복사하세요.
+
+### 첫 호출 실패 시 점검 절차
+
+1. **키 패딩 확인**: Base64 형식이라 끝 `=` 문자가 잘리지 않았는지 확인
+2. **만료 여부**: 인증키 기간만료(코드 11)는 마이페이지에서 기간 연장 가능
+3. **시간 후 재시도**: 신규 발급 직후 일시적 미반영 가능 — 수 분 대기 후 재시도
+4. **권한 오류 (HTTP 403)**: 게이트웨이 단계 거부 → 마이페이지에서 활용 상태 확인
 
 ## 사용법
 
@@ -133,12 +140,57 @@ kosis/
 
 ## 오류 처리
 
+### 일반 오류
+
 | 오류 | 원인 | 해결 방법 |
 |------|------|-----------|
 | `KOSIS_API_KEY가 설정되지 않았습니다` | API 키 미설정 | `claude config set env.KOSIS_API_KEY "키"` |
 | `통계표를 찾을 수 없습니다` | org-id/tbl-id 오류 | `search` 서브커맨드로 ID 재확인 |
 | `데이터가 없습니다` | 기간 또는 항목 오류 | period/item 옵션 확인 |
 
+### 정본 err 코드 (KOSIS API §1.4.2)
+
+| 코드 | 의미 | 권장 조치 |
+|------|------|----------|
+| 10 | 인증키 누락 | 활용신청 URL 확인 |
+| 11 | 인증키 기간만료 | 마이페이지에서 기간 연장 |
+| 20 | 필수요청변수 누락 | 인자 형식 확인 |
+| 21 | 잘못된 요청변수 | 인자 값 확인 |
+| 30 | 조회결과 없음 | 조회조건(기간/항목) 조정 |
+| 31 | 조회결과 초과 | 호출건수 조정(분할 호출) |
+| 40 | 호출가능건수 제한 | KOSIS 관리자 문의 또는 호출 빈도 조정 |
+| 41 | 호출가능 ROW수 제한 | 같이 |
+| 42 | 사용자별 이용 제한 | KOSIS 관리자 문의 |
+| 50 | 서버오류 | 잠시 후 재시도 |
+
+오류 응답 형식 (XML):
+```xml
+<error>
+  <err>50</err>
+  <errMsg>서버오류가 발생하였습니다.</errMsg>
+</error>
+```
+
+> 코드 `kosis_api.py`는 KOSIS가 비표준 JSON으로 반환하는 오류도 자동 파싱합니다. 인증키 관련 오류(10/11/42)는 활용신청 URL이 자동 부착되며, HTTP 403 게이트웨이 거부도 동일하게 처리됩니다.
+
 ## 상세 API 가이드
 
-[references/kosis.md](references/kosis.md)
+`references/kosis-매뉴얼/` 디렉토리에 통계청 공식 KOSIS OpenAPI 매뉴얼 v1.0(158페이지) 정본 PDF와 11개 분류 발췌 md를 보관합니다.
+
+| 분류 | md 파일 |
+|------|--------|
+| 개요 + 제공 콘텐츠 7종 | [00-개요-제공콘텐츠.md](references/kosis-매뉴얼/00-개요-제공콘텐츠.md) |
+| 인증키 + 에러메시지 | [01-인증키-에러메시지.md](references/kosis-매뉴얼/01-인증키-에러메시지.md) |
+| 통계목록 (statisticsList.do) | [02-통계목록.md](references/kosis-매뉴얼/02-통계목록.md) |
+| 통계자료 (statisticsData.do / Param/) | [03-통계자료.md](references/kosis-매뉴얼/03-통계자료.md) |
+| 통계자료 SDMX(DSD) | [04-통계자료-SDMX-DSD.md](references/kosis-매뉴얼/04-통계자료-SDMX-DSD.md) |
+| 통계자료 SDMX(Generic/StructureSpecific) | [05-통계자료-SDMX-Generic-StructureSpecific.md](references/kosis-매뉴얼/05-통계자료-SDMX-Generic-StructureSpecific.md) |
+| 대용량 통계자료 (statisticsBigData.do) | [06-대용량통계자료.md](references/kosis-매뉴얼/06-대용량통계자료.md) |
+| 통계설명 (statisticsExplData.do) | [07-통계설명.md](references/kosis-매뉴얼/07-통계설명.md) |
+| 메타자료 (statisticsData.do?method=getMeta) | [08-메타자료.md](references/kosis-매뉴얼/08-메타자료.md) |
+| 통합검색 (statisticsSearch.do) ← 코드 _SEARCH_URL | [09-통합검색.md](references/kosis-매뉴얼/09-통합검색.md) |
+| 통계주요지표 (지표 Open API) | [10-통계주요지표.md](references/kosis-매뉴얼/10-통계주요지표.md) |
+| 참고: SDMX 표준 | [11-참고-SDMX.md](references/kosis-매뉴얼/11-참고-SDMX.md) |
+
+기존 요약본: [references/kosis.md](references/kosis.md)
+정본 PDF: [references/kosis-매뉴얼/openApi_manual_v1.0.pdf](references/kosis-매뉴얼/openApi_manual_v1.0.pdf)

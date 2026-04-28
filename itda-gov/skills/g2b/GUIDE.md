@@ -17,7 +17,12 @@ Claude가 자연어 요청을 `--keyword`, `--from`, `--to`, `--format`, `--deta
 
 ## 사전 준비
 
-공공데이터포털(https://www.data.go.kr) 회원가입 후 `나라장터 입찰공고정보서비스` 활용신청이 필요합니다. 승인(수시간~수일)이 완료되면 마이페이지에서 인증키가 발급됩니다.
+공공데이터포털 API 키가 필요합니다.
+
+1. https://www.data.go.kr 회원가입
+2. **조달청 나라장터 공공데이터개방표준서비스** 활용신청: <https://www.data.go.kr/data/15058815/openapi.do> (**자동승인**, 게이트웨이 동기화에 5~30분 소요)
+3. 마이페이지 → 개발계정 → **Decoding** 키(일반 인증키) 복사
+4. `claude config set env.KO_DATA_API_KEY "발급받은_키"` 또는 `.env` 파일에 저장
 
 ```bash
 # Claude Cowork 환경변수 등록 (권장)
@@ -26,6 +31,8 @@ claude config set env.KO_DATA_API_KEY "발급받은_키"
 # 또는 .env 파일
 KO_DATA_API_KEY=발급받은_키
 ```
+
+> 같은 키를 `funding`·`realestate` 스킬에서도 공용으로 사용할 수 있습니다. 단, **각 API는 별도로 활용신청**해야 합니다. 미신청 서비스를 호출하면 HTTP 403 응답이 반환됩니다.
 
 Python 3.10 이상이 필요하며 추가 패키지 설치는 필요 없습니다. macOS/Linux는 `python3`, Windows는 `py -3`로 실행합니다.
 

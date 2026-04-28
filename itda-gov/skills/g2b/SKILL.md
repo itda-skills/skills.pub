@@ -12,16 +12,16 @@ argument-hint: "[--keyword 키워드] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--f
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.2"
+  version: "0.9.3"
   created_at: "2026-03-29"
-  updated_at: "2026-04-18"
+  updated_at: "2026-04-28"
   tags: "나라장터, 입찰공고, 조달청, G2B, 입찰, 공고, 조달, 입찰검색, procurement, tender, bid announcement, G2B, narajangteo"
 env_vars:
   - name: "KO_DATA_API_KEY"
-    service: "공공데이터포털"
-    url: "https://www.data.go.kr"
+    service: "공공데이터포털 - 조달청 나라장터 공공데이터개방표준서비스"
+    url: "https://www.data.go.kr/data/15058815/openapi.do"
     guide: |
-      회원가입 → 원하는 API 신청 → 마이페이지 → 인증키 확인 (즉시 또는 승인 후 발급)
+      위 활용신청 페이지에서 신청 (자동승인) → 마이페이지 → 개발계정 → Decoding 인증키 복사
     required: true
     group: "data-go-kr"
 ---
@@ -35,9 +35,15 @@ env_vars:
 
 ## API 키 설정
 
-| 환경변수 | 발급처 | 비고 |
-|---------|-------|------|
-| `KO_DATA_API_KEY` | https://www.data.go.kr | '나라장터 입찰공고정보서비스' 활용 신청 필요 |
+| 환경변수 | 활용신청 | 비고 |
+|---------|---------|------|
+| `KO_DATA_API_KEY` | <https://www.data.go.kr/data/15058815/openapi.do> | 조달청 나라장터 공공데이터개방표준서비스 — **자동승인** |
+
+> 자동승인이지만 **게이트웨이 동기화에 5~30분 (드물게 1시간)** 소요. 신청 직후 호출 시 HTTP 403 `Forbidden`이 나올 수 있습니다.
+>
+> **API명:** 조달청_나라장터 공공데이터개방표준서비스 (`PubDataOpnStdService`)
+> **호출 path:** `/getDataSetOpnStdBidPblancInfo` (입찰공고 데이터셋)
+> **응답 포맷:** JSON+XML, 갱신주기 실시간
 
 ```bash
 # Claude Cowork 설정 (권장)
@@ -46,6 +52,8 @@ claude config set env.KO_DATA_API_KEY "발급받은_키"
 # 또는 .env 파일
 KO_DATA_API_KEY=발급받은_키
 ```
+
+> **Decoding 키 사용**: 마이페이지 > Open API > 활용신청 현황 > 해당 API 상세에서 표시된 일반 인증키(Decoding)를 복사.
 
 ## 사용법
 
@@ -132,4 +140,7 @@ g2b/
 
 ## 상세 API 가이드
 
-[references/g2b.md](references/g2b.md)
+- [references/g2b.md](references/g2b.md) — 나라장터 API 사용 가이드
+- 조달청 정본 문서 (v1.1)
+  - [g2b-pubdata-opnstd-service-v1.1.docx](references/g2b-pubdata-opnstd-service-v1.1.docx) — 공공데이터개방표준서비스 OpenAPI 참고자료 원본
+  - [g2b-pubdata-opnstd-service-v1.1.md](references/g2b-pubdata-opnstd-service-v1.1.md) — 동일 내용 Markdown 변환본 (검색·발췌용)

@@ -37,7 +37,12 @@ K-Startup 공공데이터 API로 정부 창업·중소기업 지원사업 공고
 
 | 환경변수 | 활용신청 | 비고 |
 |---------|---------|------|
-| `KO_DATA_API_KEY` | https://www.data.go.kr/data/15125364/openapi.do | 창업진흥원 K-Startup(사업소개·사업공고·콘텐츠) 조회서비스 활용신청 |
+| `KO_DATA_API_KEY` | <https://www.data.go.kr/data/15125364/openapi.do> | 창업진흥원 K-Startup 조회서비스 — **자동승인** |
+
+> 자동승인이지만 **게이트웨이 동기화에 5~30분 (드물게 1시간)** 소요. 신청 직후 호출 시 HTTP 403 `Forbidden`이 나올 수 있습니다.
+>
+> **호스트:** `nidapi.k-startup.go.kr` (data.go.kr 게이트웨이가 아닌 K-Startup 직접 호스트)
+> **응답 포맷:** JSON+XML, 갱신주기 실시간
 
 ```bash
 # Claude Cowork 설정 (권장)
@@ -46,6 +51,8 @@ claude config set env.KO_DATA_API_KEY "발급받은_키"
 # 또는 .env 파일
 KO_DATA_API_KEY=발급받은_키
 ```
+
+> **Decoding 키 사용**: 마이페이지 > Open API > 활용신청 현황 > 해당 API 상세에서 표시된 일반 인증키(Decoding)를 복사.
 
 ## 사용법
 
@@ -132,4 +139,8 @@ funding/
 
 ## 상세 API 가이드
 
-[references/funding.md](references/funding.md)
+- [references/funding.md](references/funding.md) — K-Startup API 사용 가이드
+- 창업진흥원 정본 문서 (2025-01-08판)
+  - [k-startup-service-design-v2.0.docx](references/k-startup-service-design-v2.0.docx) — 서비스설계서 원본
+  - [k-startup-service-design-v2.0.md](references/k-startup-service-design-v2.0.md) — 동일 내용 Markdown 변환본 (검색·발췌용)
+  - [k-startup-codes.xlsx](references/k-startup-codes.xlsx) — 코드 매핑표 (분야·지역·대상 등)

@@ -12,7 +12,7 @@ argument-hint: "[trade|rent|regions] [--region 지역명] [--year-month YYYYMM] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.10.0"
+  version: "0.10.1"
   created_at: "2026-03-29"
   updated_at: "2026-04-28"
   tags: "부동산, 실거래가, 아파트, 전월세, 매매가, 전세, 월세, 오피스텔, 국토교통부, 집값, realestate, apartment, rent, trade price"
@@ -161,4 +161,8 @@ realestate/
 ## 상세 API 가이드
 
 - [references/realestate.md](references/realestate.md) — 응답 필드 명세, 에러 코드, CLI 사용 예시
-- [references/molit-realestate-api-guide.pdf](references/molit-realestate-api-guide.pdf) — 국토교통부 정본 PDF (2024-07-17 신규 v1.0)
+- 국토교통부 정본 PDF (모두 2024-07-17 v1.0, 한국부동산원 운영)
+  - [molit-realestate-api-guide.pdf](references/molit-realestate-api-guide.pdf) — 아파트 매매
+  - [molit-apt-rent-api-guide.pdf](references/molit-apt-rent-api-guide.pdf) — 아파트 전월세
+  - [molit-offi-trade-api-guide.pdf](references/molit-offi-trade-api-guide.pdf) — 오피스텔 매매
+  - [molit-offi-rent-api-guide.pdf](references/molit-offi-rent-api-guide.pdf) — 오피스텔 전월세

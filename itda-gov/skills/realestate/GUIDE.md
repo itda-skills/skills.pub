@@ -19,10 +19,16 @@ title: "realestate 상세 가이드"
 공공데이터포털 API 키가 필요합니다.
 
 1. https://www.data.go.kr 회원가입
-2. "국토교통부 아파트 매매·전월세 실거래" API 신청 (승인까지 수 시간 소요)
+2. 사용하려는 데이터셋을 **각각 활용신청** (전부 자동승인, 신청 즉시 5~30분 내 사용 가능)
+   - 아파트 매매: <https://www.data.go.kr/data/15126469/openapi.do>
+   - 아파트 전월세: <https://www.data.go.kr/data/15126474/openapi.do>
+   - 오피스텔 매매: <https://www.data.go.kr/data/15126464/openapi.do>
+   - 오피스텔 전월세: <https://www.data.go.kr/data/15126475/openapi.do>
 3. 마이페이지에서 **Decoding** 키(일반 인증키) 복사
 4. `claude config set env.KO_DATA_API_KEY "발급받은_키"` 또는 `.env` 파일에 저장
 
+> 동일 인증키 하나로 4개 모두 호출 가능하지만, **데이터셋마다 별도 활용신청**이 필요합니다. 신청하지 않은 서비스를 호출하면 오류 메시지에 해당 신청 링크가 자동으로 표시됩니다.
+>
 > `regions` 서브커맨드는 API 키 없이 동작합니다. 지역명을 미리 확인할 때 활용하세요.
 
 ## 활용 시나리오
@@ -80,7 +86,10 @@ title: "realestate 상세 가이드"
 |------|------|
 | `KO_DATA_API_KEY가 설정되지 않았습니다` | `claude config set env.KO_DATA_API_KEY "키"` |
 | `지역 코드를 찾을 수 없습니다` | `regions` 명령으로 정확한 지역명 확인 |
-| `데이터가 없습니다` | 다른 년월로 재시도 (신고 지연 또는 거래 없음) |
+| `HTTP Error 403: Forbidden — 게이트웨이 권한 거부` | 메시지에 표시된 신청 링크에서 활용신청 (자동승인). 신청 직후라면 5~30분 후 재시도 |
+| `데이터가 없습니다` (resultCode=03) | 다른 년월로 재시도 (신고 지연 또는 거래 없음) |
+| `활용 미승인` (resultCode=20) | 마이페이지 활용신청 승인 상태 확인 |
+| `등록되지 않은 서비스키` (resultCode=30) | 마이페이지에서 Decoding 키 다시 복사해 환경변수 갱신 |
 
 ## 상세 API 가이드
 

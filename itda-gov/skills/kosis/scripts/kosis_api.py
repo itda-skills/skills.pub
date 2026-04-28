@@ -25,6 +25,36 @@ _SEARCH_URL = "https://kosis.kr/openapi/statisticsSearch.do"
 _DATA_URL = "https://kosis.kr/openapi/Param/statisticsParameterData.do"
 _LIST_URL = "https://kosis.kr/openapi/statisticsList.do"
 
+# 활용신청 페이지 — 인증키 관련 오류 시 사용자에게 자동 부착
+_KOSIS_APPLY_URL = "https://kosis.kr/openapi/"
+
+_KOSIS_SETUP_GUIDE = (
+    "\n[설정 안내] KOSIS_API_KEY를 확인하세요:\n"
+    f"  1. {_KOSIS_APPLY_URL} 접속 → 회원가입 → Open API → 활용신청\n"
+    "  2. 활용신청 즉시 자동 승인 (대기 없음). 마이페이지에서 인증키 확인\n"
+    "  3. 환경변수 설정:\n"
+    "     claude config set env.KOSIS_API_KEY \"발급받은_키\"\n"
+    "  4. 첫 호출 실패 시 점검 절차:\n"
+    "     - Base64 키 끝 '=' 패딩 누락 여부 확인 (전체 복사 필수)\n"
+    "     - 만료된 인증키는 마이페이지에서 기간 연장 가능\n"
+    "     - 잠시(수 분) 후 재시도 — 신규 발급 직후 일시적 미반영 가능\n"
+)
+
+# 정본 에러 코드 매핑 (출처: KOSIS OpenAPI 매뉴얼 v1.0 §1.4.2)
+# references/kosis-매뉴얼/01-인증키-에러메시지.md 참조
+_ERROR_CODE_HINTS: dict[str, dict[str, Any]] = {
+    "10": {"desc": "인증키 누락", "category": "setup", "needs_apply_url": True},
+    "11": {"desc": "인증키 기간만료", "category": "setup", "needs_apply_url": True},
+    "20": {"desc": "필수요청변수 누락", "category": "setup", "needs_apply_url": False},
+    "21": {"desc": "잘못된 요청변수", "category": "setup", "needs_apply_url": False},
+    "30": {"desc": "조회결과 없음", "category": "data", "needs_apply_url": False},
+    "31": {"desc": "조회결과 초과", "category": "data", "needs_apply_url": False},
+    "40": {"desc": "호출가능건수 제한", "category": "transient", "needs_apply_url": False},
+    "41": {"desc": "호출가능 ROW수 제한", "category": "transient", "needs_apply_url": False},
+    "42": {"desc": "사용자별 이용 제한", "category": "setup", "needs_apply_url": True},
+    "50": {"desc": "서버오류", "category": "transient", "needs_apply_url": False},
+}
+
 # 수록주기 코드
 PERIOD_CODES = {
     "year": "Y",
@@ -33,6 +63,53 @@ PERIOD_CODES = {
     "month": "M",
     "day": "D",
 }
+
+
+def _classify_kosis_error(error_code: str) -> tuple[str, str]:
+    """KOSIS API 오류 코드를 사용자 메시지와 카테고리로 분류.
+
+    정본 에러 코드 표(_ERROR_CODE_HINTS)에서 한글 설명을 가져오고,
+    인증키 관련(10/11/42)은 활용신청 URL을 자동 부착한다.
+
+    Args:
+        error_code: KOSIS API err 코드.
+
+    Returns:
+        (사용자 메시지, 카테고리) 튜플.
+        카테고리: "setup" | "transient" | "data" | "general"
+    """
+    hint = _ERROR_CODE_HINTS.get(error_code)
+    if hint is None:
+        return (
+            f"KOSIS API 오류 (오류 코드: {error_code}) — 요청 파라미터 또는 서버 상태를 확인하세요.",
+            "general",
+        )
+
+    if error_code in ("10", "11", "42"):
+        return (
+            f"KOSIS_API_KEY 확인 필요 (오류 코드: {error_code}, {hint['desc']}){_KOSIS_SETUP_GUIDE}",
+            hint["category"],
+        )
+    if error_code in ("40", "41"):
+        return (
+            f"{hint['desc']} (오류 코드: {error_code}) — 호출 빈도를 줄이거나 KOSIS 관리자에게 문의하세요.",
+            hint["category"],
+        )
+    if error_code == "50":
+        return (
+            f"{hint['desc']} (오류 코드: {error_code}) — 잠시 후 재시도하세요.",
+            hint["category"],
+        )
+    if error_code in ("30", "31"):
+        return (
+            f"조회 결과 이슈 (오류 코드: {error_code}, {hint['desc']})",
+            hint["category"],
+        )
+    # 20, 21, 기타: setup
+    return (
+        f"KOSIS API 오류 (오류 코드: {error_code}, {hint['desc']}) — 요청 파라미터를 확인하세요.",
+        hint["category"],
+    )
 
 
 class KOSISAPIError(Exception):
@@ -62,6 +139,15 @@ def _request(url: str, params: dict[str, str]) -> list[dict[str, Any]] | dict[st
     try:
         with urllib.request.urlopen(full_url, timeout=_TIMEOUT) as resp:
             raw = resp.read()
+    except urllib.error.HTTPError as exc:
+        # @MX:NOTE: HTTP 403은 게이트웨이 단계 권한 거부 — 활용신청 안내 부착.
+        if exc.code == 403:
+            raise KOSISAPIError(
+                f"권한 거부 (HTTP 403) — 활용신청이 필요할 수 있습니다."
+                f"{_KOSIS_SETUP_GUIDE}",
+                error_code="HTTP_403",
+            ) from exc
+        raise KOSISAPIError(f"네트워크 오류: {exc}") from exc
     except urllib.error.URLError as exc:
         raise KOSISAPIError(f"네트워크 오류: {exc}") from exc
 
@@ -75,12 +161,14 @@ def _request(url: str, params: dict[str, str]) -> list[dict[str, Any]] | dict[st
     except json.JSONDecodeError:
         data = _fix_unquoted_json(text)
 
-    # 에러 응답 확인
+    # 에러 응답 확인 — 정본 한글 hint + 활용신청 URL 자동 부착
     if isinstance(data, dict) and "err" in data:
-        err_code = data.get("err", "")
+        err_code = str(data.get("err", ""))
         err_msg = data.get("errMsg", "알 수 없는 오류")
+        hint_msg, _category = _classify_kosis_error(err_code)
         raise KOSISAPIError(
-            f"KOSIS API 오류 ({err_code}): {err_msg}", error_code=err_code
+            f"KOSIS API 오류 ({err_code}): {err_msg} | {hint_msg}",
+            error_code=err_code,
         )
 
     return data

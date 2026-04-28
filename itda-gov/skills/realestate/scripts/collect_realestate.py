@@ -39,9 +39,13 @@ def _get_api_key(cli_arg: str | None = None) -> str:
 
 
 def _normalize_common_fields(item: dict[str, str]) -> dict[str, Any]:
-    """매매·전월세 공통 필드를 snake_case로 정규화."""
+    """매매·전월세 공통 필드를 snake_case로 정규화.
+
+    아파트 응답은 단지명을 ``aptNm``, 오피스텔 응답은 ``offiNm`` 으로 반환한다.
+    소비자 입장에서 동일 키(``apt_nm``)로 노출되도록 둘 중 존재하는 값을 사용한다.
+    """
     return {
-        "apt_nm": item.get("aptNm", "").strip(),
+        "apt_nm": (item.get("aptNm") or item.get("offiNm") or "").strip(),
         "exclu_use_ar": item.get("excluUseAr", "").strip(),
         "deal_year": item.get("dealYear", "").strip(),
         "deal_month": item.get("dealMonth", "").strip(),
