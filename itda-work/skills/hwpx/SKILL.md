@@ -322,36 +322,32 @@ $HWPX_BIN convert .itda-skills/<파일명> -o .itda-skills/<파일명>.html --fo
 
 ---
 
-## 번들 바이너리 업그레이드 절차
+## 번들 바이너리 업그레이드 (자동, 2026-04-28~)
 
-이 스킬은 Linux Cowork sandbox 환경에서 `bin/hwpx_linux_{amd64|arm64}.tar.gz` 번들을 자동 추출해 사용합니다. 번들은 git에 직접 커밋되어 있으며, upstream `hwpx` CLI에 새 버전이 나오면 **수동**으로 교체합니다.
+이 스킬은 Linux Cowork sandbox 환경에서 `bin/hwpx_linux_{amd64|arm64}.tar.gz` 번들을 자동 추출해 사용합니다. 번들은 **CI 빌드 타임에 자동 페치**되며, git 에는 커밋되지 않습니다.
 
-### 현재 번들 버전
+### 자동 갱신 메커니즘 (SPEC-HWPX-AUTOFETCH-001)
 
-- 소스: `itda-skills/skills.work` v1.8.0 Release asset (`itda-pack-work-v1.8.0.zip` 내부의 `skills/hwpx/bin/`)
-- 포함 파일:
+- **소스**: `itda-skills/cli.hwpx` (private) 의 GitHub Releases latest
+- **트리거**: 메인 저장소(`itda-skills/skills`)에 `v[0-9]+.[0-9]+.[0-9]+` 태그를 푸시할 때
+- **워크플로우**: `.github/workflows/release.yml` 의 "Fetch latest cli.hwpx Linux binaries" step 이 `gh release download --repo itda-skills/cli.hwpx` 를 호출하여 다음 파일을 `bin/` 에 배치:
   - `hwpx_linux_amd64.tar.gz`
   - `hwpx_linux_arm64.tar.gz`
-  - `version.txt` (번들 메타데이터; `find_hwpx.py`는 이 파일을 참조하지 않고 `hwpx version` 서브커맨드로 버전을 확인함)
+  - `version.txt` (페치된 tag, 예: `v1.0.0`)
+- **무결성 검증**: 각 tar.gz 의 사이즈 > 0 및 `tar tzf` 통과 확인
+- **실패 처리**: 페치 또는 검증 실패 시 릴리즈 자체가 실패. fallback 없음.
 
-### 수동 업그레이드 단계
+### 새 hwpx 릴리즈 반영 절차
 
-1. upstream `hwpx` 프로젝트에서 새 Linux 바이너리 tar.gz을 확보한다 (amd64·arm64 양쪽).
-2. 루트 `.gitignore`의 `!itda-work/skills/hwpx/bin/*.tar.gz`·`!.../version.txt` 예외 규칙이 그대로 유효한지 확인한다 (SPEC 기준 파일명만 예외 허용, 와일드카드 금지 — SPEC-SKILLSPUB-001 §4.12 REQ-BIN-001).
-3. `itda-work/skills/hwpx/bin/` 하위 3개 파일을 **덮어쓴다**:
-   - `hwpx_linux_amd64.tar.gz`
-   - `hwpx_linux_arm64.tar.gz`
-   - `version.txt` (새 버전 번호)
-4. `git add itda-work/skills/hwpx/bin/{hwpx_linux_amd64.tar.gz,hwpx_linux_arm64.tar.gz,version.txt}` 로 스테이징.
-5. `python3 -m pytest scripts/tests/test_publish.py -v -k "hwpx or gitkeep"` 를 실행해 publish 파이프라인 회귀가 없음을 확인한다.
-6. 새 SemVer 태그로 릴리즈: `just release X.Y.Z` (SPEC-SKILLSPUB-001 §4.11 REQ-JUST-RELEASE-001).
-7. `release.yml` 파이프라인이 `skills.pub` 저장소에 자동 반영한다.
+upstream `cli.hwpx` 에 새 버전이 릴리즈되면 별도 작업이 필요하지 않습니다. 메인 저장소의 다음 v 태그 릴리즈에서 자동으로 latest 가 번들됩니다.
 
-### 자동 업그레이드 계획
+upstream 의 latest 마킹은 SemVer 기준으로 GitHub 가 자동 결정합니다. 비정상 상황(낮은 버전이 latest 로 마킹되는 등)은 cli.hwpx 운영자에게 보고하세요.
 
-이 스킬의 bin 번들을 upstream Releases에서 자동 수급(다운로드 + 체크섬 검증 + 교체)하는 기능은 별도 SPEC에서 다룰 예정입니다.
+### 로컬 개발 시 주의사항
 
-- 관련 SPEC: SPEC-SKILLSPUB-001 Phase H (현재 번들링의 복원·문서화)
-- 후속 SPEC (tentative): SPEC-HWPXBIN-AUTOSYNC-001 — CI에서 upstream 신규 릴리즈 감지, tarball 경로 traversal 방어(`Path(member.name).is_absolute() or ".." in parts` 거부), SHA256 체크섬 검증 등
-- 자동화가 도입되기 전까지는 이 섹션의 수동 절차만 유효합니다.
+로컬 클론에는 `bin/.gitkeep` 만 존재하며 tar.gz 파일은 없습니다. `python3 scripts/publish.py --dry-run itda-work` 를 로컬에서 실행하면 hwpx bin 이 비어 있는 상태로 staging 됩니다. 실제 배포 검증이 필요하면 워크플로우를 통해 v 태그를 푸시하세요.
+
+### GitHub App 권한
+
+자동 페치는 `PUBLISH_APP_ID` GitHub App 의 `cli.hwpx` 저장소 접근 권한에 의존합니다 (Contents: Read). 권한 누락 시 페치 step 이 실패합니다.
 

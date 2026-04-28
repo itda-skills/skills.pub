@@ -791,11 +791,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Error: --capture-api 패턴 오류 — {exc}", file=sys.stderr)
             return 2
 
+    # --hook-arg 파싱 (--hook-script / --adapter 양쪽에서 공유)
+    hook_args_dict = _parse_hook_args(args.hook_arg)
+
     # --hook-script 분기 처리
     if args.hook_script is not None:
         # Validate and load hook-script
         hook_module = _load_hook_script(Path(args.hook_script))
-        hook_args_dict = _parse_hook_args(args.hook_arg)
 
         profile_dir_for_hook: str | None = None
         lock_cm_hook = None
@@ -1015,7 +1017,8 @@ def main(argv: list[str] | None = None) -> int:
 
                 if page_key is not None:
                     # 실제 어댑터 entry() 실행 (FR-ENTRY-01)
-                    adapter.entry(driver, page_key)
+                    # SPEC-WEB-NAVERLAND-001 후속 fix: --hook-arg 를 어댑터 kwargs로 전달
+                    adapter.entry(driver, page_key, **hook_args_dict)
                 else:
                     # page_key 없음: 일반 goto fallback
                     page.goto(
