@@ -8,10 +8,10 @@ license: Apache-2.0
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   tags: "hwp, hwpx, 한글, 한컴, 문서, document, convert, markdown, html"
-  version: "2.4.2"
+  version: "2.4.3"
   category: "document"
   created_at: "2026-03-20"
-  updated_at: "2026-04-27"
+  updated_at: "2026-04-28"
 ---
 
 # HWP/HWPX 문서 처리 (hwpx)
@@ -44,7 +44,7 @@ HWPX_BIN=$(which hwpx 2>/dev/null || echo ".itda-skills/bin/hwpx")
   `python3 scripts/find_hwpx.py --skill-dir "${CLAUDE_SKILL_DIR}"` 를 실행하면 자동으로 추출 및 캐시합니다.
 - **macOS / Windows**: PATH에 `hwpx`가 있으면 자동으로 사용됩니다. 없으면 수동으로 설치하세요.
 
-**최소 버전 요구**: v0.9.7 이상 (`hwpx version` 출력으로 확인)
+**버전**: 가급적 최신을 사용하세요. Linux(Cowork)는 CI가 `cli.hwpx` latest 번들을 자동 페치하므로 별도 조치가 필요 없고, macOS/Windows는 수동 최신 설치를 권장합니다.
 
 ---
 
@@ -309,7 +309,7 @@ $HWPX_BIN convert .itda-skills/<파일명> -o .itda-skills/<파일명>.html --fo
 |----------|------|
 | `hwpx convert` 실패 (exit code != 0) | stderr 내용을 사용자에게 전달. HWP5 파일이면 HTML fallback 시도 |
 | 파일을 찾을 수 없음 | 파일 경로를 다시 확인하도록 안내 |
-| v0.9.7 미만 버전 | "hwpx를 v0.9.7 이상으로 업데이트하세요." |
+| 버전 호환성 문제 | "hwpx를 최신 버전으로 업데이트하세요." |
 | 미지원 포맷 | 지원 가능한 대안 경로 안내 |
 | 바이너리 미발견 (macOS/Windows) | "PATH에 hwpx가 없습니다. hwpx를 설치 후 PATH에 추가하세요." |
 | 바이너리 미발견 (Linux) | `python3 scripts/find_hwpx.py --skill-dir "${CLAUDE_SKILL_DIR}"` 실행하여 번들 추출 |
