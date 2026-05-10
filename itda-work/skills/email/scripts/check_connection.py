@@ -23,11 +23,17 @@ def test_smtp(host: str, port: int, email: str, password: str) -> dict:
             smtp.login(email, password)
         return {"status": "ok", "host": host, "port": port}
     except TimeoutError as e:
-        return {"status": "error", "error": "timeout", "detail": str(e)}
+        return {
+            "status": "error", "error": "timeout", "detail": str(e),
+            "hint": "Run `python3 scripts/diagnose_smtp.py --provider <name>` for layered diagnosis.",
+        }
     except smtplib.SMTPAuthenticationError as e:
         return {"status": "error", "error": "auth_failed", "detail": str(e)}
     except Exception as e:
-        return {"status": "error", "error": "connection_failed", "detail": str(e)}
+        return {
+            "status": "error", "error": "connection_failed", "detail": str(e),
+            "hint": "Run `python3 scripts/diagnose_smtp.py --provider <name>` for layered diagnosis.",
+        }
 
 
 def test_imap(host: str, port: int, email: str, password: str) -> dict:

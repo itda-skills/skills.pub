@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "5.6.1",
+    "version": "5.7.0",
     "language": "ko"
   },
   "plugins": [
@@ -19,6 +19,16 @@
       "name": "itda-gov",
       "source": "./itda-gov",
       "description": "정부 공공데이터 API 스킬팩"
+    },
+    {
+      "name": "itda-mmaa",
+      "source": "./itda-mmaa",
+      "description": "군인공제회 입찰 자동 모니터링"
+    },
+    {
+      "name": "itda-wiki",
+      "source": "./itda-wiki",
+      "description": "Karpathy LLM Wiki 패턴 — 적재·작성·검증 3종 스킬"
     }
   ]
 }

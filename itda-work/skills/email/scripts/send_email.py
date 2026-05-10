@@ -21,6 +21,41 @@ from email_providers import detect_providers, get_provider, resolve_provider_nam
 from env_loader import merged_env  # noqa: E402
 
 
+# Errors that indicate a network/connectivity issue worth retrying on 587/STARTTLS.
+# Auth-related errors are NOT retried — credentials are wrong on either port.
+_RETRY_ON_587 = (
+    smtplib.SMTPServerDisconnected,
+    smtplib.SMTPConnectError,
+    ConnectionError,
+    TimeoutError,
+    OSError,
+)
+
+
+def _send_via_465(host: str, email: str, password: str, recipients: list[str],
+                  msg_str: str) -> None:
+    """Primary send path via SMTPS (port 465)."""
+    with smtplib.SMTP_SSL(host, 465, timeout=20) as smtp:
+        smtp.login(email, password)
+        smtp.sendmail(email, recipients, msg_str)
+
+
+def _send_via_587(host: str, email: str, password: str, recipients: list[str],
+                  msg_str: str) -> None:
+    """Fallback send path via SMTP submission (port 587 + STARTTLS).
+
+    Activated when 465 fails with a network-level error (not auth).
+    Useful in sandboxed networks where 465 is blocked but 587 is open
+    (very common in container/Cowork environments).
+    """
+    with smtplib.SMTP(host, 587, timeout=20) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(email, password)
+        smtp.sendmail(email, recipients, msg_str)
+
+
 def _build_attachment_part(filepath: str) -> MIMEBase:
     """파일을 MIMEBase 파트로 변환 (RFC 2231 한글 파일명 지원)."""
     path = Path(filepath)
@@ -56,6 +91,9 @@ def main() -> None:
     parser.add_argument("--html", action="store_true")
     parser.add_argument("--attach", action="append", default=[], metavar="FILE",
                         help="첨부파일 경로 (복수 지정 가능: --attach a.pdf --attach b.xlsx)")
+    parser.add_argument("--force-587", action="store_true",
+                        help="465 SMTPS를 건너뛰고 처음부터 587 STARTTLS로 발송. "
+                             "465가 항상 차단되는 환경에서 fallback 대기 시간 절약.")
     args = parser.parse_args()
 
     env = merged_env()
@@ -123,26 +161,109 @@ def main() -> None:
     if args.bcc:
         recipients += [a.strip() for a in args.bcc.split(",") if a.strip()]
 
-    try:
-        with smtplib.SMTP_SSL(provider["smtp_host"], provider["smtp_port"]) as smtp:
-            smtp.login(provider["email"], provider["password"])
-            smtp.sendmail(provider["email"], recipients, msg.as_string())
+    msg_str = msg.as_string()
+    transport_used = "smtps_465"
+    primary_error: Exception | None = None
+
+    if args.force_587:
+        # @MX:NOTE: --force-587 skips 465 entirely.
+        try:
+            _send_via_587(
+                provider["smtp_host"], provider["email"], provider["password"],
+                recipients, msg_str,
+            )
+            transport_used = "starttls_587_forced"
+        except smtplib.SMTPAuthenticationError as e:
+            print(json.dumps({"status": "error", "error": "auth_failed", "detail": str(e)}))
+            sys.exit(1)
+        except smtplib.SMTPRecipientsRefused as e:
+            print(json.dumps({"status": "error", "error": "invalid_recipient", "detail": str(e)}))
+            sys.exit(1)
+        except Exception as e:
+            print(json.dumps({
+                "status": "error",
+                "error": "send_failed_forced_587",
+                "detail": f"{type(e).__name__}: {e}",
+                "hint": (
+                    f"`python3 scripts/diagnose_smtp.py --provider {args.provider}` "
+                    "로 어느 레이어에서 실패했는지 확인하세요."
+                ),
+            }))
+            sys.exit(1)
         print(json.dumps({
             "status": "ok",
             "message_id": msg["Message-ID"],
             "to": args.to,
             "subject": args.subject,
+            "transport": transport_used,
         }))
         sys.exit(0)
+
+    try:
+        _send_via_465(
+            provider["smtp_host"], provider["email"], provider["password"],
+            recipients, msg_str,
+        )
     except smtplib.SMTPAuthenticationError as e:
+        # Credentials wrong — same on 587, no point retrying.
         print(json.dumps({"status": "error", "error": "auth_failed", "detail": str(e)}))
         sys.exit(1)
     except smtplib.SMTPRecipientsRefused as e:
         print(json.dumps({"status": "error", "error": "invalid_recipient", "detail": str(e)}))
         sys.exit(1)
+    except _RETRY_ON_587 as e:
+        # @MX:NOTE: 465 connection-level failure → automatic 587/STARTTLS fallback.
+        # Common in sandboxed networks (Cowork, container egress filters).
+        primary_error = e
+        print(
+            f"warning: SMTPS(465) failed ({type(e).__name__}: {e}); "
+            f"retrying via STARTTLS(587)...",
+            file=sys.stderr,
+        )
+        try:
+            _send_via_587(
+                provider["smtp_host"], provider["email"], provider["password"],
+                recipients, msg_str,
+            )
+            transport_used = "starttls_587_fallback"
+        except smtplib.SMTPAuthenticationError as e2:
+            print(json.dumps({"status": "error", "error": "auth_failed", "detail": str(e2)}))
+            sys.exit(1)
+        except smtplib.SMTPRecipientsRefused as e2:
+            print(json.dumps({"status": "error", "error": "invalid_recipient", "detail": str(e2)}))
+            sys.exit(1)
+        except Exception as e2:
+            print(json.dumps({
+                "status": "error",
+                "error": "send_failed_both_ports",
+                "detail_465": f"{type(primary_error).__name__}: {primary_error}",
+                "detail_587": f"{type(e2).__name__}: {e2}",
+                "hint": (
+                    "양쪽 포트 모두 실패. `python3 scripts/diagnose_smtp.py "
+                    f"--provider {args.provider}` 로 레이어별 진단 실행 권장."
+                ),
+            }))
+            sys.exit(1)
     except Exception as e:
-        print(json.dumps({"status": "error", "error": "send_failed", "detail": str(e)}))
+        print(json.dumps({
+            "status": "error",
+            "error": "send_failed",
+            "detail": str(e),
+            "hint": (
+                f"`python3 scripts/diagnose_smtp.py --provider {args.provider}` "
+                "로 어느 레이어에서 실패했는지 확인하세요."
+            ),
+        }))
         sys.exit(1)
+
+    print(json.dumps({
+        "status": "ok",
+        "message_id": msg["Message-ID"],
+        "to": args.to,
+        "subject": args.subject,
+        "transport": transport_used,
+    }))
+    sys.exit(0)
 
 
 if __name__ == "__main__":

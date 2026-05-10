@@ -8,10 +8,10 @@ license: Apache-2.0
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   tags: "hwp, hwpx, 한글, 한컴, 문서, document, convert, markdown, html"
-  version: "2.4.3"
+  version: "2.5.0"
   category: "document"
   created_at: "2026-03-20"
-  updated_at: "2026-04-28"
+  updated_at: "2026-05-01"
 ---
 
 # HWP/HWPX 문서 처리 (hwpx)
@@ -62,7 +62,7 @@ $HWPX_BIN convert .itda-skills/<파일명> -o .itda-skills/<파일명>.md --form
 ```
 
 > 입력 파일을 `.itda-skills/`로 복사하는 이유: Cowork 환경의 uploads 경로는 read-only이므로,
-> 변환 중 이미지 추출(`images/` 디렉토리 생성)이 실패할 수 있습니다.
+> 변환 중 이미지 추출(`<stem>/` 디렉토리 생성)이 실패할 수 있습니다.
 
 **2단계 — 확인**: 변환 결과 파일 읽기
 
@@ -75,7 +75,7 @@ Read .itda-skills/<파일명>.md
 
 - 사용자 요청에 "이미지 설명 없이", "캡션 없이", "이미지 그대로" 포함 시 이 단계를 건너뛴다
 - HTML 변환(`--format html`) 결과에는 적용하지 않는다
-- `.itda-skills/images/` 디렉토리가 없거나 비어있으면 건너뛴다
+- 추출된 이미지 디렉토리(`.itda-skills/<파일명>/`) 가 없거나 비어있으면 건너뛴다 (구버전 fallback 은 `find_images` 헬퍼가 처리)
 
 **(A) 이미지 수 확인** — 이미지가 10개를 초과하면 사용자에게 캡션 생성 범위를 확인한다 (전체 / 처음 N개 / 건너뛰기)
 
@@ -91,14 +91,14 @@ os.makedirs('.itda-skills/images_resized', exist_ok=True)
 img = Image.open(sys.argv[1])
 img.thumbnail((512, 512))
 img.convert('RGB').save(sys.argv[2], 'JPEG', quality=80)
-" .itda-skills/images/<이미지파일> .itda-skills/images_resized/<이미지파일>.jpg
+" .itda-skills/<파일명>/<이미지파일> .itda-skills/images_resized/<이미지파일>.jpg
 
 # 2순위 (macOS): sips
 sips --resampleHeightWidthMax 512 -s format jpeg -s formatOptions 80 \
-  .itda-skills/images/<이미지파일> --out .itda-skills/images_resized/<이미지파일>.jpg
+  .itda-skills/<파일명>/<이미지파일> --out .itda-skills/images_resized/<이미지파일>.jpg
 
 # 3순위: ffmpeg
-ffmpeg -y -i .itda-skills/images/<이미지파일> \
+ffmpeg -y -i .itda-skills/<파일명>/<이미지파일> \
   -vf "scale='min(512,iw)':'min(512,ih)':force_original_aspect_ratio=decrease" \
   -q:v 5 .itda-skills/images_resized/<이미지파일>.jpg
 
@@ -121,15 +121,25 @@ Agent(
 - 이미지가 여러 개이면 한 메시지에 여러 Agent 호출을 병렬로 보낸다
 - 서브에이전트는 격리된 context에서 실행되므로 메인 세션의 토큰을 소모하지 않는다
 
-**(D) Markdown 업데이트** — 서브에이전트 결과를 수집하여 이미지 참조를 수정
+**(D) Markdown 업데이트** — 변환 직후 MD 본문에서 실제 이미지 참조 경로를 정규식으로 추출 후 Edit
 
+```python
+# 1) MD 본문에서 실제 이미지 참조 경로 추출
+import re
+md_text = Read(".itda-skills/<파일명>.md")
+matches = re.findall(r"!\[\]\(([^)]+/(image_\d+\.\w+))\)", md_text)
+# matches = [(전체경로1, 파일명1), ...]
+
+# 2) 각 이미지마다 동적 Edit
+for relative_path, image_filename in matches:
+    Edit(
+      file_path=".itda-skills/<파일명>.md",
+      old_string=f"![]({relative_path})",
+      new_string=f"![서브에이전트가 반환한 설명]({relative_path})"
+    )
 ```
-Edit(
-  file_path=".itda-skills/<파일명>.md",
-  old_string="![](images/<이미지파일>)",
-  new_string="![서브에이전트가 반환한 설명](images/<이미지파일>)"
-)
-```
+
+이 패턴은 cli.hwpx v1.0.2+ 의 신규 경로 (`<stem>/image_NNNN.png`) 와 v1.0.1 이하의 구버전 경로 (`images/<file>`) 양쪽을 동시에 흡수합니다.
 
 **(E) 임시 파일 정리**
 
@@ -146,10 +156,42 @@ rm -rf .itda-skills/images_resized/
 
 - Cowork 환경(`CLAUDE_CODE_IS_COWORK=1`)에서는:
   - 변환된 md 파일을 `mnt/outputs/`에 저장한다
-  - 이미지가 추출되었으면(`.itda-skills/images/` 존재 시) `mnt/outputs/images/`로 복사한다
-  - md 내 이미지 상대경로(`images/xxx.jpeg`)가 `mnt/outputs/` 기준으로 유효한지 확인한다
+  - 이미지가 추출되었으면(`find_images` 가 `primary != "none"` 반환 시) 해당 디렉토리 전체를 `mnt/outputs/<파일명>/` 로 복사한다
+  - md 내 이미지 상대 경로가 `mnt/outputs/` 기준으로 유효한지 확인한다
 - Claude Code 로컬 환경에서는 `.itda-skills/` 경로의 파일을 직접 제시한다
 - 표, 목록, 제목 구조 보존하여 내용을 전달한다
+
+---
+
+### 출력 파일명 정책 (cli.hwpx v1.0.2+)
+
+`-o` 플래그로 출력 파일명을 명시하면 hash 접미사 없이 그대로 저장됩니다. 본 스킬은 항상 `-o` 를 명시 호출하므로 결정적 경로를 보장합니다.
+
+| 호출 방식 | 출력 |
+|----------|------|
+| `hwpx convert doc.hwpx -o out.md` | `out.md` (hash 없음) |
+| `hwpx convert doc.hwpx` (스킬 외) | `doc-<hash6>.md` (자동 SHA256 6자) |
+
+### 이미지 경로 정책 (β 전략)
+
+cli.hwpx v1.0.2 이상에서 이미지 추출 경로가 변경되었습니다.
+
+| 버전 | 경로 |
+|------|------|
+| v1.0.2+ | `.itda-skills/<파일명>/image_0001.png` (4자리 zero-pad, 9999 초과 시 5자리) |
+| v1.0.1 이하 | `.itda-skills/images/<basename>_image1.png` |
+
+본 스킬은 `scripts/find_images.py` 헬퍼로 양쪽 경로를 동시 탐색합니다. 구버전 출력 패턴이 감지되면 사용자에게 cli.hwpx 업그레이드를 권장합니다.
+
+```python
+from find_images import find_images
+
+result = find_images(output_dir=".itda-skills", stem="보도자료")
+# result["primary"]: "new" | "legacy" | "none"
+# result["new"]: list[str], 신규 <stem>/image_NNNN.<ext> 절대 경로
+# result["legacy"]: list[str], 구버전 images/*.<ext>
+# result["warning"]: 구버전만 발견 시 안내 메시지, 그 외 None
+```
 
 ---
 
@@ -313,6 +355,7 @@ $HWPX_BIN convert .itda-skills/<파일명> -o .itda-skills/<파일명>.html --fo
 | 미지원 포맷 | 지원 가능한 대안 경로 안내 |
 | 바이너리 미발견 (macOS/Windows) | "PATH에 hwpx가 없습니다. hwpx를 설치 후 PATH에 추가하세요." |
 | 바이너리 미발견 (Linux) | `python3 scripts/find_hwpx.py --skill-dir "${CLAUDE_SKILL_DIR}"` 실행하여 번들 추출 |
+| `hwpx app launch/open/close/status` 호출 시도 | v2.0.0 에서 제거되었음을 안내. macOS: `open -a "Hancom Office Hangul" <파일>`, Windows: hyve(.NET) 출시 대기 |
 
 ---
 

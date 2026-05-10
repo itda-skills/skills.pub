@@ -38,7 +38,7 @@ print(f'cowork={cowork}|config_dir={config_dir}|mnt={mnt_exists}')
 - `cowork=True` + `config_dir` 있음 → Cowork 환경: `.remote-plugins/` 스캔, `.env` 경로 = `mnt/.env`
 - `cowork=True` + `config_dir` 없음 → Cowork이지만 호스트 폴더 미마운트:
   > "호스트 폴더가 마운트되지 않아 설정을 저장할 수 없습니다.\n\n설정 방법:\n1. Cowork 세션 종료\n2. 프로젝트 폴더를 호스트에서 마운트 후 재시작\n3. 다시 `/itda-setup` 실행" 메시지 표시 후 종료.
-- `cowork=False` → Claude Code 로컬: `pack-*/skills/` 스캔 (모노레포) 또는 `.local-plugins/*/skills/` 스캔 (설치된 플러그인), `.env` 경로 = `.env`
+- `cowork=False` → Claude Code 로컬: `itda-*/skills/` 스캔 (모노레포) 또는 `.local-plugins/*/skills/` 스캔 (설치된 플러그인), `.env` 경로 = `.env`
 
 ## Phase 1: 스킬 스캔 및 집계
 
@@ -59,7 +59,7 @@ else:
 ```
 
 **Claude Code 로컬 스캔:**
-- `Glob("pack-*/skills/*/SKILL.md")` — 모노레포 개발 환경
+- `Glob("itda-*/skills/*/SKILL.md")` — 모노레포 개발 환경
 - `Glob(".local-plugins/*/skills/*/SKILL.md")` — 설치된 플러그인
 
 각 SKILL.md를 읽어 `env_vars:` 블록을 파싱합니다.

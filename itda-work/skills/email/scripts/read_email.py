@@ -32,7 +32,17 @@ from email_state import (  # noqa: E402
 from env_loader import merged_env  # noqa: E402
 from itda_path import resolve_data_dir  # noqa: E402
 
-DEFAULT_MAX_CHARS = 5000  # default body length for --max-chars (FR-01)
+DEFAULT_MAX_CHARS = 1500  # default body length for --max-chars (token-optimized: most emails fit in 1500 chars)
+# @MX:NOTE: Reduced from 5000 to 1500 in v0.17.0. Use --max-chars -1 for full body.
+
+# Headers required for sanitization, dates, and phishing signal extraction.
+# Used by --headers-only mode to fetch only required header fields, not the full RFC822 body.
+_HEADER_FIELDS = (
+    "FROM SUBJECT DATE REPLY-TO TO CC AUTHENTICATION-RESULTS"
+)
+_HEADERS_ONLY_FETCH_SPEC = f"(BODY.PEEK[HEADER.FIELDS ({_HEADER_FIELDS})])"
+# Full message fetch via PEEK (does NOT mark \Seen flag, unlike RFC822).
+_FULL_FETCH_SPEC = "(BODY.PEEK[])"
 BODY_PREVIEW_LIMIT = 500  # deprecated body_preview field limit (AC-08)
 # Reserve budget for wrap_email_content markers so body_preview total stays
 # within BODY_PREVIEW_LIMIT (ISS-89e62b86).
@@ -235,6 +245,15 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--headers-only",
+        action="store_true",
+        help=(
+            "Fetch only headers (from/subject/date/reply-to/auth) without "
+            "message body. Drastically reduces network and token usage when "
+            "listing mail. Sets body to empty, total_chars=0, truncated=false."
+        ),
+    )
+    parser.add_argument(
         "--since-last-run",
         action="store_true",
         help=(
@@ -356,11 +375,14 @@ def main() -> None:
 
         results = []
         fetched_uids: list[int] = []
+        # @MX:NOTE: BODY.PEEK[] avoids marking \Seen flag (unlike RFC822).
+        # HEADER.FIELDS variant only transfers required headers — major token saver.
+        fetch_spec = _HEADERS_ONLY_FETCH_SPEC if args.headers_only else _FULL_FETCH_SPEC
         for mid in reversed(fetch_ids):
             if uid_mode:
-                _, data = imap.uid("FETCH", mid, "(RFC822)")
+                _, data = imap.uid("FETCH", mid, fetch_spec)
             else:
-                _, data = imap.fetch(mid, "(RFC822)")
+                _, data = imap.fetch(mid, fetch_spec)
             if not data or data[0] is None:
                 continue
             raw = data[0][1]
@@ -372,8 +394,12 @@ def main() -> None:
                     pass
             raw_from = _decode_header(msg.get("From", ""))
             raw_subject = _decode_header(msg.get("Subject", ""))
-            raw_body = _get_raw_body_text(msg)
-            body_str, total_chars, truncated = _build_body_field(raw_body, args.max_chars)
+            if args.headers_only:
+                raw_body = ""
+                body_str, total_chars, truncated = wrap_email_content(""), 0, False
+            else:
+                raw_body = _get_raw_body_text(msg)
+                body_str, total_chars, truncated = _build_body_field(raw_body, args.max_chars)
             # Deprecated body_preview field: kept for backward compatibility.
             # Will be removed in v0.13.0+.
             body_preview_str = wrap_email_content(

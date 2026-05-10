@@ -24,10 +24,10 @@ HWP5(.hwp)와 HWPX(.hwpx) 문서를 Markdown 또는 HTML로 변환합니다.
 
 ```markdown
 # 변환 전
-![](images/image1.png)
+![](보도자료_2024/image_0001.png)
 
 # 변환 후
-![조직도: 본부장 아래 3개 팀이 배치된 구조](images/image1.png)
+![조직도: 본부장 아래 3개 팀이 배치된 구조](보도자료_2024/image_0001.png)
 ```
 
 - Sonnet 모델 서브에이전트가 이미지별로 병렬 분석
@@ -103,7 +103,7 @@ HWP5(.hwp)와 HWPX(.hwpx) 문서를 Markdown 또는 HTML로 변환합니다.
 
 ## 요구 사항
 
-- `hwpx` CLI v0.9.7 이상
+- `hwpx` CLI v1.0.2 이상 권장 (v1.0.1 이하도 β fallback 으로 동작)
 - Linux: 스킬에 번들 내장 (자동 설치)
 - macOS/Windows: [hwpx 설치](https://github.com/nicecai/hwpx) 후 PATH에 추가
 

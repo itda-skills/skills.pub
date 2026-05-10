@@ -1,20 +1,23 @@
 ---
 name: web-reader
 description: >
-  웹페이지 및 YouTube 자막을 읽고 Markdown/JSON으로 정제합니다.
-  "이 링크 읽어줘", "웹페이지 요약해줘", "유튜브 자막 추출해줘",
-  "네이버 뉴스 기사 가져와", "사이트에서 테이블 데이터 JSON으로 뽑아줘",
-  "로그인 필요한 페이지 쿠키 넣어서 읽어줘" 같은 요청에 사용하세요.
-  한국어 사이트(EUC-KR/CP949)와 동적 렌더링 페이지까지 처리합니다.
+  WebFetch로 처리되지 않는 고급 웹 페치 전용 스킬입니다. 다음 5가지 경우에만 사용하세요:
+  (1) EUC-KR/CP949 한글 인코딩 페이지 디코딩, (2) JavaScript 동적 렌더링이 필요한
+  SPA/CSR 페이지(Playwright 헤드리스 브라우저), (3) YouTube 자막(transcript/caption) 추출,
+  (4) 쿠키 인증이 필요한 로그인된 페이지 또는 세션 기반 페이지,
+  (5) SPA 어댑터가 필요한 특수 사이트(naver-land 부동산 단지, instagram/X(twitter)/threads 등 SNS).
+  또는 사용자가 "web-reader 스킬로 가져와줘", "웹리더로 읽어줘"처럼 스킬명을 명시한 경우에 활성화됩니다.
+  Do NOT use for: 단순 URL 읽기·일반 웹페이지 요약·정적 HTML 페치는 Claude의 WebFetch 도구를
+  사용하세요. 위 5종 고급 기능이 필요하지 않은 일반 페치 요청은 이 스킬을 활성화하지 마세요.
 license: Apache-2.0
 compatibility: Designed for Claude Cowork
 allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "2.11.1"
+  version: "2.13.0"
   created_at: "2026-03-18"
-  updated_at: "2026-04-29"
+  updated_at: "2026-05-10"
   tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, dynamic-fetch, cli, coverage, youtube, transcript, caption, ssrf, stealth, profile, security, spa, adapter, capture, naver-land, real-estate, css-selector, instagram, twitter, threads, sns"
 ---
 
@@ -285,6 +288,28 @@ SSRF 방지 공통 모듈. 직접 CLI 실행하지 않음.
 - DNS 해석 후 IP 검증 (DNS rebinding 방어)
 - --allow-private 플래그로 명시적 우회 가능
 ```
+
+## Troubleshooting (v2.12.0+)
+
+fetch가 실패하거나 빈 응답을 반환할 때 레이어별 진단:
+
+```bash
+python3 scripts/diagnose_url.py https://example.com
+```
+
+SSRF → DNS → TCP → SSL → HTTP HEAD → robots.txt 를 분리 측정하여 어느 레이어가 문제인지 즉시 식별. 출력 JSON의 `diagnosis.code` 만 보면 됩니다.
+
+진단 코드 예시:
+- `dns_failure` — 호스트 이름 오타 / DNS 문제
+- `ssrf_blocked` — private IP / loopback (보안 차단)
+- `tcp_blocked` — 포트 차단 / 서버 다운
+- `ssl_cert_invalid` — 인증서 만료 / CN 불일치
+- `http_403_forbidden` — anti-bot — `fetch_dynamic.py` (브라우저) 시도
+- `http_404_not_found` — URL 자체 잘못
+- `http_429_rate_limit` — rate limit, 잠시 후 재시도
+- `non_html_content` — PDF/이미지/binary, 별도 도구 필요
+- `robots_denied` — robots.txt 가 fetch 금지
+- `all_ok` — HTTP 레벨 정상, 다른 원인 (JS 렌더링 등) 점검
 
 ## 추출 파이프라인 내부 구조
 

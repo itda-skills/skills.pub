@@ -1,0 +1,3 @@
+# pdfplumber: PDF 텍스트 추출 폴백 (pdftotext 미설치 시 사용)
+# pdftotext (poppler-utils) 가 설치된 경우 pdfplumber는 사용되지 않음
+pdfplumber>=0.10,<1

@@ -10,9 +10,9 @@ compatibility: "Designed for Claude Cowork. Python 3.10+. No external dependenci
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.16.1"
+  version: "0.18.0"
   created_at: "2026-03-18"
-  updated_at: "2026-04-18"
+  updated_at: "2026-05-01"
   tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, 이메일, 메일 보내기, 메일 읽기, 받은편지함, 새 메일, 증분 조회, 다음 메일, 카카오 메일, 피싱, 폴더목록, 멀티계정"
 ---
 
@@ -188,6 +188,7 @@ Arguments:
 - `--bcc`: BCC address (optional, not added to headers)
 - `--html`: Send as HTML instead of plain text (optional flag)
 - `--attach FILE`: Attach a file (can be specified multiple times for multiple files)
+- `--force-587`: 465 SMTPS를 건너뛰고 처음부터 587 STARTTLS 사용 (v0.18.0+). 465가 항상 차단되는 환경에서 fallback 대기 시간 절약. 응답 `transport: "starttls_587_forced"`.
 
 ### Send Email with Attachments
 
@@ -237,6 +238,9 @@ python3 scripts/read_email.py --provider daum --max-chars -1
 # 본문 500자로 제한 (구 preview 모드와 동일)
 python3 scripts/read_email.py --provider naver --max-chars 500
 
+# Headers-only mode (body fetch 생략, 약 86% 응답 크기 절감, v0.17.0+)
+python3 scripts/read_email.py --provider naver --headers-only --count 20
+
 # Read only unread emails
 python3 scripts/read_email.py --provider naver --unread-only
 
@@ -266,7 +270,8 @@ Arguments:
 - `--count`: Max emails to retrieve (default: `10`)
 - `--search`: IMAP search criteria (default: `ALL`)
 - `--unread-only`: Filter to unread messages only (flag)
-- `--max-chars N`: Maximum body characters (default: `5000`). Use `-1` for full body, `0` for empty.
+- `--max-chars N`: Maximum body characters (default: `1500`, v0.17.0+). Use `-1` for full body, `0` for empty.
+- `--headers-only`: Fetch only headers (from/subject/date/reply-to/auth) without message body. v0.17.0+. 5건 기준 약 **86% 토큰 절감**. 메일 목록 brief, 피싱 경고 스캔, 새 메일 도착 확인 등에 사용.
 - `--since-last-run`: Return only messages whose IMAP UID is greater than the last seen UID for this `(provider, email, folder)` triple. State is kept at `{CWD}/.itda-skills/email/state.json` (or `{CWD}/mnt/.itda-skills/email/state.json` in Cowork with a host mount). First invocation seeds the cursor with the latest `--count` messages. `UIDVALIDITY` changes are detected automatically and trigger a reset with a warning on stderr.
 - `--reset-state`: Drop the incremental state entry for this `(provider, email, folder)` before fetching. Other folders/accounts are preserved.
 
@@ -504,12 +509,49 @@ Use this skill when the user says any of:
 
 ---
 
+## Troubleshooting (v0.18.0+)
+
+### 진단 도구
+
+`send_email.py` 가 실패하거나 `check_connection.py` 가 일반 에러만 반환할 때, 레이어별 진단:
+
+```bash
+python3 scripts/diagnose_smtp.py --provider naver
+```
+
+DNS → TCP → SSL → SMTP banner → EHLO → AUTH 단계를 분리 측정하여 어느 레이어에서 실패했는지 정확히 식별합니다. 출력 JSON의 `diagnosis.code` 만 보면 됩니다.
+
+### 진단 코드별 해결 가이드
+
+| 진단 코드 | 원인 | 해결 방법 |
+|----------|------|----------|
+| `dns_failure` | DNS 해석 실패 | 인터넷 연결 확인. `nslookup smtp.naver.com` 으로 DNS 점검. |
+| `no_internet` | 일반 인터넷 차단 | 네트워크 관리자 문의. Cowork sandbox 환경에서는 정상. |
+| `egress_block_465` | 포트 465만 차단 | **자동 처리됨** — `send_email.py` 가 587 STARTTLS로 fallback. 별도 조치 불필요. |
+| `egress_block_smtp` | 465/587 모두 차단 | 호스팅 환경 정책상 SMTP 발송 불가. 호스트 머신에서 실행하거나, 외부 SMTP 릴레이 서비스(SendGrid/Mailgun) 사용 검토. |
+| `ssl_intercept_or_break` | TLS proxy intercept 또는 cert 신뢰 문제 | `peer_cn` 이 `*.mail.naver.com` 아닌지 확인. 회사망 root CA 미설치 가능. |
+| `server_disconnect` | TCP/SSL OK인데 SMTP 핸드셰이크 직후 끊김 | (1) IP 평판 차단 — Cowork sandbox 출구 IP를 NAVER가 임시 차단. 호스트에서 실행. (2) 일일 발송 한도 초과. (3) 계정 SMTP 비활성. NAVER 메일 설정 → POP3/IMAP/SMTP 설정 확인. |
+| `credentials_invalid` | 앱 비밀번호 오류 | 앱 비밀번호 재발급. 메인 계정 비밀번호 사용 금지. 2FA 활성 상태에서만 앱 비밀번호 발급 가능. |
+| `all_ok` | 정상 | 다른 원인 (수신자 주소, 첨부파일 등) 점검. |
+
+### 자주 묻는 패턴
+
+**Q. `send_email.py` 가 "Connection unexpectedly closed" 로 실패함**
+
+→ 가장 흔한 원인은 `server_disconnect` (서버측 IP 평판 차단). v0.18.0+ 부터 자동으로 587 STARTTLS fallback이 시도되며 stderr에 `warning: SMTPS(465) failed (...); retrying via STARTTLS(587)...` 가 표시됩니다. fallback도 실패하면 `send_failed_both_ports` 에러로 양쪽 상세 메시지가 함께 반환됩니다.
+
+**Q. 로컬에서는 되는데 Cowork 샌드박스에서만 실패함**
+
+→ 거의 100% 네트워크 egress 정책. `diagnose_smtp.py` 출력에서 `tcp_465.status` 와 `tcp_587.status` 를 비교하세요. 한쪽만 OK면 그 포트만 사용 가능. 둘 다 fail 이면 SMTP 자체 차단 환경.
+
+---
+
 ## Security Notes
 
 - **Gmail, Naver, Daum은 앱 비밀번호를 사용하세요** — 메인 계정 비밀번호를 직접 쓰지 마세요.
 - App passwords bypass 2FA without exposing your full account credentials.
 - Credentials are loaded from environment variables and `.env` file (env var takes priority).
-- SSL connections only (port 465); STARTTLS (port 587) is not supported in v1.0.
+- 기본 송신은 SMTPS (포트 465). v0.18.0+ 부터 465 연결 실패 시 자동으로 STARTTLS (포트 587)로 fallback.
 - Gmail은 개인 계정 기준 IMAP가 켜져 있어도, 이 스킬에서는 `GMAIL_APP_PASSWORD`가 있어야 SMTP/IMAP 로그인을 수행합니다.
 
 ### Prompt Injection Defense (v0.11.0+)
