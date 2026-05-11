@@ -1,0 +1,128 @@
+# itda-work 스킬 체인 매핑
+#
+# 산출물 종류 → 권장 스킬 시퀀스 + 검수 강제 정책
+# - chain: 호출 순서 (왼쪽이 먼저)
+# - enforcement:
+#     hard  → human-tone 마지막 단계 [HARD] 강제 (사용자가 명시 우회 안 하면 필수)
+#     soft  → human-tone 권장 (검수 강도 "강" 선택 시 강제로 승격)
+#     none  → 검수 불필요 (변환·조회·편집 등 비-텍스트 작업)
+#
+# 신규 스킬 추가 시 이 파일에 항목 추가 + version bump.
+
+version: "1.0.0"
+last_updated: "2026-05-11"
+
+chains:
+  # ── 텍스트 산출물 (검수 강제) ──────────────────────
+  blog:
+    label: "블로그 포스팅"
+    chain: [blog-seo, draft-post, human-tone]
+    enforcement: hard
+    description: "키워드 발굴 → 초안 작성 → AI 톤 검수"
+    triggers: ["블로그 글 써줘", "포스팅 작성", "SEO 글"]
+
+  report:
+    label: "보고서"
+    chain: [draft-post, human-tone]
+    enforcement: hard
+    description: "보고서 초안 → AI 톤 검수"
+    triggers: ["보고서 써줘", "리포트 초안"]
+
+  newsletter:
+    label: "뉴스레터"
+    chain: [draft-post, human-tone]
+    enforcement: hard
+    triggers: ["뉴스레터 써줘"]
+
+  press_release:
+    label: "보도자료"
+    chain: [draft-post, human-tone]
+    enforcement: hard
+    triggers: ["보도자료 작성", "프레스 릴리즈"]
+
+  proposal:
+    label: "제안서/기획서"
+    chain: [draft-post, human-tone]
+    enforcement: hard
+    triggers: ["기획서 만들어줘", "제안서 초안"]
+
+  customer_email:
+    label: "고객사/외부 이메일"
+    chain: [draft-post, human-tone, email]
+    enforcement: hard
+    description: "초안 → 검수 → 송신"
+    triggers: ["고객사 메일 써줘", "외부 메일 작성"]
+
+  # ── 텍스트 산출물 (검수 선택) ──────────────────────
+  internal_memo:
+    label: "내부 메모/공지"
+    chain: [draft-post]
+    enforcement: soft
+    description: "초안만 (검수 강도 강 선택 시 human-tone 자동 추가)"
+    triggers: ["내부 메모", "팀 공지"]
+
+  internal_email:
+    label: "내부 이메일"
+    chain: [draft-post, email]
+    enforcement: soft
+    triggers: ["내부 메일", "팀 이메일"]
+
+  # ── 비-텍스트 작업 (검수 불필요) ────────────────────
+  hwp_read:
+    label: "한글(HWP/HWPX) 읽기·변환"
+    chain: [hwpx]
+    enforcement: none
+    triggers: ["HWP 읽어줘", "한글 문서 변환"]
+
+  pdf_extract:
+    label: "PDF → 지식베이스화"
+    chain: [pdf-context-refinery]
+    enforcement: none
+    triggers: ["PDF 마크다운 변환", "PDF OCR 정리"]
+
+  web_research:
+    label: "웹 리서치 → 글쓰기"
+    chain: [web-reader, draft-post, human-tone]
+    enforcement: hard
+    description: "웹 페이지 수집 → 초안 → 검수"
+    triggers: ["이 사이트 정리해서 글로", "웹 자료 기반 보고서"]
+
+  finance_etf:
+    label: "ETF/주식 조회"
+    chain: [etf-naver]
+    enforcement: none
+    triggers: ["ETF 알려줘", "069500 분석"]
+
+  finance_fx:
+    label: "환율 조회"
+    chain: [exchange-rate]
+    enforcement: none
+    triggers: ["달러 환율", "엔화 환율"]
+
+  image_edit:
+    label: "이미지 편집"
+    chain: [imagekit]
+    enforcement: none
+    triggers: ["이미지 크기 줄여줘", "PNG to JPG"]
+
+  debug:
+    label: "원인 분석/디버깅"
+    chain: [investigate]
+    enforcement: none
+    triggers: ["왜 안 되지", "원인 모르겠어"]
+
+# ── 검수 강도 정책 ─────────────────────────────────
+# 사용자가 인터뷰에서 선택한 검수 강도가 enforcement를 변환하는 규칙
+review_strength_policy:
+  strong:
+    description: "모든 텍스트 산출물 human-tone 강제"
+    soft_to_hard: true
+    hard_to_hard: true
+  standard:
+    description: "외부 발신 산출물만 강제"
+    soft_to_hard: false
+    hard_to_hard: true
+  light:
+    description: "사용자 명시 요청 시만 검수"
+    soft_to_hard: false
+    hard_to_hard: false

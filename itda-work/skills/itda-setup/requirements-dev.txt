@@ -1,0 +1,9 @@
+# itda-setup dev 의존성 (tests/ 디렉토리 전용).
+#
+# itda-setup runtime은 의존성 0개입니다 (Bash + Read/Write/Edit/Glob/AskUserQuestion만
+# 사용, Python 스크립트 미호출). 따라서 SKILL.md compatibility: "Prompt-only, no
+# Python scripts required" 정책은 그대로 유지됩니다.
+#
+# 본 파일은 just test-skill itda-setup 실행 시 chain-map.yaml/CLAUDE.md.tmpl을
+# 검증하기 위해서만 사용됩니다.
+pyyaml>=6.0

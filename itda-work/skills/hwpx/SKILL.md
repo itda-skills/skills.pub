@@ -1,17 +1,25 @@
 ---
 name: hwpx
 description: >
-  HWP/HWPX 문서를 읽어 Markdown/HTML로 변환합니다. "이 HWP 파일 읽어줘",
-  "한글 문서 내용 보여줘", "HWP를 마크다운으로 변환해줘",
+  한국 공공기관 보도자료 .hwp/.hwpx 변환을 즉시 1회 호출로 처리합니다.
+  "이 HWP 파일 읽어줘", "한글 문서 내용 보여줘", "HWP를 마크다운으로 변환해줘",
   "itda-hwpx로 변환해줘" 같은 요청에 사용하세요. 읽기·변환 전용입니다.
+
+  매번 olefile 스크립트를 작성·디버깅(실측 평균 4회)할 필요 없이 단 1회 호출로 완료합니다
+  (실측: 보도자료 1건당 클로드 단독 ~114,000토큰 vs 본 스킬 ~3,100토큰, 약 37배 절감,
+  10회 누적 ratio=0.003 — evals/results/SPEC-HWPX-DIFF-001-20260511.json, 2026-05-11).
+  한국 공공기관 표 평탄화 규칙과 이미지 자동 캡션(Sonnet 서브에이전트)이 내장되어 있습니다.
+
+  본문만 필요한 가벼운 케이스는 클로드 단독(olefile 50줄 스크립트)으로도 가능합니다.
+  표 구조 보존·이미지 추출·양산(반복) 환경에서는 본 스킬을 사용하세요.
 license: Apache-2.0
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  tags: "hwp, hwpx, 한글, 한컴, 문서, document, convert, markdown, html"
-  version: "2.5.0"
+  tags: "hwp, hwpx, 한글, 한컴, 문서, document, convert, markdown, html, 표변환, 이미지추출, 보도자료"
+  version: "2.7.0"
   category: "document"
   created_at: "2026-03-20"
-  updated_at: "2026-05-01"
+  updated_at: "2026-05-11"
 ---
 
 # HWP/HWPX 문서 처리 (hwpx)

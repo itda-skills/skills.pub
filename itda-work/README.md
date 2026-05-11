@@ -8,7 +8,7 @@
 
 **itda-skills**는 Claude Code, Cowork에 유용한 스킬을 추가하는 플러그인입니다.
 
-현재 **8개 스킬**을 제공합니다.
+현재 **9개 스킬**을 제공합니다.
 
 > ℹ️ **v3.0.0 변경 안내**: `itda-slide-ai`, `itda-stt`는 인큐베이팅(비공개) 스킬팩 `itda-egg`로 이전되었습니다. 안정화 검증 후 itda-work로 졸업할 수 있습니다.
 >
@@ -44,6 +44,7 @@
 |------|------|:----:|
 | **itda-blog-seo** | 네이버 블로그 SEO용 블루키워드 발굴 | 🌐 |
 | **itda-draft-post** | 블로그·보고서·콘텐츠 초안 생성 | 📦 |
+| **itda-human-tone** | AI가 쓴 듯한 보고서·이메일·기획서를 사람 톤으로 다듬는 후처리 검수 | 📦 |
 
 > 📦 Sandbox OK — 외부 네트워크 없이 동작 &nbsp;&nbsp; 🌐 네트워크 필요 &nbsp;&nbsp; 🔑 API 키 필요 &nbsp;&nbsp; 🔧 시스템 도구 필요
 

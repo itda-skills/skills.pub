@@ -30,12 +30,12 @@ title: "web-reader 상세 가이드"
 이 유튜브 강의 자막 뽑아서 텍스트로 정리해줘
 ```
 
-### 로그인 세션 유지 + 스크래이핑
+### 쿠키 인증이 필요한 정적 페이지
 
-로그인이 필요한 페이지나 SPA는 브라우저 프로필에 세션을 저장해 두고 반복 접근합니다. 안티봇 사이트 대응을 위해 `--stealth`를 기본으로 사용합니다.
+로그인이 필요한 페이지지만 본문이 HTML로 응답되는 경우, 쿠키를 헤더로 전달해 가져옵니다. (JavaScript 렌더링이 필요한 페이지는 아래 "마이그레이션 안내" 참조)
 
 ```
-로그인한 상태로 이 페이지 내용 가져와줘
+이 페이지를 쿠키와 함께 정적으로 읽어줘
 ```
 
 ## 출력 옵션
@@ -59,60 +59,121 @@ py -3 scripts/fetch_html.py --url "URL" --output page.html
 py -3 scripts/extract_content.py page.html --format markdown
 ```
 
-동적 페이지·로그인 세션은 다음과 같이 부르며, `--stealth`는 항상 기본으로 붙입니다.
+쿠키 인증이 필요할 때:
 
 ```bash
 # macOS/Linux
-python3 scripts/fetch_dynamic.py --url "URL" --stealth --profile myprofile --output page.html
+python3 scripts/fetch_html.py --url "URL" --cookie "session_id=abc; token=xyz" --output page.html
 
 # Windows
-py -3 scripts/fetch_dynamic.py --url "URL" --stealth --profile myprofile --output page.html
+py -3 scripts/fetch_html.py --url "URL" --cookie "session_id=abc; token=xyz" --output page.html
 ```
 
 ## 팁
 
-- **`--stealth`는 기본값처럼 사용**: 일반 사이트는 영향이 없지만 안티봇 탐지 사이트에서는 성공률이 크게 올라갑니다. 동적 페이지 호출 시 항상 붙이는 것을 권장합니다.
 - **자동 retry 완화**: 추출된 본문이 짧으면 스킬이 스스로 selector·hidden element·content scoring을 단계적으로 해제하며 재시도합니다. 별도 옵션 지정 없이 부족한 추출을 자동 보완합니다.
-- **훅 스크립트로 멀티스텝 자동화**: 로그인 폼 입력 → 페이지네이션 순회 같은 복잡한 흐름은 `fetch_dynamic.py --hook-script hook.py` 로 Python 훅을 전달해 자동화합니다. 훅은 `run(page, args)` 함수로 정의됩니다.
+- **`--selector`로 정밀 추출**: 본문 selector를 알면 `extract_content.py --selector "article.post"` 형태로 직접 지정해 자동 탐지를 건너뜁니다.
+- **`diagnose_url.py`로 사전 진단**: fetch가 실패하면 `python3 scripts/diagnose_url.py URL` 로 SSRF → DNS → TCP → SSL → HTTP HEAD → robots.txt 레이어를 한 번에 점검합니다.
 
 ## JS로 그려지는 페이지가 잘 안 읽힐 때
 
-일부 웹사이트는 JavaScript로만 콘텐츠를 렌더링합니다. 이런 페이지에서 내용이 0건으로 나올 때는 다음 순서로 시도해 보세요.
+web-reader v3.0.0부터 **JavaScript 동적 렌더링은 hyve MCP로 위임**되었습니다. 동적 페이지 fetch가 필요할 때는 다음 순서로 시도하세요.
 
-**1단계: 동적 렌더링으로 읽기 (가장 먼저 시도)**
-
-평범한 SPA(React/Vue/Next.js 등)는 이 한 줄로 충분합니다.
+**1단계: hyve MCP의 `web_browse.render` 사용**
 
 ```
-이 페이지는 자바스크립트로 그려져서 잘 안 읽혀, 동적으로 읽어줘
+이 페이지는 자바스크립트로 그려져서 잘 안 읽혀. hyve의 web_browse.render로 읽어줘.
 ```
 
-내부적으로는 `python3 scripts/fetch_dynamic.py --url "URL" --stealth` 가 실행됩니다.
+내부적으로 hyve MCP가 chromedp 기반 헤드리스 브라우저로 페이지를 렌더링하고 본문 HTML을 반환합니다. (SPEC-WEB-MCP-002)
 
-**2단계: 클릭·입력 같은 상호작용이 필요할 때 (훅 스크립트)**
+**2단계: 네이버 부동산 같은 특정 도메인은 전용 도메인 사용**
 
-로그인 폼 채우기, 페이지네이션 순회, 검색어 입력 후 결과 수집처럼 여러 단계가 필요하면 훅 스크립트로 자동화합니다. 작성 방법은 [references/browser-driver.md](references/browser-driver.md)를 참조하세요.
+```
+naverplace로 이 단지 매물 정보 가져와줘
+```
 
+hyve MCP의 `naverplace` 도메인은 단지·매물·리뷰 정보를 Go 포팅된 chromedp 어댑터로 직접 제공합니다.
+
+**3단계: 그래도 안 되면 hyve MCP의 capture 모드**
+
+페이지가 별도 API로 데이터를 받아와 화면에 그리는 구조라면 hyve MCP의 `web_browse.render` 에 capture 옵션을 사용해 네트워크 응답을 캡처합니다.
+
+## 마이그레이션 안내 (v2 → v3)
+
+web-reader v3.0.0에서는 동적 fetch 인프라(Playwright/Chromium, SPA 어댑터, capture 처리)가 일체 제거되었습니다. 해당 use case는 **hyve MCP**로 이전되어 단일 진입점에서 더 일관된 경험을 제공합니다.
+
+### 변경 사항 요약
+
+| v2.x (web-reader 내부) | v3.0.0 대체 (hyve MCP) |
+|------------------------|------------------------|
+| `fetch_dynamic.py --url URL` | `web_browse.render` (SPEC-WEB-MCP-002) |
+| `fetch_dynamic.py --url URL --stealth` | `web_browse.render` (stealth 기본 적용) |
+| `fetch_dynamic.py --adapter naver_land --adapter-page complexes` | `naverplace.search` 또는 `naverplace.complex` |
+| `fetch_dynamic.py --adapter naver_land --adapter-page complex_detail` | `naverplace.complex` (단지 + 매물) |
+| `extract_content.py --from-capture <jsonl> --adapter naver_land` | `naverplace.reviews` 또는 `naverplace.complex` |
+| `extract_content.py --dynamic-only` | `web_browse.render` |
+| `profile_manager.py warmup <name>` | hyve MCP는 프로필을 자체 관리 (개별 명령 불필요) |
+
+### Before / After 예시
+
+**예시 1: SPA 페이지 동적 렌더링**
+
+Before (v2.x):
 ```bash
-python3 scripts/fetch_dynamic.py --url "URL" --hook-script hook.py
+python3 scripts/fetch_dynamic.py --url "https://example.com/spa-page" --stealth --output page.html
+python3 scripts/extract_content.py page.html --format markdown
 ```
 
-**3단계: 그래도 0건일 때 (네트워크 응답 캡처)**
+After (v3.0.0):
+```
+hyve의 web_browse.render로 https://example.com/spa-page 페이지 마크다운으로 가져와줘
+```
 
-위 두 방법으로도 본문이 비어 있다면, 페이지가 별도 API로 데이터를 받아와 화면에 그리는 구조일 수 있습니다. 이 경우 네트워크 응답을 직접 캡처해 마크다운으로 변환하는 방법이 있습니다. 사이트별로 어댑터가 필요할 수 있으며, 어댑터 작성·등록 방법은 [references/spa-adapters.md](references/spa-adapters.md)를 참조하세요.
+**예시 2: 네이버 부동산 단지 + 매물 목록**
 
-## 고급 사용 (개발자용)
+Before (v2.x):
+```bash
+python3 scripts/fetch_dynamic.py --adapter naver_land --adapter-page complex_detail \
+  --url "https://new.land.naver.com/complexes/104917" \
+  --capture-api "^https://new\.land\.naver\.com/api/(complexes|articles)" \
+  --stealth
+python3 scripts/extract_content.py --from-capture capture.jsonl --adapter naver_land --format json
+```
 
-복잡한 자동화가 필요하거나 SPA 어댑터를 직접 작성하려는 개발자는 다음 문서를 참조하세요:
+After (v3.0.0):
+```
+hyve의 naverplace.complex로 104917 단지 정보랑 매물 목록 JSON으로 받아줘
+```
 
-- **SPA 어댑터 개발**: [references/spa-adapters.md](references/spa-adapters.md) — 웹스쿼어, 넥사크로 같은 SPA 프레임워크 처리
-- **브라우저 드라이버 API**: [references/browser-driver.md](references/browser-driver.md) — Playwright 기반 페이지 제어 상세 API
+**예시 3: 인스타그램 프로필 통계**
+
+Before (v2.x):
+```bash
+python3 scripts/extract_content.py --url "https://instagram.com/some_account" --format json
+# 내부적으로 SNS 자동 동적 진입 (실제로는 코드에 화이트리스트 없었음 — v3.0.0에서 description 정정)
+```
+
+After (v3.0.0):
+```
+hyve의 web_browse.render로 인스타그램 some_account 프로필 정보 가져와줘
+```
+
+### 호환성
+
+- 정적 fetch / YouTube 자막 / 쿠키 fetch / `--selector` 지정 추출은 v3.0.0에서도 **그대로 동작**합니다.
+- v2.x 호출 패턴 중 `--dynamic-only`, `--adapter`, `--adapter-page`, `--from-capture` 는 호출 시 **exit code 4** + stderr에 hyve MCP 안내 메시지가 표시됩니다.
+- `fetch_with_fallback()` Python API는 `dynamic_only=True` 호출 시 `ValueError` 를 발생시키며, 메시지에 hyve MCP 마이그레이션 경로가 포함됩니다.
+
+### hyve MCP가 설치되지 않은 환경
+
+hyve MCP가 활성화되지 않은 환경에서는 동적 fetch use case가 작동하지 않습니다. 정적 fetch / YouTube / 쿠키 fetch는 web-reader v3.0.0 그대로 사용 가능합니다. hyve MCP 설치 방법은 hyve 레포의 README를 참조하세요.
 
 ---
 
 ## 제한사항
 
 - **SSRF 차단**: 내부망 IP(`127.x`, `10.x`, `192.168.x` 등) 호출은 기본 차단됩니다. 명시적 우회는 `--allow-private` 플래그로만 허용됩니다.
-- **Playwright 사전 설치 필요**: 동적 페이지는 `uv pip install --system playwright && playwright install chromium` 이 선행되어야 합니다.
+- **JavaScript 렌더링 미지원**: v3.0.0부터 동적 fetch는 hyve MCP의 `web_browse.render` 로 위임됩니다. 위 "마이그레이션 안내" 참조.
 - **응답 크기 50MB 상한**: 대형 파일 다운로드 용도로는 부적합합니다.
 - **YouTube 자막 미지원 영상**: 자막이 없는 영상은 메타데이터(제목·채널)만 반환합니다.

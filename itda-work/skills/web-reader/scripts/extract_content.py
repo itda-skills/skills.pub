@@ -380,186 +380,11 @@ def extract_with_retry(
     return result
 
 
-def _load_adapter_for_capture(adapter_name: str | None):
-    """어댑터 이름으로 어댑터 인스턴스를 로드한다.
-
-    _loader.load_adapter를 래핑하여 None-safe 인터페이스를 제공한다.
-
-    인자:
-        adapter_name: 어댑터 이름. None이면 None 반환.
-
-    반환:
-        Adapter 인스턴스 또는 None (로드 실패 포함).
-    """
-    if adapter_name is None:
-        return None
-    # scripts/ 경로 자동 포함 — spa_adapters._loader는 같은 디렉토리에 있음
-    _scripts_dir = os.path.dirname(os.path.abspath(__file__))
-    if _scripts_dir not in sys.path:
-        sys.path.insert(0, _scripts_dir)
-    try:
-        from spa_adapters._loader import load_adapter
-        return load_adapter(adapter_name)
-    except Exception as exc:
-        print(f"Warning: 어댑터 '{adapter_name}' 로드 실패: {exc}", file=sys.stderr)
-        return None
-
-
-def _format_date_yyyymmdd(value: str) -> str:
-    """YYYYMMDD 형식의 날짜를 YYYY-MM-DD 형식으로 변환한다.
-
-    변환 불가한 경우 원본 문자열을 그대로 반환한다.
-    """
-    if len(value) == 8 and value.isdigit():
-        return f"{value[:4]}-{value[4:6]}-{value[6:]}"
-    return value
-
-
-def _render_capture_as_markdown(
-    items: list[dict[str, Any]],
-    adapter_name: str | None,
-    page_key: str,
-) -> str:
-    """캡처 아이템 목록을 Markdown 형식으로 렌더링한다.
-
-    인자:
-        items: extract()가 반환한 정규화된 아이템 목록
-        adapter_name: 어댑터 이름 (헤더에 사용)
-        page_key: 페이지 키 (헤더에 사용)
-
-    반환:
-        Markdown 문자열
-    """
-    if not items:
-        return "(공지 없음)\n"
-
-    lines: list[str] = []
-    header = f"{adapter_name or 'capture'}/{page_key}"
-    lines.append(f"# {header} — {len(items)}건\n")
-
-    # 표 헤더
-    lines.append("| 제목 | 날짜 | 작성자 | 조회수 |")
-    lines.append("|------|------|--------|--------|")
-
-    for item in items:
-        title = str(item.get("title", "")).replace("|", "\\|")
-        date_raw = str(item.get("date", ""))
-        date = _format_date_yyyymmdd(date_raw)
-        author = str(item.get("author", "")).replace("|", "\\|")
-        views = str(item.get("views", ""))
-        lines.append(f"| {title} | {date} | {author} | {views} |")
-
-    lines.append("")
-    return "\n".join(lines)
-
-
-def _render_capture_as_json(
-    items: list[dict[str, Any]],
-    adapter_name: str | None,
-    page_key: str,
-) -> str:
-    """캡처 아이템 목록을 JSON 형식으로 렌더링한다."""
-    output_data = {
-        "adapter": adapter_name,
-        "page_key": page_key,
-        "count": len(items),
-        "items": items,
-    }
-    return json.dumps(output_data, ensure_ascii=False, indent=2)
-
-
-def _process_from_capture(
-    capture_path: str,
-    adapter_name: str | None,
-    page_key: str | None,
-    fmt: str,
-) -> tuple[str, int]:
-    """JSONL キャプチャファイルを読み込んでコンテンツに変換する。
-
-    JSONL 파일을 읽고 어댑터 필드 매핑을 적용하여 지정한 형식으로 변환한다.
-
-    인자:
-        capture_path: JSONL 파일 경로
-        adapter_name: 어댑터 이름 (None이면 raw dump)
-        page_key: 어댑터 페이지 키 (None이면 기본 페이지)
-        fmt: 출력 형식 ("markdown", "json", "html")
-
-    반환:
-        (출력 문자열, exit_code) 튜플
-    """
-    adapter = _load_adapter_for_capture(adapter_name)
-
-    # page_key 결정: 인자 > manifest default_page > 어댑터 첫 번째 pages 키 > None
-    # ISS-NOTICEHC-020: "notice" 하드코드 제거. 결정 불가 시 None 유지 → raw dump 안내.
-    effective_page_key = page_key
-    if effective_page_key is None and adapter_name is not None:
-        try:
-            from spa_adapters._loader import get_default_page
-            effective_page_key = get_default_page(adapter_name)
-        except Exception:
-            pass
-    if effective_page_key is None and adapter is not None:
-        pages = getattr(adapter, "pages", {})
-        effective_page_key = next(iter(pages), None)
-    # ISS-EXTRACT-028: page_key None → 어댑터가 있어도 raw dump 강제.
-    # 메시지와 동작의 불일치 방지: "raw 출력" 안내 후 실제로도 raw dump한다.
-    if effective_page_key is None:
-        print(
-            "[web-reader] page_key를 결정할 수 없습니다. "
-            "필드 매핑 없이 raw JSONL을 그대로 출력합니다. "
-            "--adapter-page 옵션으로 화면명을 지정하거나 "
-            "매니페스트의 default_page를 확인하세요.",
-            file=sys.stderr,
-        )
-        # adapter.extract 호출 없이 raw dump 분기로 바로 이동
-        adapter = None
-
-    # JSONL 읽기
-    try:
-        with open(capture_path, encoding="utf-8") as f:
-            raw_lines = f.readlines()
-    except (OSError, IOError) as exc:
-        print(f"Error: 캡처 파일 읽기 실패: {exc}", file=sys.stderr)
-        return "", 1
-
-    captures: list[dict[str, Any]] = []
-    for line_no, line in enumerate(raw_lines, 1):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            captures.append(json.loads(line))
-        except json.JSONDecodeError as exc:
-            print(
-                f"Warning: {capture_path}:{line_no} — JSON 파싱 실패, skip: {exc}",
-                file=sys.stderr,
-            )
-
-    # 어댑터 추출 또는 raw dump
-    if adapter is not None:
-        result = adapter.extract(None, captures)
-        items: list[dict[str, Any]] = result.get("items", [])
-        actual_page_key = result.get("page_key", effective_page_key)
-    else:
-        # --adapter 미지정: raw JSON dump
-        if fmt == "json":
-            return json.dumps(captures, ensure_ascii=False, indent=2), 0
-        # markdown/html 요청이지만 어댑터 없음 → raw JSON으로 fallback
-        print(
-            "Warning: --adapter 미지정. raw JSON으로 출력합니다.",
-            file=sys.stderr,
-        )
-        return json.dumps(captures, ensure_ascii=False, indent=2), 0
-
-    # 형식 변환
-    if fmt in ("markdown", "html"):
-        output = _render_capture_as_markdown(items, adapter_name, actual_page_key)
-    elif fmt == "json":
-        output = _render_capture_as_json(items, adapter_name, actual_page_key)
-    else:
-        output = _render_capture_as_markdown(items, adapter_name, actual_page_key)
-
-    return output, 0
+# NOTE: SPEC-WEBREADER-LIGHTEN-001 v3.0.0 — SPA 어댑터 / capture 처리 함수 일체 제거.
+# (_load_adapter_for_capture, _format_date_yyyymmdd, _render_capture_as_markdown,
+#  _render_capture_as_json, _process_from_capture)
+# main() 진입 직후 fail-fast 가 --adapter / --adapter-page / --from-capture 호출을 차단하므로
+# 본 함수들은 더 이상 호출되지 않는다. 마이그레이션 안내는 GUIDE.md 참조.
 
 
 def main() -> None:
@@ -684,24 +509,35 @@ def main() -> None:
     except SystemExit:
         sys.exit(2)
 
-    # --from-capture 분기: JSONL → 변환 후 출력
-    if args.from_capture:
-        output, exit_code = _process_from_capture(
-            capture_path=args.from_capture,
-            adapter_name=args.adapter,
-            page_key=args.adapter_page,
-            fmt=args.format,
+    # REQ-LIGHTEN-003.2: 동적 fetch 플래그 fail-fast (web-reader v3.0.0)
+    # AC-3 검증 키워드: "동적 fetch 는 web-reader v3.0.0 에서 제거",
+    # "hyve MCP 의 web_browse.render", "SPEC-WEB-MCP-002"
+    if getattr(args, "dynamic_only", False):
+        print(
+            "[web-reader v3.0.0] 동적 fetch 는 web-reader v3.0.0 에서 제거되었습니다.\n"
+            "JavaScript 렌더링이 필요한 페이지는 hyve MCP 의 web_browse.render 도메인을 사용하세요 "
+            "(SPEC-WEB-MCP-002).\n"
+            "마이그레이션 안내: itda-work/skills/web-reader/GUIDE.md 참조.",
+            file=sys.stderr,
         )
-        if args.output:
-            try:
-                with open(args.output, "w", encoding="utf-8") as f:
-                    f.write(output)
-            except (OSError, IOError) as exc:
-                print(f"Error: 출력 파일 쓰기 실패: {exc}", file=sys.stderr)
-                sys.exit(1)
-        else:
-            print(output, end="")
-        sys.exit(exit_code)
+        sys.exit(4)
+
+    # REQ-LIGHTEN-003.3: SPA 어댑터 플래그 fail-fast (web-reader v3.0.0)
+    # AC-3 검증 키워드: "SPA 어댑터", "naverplace", "web_browse.render"
+    if (
+        getattr(args, "from_capture", None)
+        or getattr(args, "adapter", None)
+        or getattr(args, "adapter_page", None)
+    ):
+        print(
+            "[web-reader v3.0.0] SPA 어댑터 (--adapter / --adapter-page / --from-capture) 는 "
+            "web-reader v3.0.0 에서 제거되었습니다.\n"
+            "- 네이버 부동산: hyve MCP 의 naverplace 도메인 사용 (이미 chromedp Go 포팅 완료)\n"
+            "- 기타 SPA: hyve MCP 의 web_browse.render 사용 (SPEC-WEB-MCP-002)\n"
+            "마이그레이션 안내: itda-work/skills/web-reader/GUIDE.md 참조.",
+            file=sys.stderr,
+        )
+        sys.exit(4)
 
     # REQ-7.1: --url과 positional input은 상호 배타적 (Codex finding: backward-compat 보존)
     if args.url and args.input:
