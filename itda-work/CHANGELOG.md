@@ -7,6 +7,23 @@
 
 ### Added
 
+- **README 등재 누락 보강 — 3개 기존 스킬 공식 카탈로그 등재** ("조사·검증", "환경·설정" 카테고리 신설)
+  - **itda-ground-check** (v0.10.0, 2026-05-12 도입, 2026-05-13 최신): 1차 소스 강제 조사 + 독립 검증 + 실사용 예시 확장 3단계. Cowork 우선, WebFetch 실패 시 web-reader fallback. Public Web 카테고리에 한정.
+  - **itda-investigate** (v0.10.1): 원인 불명 상황의 체계적 조사. 경쟁 가설 + 반증 실험으로 증거 기반 결론 도출. 디버그·성능·아키텍처·검증·해석 5종 타입 지원.
+  - **itda-setup** (v1.0.0): API 키·환경변수 스캔 + 대화형 설정 + 프로젝트 CLAUDE.md(스킬 체인 정책) 자동 생성. itda 스킬팩 메타 설정 entry-point.
+  - `itda-work` 스킬 수: 11개 → **14개** (README 표 기준, find-work 등재 직후 시점에서 갱신).
+  - `itda-work` 버전 bump: 3.3.0 → **3.4.0** (Minor — 신규 등재 3건, 신규 카테고리 2종).
+  - 본 항목은 **신규 스킬 도입이 아니라 README 동기화**임을 명시. 각 스킬의 실제 도입·기능 변경 이력은 스킬별 CHANGELOG 및 과거 커밋(`5cacac9`, `f8cf34c`, `c072834` 등) 참조.
+
+- **itda-find-work v0.9.1: 비개발자 업무 발굴 인터뷰 스킬 신규 도입** (업무 발굴 카테고리 신설)
+  - Claude Cowork 전용. 비개발자 직장인이 "내 업무 중 뭘 Claude로 풀어볼지 모르겠다"는 막막한 상태에서 출발해 단계별 인터뷰로 후보를 끄집어낸다.
+  - 두 트랙 지원: (A) 반복 업무, (B) 미지의 문제, 혼합 인정.
+  - 4단계 절차: 시작 안내 → 문제 발굴 + 트랙 명시 → 집요한 Grill 6항목 → 데이터·실행 경로 → 메모 작성.
+  - Progressive Disclosure 적용: SKILL.md(본문 ~255줄) + `references/{tracks,paths,data-sources}.md`(lazy load) + `GUIDE.md`(강사·운영자용, Claude 미로드).
+  - 두 트랙 dry-run 검증(트랙 A 12턴 김민호 대리 페르소나, 트랙 B 17턴 박지영 차장 페르소나) 통과 후 결함 4건 수정 적용(v0.9.0 → v0.9.1).
+  - `itda-work` 스킬 수: 10개 → **11개** (README 표 기준).
+  - `itda-work` 버전 bump: 3.2.0 → **3.3.0** (Minor).
+
 - **itda-setup v0.9.2 → v1.0.0: 프로젝트 CLAUDE.md 자동 생성 (스킬 체인 정책)** — Cowork 환경에 hook이 없는 한계를 극복하기 위해 KNOWLEDGE.md §3의 "CLAUDE.md = 팀 매뉴얼" 패턴을 itda-work에 이식. 산출물별 스킬 체인을 [HARD] 규칙으로 명문화하여 모델이 매 턴 자율 준수하도록 강제.
   - `references/chain-map.yaml` (128 lines, 신규): 15개 산출물(blog/report/newsletter/proposal/customer_email/internal_memo/hwp_read/pdf_extract/web_research/finance_etf/finance_fx/image_edit/debug 등) → 권장 스킬 시퀀스 + enforcement(hard/soft/none) 매핑. review_strength_policy로 사용자 검수 강도(강/표준/약)를 enforcement 변환에 적용.
   - `references/templates/CLAUDE.md.tmpl` (79 lines, 신규): 사용자 프로젝트 CLAUDE.md 템플릿. 11개 슬롯({project_name}, {chain_table}, {trigger_examples}, {user_preserved_section} 등)으로 인터뷰 응답 주입.
