@@ -10,7 +10,7 @@ compatibility: "Designed for Claude Cowork. Python 3.10+. No external dependenci
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.19.0"
+  version: "0.20.0"
   created_at: "2026-03-18"
   updated_at: "2026-05-13"
   tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, 이메일, 메일 보내기, 메일 읽기, 받은편지함, 새 메일, 증분 조회, 다음 메일, 카카오 메일, 피싱, 폴더목록, 멀티계정"
@@ -54,13 +54,7 @@ NAVER_APP_PASSWORD=your-app-password
 ```
 Claude Cowork가 자동으로 참조합니다.
 
-**방법 B — 개인 맞춤 설정 (settings.json)**:
-```bash
-claude config set env.NAVER_EMAIL "your-id@naver.com"
-claude config set env.NAVER_APP_PASSWORD "your-app-password"
-```
-
-**방법 C — .env 파일**:
+**방법 B — .env 파일**:
 작업 디렉토리에 `.env` 파일을 만들어도 자동으로 로드됩니다.
 
 ### 2. Google (Gmail) Setup
@@ -83,13 +77,7 @@ GOOGLE_EMAIL=your-email@gmail.com
 GOOGLE_APP_PASSWORD=your-16-char-password
 ```
 
-**방법 B — 개인 맞춤 설정 (settings.json)**:
-```bash
-claude config set env.GOOGLE_EMAIL "your-email@gmail.com"
-claude config set env.GOOGLE_APP_PASSWORD "your-16-char-password"
-```
-
-**방법 C — .env 파일**: 작업 디렉토리의 `.env` 파일에 추가.
+**방법 B — .env 파일**: 작업 디렉토리의 `.env` 파일에 추가.
 
 > **[DEPRECATED]** `GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD` 는 v0.18.0에서 제거 예정입니다.
 > 기존 사용자는 `GOOGLE_EMAIL` / `GOOGLE_APP_PASSWORD` 로 이름만 바꾸면 됩니다. (아래 Migration 가이드 참조)
@@ -112,13 +100,7 @@ DAUM_EMAIL=your-id@daum.net
 DAUM_APP_PASSWORD=your-imap-password
 ```
 
-**방법 B — 개인 맞춤 설정 (settings.json)**:
-```bash
-claude config set env.DAUM_EMAIL "your-id@daum.net"
-claude config set env.DAUM_APP_PASSWORD "your-imap-password"
-```
-
-**방법 C — .env 파일**: 작업 디렉토리의 `.env` 파일에 추가.
+**방법 B — .env 파일**: 작업 디렉토리의 `.env` 파일에 추가.
 
 **지원 도메인**: `@daum.net`, `@hanmail.net`, `@kakao.com` (IMAP 서버 동일)
 
@@ -244,6 +226,61 @@ python3 scripts/send_email.py \
 # Windows
 py -3 scripts/send_email.py --provider naver --to ... --subject ... --body ... --attach file.pdf
 ```
+
+### Drafts — IMAP 임시보관함 (v0.20.0+)
+
+IMAP `Drafts` 폴더에 초안을 저장·검토·발송하는 흐름입니다. 네이버/Gmail 모바일 앱·웹메일의 "임시보관함"과 자동 동기화됩니다.
+
+```bash
+# 1) 초안 저장 — IMAP Drafts 폴더에 APPEND (\Draft 플래그 포함)
+python3 scripts/save_draft.py \
+  --provider naver \
+  --to recipient@example.com \
+  --subject "검토용 초안" \
+  --body "검토 후 발송 예정입니다."
+# 응답: {"status": "draft_saved", "uid": 1234, "provider": "naver", "folder": "Drafts"}
+
+# 첨부·HTML 본문 포함
+python3 scripts/save_draft.py \
+  --provider google \
+  --to a@example.com --cc b@example.com \
+  --subject "보고서 초안" \
+  --body-html "<h1>안녕하세요</h1><p>검토 부탁드립니다.</p>" \
+  --attachment report.pdf
+
+# 기존 send_email.py 흐름에서 발송 대신 초안 저장
+python3 scripts/send_email.py --provider naver --to a@b.com --subject "..." --body "..." --save-as-draft
+
+# 2) 초안 목록 (최신순 JSON 배열, 기본 20건)
+python3 scripts/list_drafts.py --provider naver
+python3 scripts/list_drafts.py --provider gmail --limit 50 --since 2026-05-01
+
+# 3) 초안 본문·첨부 메타 조회
+python3 scripts/read_draft.py --provider naver --uid 1234
+
+# 4) 초안 발송 — SMTP 발송 성공 시 자동 EXPUNGE
+python3 scripts/send_draft.py --provider naver --uid 1234
+# --keep: 발송 후에도 초안 보존 (`"expunged": false`)
+python3 scripts/send_draft.py --provider naver --uid 1234 --keep
+# --dry-run: SMTP 호출 없이 MIME 파싱 결과만 출력
+python3 scripts/send_draft.py --provider naver --uid 1234 --dry-run
+
+# 5) 초안 삭제 (EXPUNGE)
+python3 scripts/delete_draft.py --provider naver --uid 1234
+
+# Windows
+py -3 scripts/save_draft.py --provider naver --to ... --subject ... --body ...
+py -3 scripts/list_drafts.py --provider naver
+py -3 scripts/send_draft.py --provider naver --uid 1234
+```
+
+**동작 규약**:
+
+- IMAP `APPEND` + `\Draft` 플래그 + 현재 시각 `INTERNALDATE` 명시 (네이버·Gmail 모바일 임시보관함 노출 보장)
+- IMAP 메시지는 in-place 수정 불가 — "수정"은 `delete_draft` → `save_draft` 흐름으로 (UID는 새로 발급됨)
+- 발송 후 처리: 기본 자동 EXPUNGE, `--keep` 시 보존
+- 실패 시 outbox fallback 없음 (drafts는 outbox와 의도가 다른 흐름). stderr에 `auth_failed`/`network_error`/`server_rejected`/`quota_exceeded`/`unknown` 중 하나 명시 후 exit code 1
+- 진행 상태·UID는 항상 IMAP 서버를 권위 원본으로 사용 (사용자가 모바일에서 수정하면 UID가 바뀌므로 `list_drafts.py`로 다시 조회 필요)
 
 ### Read Inbox (Naver, Gmail, Daum, or Custom)
 

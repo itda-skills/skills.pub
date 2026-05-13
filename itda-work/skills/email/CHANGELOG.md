@@ -1,5 +1,45 @@
 # Changelog — itda-email
 
+## [0.20.0] — 2026-05-13 (SPEC-EMAIL-DRAFTS-001)
+
+### New Features
+
+- **IMAP Drafts 흐름 (REQ-DRAFTS-001~009)**: 사용자가 명시적으로 작성한 메일을 IMAP `Drafts` 폴더에 저장·검토·발송하는 워크플로우 추가. 네이버 메일·Gmail 모바일 앱·웹메일의 "임시보관함"과 자동 동기화됨.
+- **`save_draft.py` 신규**: MIME 조립 후 IMAP `APPEND` to Drafts + `\Draft` 플래그 + `INTERNALDATE` 명시. APPENDUID(RFC 4315)로 UID 발급, 미지원 서버는 폴더 SELECT/SEARCH로 fallback. 첨부 파일은 기존 `attachment_validator`로 검증 후 `multipart/mixed`, HTML 본문은 `multipart/alternative`로 조립.
+- **`list_drafts.py` 신규**: Drafts 폴더 SELECT 후 최근 N개(기본 20, `--limit`) 메시지의 UID·Subject·From·To·Date·Size를 INTERNALDATE 내림차순 JSON 배열로 출력. `--since YYYY-MM-DD` 필터 지원.
+- **`read_draft.py` 신규**: UID로 본문(text/plain, text/html, 첨부 메타데이터) 조회. JSON 응답에 body_text, body_html, attachments 포함.
+- **`send_draft.py` 신규**: UID FETCH → MIME 파싱 → SMTP 발송 → 성공 시 `UID STORE +FLAGS (\Deleted)` + `UID EXPUNGE`(UIDPLUS, 미지원 시 일반 EXPUNGE fallback). `--keep`(EXPUNGE 스킵), `--dry-run`(SMTP 호출 없이 파싱 결과만 출력) 옵션. Sent 폴더 처리는 기존 `send_email.py` 패턴 위임.
+- **`delete_draft.py` 신규**: UID에 `\Deleted` 플래그 + EXPUNGE. exit 0 시 `{"status": "deleted", "uid": N, "expunged": true}`.
+- **`send_email.py --save-as-draft` 플래그**: 기존 발송 흐름에서 SMTP 단계를 건너뛰고 Drafts에 저장. outbox 큐 fallback 비활성화. 응답에 UID 포함.
+- **`email_compose.py` 신규 헬퍼**: MIME 조립 로직(EmailMessage 생성, 첨부 인코딩, 한글 헤더 UTF-8 처리)을 모듈화. `save_draft.py`와 `send_email.py`에서 공유.
+
+### Behavior Contracts
+
+- IMAP `APPEND`/`FETCH`/`STORE` 실패 시 **outbox fallback 없음** — drafts는 outbox와 의도가 다른 흐름. stderr에 분류 키(`auth_failed`/`network_error`/`server_rejected`/`quota_exceeded`/`unknown`) + 상세 메시지 + exit code 1.
+- UID 미존재 시(`send_draft.py --uid 99999`) stderr `uid_not_found`, exit code 1.
+- IMAP 연결은 try/finally 또는 contextmanager로 LOGOUT 보장.
+- 모든 신규 스크립트는 `--provider naver|google|gmail|daum` 받음 (gmail은 google의 alias, `resolve_provider_name`이 정규화).
+- 인증은 기존 `email_providers.PROVIDERS[name]['email_env']` / `['password_env']` + `env_loader.merged_env()` 패턴 그대로. CLI 인자·stdout·stderr에 자격증명 노출 금지.
+
+### Tests
+
+- 신규 84개 unit test 추가 (`test_save_draft.py`, `test_list_drafts.py`, `test_read_draft.py`, `test_send_draft.py`, `test_delete_draft.py`, `test_send_email_save_as_draft.py`, `test_email_compose.py`). `imaplib.IMAP4_SSL`/`smtplib.SMTP_SSL` 전부 mock.
+- 전체 402 테스트 통과 (기존 318 + 신규 84).
+- 신규 스크립트 라인 커버리지 평균 **85%** (`email_compose.py` 100%, `read_draft.py` 85%, `list_drafts.py` 83%, `send_draft.py` 83%, `delete_draft.py` 82%, `save_draft.py` 81%).
+
+### Out of Scope (향후 SPEC에서 다룸)
+
+- 로컬 파일시스템 초안 저장(`.eml`/`.html`/`.json`), Windows 탐색기 가시화·HTML 미리보기.
+- IMAP Drafts ↔ 로컬 파일 양방향 동기화.
+- `update_draft.py` (수정은 `delete_draft.py` → `save_draft.py` 흐름으로 대체).
+- 초안 검색 기능.
+
+## [0.19.1] — 2026-05-13
+
+### Removed
+
+- SKILL.md에서 `claude config set env.*` 안내 제거. Claude Code 전용 명령어로 Claude Cowork에서 동작하지 않음. CLAUDE.md 또는 `.env` 파일 사용을 권장하는 두 가지 방법만 남김 (Naver/Google/Daum 3개 섹션).
+
 ## [0.19.0] — 2026-05-13 (SPEC-EMAIL-RESILIENCE-001)
 
 ### New Features

@@ -254,6 +254,8 @@ def main() -> None:
     parser.add_argument("--force-587", action="store_true")
     parser.add_argument("--skip-probe", action="store_true",
                         help="사전 TCP probe를 건너뛰고 바로 SMTP 시도.")
+    parser.add_argument("--save-as-draft", action="store_true", dest="save_as_draft",
+                        help="SMTP 발송 대신 IMAP Drafts에 초안으로 저장합니다.")
     args = parser.parse_args()
 
     env = merged_env()
@@ -329,6 +331,22 @@ def main() -> None:
         recipients += [a.strip() for a in args.bcc.split(",") if a.strip()]
 
     msg_str = msg.as_string()
+
+    # REQ-DRAFTS-005: --save-as-draft 플래그 처리 — SMTP 발송 건너뛰고 Drafts에 저장
+    if args.save_as_draft:
+        from save_draft import save_draft as _save_draft  # noqa: PLC0415 (지연 import)
+        result = _save_draft(
+            provider=args.provider,
+            to_addr=args.to,
+            subject=args.subject,
+            body=args.body,
+            cc=args.cc,
+            bcc=args.bcc,
+            attachments=args.attach if args.attach else [],
+            account=args.account,
+        )
+        print(json.dumps(result, ensure_ascii=False))
+        sys.exit(0)
 
     # REQ-004: 사전 TCP probe
     if not args.skip_probe:
