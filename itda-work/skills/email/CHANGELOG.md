@@ -1,5 +1,34 @@
 # Changelog — itda-email
 
+## [0.19.0] — 2026-05-13 (SPEC-EMAIL-RESILIENCE-001)
+
+### New Features
+
+- **TCP probe 사전 탐색 (REQ-004)**: SMTP 연결 전 `socket.create_connection`으로 465/587 포트 개방 여부를 3초 타임아웃으로 탐색. 양쪽 모두 차단된 경우 80초+ 대기 없이 즉시 아웃박스로 저장.
+- **아웃박스 패턴 (REQ-004)**: SMTP 포트 차단 또는 양쪽 포트 모두 실패 시 RFC 822 EML + JSON 메타데이터를 `.itda-skills/email/outbox/` 에 저장. 응답 `{"status": "queued", "outbox_path": "...", "reason": "probe_blocked|send_failed_all_attempts"}`. 비밀번호 미포함(REQ-007).
+- **`send_outbox.py` 신규 스크립트 (REQ-005)**: 아웃박스 큐 일괄 발송. `--dry-run`, `--limit N`, `--purge-on-success` 옵션. 성공한 메일은 `outbox/sent/`로 이동 또는 삭제. 자격증명은 `get_provider()`로 재로드(메타데이터에서 읽지 않음).
+- **포트별 지수 백오프 (REQ-002)**: 각 포트 최대 2회 시도, 실패 후 1초·4초 대기(`_BACKOFF_SEQ = (1, 4)`). 마지막 시도 후에도 대기 적용(포트 전환 전 쿨다운 포함). 인증 에러는 재시도 제외.
+- **복수 수신자 (REQ-003)**: `--to "a@x.com,b@x.com"` 쉼표 구분 지원. 빈 토큰 자동 제거. `msg["To"]` 헤더에는 원본 문자열 보존.
+- **TLS 컨텍스트 명시적 전달 (REQ-001)**: `ssl.create_default_context()`를 `SMTP_SSL` 및 `starttls()` 양쪽에 명시적으로 전달.
+- **`--skip-probe` 플래그**: TCP probe를 건너뛰고 바로 SMTP 시도. 이미 포트 개방이 확인된 환경에서 사용.
+
+### Breaking Changes
+
+- **양쪽 포트 실패 시 동작 변경**: 구 동작(`exit 1`, `error: "send_failed_both_ports"`) → 신 동작(`exit 0`, `status: "queued"`, `reason: "send_failed_all_attempts"`). 이메일이 유실되지 않고 아웃박스에 보존됨. `send_outbox.py`로 재전송 가능.
+
+### Tests
+
+- 신규 14개 unit test (`test_send_email_resilience.py`): probe 차단→아웃박스 / probe 1포트 개방→SMTP 진행 / --skip-probe / 아웃박스 메타데이터 비밀번호 미포함 / 디스크 쓰기 실패 graceful / --force-587 probe 스킵 / 465 retry backoff [1,4] / 양쪽 실패→아웃박스 / auth 에러 재시도 없음 / 다중 수신자 헤더 보존 / 빈 토큰 제거 / TLS context 465/587.
+- 신규 5개 unit test (`test_send_outbox.py`): 빈 디렉토리 / dry-run / 성공→sent/ 이동 / 실패→파일 유지 / purge-on-success.
+- `test_send_email_fallback.py` 업데이트: `test_both_ports_fail_returns_combined_detail` → `test_both_ports_fail_routes_to_outbox` (새 동작 반영). `_run()` 헬퍼에 `socket.create_connection` mock + `time.sleep` mock 추가.
+- 전체 318 테스트 통과 (기존 283 + 신규 35).
+
+### Verification
+
+- `python3 -m pytest itda-work/skills/email/scripts/tests/ -v`: 318/318 passed
+- `python3 -m py_compile send_email.py send_outbox.py`: OK
+- outbox JSON 비밀번호 미포함: `test_outbox_metadata_no_password` 통과
+
 ## [0.18.0] — 2026-05-01
 
 ### New Features

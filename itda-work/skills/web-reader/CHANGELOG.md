@@ -1,5 +1,77 @@
 # Changelog — itda-web-reader
 
+## [5.0.0] — 2026-05-13 (SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001)
+
+### Breaking Changes
+
+- **`description` scope 재확장 (2종 → 3종)**: SKILL.md description의 use case가 `(1) EUC-KR/CP949` + `(2) 쿠키 인증 정적 페이지` + **`(3) JavaScript 동적 페이지 (Lightpanda 백엔드)`** 3종으로 확장되었습니다. progressive disclosure 매칭에서 "이 SPA 동적으로 가져와줘" 자연어 요청이 다시 web-reader를 활성화합니다.
+- **`--dynamic-only` 동작 복원**: LIGHTEN(v3.0.0)에서 `exit 4 + hyve 안내`로 fail-fast 처리했던 `extract_content.py --dynamic-only`가 v5.0.0부터 정상 동작합니다. 백엔드는 **Lightpanda** subprocess wrapper.
+- **신규 외부 의존성**: `lightpanda` 바이너리. Python 모듈 의존성 추가 없음. 검출 우선순위: `$PATH` → `~/.itda-skills/bin/` → `./mnt/.itda-skills/bin/` → `./.itda-skills/bin/`.
+- **Exit code 신설**: `exit 3` (Lightpanda 미설치, stderr에 플랫폼별 설치 안내), `exit 4`는 bot challenge 감지로 의미 재정의(stderr에 hyve MCP escalation 안내).
+
+### New Features
+
+- **`scripts/fetch_dynamic.py`** (~400 LOC): Lightpanda CLI subprocess wrapper. 옵션: `--wait-until`, `--wait-selector`, `--wait-ms`, `--terminate-ms`, `--strip-mode`, `--cookie-file`, `--http-proxy`, `--dump-markdown`, `--block-private-networks` (기본 활성).
+- **`extract_content.py --lp-markdown`**: Lightpanda의 `--dump markdown` 출력을 정제 파이프라인 우회하고 그대로 반환. 한국 미디어/뉴스에서 빠르고 깔끔한 출력.
+- **Bot challenge 자동 감지**: `Access Denied`, `Just a moment`, `Cloudflare`, `PerimeterX` 등 7개 패턴. 감지 시 hyve MCP escalation 메시지 + exit 4.
+
+### Validation Matrix (2026-05-13)
+
+22-URL 직접 측정:
+
+| 분류 | 결과 |
+|------|------|
+| 한국 미디어 (naver, daum, brunch, velog, n.news.naver, tistory) | 6/6 성공, 평균 1.0초 |
+| 한국 정부 (gov.kr, nts.go.kr, molit.go.kr) | 3/3 성공, 평균 1.7초 |
+| 한국 커뮤니티/쇼핑 (dcinside, musinsa) | 2/2 성공 |
+| 영문 SPA (github, vercel) | 2/2 성공 |
+| news.naver.com 실 기사 본문 추출 | 11.3KB 한글 텍스트 완전 추출 (1.5초) |
+| **Anti-bot (coupang)** | **차단(Access Denied) → exit 4 + hyve escalation 자동 안내** |
+| **SNS shell only (인스타·X)** | **HTML shell 응답하지만 실 데이터 없음 — hyve MCP escalation 권장** |
+
+**진짜 성공률: 20/22 = 91%** (anti-bot/SNS 제외 시 20/20 = **100%**)
+
+### Migration
+
+| 이전 (v3.x ~ v4.x) | v5.0.0 대체 |
+|-------------------|-------------|
+| 동적 fetch는 hyve MCP `web_browse.render` (LIGHTEN-001) | `extract_content.py --url URL --dynamic-only --format markdown` |
+| 한국 미디어 빠른 추출 | `extract_content.py --url URL --dynamic-only --lp-markdown` |
+| 세부 옵션 필요 시 | `fetch_dynamic.py` CLI 직접 사용 |
+| Anti-bot 차단 | **여전히 hyve MCP** (자동 escalation 안내) |
+| SNS 인증 | **여전히 hyve MCP** |
+| naverplace | **여전히 hyve MCP** |
+
+### Rationale
+
+LIGHTEN(v3.0.0)에서 동적 fetch를 hyve MCP로 위임한 결정의 근거는 다음과 같았다:
+- Playwright/Chromium ~200MB 설치 + `playwright install chromium` 잦은 실패
+- fetch_dynamic.py 1,378 LOC가 web-reader의 56% 차지
+
+이 근거는 **Lightpanda 등장으로 해소**된다:
+- 단일 바이너리 65–135MB (Node 의존 없음, Homebrew/AUR/nightly URL)
+- 24MB 메모리 풋프린트, 100ms 부팅, V8 기반 JS 실행
+- LLM-친화 CLI (`--dump markdown`, `--strip-mode`, `--wait-selector`)
+- CDP/MCP 서버 모드 내장
+- 신규 wrapper LOC ~400 (이전 1,378 LOC의 29%)
+
+LIGHTEN의 결정 자체보다 **그 결정의 근본 동기(가벼운 설치 + 안정 동작)** 를 더 잘 만족하는 백엔드로 동적 fetch를 web-reader로 재흡수한다. hyve MCP는 폐기되지 않으며, anti-bot/SNS/도메인 어댑터 영역의 escalation 경로로 유지된다.
+
+### Non-goals (hyve MCP escalation)
+
+- Akamai/Cloudflare anti-bot 우회 (stealth/fingerprint 마스킹)
+- SNS 인증 후 데이터 로드 (인스타·X timeline)
+- 네이버 부동산 등 도메인 어댑터 (naverplace는 hyve MCP)
+- Windows 네이티브 (Lightpanda는 WSL2 필수)
+- musl Linux (Alpine 미지원)
+
+### Cross-skill Impact
+
+- `grep -rln "fetch_dynamic\|lightpanda" itda-*/ | grep -v web-reader/`: 0건 (cross-skill 외부 호출자 없음)
+- 기존 정적 fetch 회귀 0건: 비-Lightpanda 테스트 스위트 통과 (473개 + 신규)
+
+---
+
 ## [4.0.0] — 2026-05-13 (SPEC-WEBREADER-YOUTUBE-REMOVE-001)
 
 ### Breaking Changes

@@ -1,39 +1,37 @@
 ---
 name: web-reader
 description: >
-  WebFetch로 처리되지 않는 정적 웹 페치 전용 스킬입니다. 다음 2가지 경우에만 사용하세요:
-  (1) EUC-KR/CP949 한글 인코딩 페이지 디코딩, (2) 쿠키 인증이 필요한 로그인된 페이지
-  또는 세션 기반 정적 페이지.
-  또는 사용자가 "web-reader 스킬로 가져와줘", "웹리더로 읽어줘"처럼 스킬명을 명시한 경우에 활성화됩니다.
-  Do NOT use for: 단순 URL 읽기·일반 웹페이지 요약·정적 HTML 페치는 Claude의 WebFetch 도구를
-  사용하세요. JavaScript 렌더링이 필요한 SPA/CSR 페이지는 hyve MCP의 web_browse.render
-  도메인(SPEC-WEB-MCP-002)을 사용하세요. 네이버 부동산은 hyve MCP의 naverplace 도메인을
-  사용하세요. YouTube 자막은 `yt-dlp --write-auto-sub --sub-lang ko --skip-download <URL>`
-  한 줄과 Claude 위임으로 충분합니다 (v4.0.0에서 자막 기능 제거).
-  위 2종 정적 기능이 필요하지 않은 일반 페치 요청은 이 스킬을 활성화하지 마세요.
+  WebFetch 미처리 정적/동적 웹 페치 스킬. 3종 use case: (1) EUC-KR/CP949, (2) 쿠키 인증,
+  (3) JS 동적 (Lightpanda 백엔드, --dynamic-only). 동적 요청 시 mcp__lightpanda__* 노출되어
+  있으면 우선 사용, 본 스킬은 fallback. 일반 URL은 WebFetch, anti-bot/SNS/네이버부동산은
+  hyve MCP, YouTube는 yt-dlp 사용. 우선순위 상세는 본문 참조.
 license: Apache-2.0
 compatibility: Designed for Claude Cowork
 allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "4.0.0"
+  version: "5.0.0"
   created_at: "2026-03-18"
   updated_at: "2026-05-13"
-  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie"
+  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, lightpanda, dynamic, javascript, headless, spa"
 ---
 
 # web-reader
 
-웹페이지를 깔끔한 Markdown 또는 JSON으로 변환한다. 한국 웹사이트(EUC-KR/CP949)와 쿠키 인증 정적 페이지에 최적화된 정적 페치 전용 스킬.
+웹페이지를 깔끔한 Markdown 또는 JSON으로 변환한다. 한국 웹사이트(EUC-KR/CP949), 쿠키 인증 정적 페이지, JavaScript 동적 페이지(Lightpanda 백엔드)에 최적화된 페치 전용 스킬.
 
-> **v4.0.0 안내**: YouTube 자막 추출 기능은 v4.0.0에서 제거되었습니다. `yt-dlp` + Claude 위임으로
-> 동등 결과를 얻을 수 있어 이중 유지보수를 종료했습니다. 마이그레이션 가이드는 [GUIDE.md](GUIDE.md)의
-> "마이그레이션 안내 (v3 → v4)" 섹션을 참조하세요.
+> **v5.0.0 안내**: 동적 fetch가 `--dynamic-only` 플래그로 부활했습니다. 백엔드는 **Lightpanda**
+> (Zig+V8 단일 바이너리, ~65–135MB, 24MB 메모리, 100ms 부팅). LIGHTEN(v3.0.0)에서 Playwright/Chromium의
+> 무거운 설치를 이유로 hyve MCP로 위임했던 동적 fetch가, Lightpanda 등장으로 가벼운 설치 + 안정 동작이
+> 가능해져 web-reader로 재흡수되었습니다. 22-URL 검증에서 일반 사이트 100% 성공.
+> 마이그레이션 가이드는 [GUIDE.md](GUIDE.md)의 "마이그레이션 안내 (v4 → v5)" 섹션을 참조하세요.
 >
-> **v3.0.0 안내**: 동적 fetch(Playwright/Chromium)와 SPA 어댑터는 **hyve MCP**로 이전되었습니다.
-> JavaScript 렌더링이 필요하면 hyve MCP의 `web_browse.render` 도메인을, 네이버 부동산은 `naverplace`
-> 도메인을 사용하세요.
+> **v4.0.0 안내**: YouTube 자막 추출 기능은 v4.0.0에서 제거되었습니다. `yt-dlp` + Claude 위임으로
+> 동등 결과를 얻을 수 있어 이중 유지보수를 종료했습니다.
+>
+> **v3.0.0 안내**: SPA 어댑터(naver-land 등)는 hyve MCP의 `naverplace` 도메인으로 이전됐습니다.
+> Anti-bot stealth가 필요하면 hyve MCP의 `web_browse.render` 사용.
 
 ## Prerequisites
 
@@ -68,6 +66,31 @@ py -3 scripts/fetch_html.py --url "URL" --output page.html
 py -3 scripts/extract_content.py page.html --format markdown
 ```
 
+### 동적 fetch (JavaScript 렌더링, v5.0.0)
+
+**[HARD] 우선순위 규칙**: 동적 fetch가 필요한 자연어 요청을 처리할 때 — Claude는 먼저 현재 available tools에 `mcp__lightpanda__*` 도구가 노출되어 있는지 점검하세요 (ToolSearch 사용 가능). 노출되어 있다면 그 MCP 도구를 직접 호출하는 것이 본 스킬을 활성화하는 것보다 우선합니다. 본 스킬의 `--dynamic-only` subprocess는 아래 fallback 경로:
+
+- (a) `mcp__lightpanda__*` 도구가 현재 세션에 노출되지 않은 환경 (예: lightpanda를 사용자가 등록 안 함, 또는 Claude Code CLI 환경)
+- (b) 정제 파이프라인 결과(YAML frontmatter, CSS selector 추출, 노이즈 제거)가 필요한 경우
+- (c) CLI 자동화 스크립트·파이프라인에서 명시 호출
+
+사용자가 "이 SPA 동적으로 가져와줘"라고 자연어로 요청했을 때, 현재 세션에 lightpanda MCP가 보이면 본 스킬 활성화를 건너뛰고 MCP 도구로 직접 호출하세요. 사용자에게 묻지 않습니다 (정책).
+
+```bash
+# (fallback) Lightpanda 백엔드로 동적 페이지 가져오기 (정제 파이프라인 통과)
+python3 scripts/extract_content.py --url "https://news.naver.com/section/100" --dynamic-only --format markdown
+
+# (fallback) Lightpanda 자체 --dump markdown 출력 (정제 파이프라인 우회, 한국 미디어에 빠름)
+python3 scripts/extract_content.py --url "https://news.naver.com/" --dynamic-only --lp-markdown
+
+# (fallback) 세부 옵션은 fetch_dynamic.py CLI 직접 사용
+python3 scripts/fetch_dynamic.py --url "URL" --wait-selector "article.body" --terminate-ms 20000
+```
+
+Lightpanda 미설치 시 exit 3 + 설치 안내. Anti-bot 차단 페이지(coupang 등) 호출 시 exit 4 + hyve MCP escalation 안내.
+
+> **참고**: Lightpanda는 stdio MCP 서버 모드를 내장합니다 (`lightpanda mcp`). Claude Desktop의 `claude_desktop_config.json`에 등록하면 Cowork 환경에서도 자동 활성화됩니다 (사용자 영역 — 본 스킬은 등록 안내·실행에 관여하지 않음).
+
 ### 출력 포맷
 
 | 포맷 | 플래그 | 설명 |
@@ -75,6 +98,7 @@ py -3 scripts/extract_content.py page.html --format markdown
 | HTML | `--format html` | 정제된 HTML (기본값) |
 | Markdown | `--format markdown` | YAML frontmatter 포함 |
 | JSON | `--format json` | 메타데이터 + 콘텐츠 구조화 |
+| Lightpanda raw markdown | `--dynamic-only --lp-markdown` | 정제 파이프라인 우회, 한국 미디어 권장 |
 
 ## 특정 영역만 추출하기 (--selector)
 
@@ -101,9 +125,10 @@ python3 scripts/extract_content.py page.html --selector "table.price" --format j
 | exit code | 의미 |
 |-----------|------|
 | 0 | 정상 추출 |
-| 1 | selector 매칭 0건 (fallback 없음) |
+| 1 | selector 매칭 0건 또는 Lightpanda runtime 오류 |
 | 2 | selector 문법 오류 또는 잘못된 인자 |
-| 4 | 동적 fetch / SPA 어댑터 요청 (v3.0.0에서 hyve MCP로 위임됨) |
+| 3 | Lightpanda 바이너리 미설치 (stderr에 설치 안내) |
+| 4 | Bot challenge 감지(Access Denied/Cloudflare) 또는 SPA 어댑터 요청 → hyve MCP escalation |
 
 ## 인증 및 쿠키
 
@@ -159,6 +184,36 @@ v3.0.0 폐기 플래그 (호출 시 exit 4 + hyve MCP 안내):
   --adapter NAME            → hyve MCP naverplace 도메인(네이버 부동산) 또는 web_browse.render
   --adapter-page KEY        → 위와 동일
   --from-capture FILE       → hyve MCP web_browse.render의 capture 기능 사용
+```
+
+### fetch_dynamic.py (v5.0.0)
+```
+CLI: fetch_dynamic.py --url URL [--output FILE] [--dump-markdown]
+                      [--wait-until {load,domcontentloaded,networkidle,done}]
+                      [--wait-selector CSS] [--wait-ms N]
+                      [--terminate-ms N] [--http-timeout-ms N]
+                      [--strip-mode {js,css,ui,full,"js,css"}]
+                      [--cookie-file FILE] [--http-proxy URL] [--allow-private]
+
+Backend: Lightpanda (Zig+V8 단일 바이너리). 검출 우선순위:
+  1. $PATH (which lightpanda)
+  2. ~/.itda-skills/bin/lightpanda
+  3. ./mnt/.itda-skills/bin/lightpanda (Cowork 마운트)
+  4. ./.itda-skills/bin/lightpanda (Cowork 세션 한정)
+
+Exit codes:
+  0 = success
+  1 = Lightpanda runtime error (subprocess rc != 0)
+  2 = invalid args
+  3 = lightpanda binary not found (stderr: 플랫폼별 설치 안내)
+  4 = bot challenge detected (stderr: hyve MCP escalation 안내)
+
+SSRF: --block-private-networks 기본 활성. --allow-private로 해제 가능.
+
+Non-goals (hyve MCP escalation):
+  - Anti-bot 우회 (Akamai/Cloudflare stealth)
+  - SNS 인증 (인스타·X 로그인 토큰)
+  - 네이버 부동산 (naverplace 도메인 어댑터)
 ```
 
 ### clean_html.py
@@ -228,6 +283,21 @@ retry 전략 (단어 수 부족 시 자동 완화):
 - **응답 제한**: 50MB body 크기 제한 (Content-Length + chunked 양쪽)
 
 ## 마이그레이션
+
+### v4.x → v5.0.0 (Lightpanda 동적 fetch 부활)
+
+LIGHTEN(v3.0.0)에서 Playwright/Chromium 설치 부담을 이유로 hyve MCP로 위임했던 동적 fetch가, Lightpanda 등장으로 v5.0.0에서 web-reader로 재흡수되었습니다.
+
+| 이전 (v3~v4) | v5.0.0 대체 |
+|-------------|-------------|
+| (동적 fetch) hyve MCP `web_browse.render` | `extract_content.py --url URL --dynamic-only --format markdown` |
+| 한국 미디어 빠른 추출 | `extract_content.py --url URL --dynamic-only --lp-markdown` |
+| 세부 옵션(`--wait-selector` 등) | `fetch_dynamic.py` CLI 직접 사용 |
+| Anti-bot 차단 사이트 | **여전히 hyve MCP** (escalation 자동 안내) |
+| SNS (인스타·X) | **여전히 hyve MCP** (인증 필요) |
+| 네이버 부동산 | **여전히 hyve MCP** `naverplace` 도메인 |
+
+자세한 안내는 [GUIDE.md](GUIDE.md)의 "마이그레이션 안내 (v4 → v5)" 섹션 참조.
 
 ### v3.x → v4.0.0 (YouTube 자막 제거)
 

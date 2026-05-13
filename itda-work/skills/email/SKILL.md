@@ -10,9 +10,9 @@ compatibility: "Designed for Claude Cowork. Python 3.10+. No external dependenci
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.18.0"
+  version: "0.19.0"
   created_at: "2026-03-18"
-  updated_at: "2026-05-01"
+  updated_at: "2026-05-13"
   tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, 이메일, 메일 보내기, 메일 읽기, 받은편지함, 새 메일, 증분 조회, 다음 메일, 카카오 메일, 피싱, 폴더목록, 멀티계정"
 ---
 
@@ -189,6 +189,28 @@ Arguments:
 - `--html`: Send as HTML instead of plain text (optional flag)
 - `--attach FILE`: Attach a file (can be specified multiple times for multiple files)
 - `--force-587`: 465 SMTPS를 건너뛰고 처음부터 587 STARTTLS 사용 (v0.18.0+). 465가 항상 차단되는 환경에서 fallback 대기 시간 절약. 응답 `transport: "starttls_587_forced"`.
+- `--skip-probe`: 포트 연결 사전 탐색(TCP probe)을 건너뛰고 바로 SMTP 연결 시도 (v0.19.0+). 기본값은 probe 활성화.
+- `--to` 에 쉼표로 구분된 복수 수신자 지정 가능 (v0.19.0+). 예: `"a@x.com,b@x.com"`.
+
+#### 아웃박스 (v0.19.0+)
+
+샌드박스 환경(Cowork 등)에서 SMTP 포트가 차단된 경우, 이메일은 아웃박스에 저장되며 나중에 전송할 수 있습니다.
+
+- **저장 위치**: `.itda-skills/email/outbox/` (프로젝트 디렉토리 기준)
+- **파일 형식**: RFC 822 EML 파일 + JSON 메타데이터 (비밀번호 미포함)
+- **응답**: `{"status": "queued", "outbox_path": "...", "reason": "probe_blocked|send_failed_all_attempts"}`
+- **아웃박스 전송**: `python3 scripts/send_outbox.py` 로 큐에 쌓인 메일 일괄 발송
+
+```bash
+# 아웃박스 전송 (기본: 성공 시 sent/ 이동)
+python3 scripts/send_outbox.py --provider naver
+
+# 실제 전송 없이 목록만 확인
+python3 scripts/send_outbox.py --provider naver --dry-run
+
+# 전송 후 파일 삭제
+python3 scripts/send_outbox.py --provider naver --purge-on-success
+```
 
 ### Send Email with Attachments
 
@@ -538,7 +560,11 @@ DNS → TCP → SSL → SMTP banner → EHLO → AUTH 단계를 분리 측정하
 
 **Q. `send_email.py` 가 "Connection unexpectedly closed" 로 실패함**
 
-→ 가장 흔한 원인은 `server_disconnect` (서버측 IP 평판 차단). v0.18.0+ 부터 자동으로 587 STARTTLS fallback이 시도되며 stderr에 `warning: SMTPS(465) failed (...); retrying via STARTTLS(587)...` 가 표시됩니다. fallback도 실패하면 `send_failed_both_ports` 에러로 양쪽 상세 메시지가 함께 반환됩니다.
+→ 가장 흔한 원인은 `server_disconnect` (서버측 IP 평판 차단). v0.18.0+ 부터 자동으로 587 STARTTLS fallback이 시도되며 stderr에 `warning: SMTPS(465) failed (...); retrying via STARTTLS(587)...` 가 표시됩니다. v0.19.0+ 부터는 양쪽 포트 실패 시 이메일을 아웃박스에 저장(`status: "queued"`)하며 exit 0으로 종료됩니다. 나중에 `send_outbox.py` 로 재전송하거나 `--skip-probe` 플래그 없이 재시도할 수 있습니다.
+
+**Q. Cowork 환경에서 이메일 전송이 안 됨**
+
+→ v0.19.0+ 부터 SMTP 포트 차단 감지 시 자동으로 아웃박스에 저장합니다. 응답이 `{"status": "queued"}` 이면 이메일이 `.itda-skills/email/outbox/` 에 저장되었습니다. 호스트 환경에서 `python3 scripts/send_outbox.py --provider <이름>` 을 실행하면 저장된 메일을 발송할 수 있습니다.
 
 **Q. 로컬에서는 되는데 Cowork 샌드박스에서만 실패함**
 

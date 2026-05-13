@@ -92,6 +92,92 @@ hyve MCP의 `naverplace` 도메인은 단지·매물·리뷰 정보를 Go 포팅
 
 페이지가 별도 API로 데이터를 받아와 화면에 그리는 구조라면 hyve MCP의 `web_browse.render` 에 capture 옵션을 사용해 네트워크 응답을 캡처합니다.
 
+## 마이그레이션 안내 (v4 → v5)
+
+web-reader v5.0.0에서 **JavaScript 동적 fetch가 부활**했습니다. LIGHTEN(v3.0.0)에서 hyve MCP로 위임한 이유는 Playwright/Chromium 설치(~200MB) 부담과 잦은 실패였는데, **Lightpanda**(Zig+V8 단일 바이너리, 65–135MB, 24MB 메모리, 100ms 부팅)가 그 제약을 해소했기 때문입니다.
+
+### 우선순위 (중요)
+
+Lightpanda는 stdio MCP 서버 모드를 내장합니다. Claude Desktop의 `claude_desktop_config.json`에 lightpanda를 등록해 두면 Cowork에서도 자동 활성화되어 Claude가 MCP 도구로 직접 호출 가능합니다.
+
+따라서 동적 fetch 요청 처리 우선순위:
+
+1. **`mcp__lightpanda__*` 도구가 Claude 세션에 노출된 환경**: MCP 도구 직접 호출 (web-reader 활성화 안 함)
+2. **MCP 도구 미노출 환경 / 정제 파이프라인 필요**: 본 스킬의 `--dynamic-only` 사용
+
+본 가이드의 모든 `--dynamic-only` 예시는 2번 경로(fallback) 입니다. lightpanda를 MCP로 등록한 환경에서는 자연어 "이 SPA 가져와줘"만으로 Claude가 MCP를 직접 사용하므로 별도 CLI 명령이 필요 없습니다.
+
+> **Lightpanda 설치 및 MCP 등록은 사용자 영역**입니다. 본 스킬은 등록 절차 안내·실행에 관여하지 않습니다 (정책). 미설치 시 `--dynamic-only` 호출은 exit 3 + 플랫폼별 설치 안내 메시지만 출력합니다.
+
+### 설치
+
+```bash
+# macOS (Homebrew)
+brew install lightpanda
+
+# 또는 nightly 직접 다운로드
+# macOS arm64
+mkdir -p ~/.itda-skills/bin && curl -L \
+  https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-macos \
+  -o ~/.itda-skills/bin/lightpanda && chmod +x ~/.itda-skills/bin/lightpanda
+xattr -d com.apple.quarantine ~/.itda-skills/bin/lightpanda 2>/dev/null
+
+# Linux x86_64 (glibc 기반, musl/Alpine 미지원)
+mkdir -p ~/.itda-skills/bin && curl -L \
+  https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-linux \
+  -o ~/.itda-skills/bin/lightpanda && chmod +x ~/.itda-skills/bin/lightpanda
+
+# Windows
+# 네이티브 미지원 — WSL2 필수. WSL2 내부에서 Linux 명령으로 설치.
+# 또는 hyve MCP의 web_browse.render 사용 (SPEC-WEB-MCP-002).
+```
+
+검출 우선순위: `$PATH` → `~/.itda-skills/bin/lightpanda` → `./mnt/.itda-skills/bin/lightpanda` (Cowork 마운트) → `./.itda-skills/bin/lightpanda` (Cowork 세션 한정).
+
+### 사용
+
+```
+이 SPA 페이지 동적으로 가져와줘
+이 네이버 뉴스 동적 fetch로 마크다운 추출해줘
+```
+
+CLI:
+```bash
+# 1) 정제 파이프라인 통과 (YAML frontmatter + 본문 추출)
+python3 scripts/extract_content.py --url "https://news.naver.com/section/100" --dynamic-only --format markdown
+
+# 2) Lightpanda 자체 markdown 출력 (정제 우회, 한국 미디어 권장 — 빠르고 깔끔)
+python3 scripts/extract_content.py --url "https://news.naver.com/" --dynamic-only --lp-markdown
+
+# 3) 세부 옵션이 필요할 때 fetch_dynamic.py 직접 사용
+python3 scripts/fetch_dynamic.py --url "URL" \
+  --wait-selector "article" --terminate-ms 20000 --strip-mode js,css
+```
+
+### 언제 web-reader `--dynamic-only` vs hyve MCP
+
+| 케이스 | 도구 |
+|--------|------|
+| 한국 미디어/뉴스/블로그 SPA | **web-reader `--dynamic-only`** (1초대, 가벼움) |
+| 정부 SPA (gov.kr, nts.go.kr 등) | **web-reader `--dynamic-only`** |
+| 영문 SPA (github, vercel 등) | **web-reader `--dynamic-only`** |
+| Akamai/Cloudflare 봇 차단 (coupang 등) | **hyve MCP `web_browse.render`** (stealth) |
+| SNS 인증 후 데이터 (인스타·X) | **hyve MCP `web_browse.render`** (인증 흐름) |
+| 네이버 부동산 단지/매물 | **hyve MCP `naverplace.complex` / `naverplace.search`** |
+| Windows 네이티브 환경 | **hyve MCP `web_browse.render`** (Lightpanda WSL2 필수) |
+
+web-reader가 bot challenge를 감지하면 exit 4 + hyve MCP escalation 안내 메시지를 stderr로 출력합니다 — 사용자는 그대로 hyve MCP로 전환하면 됩니다.
+
+### 검증 매트릭스 (2026-05-13)
+
+22개 URL 직접 측정 결과:
+- 일반 사이트 (한국 미디어·블로그·정부·영문 SPA): **20/20 (100%) 성공**, 평균 1.2초
+- Anti-bot/SNS: 2/2 실패 (예상대로 — escalation 권장)
+
+자세한 데이터는 [SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001](../../../.moai/specs/SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001/spec.md) §1.2 참조.
+
+---
+
 ## 마이그레이션 안내 (v3 → v4)
 
 web-reader v4.0.0에서 **YouTube 자막 추출 기능이 제거**되었습니다. 직접 비교 실험에서 `yt-dlp` 한 줄로 동일한 결과를 얻을 수 있고 Claude가 후처리까지 즉시 수행함을 확인했기 때문입니다. 이중 유지보수 비용이 사용자 체감 가치를 초과해 제거를 결정했습니다.

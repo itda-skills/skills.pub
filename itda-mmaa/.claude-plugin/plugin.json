@@ -1,7 +1,7 @@
 {
   "name": "itda-mmaa",
   "description": "군인공제회(MMAA) 입찰 공고를 자동 수집·추출하는 플러그인 — KACEM 게시판 모니터링 + ZIP 첨부 자동 압축해제 + 사업개요·사업비 추출",
-  "version": "6.0.0",
+  "version": "6.1.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
