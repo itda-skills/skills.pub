@@ -1,5 +1,18 @@
 # Changelog — itda-web-reader
 
+## [5.0.1] — 2026-05-13
+
+### Improvements
+
+- **GUIDE.md "검증된 데이터 수집 사이트" 섹션 추가**: 13개 사이트 실측 결과 표화 (한국 미디어/외산 ATS/SaaS Changelog/공공/커뮤니티/이커머스/채용 SPA). 정적 fetch로 충분한 사이트 11종, lightpanda 필수 2종(Wanted, Disquiet) 분류.
+- **의사결정 휴리스틱 명시**: 정적 fetch 우선 → `words=0`이면 `--dynamic-only` → exit 4면 web-reader 범위 밖.
+- **효용성 워크플로우 3종 예시**: 매일 IT 헤드라인 자동 수집, 경쟁사 Greenhouse 채용 주간 diff, Linear changelog 신규 항목.
+- **실측 패턴 인사이트**: 외산 SaaS·ATS는 SEO 위해 SSR 기본이라 정적 fetch만으로 본문 회수 가능. 한국 미디어 메인도 동일. Lightpanda 진성 효용은 CSR SPA(Wanted, Disquiet)에서만 발휘.
+
+### Why
+
+`itda-work:find-work`로 발굴된 "정기 웹 모니터링" 후보가 web-reader로 처리 가능한지 판단할 때, 매번 사용자가 직접 시도·실패할 위험을 줄이기 위해 검증된 사이트 카탈로그를 GUIDE.md에 명문화.
+
 ## [5.0.0] — 2026-05-13 (SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001)
 
 ### Breaking Changes
