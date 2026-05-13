@@ -1,5 +1,13 @@
 # Changelog — find-work
 
+## [0.9.2] — 2026-05-13
+
+### Improvements
+
+- **GUIDE.md를 사용자 활용 가이드로 재작성**: 기존 운영자·강사 시점 문서가 다른 itda-work 스킬(`investigate`, `web-reader`, `exchange-rate` 등)의 GUIDE.md 컨벤션(`title: "... 상세 가이드"` + 빠른 시작 + 활용 시나리오 + 팁 + 제한사항)과 어긋나 사용자가 가이드를 찾을 때 혼선이 있었음. 사용자 시점으로 전면 재작성.
+- **운영자·강사 컨텐츠는 `references/operator-guide.md`로 이동**: 시연 흐름·자주 묻는 질문 대비·운영 팁은 그대로 보존, 내부 문서로 분리.
+- SKILL.md 참조 문서 목록 갱신 (operator-guide.md 추가, GUIDE.md 설명 정정).
+
 ## [0.9.1] — 2026-05-13
 
 ### Bug Fixes
