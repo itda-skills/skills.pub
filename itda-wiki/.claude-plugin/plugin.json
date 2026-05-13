@@ -1,7 +1,7 @@
 {
   "name": "itda-wiki",
   "description": "Karpathy LLM Wiki 패턴을 Claude Cowork에서 운영하는 3종 스킬 — 적재(research-deposit) + 인용 강제 작성(report-writer) + 인용 검증(evidence-checker). [IGM] 클로드 활용 2026 업무혁명 과정 02기 강의 산출물.",
-  "version": "5.9.0",
+  "version": "6.0.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

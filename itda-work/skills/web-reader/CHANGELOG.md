@@ -1,5 +1,33 @@
 # Changelog — itda-web-reader
 
+## [4.0.0] — 2026-05-13 (SPEC-WEBREADER-YOUTUBE-REMOVE-001)
+
+### Breaking Changes
+
+- **YouTube 자막 추출 기능 제거 (약 1,865 LOC 삭제)**: `scripts/fetch_youtube.py` (591 LOC), `tests/test_fetch_youtube.py` (1,133 LOC), `scripts/tests/test_youtube_selector_warning.py` (141 LOC) 가 모두 제거되었습니다. `extract_content.py` 의 YouTube URL 자동 위임 분기도 제거되었습니다.
+- **YouTube URL을 `extract_content.py --url` 에 전달하면 exit code 2**: stderr에 `yt-dlp` 명령어 안내가 출력되고 종료합니다. fail-fast 정책 (silent fallback 없음).
+- **`youtube-transcript-api` 의존성 제거**: `requirements.txt` 에서 제거되었습니다.
+- **description scope 축소 (3종 → 2종)**: SKILL.md description 의 use case 가 `(1) EUC-KR/CP949 한글 인코딩` + `(2) 쿠키 인증 정적 페이지` 2종으로 축소되었습니다. "YouTube 자막" 자연어 요청에 더 이상 web-reader 가 활성화되지 않습니다.
+- **`metadata.tags` 변경**: `youtube`, `transcript`, `caption` 태그가 제거되었습니다.
+
+### Migration
+
+| v3.x 호출 | v4.0.0 대체 |
+|-----------|-------------|
+| `python3 scripts/fetch_youtube.py --url URL` | `yt-dlp --write-auto-sub --sub-lang ko --skip-download <URL>` |
+| `python3 scripts/extract_content.py --url <youtube_url>` | exit 2 + 안내 — 호출 측에서 `yt-dlp` 로 전환 |
+| Python: `from fetch_youtube import fetch_youtube` | `subprocess.run(["yt-dlp", ...])` 또는 `yt-dlp` 라이브러리 |
+
+자세한 마이그레이션은 GUIDE.md "마이그레이션 안내 (v3 → v4)" 섹션 참조.
+
+### Rationale
+
+2026-05-13 직접 비교 실험에서 `yt-dlp --write-auto-sub --sub-lang ko --skip-download URL` 한 줄 + Python 정규식 10줄로 `fetch_youtube.py` 와 동등한 결과(한국어 자동자막 텍스트 정리)를 생성할 수 있음을 확인했습니다. Claude 는 yt-dlp 호출과 VTT 파싱을 즉석에서 수행하며, web-reader 가 제공하던 추가 가치(YAML frontmatter, 언어 우선순위, oEmbed 메타데이터 통합)는 단일 자막 정리 작업에서 사용자가 체감하지 못합니다. 이중 유지보수 비용이 사용자 가치를 초과하므로 yt-dlp 위임 경로로 단일화합니다.
+
+Cross-skill 외부 호출자: **0건** (`grep -rln "fetch_youtube\|youtube_transcript_api" itda-*/ | grep -v "web-reader/"` 결과). 안전하게 제거 가능.
+
+---
+
 ## [3.0.0] — 2026-05-11 (SPEC-WEBREADER-LIGHTEN-001)
 
 ### Breaking Changes

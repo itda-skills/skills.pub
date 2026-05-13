@@ -8,18 +8,20 @@ description: >
   매번 olefile 스크립트를 작성·디버깅(실측 평균 4회)할 필요 없이 단 1회 호출로 완료합니다
   (실측: 보도자료 1건당 클로드 단독 ~114,000토큰 vs 본 스킬 ~3,100토큰, 약 37배 절감,
   10회 누적 ratio=0.003 — evals/results/SPEC-HWPX-DIFF-001-20260511.json, 2026-05-11).
-  한국 공공기관 표 평탄화 규칙과 이미지 자동 캡션(Sonnet 서브에이전트)이 내장되어 있습니다.
+  한국 공공기관 표 평탄화 규칙이 내장되어 있고, 이미지 캡션(Sonnet 서브에이전트)은
+  명시 요청 시에만 실행됩니다 (v3.0.0 부터 디폴트 OFF, cli.hwpx v2.1.0 호환).
 
-  본문만 필요한 가벼운 케이스는 클로드 단독(olefile 50줄 스크립트)으로도 가능합니다.
-  표 구조 보존·이미지 추출·양산(반복) 환경에서는 본 스킬을 사용하세요.
+  본문만 필요한 가벼운 케이스는 "본문만"/"텍스트만" 키워드로 이미지 추출 자체를 생략할 수 있고
+  (cli.hwpx --no-extract-images, v2.1.0+), 표 구조 보존·이미지 추출·양산(반복) 환경에서는
+  디폴트 호출만으로 충분합니다.
 license: Apache-2.0
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   tags: "hwp, hwpx, 한글, 한컴, 문서, document, convert, markdown, html, 표변환, 이미지추출, 보도자료"
-  version: "2.7.0"
+  version: "3.0.0"
   category: "document"
   created_at: "2026-03-20"
-  updated_at: "2026-05-11"
+  updated_at: "2026-05-13"
 ---
 
 # HWP/HWPX 문서 처리 (hwpx)
@@ -58,6 +60,22 @@ HWPX_BIN=$(which hwpx 2>/dev/null || echo ".itda-skills/bin/hwpx")
 
 ## 워크플로
 
+### 이미지 옵션 매트릭스 (v3.0.0 부터)
+
+디폴트는 **이미지 추출 O / 캡션 X**. 사용자 발화에 키워드가 있으면 아래 표대로 분기합니다.
+
+| 사용자 의도 | 트리거 키워드 | CLI 호출 | 2.5단계 (Sonnet 캡션) |
+|------------|-------------|---------|---------------------|
+| 디폴트 | (키워드 없음) | `hwpx convert ... --format md` | **스킵** |
+| 본문만 (가장 가벼움) | "본문만", "텍스트만", "이미지 빼고", "이미지 없이" | `hwpx convert ... --format md --no-extract-images` | 스킵 (이미지 없음) |
+| 캡션 포함 | "이미지 설명도", "캡션 포함", "이미지 분석해줘", "이미지 설명 추가" | `hwpx convert ... --format md` | **실행** |
+| 모순 (본문만 + 캡션 포함) | 둘 다 등장 | (CLI 실행 보류) | AskUserQuestion 으로 의도 재확인 |
+
+**호환성 가드**:
+- `--no-extract-images` 는 cli.hwpx v2.1.0 이상에서만 동작. `hwpx version` 출력을 SemVer 비교하여 v2.1.0 미만이면 "본문만" 키워드 무시 + 사용자에게 cli 업그레이드 안내.
+- HTML 변환(`--format html`) 은 cli.hwpx 가 이미지 추출 미지원 → 두 키워드 모두 경고 후 무시.
+- `--no-extract-images` + `--require-images` 동시 사용은 cli.hwpx 에서 exit 1. 본 스킬은 `--require-images` 를 사용하지 않으므로 충돌 없음.
+
 ### ① HWP/HWPX 파일 읽기 (4단계)
 
 **1단계 — 실행**: 입력 파일을 쓰기 가능 경로로 복사 후 변환
@@ -66,11 +84,17 @@ HWPX_BIN=$(which hwpx 2>/dev/null || echo ".itda-skills/bin/hwpx")
 # 입력 파일 복사 + 변환 (read-only 경로 회피)
 mkdir -p .itda-skills
 cp <입력파일> .itda-skills/
+
+# 디폴트 (이미지 추출 O)
 $HWPX_BIN convert .itda-skills/<파일명> -o .itda-skills/<파일명>.md --format md
+
+# "본문만"/"텍스트만" 키워드 감지 시 (cli.hwpx v2.1.0+ 필요)
+$HWPX_BIN convert .itda-skills/<파일명> -o .itda-skills/<파일명>.md --format md --no-extract-images
 ```
 
 > 입력 파일을 `.itda-skills/`로 복사하는 이유: Cowork 환경의 uploads 경로는 read-only이므로,
 > 변환 중 이미지 추출(`<stem>/` 디렉토리 생성)이 실패할 수 있습니다.
+> `--no-extract-images` 사용 시 디렉토리가 생성되지 않고 MD 본문에 `![](#image-omitted)` placeholder 가 주입됩니다.
 
 **2단계 — 확인**: 변환 결과 파일 읽기
 
@@ -79,9 +103,11 @@ $HWPX_BIN convert .itda-skills/<파일명> -o .itda-skills/<파일명>.md --form
 Read .itda-skills/<파일명>.md
 ```
 
-**2.5단계 — 이미지 캡션 생성**: 추출된 이미지에 AI 설명을 자동 삽입
+**2.5단계 — 이미지 캡션 생성 (옵트인, v3.0.0 부터 디폴트 OFF)**: 추출된 이미지에 AI 설명을 삽입
 
-- 사용자 요청에 "이미지 설명 없이", "캡션 없이", "이미지 그대로" 포함 시 이 단계를 건너뛴다
+- **디폴트는 스킵**. 사용자 요청에 "이미지 설명도", "캡션 포함", "이미지 분석해줘", "이미지 설명 추가" 같은 키워드가 있을 때만 실행한다
+- 잔존 키워드 "이미지 설명 없이", "캡션 없이", "이미지 그대로" 는 디폴트 동작과 동일 (호환성 유지, 동작 변경 없음)
+- "본문만"/"텍스트만" 키워드로 `--no-extract-images` 가 적용된 경우 이미지가 없으므로 자동 스킵
 - HTML 변환(`--format html`) 결과에는 적용하지 않는다
 - 추출된 이미지 디렉토리(`.itda-skills/<파일명>/`) 가 없거나 비어있으면 건너뛴다 (구버전 fallback 은 `find_images` 헬퍼가 처리)
 
@@ -190,6 +216,17 @@ cli.hwpx v1.0.2 이상에서 이미지 추출 경로가 변경되었습니다.
 | v1.0.1 이하 | `.itda-skills/images/<basename>_image1.png` |
 
 본 스킬은 `scripts/find_images.py` 헬퍼로 양쪽 경로를 동시 탐색합니다. 구버전 출력 패턴이 감지되면 사용자에게 cli.hwpx 업그레이드를 권장합니다.
+
+### cli.hwpx 버전 호환성
+
+| 스킬 기능 | 요구 버전 |
+|----------|----------|
+| 기본 변환 (MD/HTML) | v0.9.7+ |
+| 결정적 출력 파일명 (`-o` hash 없음) | v1.0.2+ |
+| 신규 이미지 경로 (`<stem>/image_NNNN`) | v1.0.2+ |
+| **`--no-extract-images` ("본문만" 키워드)** | **v2.1.0+** |
+
+v2.1.0 미만 환경에서 "본문만" 키워드를 사용하면 unknown flag 오류가 발생합니다. 스킬은 호출 전 `$HWPX_BIN version` 출력을 파싱하여 v2.1.0 미만이면 키워드를 무시하고 디폴트 호출로 폴백 + 사용자에게 cli 업그레이드를 안내합니다.
 
 ```python
 from find_images import find_images

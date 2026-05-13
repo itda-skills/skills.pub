@@ -19,6 +19,7 @@ import importlib
 import importlib.util
 import json
 import os
+import re
 import sys
 import time
 from typing import Any
@@ -571,36 +572,22 @@ def main() -> None:
     # Read input
     try:
         if args.url:
-            # YouTube URL이면 fetch_youtube 모듈에 위임
-            _fy = _load_module("fetch_youtube")
-            if _fy.is_youtube_url(args.url):
-                # REQ-005 (SPEC-WEBREADER-010): YouTube URL + --selector 충돌 warning
-                user_selector_yt = getattr(args, "selector", None)
-                if user_selector_yt:
-                    print(
-                        f"Warning: --selector ignored for YouTube URL ('{user_selector_yt}'). "
-                        "YouTube transcript extraction does not use CSS selectors.",
-                        file=sys.stderr,
-                    )
-                lang = getattr(args, "lang", None)
-                yt_result = _fy.fetch_youtube(args.url, args.format, lang)
-                content = yt_result["content"]
-
-                if args.output:
-                    with open(args.output, "w", encoding="utf-8") as f:
-                        f.write(content)
-                else:
-                    print(content)
-
+            # SPEC-WEBREADER-YOUTUBE-REMOVE-001: YouTube 자막 기능은 v4.0.0에서 제거됨.
+            # yt-dlp + Claude 위임으로 동등 결과를 얻을 수 있음 (이중 유지보수 비용이 사용자 가치를 초과).
+            if re.search(
+                r"(?:youtube\.com/(?:watch|shorts|live)|youtu\.be/|m\.youtube\.com/watch)",
+                args.url,
+            ):
                 print(
-                    f"words={yt_result['word_count']} "
-                    f"time={yt_result['parse_time_ms']}ms "
-                    f"format={args.format}",
+                    "YouTube transcript extraction was removed in web-reader v4.0.0.\n"
+                    "Use yt-dlp instead:\n"
+                    "  yt-dlp --write-auto-sub --sub-lang ko --skip-download <URL>\n"
+                    "See GUIDE.md '마이그레이션 안내 (v3 → v4)' for details.",
                     file=sys.stderr,
                 )
-                sys.exit(0)
+                sys.exit(2)
 
-            # YouTube가 아닌 URL: fetch_pipeline orchestrator 사용 (REQ-2, WI-2)
+            # 일반 URL: fetch_pipeline orchestrator 사용 (REQ-2, WI-2)
             try:
                 _fp = _load_module("fetch_pipeline")
                 _ws = _load_module("web_selectors")

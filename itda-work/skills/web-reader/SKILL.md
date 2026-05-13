@@ -1,34 +1,39 @@
 ---
 name: web-reader
 description: >
-  WebFetch로 처리되지 않는 정적 웹 페치 전용 스킬입니다. 다음 3가지 경우에만 사용하세요:
-  (1) EUC-KR/CP949 한글 인코딩 페이지 디코딩, (2) YouTube 자막(transcript/caption) 추출,
-  (3) 쿠키 인증이 필요한 로그인된 페이지 또는 세션 기반 정적 페이지.
+  WebFetch로 처리되지 않는 정적 웹 페치 전용 스킬입니다. 다음 2가지 경우에만 사용하세요:
+  (1) EUC-KR/CP949 한글 인코딩 페이지 디코딩, (2) 쿠키 인증이 필요한 로그인된 페이지
+  또는 세션 기반 정적 페이지.
   또는 사용자가 "web-reader 스킬로 가져와줘", "웹리더로 읽어줘"처럼 스킬명을 명시한 경우에 활성화됩니다.
   Do NOT use for: 단순 URL 읽기·일반 웹페이지 요약·정적 HTML 페치는 Claude의 WebFetch 도구를
   사용하세요. JavaScript 렌더링이 필요한 SPA/CSR 페이지는 hyve MCP의 web_browse.render
   도메인(SPEC-WEB-MCP-002)을 사용하세요. 네이버 부동산은 hyve MCP의 naverplace 도메인을
-  사용하세요. 위 3종 정적 기능이 필요하지 않은 일반 페치 요청은 이 스킬을 활성화하지 마세요.
+  사용하세요. YouTube 자막은 `yt-dlp --write-auto-sub --sub-lang ko --skip-download <URL>`
+  한 줄과 Claude 위임으로 충분합니다 (v4.0.0에서 자막 기능 제거).
+  위 2종 정적 기능이 필요하지 않은 일반 페치 요청은 이 스킬을 활성화하지 마세요.
 license: Apache-2.0
 compatibility: Designed for Claude Cowork
 allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "3.0.0"
+  version: "4.0.0"
   created_at: "2026-03-18"
-  updated_at: "2026-05-11"
-  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, youtube, transcript, caption, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie"
+  updated_at: "2026-05-13"
+  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie"
 ---
 
 # web-reader
 
-웹페이지와 YouTube 자막을 가져와 깔끔한 Markdown 또는 JSON으로 변환한다. 한국 웹사이트(EUC-KR/CP949)에 최적화된 정적 페치 전용 스킬.
+웹페이지를 깔끔한 Markdown 또는 JSON으로 변환한다. 한국 웹사이트(EUC-KR/CP949)와 쿠키 인증 정적 페이지에 최적화된 정적 페치 전용 스킬.
 
+> **v4.0.0 안내**: YouTube 자막 추출 기능은 v4.0.0에서 제거되었습니다. `yt-dlp` + Claude 위임으로
+> 동등 결과를 얻을 수 있어 이중 유지보수를 종료했습니다. 마이그레이션 가이드는 [GUIDE.md](GUIDE.md)의
+> "마이그레이션 안내 (v3 → v4)" 섹션을 참조하세요.
+>
 > **v3.0.0 안내**: 동적 fetch(Playwright/Chromium)와 SPA 어댑터는 **hyve MCP**로 이전되었습니다.
 > JavaScript 렌더링이 필요하면 hyve MCP의 `web_browse.render` 도메인을, 네이버 부동산은 `naverplace`
-> 도메인을 사용하세요. 마이그레이션 가이드는 [GUIDE.md](GUIDE.md)의 "마이그레이션 안내 (v2 → v3)"
-> 섹션을 참조.
+> 도메인을 사용하세요.
 
 ## Prerequisites
 
@@ -38,7 +43,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
 # powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 
 # 필수 의존성 (Playwright/Chromium 불필요)
-uv pip install --system requests beautifulsoup4 markdownify youtube-transcript-api
+uv pip install --system requests beautifulsoup4 markdownify
 ```
 
 ## 추천 워크플로우 (Fetch → Extract)
@@ -61,14 +66,6 @@ Windows:
 ```powershell
 py -3 scripts/fetch_html.py --url "URL" --output page.html
 py -3 scripts/extract_content.py page.html --format markdown
-```
-
-### YouTube 자막 추출
-
-```bash
-python3 scripts/fetch_youtube.py --url "https://www.youtube.com/watch?v=VIDEO_ID"
-# 또는 extract_content.py에 YouTube URL을 전달하면 자동 위임
-python3 scripts/extract_content.py --url "https://www.youtube.com/watch?v=VIDEO_ID" --format markdown
 ```
 
 ### 출력 포맷
@@ -145,7 +142,7 @@ CLI: extract_content.py [INPUT_FILE] [--output FILE]
                         [--selector CSS]
      (reads stdin if INPUT_FILE omitted)
      --url과 INPUT_FILE은 상호 배타적 (동시 지정 시 에러)
-     YouTube URL이 --url에 주어지면 자동으로 fetch_youtube에 위임
+     YouTube URL이 --url에 주어지면 v4.0.0부터 exit 2 + yt-dlp 안내 메시지 출력
 
 --selector CSS            CSS selector로 추출 범위를 한정한다.
                           지정 시 자동 본문 탐지(ENTRY_POINT_SELECTORS)를 건너뛴다.
@@ -162,18 +159,6 @@ v3.0.0 폐기 플래그 (호출 시 exit 4 + hyve MCP 안내):
   --adapter NAME            → hyve MCP naverplace 도메인(네이버 부동산) 또는 web_browse.render
   --adapter-page KEY        → 위와 동일
   --from-capture FILE       → hyve MCP web_browse.render의 capture 기능 사용
-```
-
-### fetch_youtube.py
-```
-CLI: fetch_youtube.py --url YOUTUBE_URL [--format html|markdown|json] [--lang CODE] [--output FILE]
-
-자막 언어 우선순위 (--lang 미지정 시):
-  1. ko (수동)  2. ko (자동)  3. en (수동)  4. en (자동)  5. 첫 번째 가용
-지원 URL: youtube.com/watch, youtu.be, /shorts/, /live/, m.youtube.com
-
-Exit codes: 0=success, 1=network error, 2=invalid args
-자막 없음: exit 0, stderr Warning, 메타데이터만 반환
 ```
 
 ### clean_html.py
@@ -242,9 +227,21 @@ retry 전략 (단어 수 부족 시 자동 완화):
 - **Import 보호**: importlib 기반 모듈 로딩 + sys.modules 캐시 경로 검증
 - **응답 제한**: 50MB body 크기 제한 (Content-Length + chunked 양쪽)
 
-## 마이그레이션 (v2.x → v3.0.0)
+## 마이그레이션
 
-v3.0.0에서 제거된 기능과 대체 경로는 [GUIDE.md](GUIDE.md)의 "마이그레이션 안내 (v2 → v3)" 섹션을 참조하세요. 요약:
+### v3.x → v4.0.0 (YouTube 자막 제거)
+
+YouTube 자막 기능이 제거되었습니다. `yt-dlp` 한 줄로 동일한 결과를 얻을 수 있습니다.
+
+| v3.x 호출 | v4.0.0 대체 |
+|-----------|-------------|
+| `python3 scripts/fetch_youtube.py --url URL` | `yt-dlp --write-auto-sub --sub-lang ko --skip-download <URL>` |
+| `python3 scripts/extract_content.py --url <youtube_url>` | 동일 (exit 2 + yt-dlp 안내) |
+| `--lang en` 영어 자막 | `yt-dlp --sub-lang en --skip-download <URL>` |
+
+자세한 안내는 [GUIDE.md](GUIDE.md)의 "마이그레이션 안내 (v3 → v4)" 섹션 참조.
+
+### v2.x → v3.0.0 (동적 fetch 제거)
 
 | v2.x 호출 | v3.0.0 대체 |
 |-----------|-------------|

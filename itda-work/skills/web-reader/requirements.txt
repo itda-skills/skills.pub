@@ -2,8 +2,8 @@
 requests>=2.28.0
 beautifulsoup4>=4.12
 markdownify>=0.13
-youtube-transcript-api>=1.0.0
 
-# Optional: for JavaScript-rendered pages (dynamic content)
-# playwright>=1.40.0
-# After installing playwright: playwright install chromium
+# YouTube transcript extraction was removed in v4.0.0 (SPEC-WEBREADER-YOUTUBE-REMOVE-001).
+# Use yt-dlp directly: yt-dlp --write-auto-sub --sub-lang ko --skip-download <URL>
+#
+# JavaScript-rendered pages: use hyve MCP web_browse.render (SPEC-WEB-MCP-002).
