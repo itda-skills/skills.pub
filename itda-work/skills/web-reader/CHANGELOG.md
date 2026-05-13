@@ -1,5 +1,18 @@
 # Changelog — itda-web-reader
 
+## [5.0.2] — 2026-05-13
+
+### Improvements
+
+- **GUIDE.md 일반 사용자 문서 정책 준수**: GUIDE.md에 노출되어 있던 `python3 scripts/*.py` CLI 명령 16곳을 모두 자연어 발화 예시로 대체. 일반 사용자가 보는 문서에는 명령어를 노출하지 않는다는 정책.
+- **마이그레이션 섹션 3종(v4→v5, v3→v4, v2→v3)을 `references/migration.md`로 분리**: 기존 사용자·개발자가 코드를 마이그레이션할 때 참조하는 historical reference. 일반 사용자에게는 필요 없으므로 GUIDE.md 본문에서 제거.
+- **개발자용 CLI 레퍼런스 통합**: 자동화 스크립트·파이프라인에서 직접 호출할 때 필요한 CLI 명령 모음을 `references/migration.md` 하단에 통합.
+- **GUIDE.md 자연어 호출 예시 강화**: 활용 시나리오·검증된 사이트·SPA 처리·팁 섹션 전반에서 "이 ~ 가져와줘" 형식 발화 예시 사용.
+
+### Why
+
+`web-reader` GUIDE.md는 일반 사용자가 보는 활용 가이드인데 직전 v5.0.1까지 `python3 scripts/...` CLI 명령이 16곳 노출되어 있어 정책 위반. 일반 사용자는 자연어로만 스킬을 호출하므로 CLI 명령은 references로 분리해 개발자 전용 문서로 위치 조정.
+
 ## [5.0.1] — 2026-05-13
 
 ### Improvements
