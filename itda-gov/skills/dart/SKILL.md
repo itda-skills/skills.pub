@@ -12,7 +12,7 @@ argument-hint: "[search|info|finance|employees|profile|disclosure|business|compa
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.13.1"
+  version: "0.13.2"
   created_at: "2026-03-29"
   updated_at: "2026-04-29"
   tags: "기업정보, 재무제표, DART, 전자공시, 경쟁사분석, 제안서, 직원현황, 매출, 영업이익, 사업보고서, 공시목록, 사업보고서텍스트, 다기업비교, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"

@@ -8,7 +8,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.10.1"
+  version: "0.10.2"
   created_at: "2026-03-08"
   updated_at: "2026-04-18"
   tags: "etf, naver finance, technical analysis, premium, sector rotation, ETF, 네이버 ETF, 괴리율, 리밸런싱"

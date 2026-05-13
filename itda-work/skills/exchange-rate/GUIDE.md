@@ -30,25 +30,12 @@ title: "Exchange Rate (매매기준율) 활용 가이드"
 2025년 1월 한 달간 달러 환율을 일별로 보여줘
 ```
 
-CLI 예시:
-
-```bash
-python3 scripts/exchange_rate.py --month 2025-01 --currency USD
-```
-
 ### 월간 비교 분석
 
 서로 다른 월·통화의 평균을 비교해 환율 추이를 파악합니다.
 
 ```
 이번 달 엔화 평균과 지난달 엔화 평균을 비교해줘
-```
-
-CLI 예시:
-
-```bash
-python3 scripts/exchange_rate.py --month 2025-03 --currency JPY
-python3 scripts/exchange_rate.py --month 2025-02 --currency JPY
 ```
 
 ### 휴일 자동 폴백

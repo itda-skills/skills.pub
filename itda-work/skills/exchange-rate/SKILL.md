@@ -12,7 +12,7 @@ allowed-tools: Read WebFetch Bash(python3:* date:*)
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.10.1"
+  version: "0.10.2"
   created_at: "2026-03-18"
   updated_at: "2026-04-18"
   tags: "exchange-rate, currency, forex, korea, 환율, 매매기준율"

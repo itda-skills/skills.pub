@@ -12,7 +12,7 @@ argument-hint: "[--keyword 키워드] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--f
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.3"
+  version: "0.9.4"
   created_at: "2026-03-29"
   updated_at: "2026-04-28"
   tags: "나라장터, 입찰공고, 조달청, G2B, 입찰, 공고, 조달, 입찰검색, procurement, tender, bid announcement, G2B, narajangteo"
