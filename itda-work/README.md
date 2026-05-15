@@ -384,8 +384,6 @@ just publish itda-work
 
 # Dry-run
 DRY_RUN=true just publish
-# 또는
-python3 scripts/publish.py --dry-run --pub-dir /path/to/skills.pub itda-work
 ```
 
 **사전 요구사항:**

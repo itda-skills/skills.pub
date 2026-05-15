@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Improvements
+
+- **사용자 가이드 일괄 점검 (v6.2.5)** — `itda-work/README.md`와 `itda-work/docs/guide-data-collector-api-keys.md`에 노출된 `python3 scripts/*.py` / `py -3 scripts/*.py` 명령 총 20곳을 자연어 발화 예시로 대체. 일반 사용자용 문서에 CLI 명령 노출 금지 정책 일괄 적용. SKILL.md·HANDOFF.md·references는 Claude/개발자용 instruction으로 보존.
+
 ### Added
 
 - **README 등재 누락 보강 — 3개 기존 스킬 공식 카탈로그 등재** ("조사·검증", "환경·설정" 카테고리 신설)
