@@ -1,14 +1,9 @@
 ---
 name: find-work
 description: >
-  "내 업무 중 뭘 Claude로 풀어볼지 모르겠어요", "자동화 아이디어가 없어요",
-  "Cowork로 뭘 해볼까", "반복 업무 정리 좀 도와줘", "업무 찾기 도와줘"처럼
-  Claude Cowork 활용 시작점이 막막한 비개발자에게 사용하세요.
-  두 트랙을 다룹니다 — (A) 이미 하고 있는 반복·시간 소모 업무,
-  (B) 아직 손 못 댄 미지의 문제. 집요한 단계별 인터뷰로 후보를 끄집어내고,
-  연결 폴더에 마크다운 메모 한 장으로 떨어뜨립니다.
-  Interview skill for Claude Cowork users (non-developers) to discover work
-  candidates worth tackling, output as a single markdown memo per session.
+  비개발자 Cowork 사용자가 어떤 업무를 자동화할지 함께 찾아주는 인터뷰 스킬입니다.
+  "업무 찾기 도와줘", "자동화 아이디어가 없어요", "Cowork로 뭘 해볼까"처럼 말하면 됩니다.
+  반복 업무와 미해결 문제 양쪽을 다루고, 단계별 질문 끝에 마크다운 메모 한 장을 만들어 드립니다.
 license: Apache-2.0
 compatibility: Claude Cowork only
 user-invocable: true
@@ -16,13 +11,13 @@ allowed-tools: Read, Write, Edit, Bash
 argument-hint: "[focus-area]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.11.1"
+  version: "0.11.3"
   category: "productivity"
   status: "stable"
   created_at: "2026-05-12"
-  updated_at: "2026-05-21"
+  updated_at: "2026-05-22"
   aliases: "업무찾기, 자동화발굴"
-  tags: "업무찾기, 자동화발굴, 인터뷰, 페인포인트, Cowork, 비개발자, 미지의문제, 반복업무, 데이터연결, find work, work discovery, automation ideation, pain point interview, non-developer"
+  tags: "Cowork, find work, work discovery, automation ideation, pain point interview, non-developer"
 ---
 
 # find-work — 업무 찾기

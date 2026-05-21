@@ -1,9 +1,9 @@
 ---
 name: imagekit
 description: >
-  이미지 정보 조회, 리사이즈, 크롭, DPI 변경, 포맷 변환, 회전·반전 스킬.
-  "이미지 크기 줄여줘", "사진 정보 알려줘", "여백 크롭해줘", "DPI 300으로 변경해줘",
-  "PNG를 JPG로 변환해줘", "사진 90도 회전해줘", "사진 뒤집기" 같은 요청에 사용하세요.
+  이미지 조회·리사이즈·여백 크롭·DPI 변경·포맷 변환·회전을 단일 CLI로 처리하는 스킬입니다.
+  "이미지 크기 줄여줘", "여백 크롭해줘", "PNG를 JPG로 변환해줘"처럼 말하면 됩니다.
+  한국 사무환경에서 자주 묻는 사진 편집 요청을 모두 다룹니다.
 license: Apache-2.0
 compatibility: Designed for Claude Cowork
 allowed-tools: Bash, Read
@@ -11,10 +11,10 @@ user-invocable: true
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "media"
-  version: "0.10.1"
+  version: "0.10.3"
   created_at: "2026-03-18"
-  updated_at: "2026-04-18"
-  tags: "image, resize, shrink, scale, crop, trim, dpi, resolution, convert, rotate, flip, imagekit, 이미지, 리사이즈, 크롭, 사진, 변환, 회전, 반전, 축소, 확대, 해상도, 자르기, 뒤집기"
+  updated_at: "2026-05-22"
+  tags: "image, resize, shrink, scale, crop, trim, dpi, resolution, convert, rotate, flip, imagekit"
 ---
 
 # imagekit

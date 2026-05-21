@@ -1,15 +1,9 @@
 ---
 name: weather-here
 description: >
-  현재 대략적 위치를 자동으로 알아내 그 지역의 날씨를 한국어로 빠르게 알려줍니다.
-  "날씨 알려줘", "지금 여기 날씨 어때", "부산 날씨", "수원 날씨" 같은 자연어
-  요청에 사용합니다. 위치를 말하지 않으면 IP 기반 위경도로 자동 탐지하여
-  되묻지 않고 즉시 응답하고, 지역명(한국어·주요 영문)을 말하면 기상청 권위
-  좌표표로 그 지역을 우선합니다. 날씨 데이터는 Open-Meteo Forecast(무키·인증키
-  불요)로 조회하며 모든 HTTP는 표준 라이브러리로 직접 수행합니다(WebFetch 미사용).
-  기본 출력은 한 줄 gist(상태+강수확률+거친 한마디)이고 상세 수치는 --detail로
-  제공합니다. Quick current-location weather: Open-Meteo keyless Forecast +
-  static authoritative coordinate table + IP geolocation, urllib only.
+  현재 위치 또는 지정 지역의 날씨를 한국어로 빠르게 조회하는 스킬입니다.
+  "날씨 알려줘", "지금 여기 날씨 어때", "부산 날씨 알려줘"처럼 말하면 됩니다.
+  위치 미지정 시 IP 지오로케이션으로 자동 탐지하고, 기본은 한 줄 요약, 상세는 --detail 옵션입니다.
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
@@ -17,12 +11,12 @@ allowed-tools: Read, Bash, Write, Glob, Grep
 argument-hint: "[지역명(선택)]"
 metadata:
   author: "Chinseok"
-  version: "0.12.1"
+  version: "0.12.3"
   category: "data-fetching"
   status: "experimental"
   created_at: "2026-05-19"
-  updated_at: "2026-05-19"
-  tags: "날씨, 현재위치, open-meteo, 무키, 지오로케이션, weather, location, openmeteo, keyless"
+  updated_at: "2026-05-22"
+  tags: "open-meteo, weather, location, openmeteo, keyless"
 ---
 
 # weather-here

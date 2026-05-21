@@ -1,10 +1,9 @@
 ---
 name: stock-quote
 description: >
-  주식시세 조회 스킬. "삼성전자 현재가 알려줘", "005930 시세 조회해줘",
-  "삼성전자 최근 1주일 시세 조회해줘", "코스피 종목 검색해줘"
-  같은 요청에 사용하세요.
-  금융위원회 주식시세정보 공공데이터 API로 주식 현재가·과거 시세를 조회합니다.
+  금융위원회 공공데이터 시세 API로 한국 주식 시세를 조회하는 스킬입니다.
+  "삼성전자 현재가 알려줘", "005930 시세 조회해줘", "삼성전자 최근 1주일 시세 조회해줘"처럼 말하면 됩니다.
+  현재가·과거 OHLC·종목 검색을 KOSPI·KOSDAQ 전반에서 지원합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -13,21 +12,10 @@ argument-hint: "[quote TICKER | history TICKER --from YYYY-MM-DD --to YYYY-MM-DD
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.2"
+  version: "0.9.5"
   created_at: "2026-05-15"
-  updated_at: "2026-05-16"
-  tags: "주식시세, 현재가, 과거시세, 종목검색, KOSPI, KOSDAQ, 주가, 종목코드, stock, quote, price, history, KRX, financial, 금융위원회"
-env_vars:
-  - name: "KO_DATA_API_KEY"
-    service: "공공데이터포털 - 금융위원회 주식시세정보"
-    url: "https://www.data.go.kr/data/15094808/openapi.do"
-    guide: |
-      동일 data.go.kr 계정으로 15094808 활용신청(자동승인) 필요:
-        1. https://www.data.go.kr/data/15094808/openapi.do 접속
-        2. "활용신청" 클릭 (자동승인)
-        3. 마이페이지 → 개발계정 → Decoding 인증키 복사
-    required: true
-    group: "data-go-kr"
+  updated_at: "2026-05-22"
+  tags: "KOSPI, KOSDAQ, stock, quote, price, history, KRX, financial"
 ---
 
 # stock-quote
@@ -35,6 +23,12 @@ env_vars:
 금융위원회 주식시세정보 공공데이터 API (data.go.kr 15094808)로 주식 현재가·과거 시세를 조회합니다.
 
 > Python 표준 라이브러리만 사용 — 추가 의존성 없음
+
+## 환경 변수
+
+| Variable | Service | Guide |
+|---|---|---|
+| `KO_DATA_API_KEY` | 공공데이터포털 - 금융위원회 주식시세정보 ([링크](https://www.data.go.kr/data/15094808/openapi.do)) | 동일 data.go.kr 계정으로 15094808 활용신청(자동승인) 필요:<br>1. https://www.data.go.kr/data/15094808/openapi.do 접속<br>2. "활용신청" 클릭 (자동승인)<br>3. 마이페이지 → 개발계정 → Decoding 인증키 복사 |
 
 ## 규제 주의 (정책)
 

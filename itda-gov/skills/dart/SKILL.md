@@ -1,9 +1,9 @@
 ---
 name: dart
 description: >
-  DART 전자공시 기업정보 수집 스킬. "삼성전자 재무제표 조회해줘",
-  "경쟁사 직원수 알려줘", "기업 매출 현황 정리해줘" 같은 요청에 사용하세요.
-  금융감독원 DART API로 기업 프로필, 재무제표, 직원현황을 조회합니다.
+  금융감독원 DART 전자공시 API로 기업 정보를 수집하는 스킬입니다.
+  "삼성전자 재무제표 조회해줘", "경쟁사 직원수 알려줘", "사업보고서 비교해줘"처럼 말하면 됩니다.
+  기업 프로필·재무·인력·사업보고서·공시 목록을 반환합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -12,25 +12,22 @@ argument-hint: "[search|info|finance|employees|profile|disclosure|business|compa
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.13.2"
+  version: "0.13.5"
   created_at: "2026-03-29"
-  updated_at: "2026-04-29"
-  tags: "기업정보, 재무제표, DART, 전자공시, 경쟁사분석, 제안서, 직원현황, 매출, 영업이익, 사업보고서, 공시목록, 사업보고서텍스트, 다기업비교, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
-env_vars:
-  - name: "DART_API_KEY"
-    service: "금융감독원 DART"
-    url: "https://opendart.fss.or.kr"
-    guide: |
-      회원가입 → 오픈 API → 인증키 신청/관리 → 40자리 키 즉시 발급
-    required: true
-    group: "dart"
-    format: "[A-Za-z0-9]{40}"
+  updated_at: "2026-05-22"
+  tags: "DART, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
 ---
 
 # dart
 
 금융감독원 DART 전자공시시스템 API로 기업 정보를 수집합니다.
 경쟁사 분석, 입찰 제안서, 사업계획서에 필요한 기업 재무·직원 데이터를 제공합니다.
+
+## 환경 변수
+
+| Variable | Service | Guide |
+|---|---|---|
+| `DART_API_KEY` | 금융감독원 DART ([링크](https://opendart.fss.or.kr)) | 회원가입 → 오픈 API → 인증키 신청/관리 → 40자리 키 즉시 발급<br>형식: `[A-Za-z0-9]{40}` |
 
 ## Prerequisites
 

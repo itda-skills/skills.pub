@@ -1,9 +1,9 @@
 ---
 name: draft-post
 description: >
-  다양한 도메인의 글쓰기 초안을 생성합니다. "블로그 글 써줘", "보고서 초안 작성해줘",
-  "이 주제로 기획서 만들어줘", "보도자료 초안 작성해줘", "뉴스레터 써줘"
-  같은 요청에 사용하세요. 인터뷰로 맥락을 수집한 뒤 도메인에 맞춘 마크다운 초안을 만듭니다.
+  블로그·보고서·기획서·보도자료·뉴스레터를 도메인 맞춤 인터뷰로 초안 작성하는 스킬입니다.
+  "블로그 글 써줘", "보고서 초안 작성해줘", "기획서 만들어줘"처럼 말하면 됩니다.
+  컨텍스트를 모은 뒤 도메인별로 톤·구조를 조정한 마크다운 초안을 출력합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork"
 user-invocable: true
@@ -11,11 +11,11 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 argument-hint: "<topic> [--style <style>] [--save <path>] [--analyze <file>] [--list-styles]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "1.2.1"
+  version: "1.2.3"
   category: "writing"
   created_at: "2026-03-28"
-  updated_at: "2026-04-18"
-  tags: "블로그, 보고서, 공문서, 초안, 글쓰기, 콘텐츠, 공무원, 보도자료, 기획서, 브리핑, 공문, 사업계획서, 뉴스레터, 회의록, 소개서, blog, report, draft, writing, official, government, press-release, proposal, briefing, newsletter, meeting-minutes"
+  updated_at: "2026-05-22"
+  tags: "blog, report, draft, writing, official, government, press-release, proposal, briefing, newsletter, meeting-minutes"
 ---
 
 # draft-post

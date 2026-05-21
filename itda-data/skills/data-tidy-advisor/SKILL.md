@@ -1,15 +1,9 @@
 ---
 name: data-tidy-advisor
 description: >
-  지저분한 엑셀·CSV 파일을 보여주면 구조 문제를 진단하고 정돈본을 새 파일로
-  만들어 드립니다. "이 엑셀 정리해줘", "헤더가 2행인 시트 tidy하게 만들어줘",
-  "소계 행 빼고 깔끔하게 정돈해줘" 같은 요청에 사용합니다. 원본 파일은
-  절대 변경하지 않고, 진단·[가설] 제시·사용자 확인 3단계 게이트를 거쳐
-  정돈본(tidy_*.csv)을 별도 파일로 만듭니다. 날짜 형식 통일·중복 행 제거·
-  공백 정리 같은 기본 값 정제도 포함합니다. 외부 라이브러리 없이 stdlib만
-  사용하며, 병합셀이 있는 xlsx는 general-purpose 서브에이전트에 파싱을 위임합니다.
-  Data tidy advisor: structure conscience gate. Diagnoses messy grids, proposes
-  hypotheses, emits tidy CSV only after user confirmation; stdlib only, keyless.
+  엉망인 엑셀·CSV를 진단하고, 원본은 그대로 둔 채 깔끔한 정돈본을 새 파일로 만들어주는 스킬입니다.
+  "이 엑셀 정리해줘", "헤더가 2행인 시트 tidy하게 만들어줘", "소계 행 빼고 깔끔하게 정돈해줘"처럼 말하면 됩니다.
+  진단→가설 제시→사용자 확인의 3단 게이트로 안전하게 동작합니다.
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
@@ -17,12 +11,12 @@ allowed-tools: Read, Bash, Write, Glob, Grep
 argument-hint: "[파일 경로 또는 정돈 요청]"
 metadata:
   author: "Chinseok"
-  version: "1.0.1"
+  version: "1.0.3"
   category: "data-tidy"
   status: "experimental"
   created_at: "2026-05-20"
-  updated_at: "2026-05-21"
-  tags: "데이터정돈, 구조진단, 가설, tidy, 원본불변, 소계, 헤더, 날짜정규화, data-tidy, 엑셀정리, stdlib"
+  updated_at: "2026-05-22"
+  tags: "tidy, data-tidy, stdlib"
 ---
 
 # data-tidy-advisor

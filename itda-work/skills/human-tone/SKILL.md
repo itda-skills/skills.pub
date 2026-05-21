@@ -1,14 +1,9 @@
 ---
 name: human-tone
 description: >
-  AI가 쓴 듯한 보고서·이메일·기획서·공지를 사람이 쓴 톤으로 다듬는 후처리 검수 스킬.
-  "이 보고서 AI 같아", "고객사 보낼 메일 너무 딱딱해", "기획서 자연스럽게 다듬어줘",
-  "AI 티 빼줘", "사람이 쓴 것처럼 고쳐줘" 같은 요청에 사용하세요.
-  10대 분류 × 40+ AI 티 패턴 SSOT(번역투·관용구·리듬·접속사·형식명사 등) + 직장인
-  사무 도메인 K 카테고리 5종(보고서식 군더더기·이메일 과공손·기획서 차용어·공지
-  ChatGPT 흔적·결론 회피)을 결정적 메트릭(metrics.py)으로 진단합니다.
-  의미·수치·고유명사·서명은 lock_preserved.py로 잠가 보존하고, 변경률 30%·50% 자동
-  가드와 13항 의미 동등성 audit으로 환각·과윤문을 차단합니다.
+  이미 작성된 한국어 사무 글(보고서·메일·기획서·공지)에서 AI 흔적을 걷어내는 후처리 스킬입니다.
+  "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘"처럼 말하면 됩니다.
+  숫자·고유명사·서명은 잠금 가드로 보존합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork"
 user-invocable: true
@@ -16,11 +11,11 @@ allowed-tools: Read, Write, Edit, Bash
 argument-hint: "<text-or-file> [--scene report|email|proposal|notice] [--register formal|semi|casual] [--strict] [--diff]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "2.0.0"
+  version: "2.0.2"
   category: "writing"
   created_at: "2026-05-11"
-  updated_at: "2026-05-11"
-  tags: "AI슬롭, AI티, 후처리, 검수, 톤조정, 보고서다듬기, 이메일다듬기, 기획서다듬기, 공문다듬기, 문체교정, 인간화, 직장인글쓰기, ai slop, humanize, human tone, post-processing, deslop, naturalize, korean writing, translationese, post-editese"
+  updated_at: "2026-05-22"
+  tags: "ai slop, humanize, human tone, post-processing, deslop, naturalize, korean writing, translationese, post-editese"
 ---
 
 # human-tone

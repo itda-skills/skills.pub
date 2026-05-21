@@ -1,39 +1,35 @@
 ---
 name: blog-reader
 description: >
-  네이버 블로그(m.blog.naver.com)의 포스트 목록·본문·댓글 트리·블로그 내 검색·통합 조회를
-  CLI로 제공합니다. "아스트로유지 블로그 최근 7일 글 가져와줘", "이 블로그 포스팅 본문이랑
-  댓글 같이 보여줘", "이 블로그에서 '인공지능' 키워드로 검색해줘" 같은 자연어 요청에
-  사용합니다. 모든 HTTP는 web-reader/scripts/fetch_html.py 경유이며, 직접 HTTP 라이브러리는
-  사용하지 않습니다. anti-bot 우회는 일절 수행하지 않습니다 (조회 전용).
-  Read-only Naver blog reader: list / post / comments / search / read.
-  All HTTP via web-reader subprocess. No anti-bot bypass.
+  네이버 블로그의 글 목록·본문·댓글 트리·블로그 내 검색을 로그인 없이 읽는 스킬입니다.
+  "네이버 블로그 글 가져와줘", "블로그 본문이랑 댓글 보여줘", "이 블로그 최근 7일 글 보여줘"처럼 말하면 됩니다.
+  공개 포스트 전용이며 봇 차단 우회는 하지 않습니다.
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
 allowed-tools: Read, Bash, Write, Glob, Grep
 argument-hint: "[list|post|comments|search|read] [options]"
-env_vars:
-  - name: "ITDA_BLOG_READER_FETCH_HTML"
-    service: "내부 의존성 경로 오버라이드 (선택)"
-    url: ""
-    guide: |
-      web-reader 스킬의 `fetch_html.py` 절대 경로를 강제 지정합니다.
-      미설정 시 인접 디렉토리 자동 탐색으로 동작하므로 일반 사용자는
-      설정 불필요. 테스트·격리 실행·비표준 배치 환경에서만 사용.
 metadata:
   author: "Chinseok"
-  version: "0.11.1"
+  version: "0.11.4"
   category: "data-fetching"
   status: "stable"
   created_at: "2026-05-15"
-  updated_at: "2026-05-21"
-  tags: "네이버블로그, 블로그, 댓글, 조회, 검색, naver, blog, comments, search, read-only"
+  updated_at: "2026-05-22"
+  tags: "naver, blog, comments, search, read-only"
 ---
 
 # blog-reader
 
 네이버 블로그를 조회하는 CLI 스킬입니다. 로그인 없이 공개 포스트·댓글을 읽을 수 있습니다.
+
+---
+
+## 환경 변수
+
+| Variable | Service | Guide |
+|---|---|---|
+| `ITDA_BLOG_READER_FETCH_HTML` | 내부 의존성 경로 오버라이드 (선택) | web-reader 스킬의 `fetch_html.py` 절대 경로를 강제 지정.<br>미설정 시 인접 디렉토리 자동 탐색으로 동작하므로 일반 사용자는 설정 불필요.<br>테스트·격리 실행·비표준 배치 환경에서만 사용. |
 
 ---
 

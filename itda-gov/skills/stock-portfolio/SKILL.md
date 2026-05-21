@@ -1,11 +1,9 @@
 ---
 name: stock-portfolio
 description: >
-  보유종목 평가손익 계산 스킬. "내 보유종목 평가손익 계산해줘", "005930 10주 평단가 28만 원 기준 손익은?",
-  "삼성전자 10주·카카오 5주 포트폴리오 평가금액 알려줘"
-  같은 요청에 사용하세요.
-  금융위원회 주식시세정보 공공데이터 API로 현재가를 조회하여 순수 산술 평가손익을 계산합니다.
-  투자 추천·리밸런싱·조언은 제공하지 않습니다 (P-2).
+  금융위원회 공공데이터 시세 API로 보유 종목 평가손익을 계산하는 스킬입니다.
+  "내 보유종목 평가손익 계산해줘", "005930 10주 평단가 28만 원 기준 손익은?", "삼성전자 10주 카카오 5주 포트폴리오 평가금액 알려줘"처럼 말하면 됩니다.
+  순수 산술 계산만 하며 자문·리밸런싱은 하지 않습니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -14,21 +12,10 @@ argument-hint: "--holding TICKER:QTY:AVGCOST [--holding ...] [--format json|tabl
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.9.2"
+  version: "0.9.5"
   created_at: "2026-05-15"
-  updated_at: "2026-05-16"
-  tags: "보유종목, 평가손익, 수익률, 포트폴리오, 평가금액, 평단가, KOSPI, KOSDAQ, 주식, 주가, stock, portfolio, P&L, evaluation, KRX, 금융위원회"
-env_vars:
-  - name: "KO_DATA_API_KEY"
-    service: "공공데이터포털 - 금융위원회 주식시세정보"
-    url: "https://www.data.go.kr/data/15094808/openapi.do"
-    guide: |
-      동일 data.go.kr 계정으로 15094808 활용신청(자동승인) 필요:
-        1. https://www.data.go.kr/data/15094808/openapi.do 접속
-        2. "활용신청" 클릭 (자동승인)
-        3. 마이페이지 → 개발계정 → Decoding 인증키 복사
-    required: true
-    group: "data-go-kr"
+  updated_at: "2026-05-22"
+  tags: "KOSPI, KOSDAQ, stock, portfolio, P&L, evaluation, KRX"
 ---
 
 # stock-portfolio
@@ -37,6 +24,12 @@ env_vars:
 보유종목의 평가금액·평가손익·수익률을 **순수 산술**로 계산합니다.
 
 > Python 표준 라이브러리만 사용 — 추가 의존성 없음
+
+## 환경 변수
+
+| Variable | Service | Guide |
+|---|---|---|
+| `KO_DATA_API_KEY` | 공공데이터포털 - 금융위원회 주식시세정보 ([링크](https://www.data.go.kr/data/15094808/openapi.do)) | 동일 data.go.kr 계정으로 15094808 활용신청(자동승인) 필요:<br>1. https://www.data.go.kr/data/15094808/openapi.do 접속<br>2. "활용신청" 클릭 (자동승인)<br>3. 마이페이지 → 개발계정 → Decoding 인증키 복사 |
 
 ## 규제 주의 (정책)
 

@@ -1,0 +1,18 @@
+[
+  {"en": "API",     "ko": "API",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "SDK",     "ko": "SDK",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "CLI",     "ko": "CLI",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "JSON",    "ko": "JSON",    "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "HTTP",    "ko": "HTTP",    "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "URL",     "ko": "URL",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "REST",    "ko": "REST",    "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "GraphQL", "ko": "GraphQL", "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "OAuth",   "ko": "OAuth",   "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "JWT",     "ko": "JWT",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "LLM",     "ko": "LLM",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "GPU",     "ko": "GPU",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "CPU",     "ko": "CPU",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "RAM",     "ko": "RAM",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "IDE",     "ko": "IDE",     "do_not_translate": true,  "notes": "약어 보존"},
+  {"en": "OS",      "ko": "OS",      "do_not_translate": true,  "notes": "약어 보존"}
+]

@@ -1,9 +1,9 @@
 ---
 name: kosis
 description: >
-  KOSIS 국가통계 수집 스킬. "인구 통계 알려줘", "산업 시장규모 조회해줘",
-  "농업 생산 통계 찾아줘" 같은 요청에 사용하세요.
-  통계청 KOSIS API로 인구·산업·경제 등 국가 공식 통계를 조회합니다.
+  통계청 KOSIS 국가통계포털 API로 공식 통계를 조회하는 스킬입니다.
+  "인구 통계 알려줘", "산업 시장규모 조회해줘", "KOSIS 통계표 검색해줘"처럼 말하면 됩니다.
+  인구·산업·시장규모·경제 데이터셋을 검색·수집합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -12,18 +12,10 @@ argument-hint: "[search|data] [--keyword 키워드] [--org-id ID] [--tbl-id ID] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.10.1"
+  version: "0.10.4"
   created_at: "2026-03-29"
-  updated_at: "2026-04-29"
-  tags: "통계, 국가통계, KOSIS, 인구, 산업통계, 시장규모, 제안서, statistics, KOSIS, population, market"
-env_vars:
-  - name: "KOSIS_API_KEY"
-    service: "국가통계포털 KOSIS"
-    url: "https://kosis.kr/openapi/"
-    guide: |
-      회원가입 → Open API → 활용신청 → 자동 승인(즉시 이용) → 마이페이지에서 인증키 확인
-    required: true
-    group: "kosis"
+  updated_at: "2026-05-22"
+  tags: "KOSIS, statistics, KOSIS, population, market"
 ---
 
 # kosis
@@ -32,6 +24,12 @@ env_vars:
 사업계획서, 시장 분석, 정책 보고서에 필요한 인구·산업·경제 통계를 제공합니다.
 
 > Python 표준 라이브러리만 사용 — 추가 의존성 없음
+
+## 환경 변수
+
+| Variable | Service | Guide |
+|---|---|---|
+| `KOSIS_API_KEY` | 국가통계포털 KOSIS ([링크](https://kosis.kr/openapi/)) | 회원가입 → Open API → 활용신청 → 자동 승인(즉시 이용) → 마이페이지에서 인증키 확인 |
 
 ## API 키 설정
 

@@ -1,18 +1,9 @@
 ---
 name: plan-work
 description: >
-  "이거 어떻게 시작하지", "이걸 어떤 itda 스킬로 풀 수 있어?",
-  "계획 세워줘", "find-work 메모 받았는데 어떻게 진행해",
-  "내가 말한 거 다시 정리해서 확인해줘",
-  "자동화하기 전에 뭘 준비해야 해?"처럼
-  하고 싶은 게 정해진 회사원이 itda-* 스킬과 어떻게 진행할지
-  단계별 실행 계획을 받고 싶을 때 사용하세요. 사용자 말을 다시
-  정리해서 확인하고, 어떤 itda 스킬이 적합한지 매핑하고, 미리
-  준비해야 할 자료까지 한 장 메모로 만들어줍니다.
-  Planning skill for office workers who know WHAT to automate
-  but need step-by-step HOW using itda-* skills. Mirror-back
-  confirms understanding, ground-check validates skill names,
-  then produces a single action plan memo.
+  사용자의 요청을 적합한 itda-* 스킬 조합으로 매핑해 실행 계획을 만드는 스킬입니다.
+  "계획 세워줘", "어떤 itda 스킬로 풀 수 있어?", "find-work 메모 받았는데 어떻게 진행해"처럼 말하면 됩니다.
+  미러백 확인 + ground-check 검증을 거쳐 한 장 메모로 출력합니다.
 license: Apache-2.0
 compatibility: Claude Cowork & Code, Python 3.10+
 user-invocable: true
@@ -20,13 +11,13 @@ allowed-tools: Read, Write, Bash
 argument-hint: "[요구사항 또는 메모 첨부]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.10.1"
+  version: "0.10.3"
   category: "productivity"
   status: "experimental"
   created_at: "2026-05-21"
-  updated_at: "2026-05-21"
+  updated_at: "2026-05-22"
   aliases: "계획세우기, 실행계획, 구현계획"
-  tags: "계획수립, 실행계획, 다시정리, 시작방법, 선행자료, Cowork, 직장인, plan-work, plan work, action-plan"
+  tags: "Cowork, plan-work, plan work, action-plan"
 ---
 
 # plan-work — 실행 계획 세우기

@@ -110,10 +110,15 @@ class NaverSearchAdClient:
 
     @classmethod
     def from_env(cls) -> "NaverSearchAdClient":
-        """환경변수로 클라이언트 생성"""
-        api_key = os.environ.get("NAVER_SEARCHAD_ACCESS_KEY", "")
-        secret_key = os.environ.get("NAVER_SEARCHAD_SECRET_KEY", "")
-        customer_id = os.environ.get("NAVER_SEARCHAD_CUSTOMER_ID", "")
+        """환경변수로 클라이언트 생성 (CLI > environ > .env, SPEC-ENV-ERROR-001)."""
+        from _env_setup import (
+            get_searchad_access_key,
+            get_searchad_customer_id,
+            get_searchad_secret_key,
+        )
+        api_key = get_searchad_access_key()
+        secret_key = get_searchad_secret_key()
+        customer_id = get_searchad_customer_id()
         return cls(api_key=api_key, customer_id=customer_id, secret_key=secret_key)
 
     def _request(self, method: str, uri: str, params: dict | None = None) -> dict:

@@ -1,5 +1,40 @@
 # Changelog — data-analysis-advisor
 
+## [1.2.0] — 2026-05-22 (SPEC-DATA-ADVISOR-STATS-001)
+
+### New Features
+- VIF(Variance Inflation Factor) 다중공선성 진단 도입 — 3변수 이상 선형결합(X3=0.5·X1+0.5·X2+잡음) 적발.
+  기존 pairwise |r|≥0.999 게이트로는 못 잡던 결함 해소(라이브 검증: pairwise 0.15~0.77 / VIF 2219~5396).
+- `build_profile_card` 반환 dict에 `vif: {column: vif_value}` + `has_multicollinearity: bool` 신규 추가.
+  `has_multicollinearity = pairwise OR (VIF>10)` OR 결합, 기존 pairwise 게이트 보존.
+- 완전상관(X1=X2)·특이행렬 시 `float("inf")` 정규화 (statsmodels 0.14.6 라이브 검증 결과 반영:
+  LinAlgError 미발생, RuntimeWarning+inf 직접 반환. defense in depth 3 layer).
+
+### Breaking Changes
+- itda-data 한정 외부 의존성 도입: `statsmodels>=0.14`, `scipy>=1.11`, `numpy>=1.26`.
+  `requirements.txt` 신설. `uv pip install --system -r requirements.txt` 필요.
+  다른 itda-* 플러그인의 stdlib-only 정책은 영향 없음 (NFR-001).
+- 첫 호출 cold-start ~5-8s 추가 (statsmodels·scipy·numpy import 비용, 이후 캐싱).
+
+### Improvements
+- 신규 테스트 20개 추가 (`tests/test_profile_card_vif.py`): VIF 정상·임계·완전상관·결측·OR 결합·method_gate 통합.
+- `test_structure_policy.py` amend: profile_card.py·test_profile_card_vif.py 한정 numpy·statsmodels·scipy import 허용 (NFR-001).
+- 회귀 무결: 기존 258 tests → 278 tests / 0 failed / 0 skipped GREEN 유지.
+
+## [1.1.2] — 2026-05-22
+
+### Improvements
+- `description` 정책 v3.0 전환 (SPEC-FRONTMATTER-LINT-001 amend).
+  한국어 자연 본문 + 인용 트리거("...") ≥3개 흘리기로 통합, 별도 `Triggers:` 라인 폐기.
+  목표 150~250자(avg 149), 400자 cap 유지. cowork-plugins 198 스킬 운영 실증 패턴 차용.
+  토큰 부담 감소: 50 스킬 frontmatter avg 340→149자 (-56%).
+
+
+## [1.1.1] — 2026-05-21
+
+### Improvements
+- description을 EN-first로 리팩터링 (한국어 트리거는 `Triggers:` 라인에 보존). 토큰 노이즈 감소. 트리거 정확도 영향 없음.
+
 ## [1.1.0] — 2026-05-21 (SPEC-DATA-ENFORCE-002)
 
 ### Improvements

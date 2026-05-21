@@ -52,9 +52,10 @@ class NaverDatalabClient:
 
     @classmethod
     def from_env(cls) -> "NaverDatalabClient":
-        """환경변수로 클라이언트 생성"""
-        client_id = os.environ.get("NAVER_CLIENT_ID", "")
-        client_secret = os.environ.get("NAVER_CLIENT_SECRET", "")
+        """환경변수로 클라이언트 생성 (CLI > environ > .env, SPEC-ENV-ERROR-001)."""
+        from _env_setup import get_naver_client_id, get_naver_client_secret
+        client_id = get_naver_client_id()
+        client_secret = get_naver_client_secret()
         return cls(client_id=client_id, client_secret=client_secret)
 
     def _get_date_range(self) -> tuple[str, str]:

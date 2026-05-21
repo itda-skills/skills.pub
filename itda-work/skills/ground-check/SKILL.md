@@ -1,29 +1,20 @@
 ---
 name: ground-check
 description: >
-  비개발자 실무자가 "비교표 만들어줘", "출처 확인해서 정리해줘",
-  "팩트체크해서 보고서 써줘", "1차 소스만 써서 정리해줘", "ground check 해줘"
-  같은 요청을 했을 때 활성화됩니다. 1차 소스 강제 조사, 독립 검증,
-  실사용 예시 확장의 3단계 절차를 자동 적용해 환각·hedge 표현·자기 검증 편향을
-  절차로 차단합니다. Cowork 환경 우선 — 자연어 검증 지침으로 Claude 내부
-  sub-agent 분기를 유도합니다. WebFetch 실패 시 web-reader 스킬로 fallback.
-  본 스킬은 공개 웹(Public Web) 출처만 다룹니다. 마운트 폴더(./mnt/),
-  Google Drive·Dropbox·Gmail·Notion 등 connector 출처 요청은 본 스킬 범위
-  밖이므로 별도 안내합니다.
-  Source-grounded research skill enforcing primary-source-only citations
-  with independent verification rounds and natural-language sub-agent
-  invocation (Cowork-first, Claude Code compatible). Category A (Public Web) only.
+  1차 출처 강제 인용과 독립 검증으로 환각·hedge 표현을 절차로 차단하는 리서치 스킬입니다.
+  "팩트체크해서 보고서 써줘", "출처 확인해서 정리해줘", "1차 소스만 써서 정리해줘"처럼 말하면 됩니다.
+  비교표·보고서·리서치 작성 시 공개 웹 출처만 사용합니다.
 license: MIT
 compatibility: Designed for Claude Cowork (Claude Code SDK 매핑은 부록 참조)
 allowed-tools: WebSearch, WebFetch, Skill, Read, Write
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "research"
-  version: "0.10.0"
+  version: "0.10.2"
   status: "active"
   created_at: "2026-05-12"
-  updated_at: "2026-05-13"
-  tags: "팩트체크, 1차소스, 비교표, 출처검증, ground-check, source-check, fact-check, primary-source, citation, verification, cowork, hedge-detection"
+  updated_at: "2026-05-22"
+  tags: "ground-check, source-check, fact-check, primary-source, citation, verification, cowork, hedge-detection"
 ---
 
 # ground-check

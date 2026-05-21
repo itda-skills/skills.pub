@@ -1,19 +1,17 @@
 ---
 name: web-reader
 description: >
-  WebFetch 미처리 정적/동적 웹 페치 스킬. 3종 use case: (1) EUC-KR/CP949, (2) 쿠키 인증,
-  (3) JS 동적 (Lightpanda 백엔드, --dynamic-only). 동적 요청 시 mcp__lightpanda__* 노출되어
-  있으면 우선 사용, 본 스킬은 fallback. 일반 URL은 WebFetch, anti-bot/SNS/네이버부동산은
-  hyve MCP, YouTube는 yt-dlp 사용. 우선순위 상세는 본문 참조.
+  WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·JS 동적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다.
+  "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "JS 동적 페이지 읽어줘"처럼 말하면 됩니다.
 license: Apache-2.0
 compatibility: Designed for Claude Cowork
 allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "5.0.2"
+  version: "5.0.4"
   created_at: "2026-03-18"
-  updated_at: "2026-05-13"
+  updated_at: "2026-05-22"
   tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, lightpanda, dynamic, javascript, headless, spa"
 ---
 

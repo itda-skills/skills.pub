@@ -1,14 +1,9 @@
 ---
 name: data-analysis-advisor
 description: >
-  데이터 분석 방법을 물어보거나 CSV·시트를 보여주면 적합한 분석 기법을 추천하고
-  정직한 보고서를 생성합니다. "이 데이터 어떻게 분석해?", "매출 데이터 회귀분석
-  해줘", "불량 원인 분석" 같은 요청에 사용합니다. 소표본·다중공선성·인과 합의
-  미충족 시 부적합 기법을 자동 거부하고 EDA 또는 정본기법(파레토, 관리도 등)으로
-  축소 제안합니다. 외부 통계 라이브러리 없이 stdlib만 사용하며, 분석 실행은
-  빌트인 general-purpose 서브에이전트에 위임합니다(무키·설치 없음).
-  Data analysis advisor: recommends analysis methods, rejects unsuitable ones;
-  stdlib only, keyless.
+  통계 분석 방법을 추천하고, 부적합한 기법은 솔직히 거부하는 정직 보고서 생성 스킬입니다.
+  "이 데이터 어떻게 분석해?", "매출 회귀분석 해줘", "불량 원인 분석"처럼 말하면 됩니다.
+  표본 부족·다중공선성·인과 합의 부재 같은 경고 신호를 자동 점검하고, EDA·파레토·관리도 같은 정본 기법으로 대안을 제시합니다.
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
@@ -16,12 +11,12 @@ allowed-tools: Read, Bash, Write, Glob, Grep
 argument-hint: "[분석 요청 또는 데이터 설명]"
 metadata:
   author: "Chinseok"
-  version: "1.1.0"
+  version: "1.2.0"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-05-19"
-  updated_at: "2026-05-21"
-  tags: "데이터분석, 통계, 분석추천, 데이터분석추천, 파레토, 회귀분석, data-analysis, statistics, 분석거부, stdlib"
+  updated_at: "2026-05-22"
+  tags: "data-analysis, statistics, stdlib"
 ---
 
 # data-analysis-advisor
@@ -159,16 +154,26 @@ python3 scripts/honest_report.py
 
 ## 설치 및 의존성
 
-외부 패키지 없음 — stdlib only (urllib, pathlib, ast, json, re 등).
-`requirements.txt` 미생성.
+SPEC-DATA-ADVISOR-STATS-001 v0.2.0부터 외부 통계 라이브러리(`statsmodels`·`scipy`·`numpy`)를 itda-data 한정 도입합니다(NFR-001). 다른 itda-* 플러그인은 stdlib-only 정책을 유지합니다.
+
+VIF 다중공선성 진단(`profile_card._compute_vif`)에 statsmodels `variance_inflation_factor`를 사용합니다. pairwise Pearson 상관(stdlib `math`)은 보존됩니다.
 
 ```bash
+# uv가 없다면 먼저 설치 (관리자 권한 불요)
+curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
+# powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
+
+# 의존성 설치 (statsmodels>=0.14, scipy>=1.11, numpy>=1.26)
+uv pip install --system -r requirements.txt
+
+# 실행
 # macOS/Linux
 python3 scripts/gate_orchestrator.py
-
 # Windows
 py -3 scripts/gate_orchestrator.py
 ```
+
+첫 호출 시 statsmodels·scipy·numpy cold-start 비용 ~5-8s가 발생할 수 있습니다(NFR-006). 이후 호출은 캐싱됩니다.
 
 ---
 

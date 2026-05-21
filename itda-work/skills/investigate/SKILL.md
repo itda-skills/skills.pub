@@ -1,10 +1,9 @@
 ---
 name: investigate
 description: >
-  원인을 모르거나 확신이 없을 때 체계적으로 파헤칩니다.
-  "왜 이렇게 느리지?", "이 에러 원인이 뭐야?", "이게 왜 안 되지?",
-  "뭔가 이상한데 뭔지 모르겠어", "이 방식이 맞는지 모르겠어" 같은 상황에 사용하세요.
-  경쟁 가설을 세우고 반증 실험으로 증거 기반 결론을 도출합니다.
+  경쟁 가설과 반증 실험으로 근본 원인을 체계적으로 조사하는 스킬입니다.
+  "왜 이렇게 느리지?", "이 에러 원인이 뭐야?", "원인 분석해줘"처럼 말하면 됩니다.
+  추측 대신 증거 기반 결론을 제공합니다.
 license: Apache-2.0
 compatibility: Designed for Claude Cowork
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
@@ -12,12 +11,12 @@ user-invocable: true
 argument-hint: '<topic> [--depth simple|full] [--save <path>] [--type bug|perf|arch|verify|interpret]'
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.10.1"
+  version: "0.10.3"
   category: "investigation"
   created_at: "2026-04-03"
-  updated_at: "2026-04-18"
+  updated_at: "2026-05-22"
   aliases: "debug, 분석, check, verify, 조사, 원인"
-  tags: "조사, 디버깅, 분석, 검증, 가설, 반증, 과학적방법, 확증편향방지, 성능분석, 아키텍처검증, investigate, debugging, hypothesis, falsification, scientific method, root cause analysis"
+  tags: "investigate, debugging, hypothesis, falsification, scientific method, root cause analysis"
 ---
 
 # investigate

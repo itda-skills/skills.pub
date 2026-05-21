@@ -1,17 +1,16 @@
 ---
 name: etf-naver
 description: >
-  네이버 금융 기반 국내 ETF 시세·기술적 분석·섹터 비교 스킬. "ETF 알려줘",
-  "국내 ETF 비교해줘", "ETF 괴리율 보여줘", "069500 기술적 분석해줘",
-  "섹터 로테이션 분석해줘" 같은 요청에 사용하세요.
-  RSI·MACD·볼린저밴드, 괴리율, 리밸런싱까지 지원합니다.
+  네이버 금융으로 국내 ETF 시세·기술적 분석·섹터 비교를 제공하는 스킬입니다.
+  "국내 ETF 비교해줘", "ETF 괴리율 보여줘", "섹터 로테이션 분석해줘"처럼 말하면 됩니다.
+  RSI·MACD·볼린저밴드·괴리율·리밸런싱 분석을 지원합니다.
 license: Apache-2.0
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.10.2"
+  version: "0.10.4"
   created_at: "2026-03-08"
-  updated_at: "2026-04-18"
-  tags: "etf, naver finance, technical analysis, premium, sector rotation, ETF, 네이버 ETF, 괴리율, 리밸런싱"
+  updated_at: "2026-05-22"
+  tags: "etf, naver finance, technical analysis, premium, sector rotation, ETF"
 ---
 
 # Naver ETF Analysis

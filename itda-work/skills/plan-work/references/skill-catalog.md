@@ -23,7 +23,6 @@ DP-1 Hybrid 방식: 이 파일은 큐레이션된 정적 목록입니다.
 | draft-post | 블로그·보고서·SNS 등 글쓰기 초안 생성 스킬 | 없음 | "블로그 글 써줘", "보고서 초안 작성해줘" |
 | blog-seo | 네이버 검색광고 API 기반 블루키워드 발굴 스킬 | NAVER_SEARCHAD_ACCESS_KEY, NAVER_SEARCHAD_SECRET_KEY | "블루키워드 찾아줘", "SEO 키워드 분석해줘" |
 | imagekit | 이미지 정보 조회·리사이즈·크롭·포맷 변환 스킬 | 없음 | "이미지 크기 줄여줘", "사진 잘라줘" |
-| itda-setup | itda 스킬팩 API 키·환경변수 설정 도우미 스킬 | 없음 | "API 키 설정해줘", "itda 설정 도와줘" |
 | stock-quote | 주식 시세 조회 스킬 (정부 공공데이터 기반) | KO_DATA_API_KEY | "삼성전자 주가 알려줘", "005930 시세" |
 | stock-portfolio | 보유종목 평가손익 계산 스킬 | KO_DATA_API_KEY | "내 보유종목 손익 계산해줘", "평가손익 알려줘" |
 | dart | DART 전자공시 기업정보 조회 스킬 | DART_API_KEY | "삼성전자 재무제표 조회해줘", "공시 정보 알려줘" |
@@ -54,7 +53,6 @@ etf-naver      → itda-work/skills/etf-naver/
 draft-post     → itda-work/skills/draft-post/
 blog-seo       → itda-work/skills/blog-seo/
 imagekit       → itda-work/skills/imagekit/
-itda-setup     → itda-work/skills/itda-setup/
 stock-quote    → itda-gov/skills/stock-quote/
 stock-portfolio → itda-gov/skills/stock-portfolio/
 dart           → itda-gov/skills/dart/

@@ -1,10 +1,9 @@
 ---
 name: kacem-tender-fetch
 description: >
-  KACEM(군인공제회) 입찰 게시판에서 공고 목록을 수집하고 첨부 ZIP을 다운로드·해제하는 스킬.
-  "군인공제회 최근 공고 받아줘", "지난 한 달 입찰 공고 모아줘", "새로 올라온 공고만 다운받아줘"
-  같은 요청에 사용하세요. KACEM HTML 게시판을 스크래핑하고, 첨부 ZIP을 다운로드·압축해제하여
-  모집공고 파일(hwp/hwpx/pdf)을 식별합니다. 추출/요약은 `kacem-tender-extract` 스킬에 위임합니다.
+  군인공제회 입찰 게시판에서 공고를 수집하고 첨부 ZIP을 받아 공식 공고 파일을 식별하는 스킬입니다.
+  "군인공제회 최근 공고 받아줘", "지난 한 달 입찰 공고 모아줘", "새로 올라온 공고만 다운받아줘"처럼 말하면 됩니다.
+  HTML 게시판 스크래핑·아카이브 해제·hwp/hwpx/pdf 격리까지 수행합니다.
 license: Apache-2.0
 compatibility: "Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -14,10 +13,10 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "active"
-  version: "1.0.0"
+  version: "1.0.2"
   created_at: "2026-04-30"
-  updated_at: "2026-04-30"
-  tags: "군인공제회, MMAA, KACEM, 입찰, 공고수집, 공동주택감리, tender, scraping, download"
+  updated_at: "2026-05-22"
+  tags: "MMAA, KACEM, tender, scraping, download"
 ---
 
 # kacem-tender-fetch

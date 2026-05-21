@@ -1,9 +1,9 @@
 ---
 name: exchange-rate
 description: >
-  원화 기준 환율 조회 스킬. "오늘 달러 환율 알려줘", "EUR 환율 조회",
-  "이번 달 엔화 평균 환율 보여줘" 같은 요청에 사용하세요.
-  일별·월평균 매매기준율을 제공하고, 휴일에는 직전 영업일로 자동 폴백합니다.
+  원화 기준 일별·월 평균 기준 환율을 조회하는 스킬입니다.
+  "오늘 달러 환율 알려줘", "이번 달 엔화 평균 환율 보여줘", "EUR 환율 조회해줘"처럼 말하면 됩니다.
+  공휴일에는 자동으로 직전 영업일 환율로 폴백합니다.
 license: Apache-2.0
 compatibility: Designed for Claude Cowork
 user-invocable: true
@@ -12,10 +12,10 @@ allowed-tools: Read WebFetch Bash(python3:* date:*)
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.10.2"
+  version: "0.10.4"
   created_at: "2026-03-18"
-  updated_at: "2026-04-18"
-  tags: "exchange-rate, currency, forex, korea, 환율, 매매기준율"
+  updated_at: "2026-05-22"
+  tags: "exchange-rate, currency, forex, korea"
 ---
 
 # Exchange Rate (매매기준율 조회)

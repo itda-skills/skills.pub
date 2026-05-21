@@ -7,6 +7,7 @@ Usage:
     python verify_quality.py <path> --pages <total_source_pages>
     python verify_quality.py output_dir/ --pages 470
     python verify_quality.py single_file.md --pages 50
+    python verify_quality.py output/ --pages 50 --domain electronics
 """
 
 from __future__ import annotations
@@ -17,10 +18,76 @@ import re
 import sys
 from pathlib import Path
 
+# 도메인별 페이지 헤더 정규식 (REQ-010)
+_DOMAIN_HEADER_REGEX: dict[str, str] = {
+    "tax-accounting": r"^\d{1,3}\s{2,}\d{4}\s",
+    "electronics": r"^\d+\s+[A-Za-z][A-Za-z\s]+\d+$",
+    "legal": r"^제\d+조|^\d+\s+판례\s+\d+",
+    "engineering": r"^\d+\s+Chapter\s+\d+|^\d+\s+[가-힣]+\s+\d+$",
+}
+
+# 기본 페이지 헤더 정규식 (backward compat, AC-8)
+_DEFAULT_HEADER_REGEX = r"^\d{1,3}\s{2,}\d{4}\s"
+
 
 def count_pattern(text: str, pattern: str) -> int:
     """텍스트에서 정규식 패턴의 매칭 횟수를 반환한다."""
     return len(re.findall(pattern, text, re.MULTILINE))
+
+
+def check_domain_items(content: str, domain: str | None) -> list[tuple[str, str]]:
+    """도메인별 추가 검증 항목을 검사한다 (REQ-010, AC-11).
+
+    Args:
+        content: 검사할 마크다운 텍스트 전체.
+        domain: 도메인 이름 (None이면 빈 리스트 반환, AC-8 backward compat).
+
+    Returns:
+        (status, message) 튜플 리스트. status는 'PASS' 또는 'FAIL'.
+    """
+    if domain is None:
+        return []
+
+    verdicts: list[tuple[str, str]] = []
+
+    if domain == "tax-accounting":
+        # 법령 약칭 패턴: (조특법|법인령|소득령) 제?N조 카운트 ≥1
+        pattern = r"(조특법|법인령|소득령)\s+제?\d+조"
+        cnt = count_pattern(content, pattern)
+        if cnt >= 1:
+            verdicts.append(("PASS", f"Domain check [tax-accounting]: 법령 약칭 패턴 {cnt}건 발견"))
+        else:
+            verdicts.append(("FAIL", "Domain check [tax-accounting]: 법령 약칭 패턴 (조특법|법인령|소득령) 제?N조 0건 — 세무 PDF인지 확인"))
+
+    elif domain == "electronics":
+        # 수식 패턴: $...$  또는 \\[a-zA-Z]+ 카운트 ≥1
+        pattern = r"\$[^$]+\$|\\[a-zA-Z]+"
+        cnt = count_pattern(content, pattern)
+        if cnt >= 1:
+            verdicts.append(("PASS", f"Domain check [electronics]: 수식 패턴 {cnt}건 발견"))
+        else:
+            verdicts.append(("FAIL", "Domain check [electronics]: 수식 패턴 ($...$|\\cmd) 0건 — 이공계 PDF 수식 추출 확인"))
+
+    elif domain == "legal":
+        # 조문 패턴: 제N조 카운트 ≥3
+        pattern = r"제\d+조"
+        cnt = count_pattern(content, pattern)
+        if cnt >= 3:
+            verdicts.append(("PASS", f"Domain check [legal]: 조문 패턴 {cnt}건 발견"))
+        else:
+            verdicts.append(("FAIL", f"Domain check [legal]: 조문 패턴 제N조 {cnt}건 — 법률 PDF는 3건 이상 필요"))
+
+    elif domain == "engineering":
+        # 단위 패턴: N MPa|kN|Pa|N  또는  KS [A-Z] N 카운트 ≥1
+        pattern = r"\d+\s*(MPa|kN|Pa|N)\b|KS\s+[A-Z]\s+\d+"
+        cnt = count_pattern(content, pattern)
+        if cnt >= 1:
+            verdicts.append(("PASS", f"Domain check [engineering]: 단위/규격 패턴 {cnt}건 발견"))
+        else:
+            verdicts.append(("FAIL", "Domain check [engineering]: 단위(MPa|kN|Pa|N) 또는 KS 규격 0건 — 공학 PDF인지 확인"))
+
+    # 알 수 없는 도메인은 빈 리스트 반환 (AC-8 guard)
+    return verdicts
 
 
 def analyze_file(filepath: str) -> dict:
@@ -44,7 +111,7 @@ def analyze_file(filepath: str) -> dict:
     }
 
 
-def check_ocr_artifacts(filepath: str) -> list[str]:
+def check_ocr_artifacts(filepath: str, header_regex: str = _DEFAULT_HEADER_REGEX) -> list[str]:
     """마크다운 파일에서 OCR 아티팩트를 탐지한다."""
     issues: list[str] = []
     with open(filepath, "r", encoding="utf-8") as f:
@@ -53,8 +120,8 @@ def check_ocr_artifacts(filepath: str) -> list[str]:
             # 글머리 아티팩트
             if re.match(r"^- \.\s", line):
                 issues.append(f"  Line {i}: Bullet artifact '- .' -> should be '- '")
-            # 페이지 번호 본문 혼입 (예: "84  2026 법인세")
-            if re.match(r"^\d{1,3}\s{2,}\d{4}\s", line):
+            # 페이지 번호 본문 혼입 (도메인별 헤더 정규식 사용)
+            if re.match(header_regex, line):
                 issues.append(f"  Line {i}: Possible page header in content: '{line[:50]}'")
             # 고아 짧은 조각 (테이블 셀 잔해 가능성)
             stripped = line.strip()
@@ -71,13 +138,20 @@ def check_ocr_artifacts(filepath: str) -> list[str]:
     return issues[:20]  # 최대 20개로 제한
 
 
-def verify(path: str, total_pages: int, doc_type: str = "textbook") -> bool:
+def verify(
+    path: str,
+    total_pages: int,
+    doc_type: str = "textbook",
+    domain: str | None = None,
+) -> bool:
     """변환 결과의 품질을 검증한다.
 
     Args:
         path: .md 파일 또는 .md 파일이 있는 디렉토리 경로
         total_pages: 원본 PDF의 총 페이지 수
         doc_type: 문서 유형 (textbook, manual, form_heavy)
+        domain: 도메인 옵션 (tax-accounting|electronics|legal|engineering|None).
+                None이면 기존 동작 100% 유지 (AC-8 backward compat).
 
     Returns:
         모든 검사를 통과하면 True, 아니면 False
@@ -88,6 +162,9 @@ def verify(path: str, total_pages: int, doc_type: str = "textbook") -> bool:
         "form_heavy": {"min_lines_per_page": 2, "healthy_min": 3},
     }
     t = thresholds.get(doc_type, thresholds["textbook"])
+
+    # 도메인별 페이지 헤더 정규식 선택 (AC-8: None이면 기본값)
+    header_regex = _DOMAIN_HEADER_REGEX.get(domain, _DEFAULT_HEADER_REGEX) if domain else _DEFAULT_HEADER_REGEX
 
     md_files: list[str] = []
     p = Path(path)
@@ -103,12 +180,15 @@ def verify(path: str, total_pages: int, doc_type: str = "textbook") -> bool:
     total_lines = 0
     all_passed = True
     results: list[dict] = []
+    all_content = ""
 
     print(f"{'=' * 60}")
     print("PDF-to-Markdown Quality Report")
     print(f"{'=' * 60}")
     print(f"Source pages: {total_pages}")
     print(f"Document type: {doc_type}")
+    if domain:
+        print(f"Domain: {domain}")
     print(f"Files found: {len(md_files)}")
     print()
 
@@ -117,6 +197,10 @@ def verify(path: str, total_pages: int, doc_type: str = "textbook") -> bool:
         total_lines += stats["lines"]
         results.append(stats)
 
+        # 도메인 검증용 콘텐츠 누적
+        with open(filepath, "r", encoding="utf-8") as f:
+            all_content += f.read()
+
         print(f"--- {stats['file']} ---")
         print(f"  Lines: {stats['lines']}")
         print(f"  Structure: {stats['h2_headers']} ##, {stats['h3_headers']} ###, {stats['h4_headers']} ####")
@@ -124,8 +208,8 @@ def verify(path: str, total_pages: int, doc_type: str = "textbook") -> bool:
         print(f"  Images: {stats['images']}, Page markers: {stats['page_markers']}")
         print(f"  Lists: {stats['list_items']}, Blockquotes: {stats['blockquotes']}")
 
-        # OCR 아티팩트 검사
-        artifacts = check_ocr_artifacts(filepath)
+        # OCR 아티팩트 검사 (도메인별 헤더 정규식 사용)
+        artifacts = check_ocr_artifacts(filepath, header_regex=header_regex)
         if artifacts:
             print(f"  OCR Artifacts ({len(artifacts)} found):")
             for a in artifacts[:5]:
@@ -171,6 +255,13 @@ def verify(path: str, total_pages: int, doc_type: str = "textbook") -> bool:
     else:
         verdicts.append(("WARN", "No tables found -- verify source has no tabular data"))
 
+    # 도메인별 추가 검증 항목 (REQ-010, AC-11)
+    domain_verdicts = check_domain_items(all_content, domain=domain)
+    for dv in domain_verdicts:
+        if dv[0] == "FAIL":
+            all_passed = False
+    verdicts.extend(domain_verdicts)
+
     for v in verdicts:
         status, msg = v
         icon = {"PASS": "[OK]", "WARN": "[!!]", "FAIL": "[XX]"}[status]
@@ -186,7 +277,13 @@ def verify(path: str, total_pages: int, doc_type: str = "textbook") -> bool:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Verify PDF-to-Markdown conversion quality")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Verify PDF-to-Markdown conversion quality.\n"
+            "Use --domain to apply domain-specific header regex and verification items.\n"
+            "Domains: tax-accounting, electronics, legal, engineering"
+        )
+    )
     parser.add_argument("path", help="Path to .md file or directory of .md files")
     parser.add_argument("--pages", type=int, required=True, help="Total source PDF pages")
     parser.add_argument(
@@ -195,9 +292,22 @@ def main() -> None:
         default="textbook",
         help="Document type for threshold selection",
     )
+    parser.add_argument(
+        "--domain",
+        choices=["tax-accounting", "electronics", "legal", "engineering"],
+        default=None,
+        help=(
+            "Domain-specific verification mode (REQ-010). "
+            "tax-accounting: 법령 약칭 패턴 검증. "
+            "electronics: 수식 패턴 검증. "
+            "legal: 조문 패턴 ≥3 검증. "
+            "engineering: 단위/KS규격 패턴 검증. "
+            "기본값 None은 기존 동작 유지 (backward compat)."
+        ),
+    )
     args = parser.parse_args()
 
-    passed = verify(args.path, args.pages, args.type)
+    passed = verify(args.path, args.pages, args.type, domain=args.domain)
     sys.exit(0 if passed else 1)
 
 

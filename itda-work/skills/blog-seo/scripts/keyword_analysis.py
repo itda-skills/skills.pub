@@ -251,12 +251,23 @@ def main(argv: list[str] | None = None) -> int:
         print(f"입력 오류: {e}", file=sys.stderr)
         return 1
 
-    # 환경변수에서 API 키 로드
-    searchad_api_key = os.environ.get("NAVER_SEARCHAD_ACCESS_KEY", "")
-    searchad_secret_key = os.environ.get("NAVER_SEARCHAD_SECRET_KEY", "")
-    searchad_customer_id = os.environ.get("NAVER_SEARCHAD_CUSTOMER_ID", "")
-    naver_client_id = os.environ.get("NAVER_CLIENT_ID", "")
-    naver_client_secret = os.environ.get("NAVER_CLIENT_SECRET", "")
+    # 환경변수에서 API 키 로드 (CLI > environ > .env, SPEC-ENV-ERROR-001)
+    from _env_setup import (
+        get_naver_client_id,
+        get_naver_client_secret,
+        get_searchad_access_key,
+        get_searchad_customer_id,
+        get_searchad_secret_key,
+    )
+    try:
+        searchad_api_key = get_searchad_access_key()
+        searchad_secret_key = get_searchad_secret_key()
+        searchad_customer_id = get_searchad_customer_id()
+        naver_client_id = get_naver_client_id()
+        naver_client_secret = get_naver_client_secret()
+    except MissingApiKeyError as e:
+        print(f"API 키 오류: {e}", file=sys.stderr)
+        return 1
 
     try:
         results = run_analysis(

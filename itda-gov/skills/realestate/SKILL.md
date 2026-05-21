@@ -1,9 +1,9 @@
 ---
 name: realestate
 description: >
-  국토교통부 부동산 실거래가 조회 스킬. "강남구 아파트 매매가 알려줘",
-  "분당 전세 시세 조회해줘", "서울 아파트 실거래가 정리해줘"
-  같은 요청에 사용하세요. 아파트·오피스텔 매매·전월세 실거래 데이터를 조회합니다.
+  국토교통부 공공데이터 API로 부동산 실거래가를 조회하는 스킬입니다.
+  "강남구 아파트 매매가 알려줘", "분당 전세 시세 조회해줘", "서울 아파트 실거래가 정리해줘"처럼 말하면 됩니다.
+  아파트·오피스텔의 매매·전세·월세 실거래 기록을 지역·월 단위로 반환합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -12,18 +12,10 @@ argument-hint: "[trade|rent|regions] [--region 지역명] [--year-month YYYYMM] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.10.1"
+  version: "0.10.4"
   created_at: "2026-03-29"
-  updated_at: "2026-04-28"
-  tags: "부동산, 실거래가, 아파트, 전월세, 매매가, 전세, 월세, 오피스텔, 국토교통부, 집값, realestate, apartment, rent, trade price"
-env_vars:
-  - name: "KO_DATA_API_KEY"
-    service: "공공데이터포털"
-    url: "https://www.data.go.kr"
-    guide: |
-      회원가입 → 원하는 API 신청 → 마이페이지 → 인증키 확인 (즉시 또는 승인 후 발급)
-    required: true
-    group: "data-go-kr"
+  updated_at: "2026-05-22"
+  tags: "realestate, apartment, rent, trade price"
 ---
 
 # realestate
@@ -32,6 +24,12 @@ env_vars:
 아파트·오피스텔 매매·전월세 실거래 데이터를 지역·월 단위로 수집합니다.
 
 > Python 표준 라이브러리만 사용 — 추가 의존성 없음
+
+## 환경 변수
+
+| Variable | Service | Guide |
+|---|---|---|
+| `KO_DATA_API_KEY` | 공공데이터포털 ([링크](https://www.data.go.kr)) | 회원가입 → 원하는 API 신청 → 마이페이지 → 인증키 확인 (즉시 또는 승인 후 발급) |
 
 ## API 키 설정
 

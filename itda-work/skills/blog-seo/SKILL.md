@@ -1,9 +1,9 @@
 ---
 name: blog-seo
 description: >
-  네이버 검색광고 API 기반 블루키워드 발굴 스킬. "파이썬 독학 블루키워드 찾아줘",
-  "경쟁 적은 키워드 분석해줘", "블로그 키워드 포화지수 확인해줘" 같은 요청에 사용하세요.
-  검색량·문서수로 포화지수·KEI를 계산해 S~D 5단계로 등급을 매깁니다.
+  네이버 SearchAd API로 블로그 SEO용 블루키워드를 발굴하는 스킬입니다.
+  "블루키워드 찾아줘", "경쟁 적은 키워드 분석해줘", "블로그 키워드 포화지수 확인해줘"처럼 말하면 됩니다.
+  포화지수·KEI 계산과 S~D 등급 분류를 제공합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -12,43 +12,10 @@ argument-hint: "[시드 키워드] [--min-volume 500] [--min-grade B] [--trend] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "seo"
-  version: "0.10.2"
+  version: "0.10.6"
   created_at: "2026-03-26"
-  updated_at: "2026-04-18"
-  tags: "블루키워드, 키워드분석, SEO, 블로그최적화, 포화지수, KEI, 네이버, 검색광고, 트렌드, blue keyword, keyword analysis, naver, blog seo, saturation index"
-env_vars:
-  - name: "NAVER_SEARCHAD_ACCESS_KEY"
-    service: "네이버 검색광고 API"
-    url: "https://searchad.naver.com"
-    guide: |
-      네이버 검색광고 회원가입 → API 관리 → 라이선스 키 발급
-    required: true
-    group: "naver-searchad"
-  - name: "NAVER_SEARCHAD_SECRET_KEY"
-    service: "네이버 검색광고 API"
-    guide: |
-      네이버 검색광고 API 관리에서 ACCESS KEY와 함께 발급
-    required: true
-    group: "naver-searchad"
-  - name: "NAVER_SEARCHAD_CUSTOMER_ID"
-    service: "네이버 검색광고 API"
-    guide: |
-      네이버 검색광고 API 관리 → 고객 ID 확인
-    required: true
-    group: "naver-searchad"
-  - name: "NAVER_CLIENT_ID"
-    service: "네이버 Open API"
-    url: "https://developers.naver.com"
-    guide: |
-      네이버 개발자 센터 → 애플리케이션 등록 → Client ID 발급
-    required: true
-    group: "naver-open"
-  - name: "NAVER_CLIENT_SECRET"
-    service: "네이버 Open API"
-    guide: |
-      네이버 개발자 센터 → 애플리케이션 등록 → Client Secret 발급
-    required: true
-    group: "naver-open"
+  updated_at: "2026-05-22"
+  tags: "SEO, KEI, blue keyword, keyword analysis, naver, blog seo, saturation index"
 ---
 
 # blog-seo
@@ -56,6 +23,18 @@ env_vars:
 네이버 API 기반 블루키워드 발굴 도구. 검색량 대비 경쟁이 적은 키워드를 자동으로 찾아줍니다.
 
 > Python 표준 라이브러리만 사용 — 추가 의존성 없음
+
+## 환경 변수
+
+| Variable | Service | Guide |
+|---|---|---|
+| `NAVER_SEARCHAD_ACCESS_KEY` | 네이버 검색광고 API ([searchad.naver.com](https://searchad.naver.com)) | 네이버 검색광고 회원가입 → API 관리 → 라이선스 키 발급 |
+| `NAVER_SEARCHAD_SECRET_KEY` | 네이버 검색광고 API ([searchad.naver.com](https://searchad.naver.com)) | 네이버 검색광고 API 관리에서 ACCESS KEY와 함께 발급 |
+| `NAVER_SEARCHAD_CUSTOMER_ID` | 네이버 검색광고 API ([searchad.naver.com](https://searchad.naver.com)) | 네이버 검색광고 API 관리 → 고객 ID 확인 |
+| `NAVER_CLIENT_ID` | 네이버 Open API ([developers.naver.com](https://developers.naver.com)) | 네이버 개발자 센터 → 애플리케이션 등록 → Client ID 발급 |
+| `NAVER_CLIENT_SECRET` | 네이버 Open API ([developers.naver.com](https://developers.naver.com)) | 네이버 개발자 센터 → 애플리케이션 등록 → Client Secret 발급 |
+
+상세 발급 절차는 아래 [API 키 발급 방법](#api-키-발급-방법) 섹션을 참고하세요.
 
 ## Prerequisites
 

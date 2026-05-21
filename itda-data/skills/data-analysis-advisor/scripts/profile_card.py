@@ -1,16 +1,19 @@
-"""profile_card.py - 관문1 프로파일 카드 평가기 (REQ-010~013).
+"""profile_card.py - 관문1 프로파일 카드 평가기 (REQ-010~013, SPEC-DATA-ADVISOR-STATS-001 v0.2.0).
 
-stdlib only — pandas/numpy/statsmodels 금지.
-Pearson 상관은 수동 계산 (math.sqrt만 사용).
+SPEC-DATA-ADVISOR-STATS-001 amend: itda-data 한정 statsmodels·scipy·numpy 도입.
+다른 itda-* 플러그인의 stdlib-only 정책은 영향받지 않음 (NFR-001).
+Pearson 상관은 수동 계산 보존, VIF만 statsmodels variance_inflation_factor 사용.
 
 임계 상수 (NFR-7 결정론적 게이트):
   PERFECT_CORR_THRESHOLD = 0.999  — 완전상관 판정 |r| 임계
+  VIF_THRESHOLD          = 10.0   — 다중공선성 VIF 통계학 관용 임계 (SPEC-STATS-001 EXC-6)
   CELL_N_CRITICAL = 5             — 범주 셀 치명적 소표본 하한
   CELL_N_CAUTION  = 30            — 범주 셀 신뢰구간 주의 하한
 """
 from __future__ import annotations
 
 import math
+import warnings
 from collections import Counter
 from typing import Any
 
@@ -20,6 +23,10 @@ from typing import Any
 
 # 완전상관 판정: |r| 이상이면 perfect_correlation/multicollinearity 보고
 PERFECT_CORR_THRESHOLD: float = 0.999
+
+# VIF 다중공선성 임계 (SPEC-DATA-ADVISOR-STATS-001 REQ-002·EXC-6)
+# 통계학 관용값. 5(엄격)·20(완화) 같은 대안 임계는 본 SPEC 범위 외(고정값).
+VIF_THRESHOLD: float = 10.0
 
 # 소표본 셀 임계 (REQ-012 2단계)
 CELL_N_CRITICAL: int = 5   # N < 5 → 치명적 소표본(분석 불가 신호)
@@ -121,6 +128,128 @@ def _scan_multicollinearity(
 
 
 # ─────────────────────────────────────────────
+# VIF 다중공선성 진단 (SPEC-DATA-ADVISOR-STATS-001 REQ-001~005)
+# ─────────────────────────────────────────────
+
+def _compute_vif(
+    numeric_cols: list[str],
+    col_values: dict[str, list[float | None]],
+) -> dict[str, float]:
+    """수치형 컬럼들의 VIF(Variance Inflation Factor)를 계산한다.
+
+    SPEC-DATA-ADVISOR-STATS-001 REQ-001/004/005/009.
+
+    pairwise |r|≥0.999 게이트(_scan_multicollinearity)는 3변수 선형결합
+    (X3 = 0.5·X1 + 0.5·X2 + 잡음)을 잡지 못한다. VIF는 각 X_i를 나머지
+    수치형 컬럼들로 회귀하여 R²_i를 구하고 VIF_i = 1/(1-R²_i)를 산출한다.
+
+    반환:
+      {column_name: vif_value} — 수치형 2개 이상일 때만 채워짐.
+      수치형 0~1개면 빈 dict (REQ-004, AC-5/6).
+
+    완전상관·특이행렬 시 결과 정규화 (REQ-005 defense in depth):
+      (a) LinAlgError catch → float('inf')
+      (b) statsmodels 0.14.6 동작 = inf 직접 반환 + RuntimeWarning → math.isinf/isnan 체크
+      (c) RuntimeWarning capture로 명시적 격리
+
+    listwise deletion: 모든 수치형 컬럼에 NaN(None) 없는 행만 사용 (§4.2).
+    """
+    if len(numeric_cols) < 2:
+        return {}
+
+    # statsmodels는 itda-data 한정 도입 (NFR-001) — 로컬 import로 cold-start 비용을
+    # 호출 시점으로 미룬다.
+    try:
+        import numpy as np  # noqa: PLC0415
+        from statsmodels.stats.outliers_influence import (  # noqa: PLC0415
+            variance_inflation_factor,
+        )
+    except ImportError as exc:  # pragma: no cover — requirements.txt 누락 시
+        raise RuntimeError(
+            "VIF 계산에 statsmodels·numpy 필요. "
+            "uv pip install --system -r requirements.txt"
+        ) from exc
+
+    # listwise deletion: 모든 수치형 컬럼이 결측 아닌 행만
+    row_count = len(next(iter(col_values.values()))) if col_values else 0
+    if row_count == 0:
+        return {c: float("nan") for c in numeric_cols}
+
+    complete_rows: list[list[float]] = []
+    for i in range(row_count):
+        row_vals: list[float] = []
+        complete = True
+        for c in numeric_cols:
+            v = col_values[c][i]
+            if v is None:
+                complete = False
+                break
+            try:
+                row_vals.append(float(v))
+            except (TypeError, ValueError):
+                complete = False
+                break
+        if complete:
+            complete_rows.append(row_vals)
+
+    # 표본 부족: VIF 회귀에 최소 n 필요(컬럼 수+1 권장, 최소 2)
+    min_rows_needed = max(2, len(numeric_cols))
+    if len(complete_rows) < min_rows_needed:
+        return {c: float("nan") for c in numeric_cols}
+
+    X = _to_2d_array(complete_rows, np)
+
+    vif_result: dict[str, float] = {}
+    for idx, col in enumerate(numeric_cols):
+        # 상수 열(분산 0) 검출 — statsmodels는 inf/nan 반환할 수 있으나
+        # 우리 thesis는 명시적 inf 정규화 (REQ-005 (b))
+        col_data = X[:, idx]
+        if float(col_data.var()) == 0.0:
+            vif_result[col] = float("inf")
+            continue
+
+        try:
+            with warnings.catch_warnings():
+                # REQ-005 (c): RuntimeWarning을 명시적으로 격리
+                warnings.simplefilter("error", RuntimeWarning)
+                v = variance_inflation_factor(X, idx)
+        except (np.linalg.LinAlgError, RuntimeWarning, ZeroDivisionError):
+            # REQ-005 (a)+(c): LinAlgError·RuntimeWarning 모두 inf로 정규화
+            v = float("inf")
+        except Exception:  # noqa: BLE001
+            # EXC-7: MemoryError·ImportError 같은 비예상 예외는 전파하지 않고
+            # nan으로 보고 (사용자 입력 거부 금지 thesis)
+            v = float("nan")
+
+        # REQ-005 (b): statsmodels 0.14.6 = inf/nan 직접 반환 케이스
+        if isinstance(v, float) and (math.isinf(v) or math.isnan(v)):
+            v = float("inf") if math.isinf(v) else float("nan")
+
+        vif_result[col] = float(v)
+
+    return vif_result
+
+
+def _to_2d_array(rows: list[list[float]], np_module) -> Any:
+    """list[list[float]] → numpy 2D array. 별도 함수로 분리해 테스트 가능성 보존."""
+    return np_module.asarray(rows, dtype=float)
+
+
+def _has_vif_multicollinearity(vif: dict[str, float]) -> bool:
+    """VIF dict에서 임계(10) 초과 컬럼이 1개 이상 존재하는지 (REQ-002).
+
+    nan은 산출 실패(표본 부족 등)로 다중공선성 신호로 보지 않는다.
+    inf는 완전상관 정규화 결과로 다중공선성 신호.
+    """
+    for v in vif.values():
+        if math.isnan(v):
+            continue
+        if math.isinf(v) or v > VIF_THRESHOLD:
+            return True
+    return False
+
+
+# ─────────────────────────────────────────────
 # 소표본 셀 스캔 (REQ-012)
 # ─────────────────────────────────────────────
 
@@ -187,6 +316,8 @@ def build_profile_card(rows: list[dict]) -> dict:
             "timeseries_hint": False,
             "target_candidates": [],  # 추측 금지 REQ-013
             "multicollinearity": [],
+            "vif": {},  # SPEC-STATS-001 REQ-007 AC-5
+            "has_multicollinearity": False,  # SPEC-STATS-001 REQ-002/003
             "cell_scan": {},
             "status": "분석 불가",
         }
@@ -243,9 +374,14 @@ def build_profile_card(rows: list[dict]) -> dict:
         for c in numeric_cols
     }
 
-    # 다중공선성·완전상관 1차 점검 (REQ-011)
+    # 다중공선성·완전상관 1차 점검 (REQ-011, pairwise)
     multicollinearity_pairs = _scan_multicollinearity(numeric_cols, numeric_col_values)
     multicollinearity = [(ca, cb, r) for ca, cb, r in multicollinearity_pairs]
+
+    # SPEC-DATA-ADVISOR-STATS-001 REQ-001~003: VIF 다중공선성 진단 (3변수 선형결합 적발).
+    # pairwise 게이트는 보존, VIF 신호와 OR 결합.
+    vif = _compute_vif(numeric_cols, numeric_col_values)
+    has_multicollinearity = bool(multicollinearity) or _has_vif_multicollinearity(vif)
 
     # 소표본 셀 스캔 (REQ-012)
     cell_scan = _scan_cells(rows, cat_cols)
@@ -273,6 +409,8 @@ def build_profile_card(rows: list[dict]) -> dict:
         # 추측 금지(REQ-013): 분석 불가 시 파생 필드 비움
         target_candidates = []
         multicollinearity = []
+        vif = {}
+        has_multicollinearity = False
 
     return {
         "row_count": row_count,
@@ -284,6 +422,8 @@ def build_profile_card(rows: list[dict]) -> dict:
         "timeseries_hint": timeseries_hint,
         "target_candidates": target_candidates,
         "multicollinearity": multicollinearity,
+        "vif": vif,  # SPEC-STATS-001 REQ-001/007
+        "has_multicollinearity": has_multicollinearity,  # SPEC-STATS-001 REQ-002/003
         "cell_scan": cell_scan,
         "status": status,
     }

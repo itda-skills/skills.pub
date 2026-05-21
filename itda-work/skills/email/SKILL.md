@@ -1,19 +1,18 @@
 ---
 name: email
 description: >
-  이메일 송수신 스킬. "이 메일 보내줘", "받은편지함 확인해줘",
-  "네이버 메일 읽어줘", "다음 메일 읽어줘", "메일 폴더 목록 보여줘",
-  "이 메일 피싱인지 확인해줘" 같은 요청에 사용하세요.
-  네이버·Gmail·다음/카카오·커스텀 SMTP/IMAP을 지원하고 피싱 탐지가 내장되어 있습니다.
+  네이버·Gmail·다음/카카오·커스텀 SMTP/IMAP에서 멀티 계정으로 메일을 보내고 받는 스킬입니다.
+  "메일 보내줘", "받은편지함 확인해줘", "이 메일 피싱인지 확인해줘"처럼 말하면 됩니다.
+  피싱 감지(SPF/DKIM/DMARC)와 증분 페치를 내장합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+. No external dependencies."
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.21.0"
+  version: "0.21.2"
   created_at: "2026-03-18"
-  updated_at: "2026-05-18"
-  tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, 이메일, 메일 보내기, 메일 읽기, 받은편지함, 새 메일, 증분 조회, 다음 메일, 카카오 메일, 피싱, 폴더목록, 멀티계정"
+  updated_at: "2026-05-22"
+  tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account"
 ---
 
 # email

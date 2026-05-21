@@ -1,10 +1,10 @@
 ---
 name: kacem-tender-extract
 description: >
-  군인공제회(MMAA) 모집공고 파일(hwp/hwpx/pdf)에서 사업개요·사업비를 추출해 Markdown 표 + JSON으로 정리하는 스킬.
-  "방금 받은 공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘" 같은 요청에 사용하세요.
-  extract → (Claude AI 정리) → render 두 단계로 동작하며, Claude가 중간에서 항목 식별·구조화를 담당합니다.
-  수집은 `kacem-tender-fetch` 스킬과 함께 사용하세요.
+  군인공제회 공고 첨부(hwp·hwpx·pdf)에서 사업개요와 사업비를 추출해 표·JSON으로 정리하는 스킬입니다.
+  "공고 사업비랑 사업개요
+  정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘", "공고 요약을 표로 정리해줘"처럼 말하면 됩니다.
+  결정적 텍스트 추출 후 Claude 기반 필드 식별 2단계로 동작합니다.
 license: Apache-2.0
 compatibility: "Claude Code / Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -14,10 +14,10 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "active"
-  version: "1.0.0"
+  version: "1.0.2"
   created_at: "2026-04-30"
-  updated_at: "2026-05-01"
-  tags: "군인공제회, MMAA, KACEM, 입찰, 사업개요, 사업비, 공동주택감리, hwp, hwpx, pdf, extraction, 추출"
+  updated_at: "2026-05-22"
+  tags: "MMAA, KACEM, hwp, hwpx, pdf, extraction"
 ---
 
 # kacem-tender-extract
