@@ -1,5 +1,27 @@
 # Changelog — find-work
 
+## [0.11.1] — 2026-05-21
+
+### Improvements
+
+- **plan-work 안내 본격화** (skill-creator 적대적 평가 M-9 해소): plan-work가 실제로 구현 완료(v0.10.0)되었음에도 SKILL.md/GUIDE.md의 안내가 여전히 "SPEC-PLAN-WORK-001 Planned, 구현 예정 — 본 안내는 구현 완료 시 본격화" 잔존이었음. 본격 안내로 격상:
+  - SKILL.md: "(SPEC-PLAN-WORK-001 Planned, 구현 예정 ...)" 미래형 제거 + "find-work는 '뭘 할지' 찾기, plan-work는 '어떻게 할지' 정리 — 두 스킬은 자매 관계" 관계 문장 추가.
+  - GUIDE.md: "(곧 추가 예정 — SPEC-PLAN-WORK-001 Planned)" 미래형 제거 + 자연어 발화 예시("이 메모 기반으로 계획 세워줘") 명시.
+
+### Why
+
+자매 스킬 plan-work가 실제 출시됐는데 find-work 쪽에서는 여전히 "곧 추가될 예정"으로 보이는 것은 사용자에게 부정확한 신호. skill-creator 외부 적대 평가로 적발 후 즉시 격상.
+
+## [0.11.0] — 2026-05-21
+
+### New Features
+
+- **plan-work 자매 스킬 안내 추가** (SPEC-PLAN-WORK-001 Planned 연계): "4단계: 메모 작성 + 마무리" 트랙별 다음 행동 4지선다 직후에 한 문단 추가 — 요구사항이 충분히 명확해진 사용자가 find-work 메모를 들고 plan-work 스킬로 자연스럽게 이어갈 수 있도록 출구 안내. GUIDE.md "제한사항" 영역에도 사용자 시점 한 줄 동반 추가.
+
+### Why
+
+find-work는 "막막함 → 후보 발굴"을 다루지만, 메모가 떨어진 직후 "그래서 다음에 뭐라고 해야 하나" 단계가 비어있었음. 본 안내는 자매 스킬 plan-work가 그 갭을 메우는 다음 단계임을 명시한다. plan-work는 SPEC-PLAN-WORK-001 Planned 상태이며, 본 안내는 구현 완료 시 본격화될 예정.
+
 ## [0.10.0] — 2026-05-13
 
 ### New Features
