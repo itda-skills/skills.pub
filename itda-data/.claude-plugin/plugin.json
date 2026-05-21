@@ -1,0 +1,26 @@
+{
+  "name": "itda-data",
+  "description": "데이터 분석 방법 추천·비정돈 파일 정돈·정직 보고서 생성 스킬팩",
+  "version": "7.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "데이터분석",
+    "통계",
+    "회귀분석",
+    "data-analysis",
+    "statistics",
+    "stdlib",
+    "데이터정돈",
+    "구조진단",
+    "tidy",
+    "원본불변",
+    "소계",
+    "헤더"
+  ]
+}

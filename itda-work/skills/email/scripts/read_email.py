@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from email_imap_utf7 import encode_modified_utf7  # noqa: E402
 from email_providers import detect_providers, get_provider, resolve_provider_name  # noqa: E402
 from email_security import (  # noqa: E402
-    WRAPPER_OVERHEAD,
     build_auth_label,
     parse_auth_results,
     reply_to_differs,
@@ -33,7 +32,8 @@ from env_loader import merged_env  # noqa: E402
 from itda_path import resolve_data_dir  # noqa: E402
 
 DEFAULT_MAX_CHARS = 1500  # default body length for --max-chars (token-optimized: most emails fit in 1500 chars)
-# @MX:NOTE: Reduced from 5000 to 1500 in v0.17.0. Use --max-chars -1 for full body.
+# @MX:NOTE: v0.21.0부터 본문은 opt-in(--body). 플래그 없으면 메타데이터만 반환한다.
+# DEFAULT_MAX_CHARS는 --body가 켜졌고 --max-chars 미지정일 때만 적용. 전체 본문은 --max-chars -1.
 
 # Headers required for sanitization, dates, and phishing signal extraction.
 # Used by --headers-only mode to fetch only required header fields, not the full RFC822 body.
@@ -43,10 +43,7 @@ _HEADER_FIELDS = (
 _HEADERS_ONLY_FETCH_SPEC = f"(BODY.PEEK[HEADER.FIELDS ({_HEADER_FIELDS})])"
 # Full message fetch via PEEK (does NOT mark \Seen flag, unlike RFC822).
 _FULL_FETCH_SPEC = "(BODY.PEEK[])"
-BODY_PREVIEW_LIMIT = 500  # deprecated body_preview field limit (AC-08)
-# Reserve budget for wrap_email_content markers so body_preview total stays
-# within BODY_PREVIEW_LIMIT (ISS-89e62b86).
-_BODY_PREVIEW_SANITIZE_LIMIT = BODY_PREVIEW_LIMIT - WRAPPER_OVERHEAD  # 450 chars
+HEADER_FIELD_LIMIT = 500  # sanitize cap for header fields (from/subject/reply-to)
 
 # Truncation notice appended when body exceeds max_chars (FR-03).
 TRUNCATE_NOTICE_TEMPLATE = (
@@ -235,12 +232,22 @@ def main() -> None:
     parser.add_argument("--search", default="ALL")
     parser.add_argument("--unread-only", action="store_true")
     parser.add_argument(
+        "--body",
+        action="store_true",
+        help=(
+            "Fetch the message body. Default off: only metadata "
+            "(from/subject/date/reply-to/auth) is returned. Pass --body when "
+            "the user asks to read message content. Implied when --max-chars "
+            "is given explicitly."
+        ),
+    )
+    parser.add_argument(
         "--max-chars",
         type=int,
-        default=DEFAULT_MAX_CHARS,
+        default=None,
         help=(
-            "Maximum body characters to return. "
-            f"Default: {DEFAULT_MAX_CHARS}. "
+            "Maximum body characters to return (implies --body). "
+            f"Default when --body without --max-chars: {DEFAULT_MAX_CHARS}. "
             "-1 = full body. 0 = empty body."
         ),
     )
@@ -248,9 +255,9 @@ def main() -> None:
         "--headers-only",
         action="store_true",
         help=(
-            "Fetch only headers (from/subject/date/reply-to/auth) without "
-            "message body. Drastically reduces network and token usage when "
-            "listing mail. Sets body to empty, total_chars=0, truncated=false."
+            "DEPRECATED (v0.21.0): metadata-only is now the default, so this "
+            "flag is a no-op kept for backward compatibility. When combined "
+            "with --body/--max-chars it still forces metadata-only."
         ),
     )
     parser.add_argument(
@@ -274,8 +281,17 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.max_chars < -1:
+    if args.max_chars is not None and args.max_chars < -1:
         parser.error("--max-chars must be >= -1")
+
+    # v0.21.0: 본문은 opt-in. --max-chars 명시는 --body를 함의(편의).
+    # --headers-only(deprecated)는 함께 와도 메타데이터-only를 강제한다.
+    want_body = (args.body or args.max_chars is not None) and not args.headers_only
+    effective_max_chars = (
+        (args.max_chars if args.max_chars is not None else DEFAULT_MAX_CHARS)
+        if want_body
+        else 0
+    )
 
 
     env = merged_env()
@@ -377,7 +393,7 @@ def main() -> None:
         fetched_uids: list[int] = []
         # @MX:NOTE: BODY.PEEK[] avoids marking \Seen flag (unlike RFC822).
         # HEADER.FIELDS variant only transfers required headers — major token saver.
-        fetch_spec = _HEADERS_ONLY_FETCH_SPEC if args.headers_only else _FULL_FETCH_SPEC
+        fetch_spec = _FULL_FETCH_SPEC if want_body else _HEADERS_ONLY_FETCH_SPEC
         for mid in reversed(fetch_ids):
             if uid_mode:
                 _, data = imap.uid("FETCH", mid, fetch_spec)
@@ -394,20 +410,10 @@ def main() -> None:
                     pass
             raw_from = _decode_header(msg.get("From", ""))
             raw_subject = _decode_header(msg.get("Subject", ""))
-            if args.headers_only:
-                raw_body = ""
-                body_str, total_chars, truncated = wrap_email_content(""), 0, False
-            else:
-                raw_body = _get_raw_body_text(msg)
-                body_str, total_chars, truncated = _build_body_field(raw_body, args.max_chars)
-            # Deprecated body_preview field: kept for backward compatibility.
-            # Will be removed in v0.13.0+.
-            body_preview_str = wrap_email_content(
-                sanitize_for_llm(
-                    raw_body[:BODY_PREVIEW_LIMIT],
-                    max_len=_BODY_PREVIEW_SANITIZE_LIMIT,
+            if want_body:
+                body_str, total_chars, truncated = _build_body_field(
+                    _get_raw_body_text(msg), effective_max_chars
                 )
-            )
             # Phishing signal extraction (SPEC-EMAIL-005)
             raw_auth = msg.get("Authentication-Results")
             auth = parse_auth_results(raw_auth)
@@ -421,14 +427,19 @@ def main() -> None:
                 warnings_list.append("spf_fail")
             if auth.get("dmarc") == "fail":
                 warnings_list.append("dmarc_fail")
-            results.append({
+            entry: dict = {
                 "id": mid.decode(),
-                "from": sanitize_for_llm(raw_from, max_len=BODY_PREVIEW_LIMIT),
-                "subject": sanitize_for_llm(raw_subject, max_len=BODY_PREVIEW_LIMIT),
+                "from": sanitize_for_llm(raw_from, max_len=HEADER_FIELD_LIMIT),
+                "subject": sanitize_for_llm(raw_subject, max_len=HEADER_FIELD_LIMIT),
                 "date": sanitize_for_llm(msg.get("Date", ""), max_len=100),
-                "body": body_str,
-                "total_chars": total_chars,
-                "truncated": truncated,
+            }
+            # Body keys present only when fetched (v0.21.0). Their absence is
+            # the metadata-only signal — no fake empty content envelope.
+            if want_body:
+                entry["body"] = body_str
+                entry["total_chars"] = total_chars
+                entry["truncated"] = truncated
+            entry.update({
                 "spf": auth.get("spf"),
                 "dkim": auth.get("dkim"),
                 "dmarc": auth.get("dmarc"),
@@ -436,8 +447,8 @@ def main() -> None:
                 "reply_to": sanitize_for_llm(raw_reply_to, max_len=200) or None,
                 "reply_to_differs": differs,
                 "warnings": warnings_list,
-                "body_preview": body_preview_str,  # deprecated: use body
             })
+            results.append(entry)
 
         imap.logout()
 

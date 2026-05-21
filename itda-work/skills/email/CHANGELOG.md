@@ -1,5 +1,30 @@
 # Changelog — itda-email
 
+## [0.21.0] — 2026-05-18 (SPEC-EMAIL-004 개정)
+
+### Breaking Changes
+
+- **`read_email.py` 기본 동작이 메타조회로 전환.** 이전: 기본으로 본문(1500자)까지 페치. 이후: `--body` 미지정 시 메타데이터(from/subject/date/reply-to/피싱신호)만 반환. 본문은 `--body` 또는 `--max-chars N`을 명시할 때만 페치. CLI 직접 소비자는 없고(개발자 테스트 전용) 스킬은 SKILL.md 라우팅으로 의도에 맞게 호출하므로 사용자 워크플로우 영향 없음.
+- **메타조회 시 `body`/`total_chars`/`truncated` 키 자체를 생략.** 이전 `--headers-only`는 `body`에 빈 봉투(`===EMAIL_CONTENT_START===\n\n===END===`)+`total_chars=0`을 출력했으나, 본문을 안 받았으면 키가 없는 게 정직하고 메시지당 토큰도 절감. 키 부재 = "본문 미페치" 신호.
+
+### Removed
+
+- **`body_preview` 필드 완전 제거.** SPEC-EMAIL-004 §4.4에서 v0.13.0+ 제거 예정으로 deprecated된 필드(`body`의 500자 캡 중복본). 외부 소비자 0 확인 후 전 모드에서 삭제. 관련 내부 상수 `_BODY_PREVIEW_SANITIZE_LIMIT` 제거, `BODY_PREVIEW_LIMIT`→`HEADER_FIELD_LIMIT`(헤더 필드 sanitize 캡으로 의미 정정).
+
+### New Features
+
+- **`--body` 플래그 신설**: 메시지 본문 opt-in. `--max-chars N`은 `--body`를 함의(이 옵션만 줘도 본문 조회). 메타조회만 하면 5건 기준 약 **86% 토큰 절감** — 목록 brief·새 메일 확인·피싱 스캔의 기본 경로가 비용 최소 경로로 정렬됨.
+- **SKILL.md Claude 라우팅 가이드 신설**: 의도(메타조회/본문읽기/전체본문)→플래그 매핑 표 + 모호 트리거 2단계(progressive disclosure) 패턴 명문화. 동작 규칙을 전 사용자 공유 SKILL.md에 고정.
+
+### Improvements
+
+- **SKILL.md 런타임 계약으로 순수화 (776→383줄, -50.6% / 33KB→19KB).** Setup(provider별 앱 비밀번호 발급 단계)·Migration·Troubleshooting 워크스루를 사용자용 GUIDE.md로 이전. SKILL.md엔 자격증명 변수명 표 + "누락 시 GUIDE 안내" 런타임 규칙만 잔존(온보딩 progressive disclosure). 모든 `vX.Y.Z` 버전스탬프 제거 — CHANGELOG가 변경이력 유일 정본. 진단 코드표는 `diagnose_smtp.py` 출력 해석용으로 압축 보존. 동작·계약 변경 0(문서 재배치).
+- **GUIDE.md 보강**: "처음 설정하기"(provider별 온보딩, 사용자 톤)·"안 될 때"(증상별 해결) 추가.
+
+### Deprecations
+
+- **`--headers-only`**: 메타조회가 기본이 되어 no-op. 하위호환용으로만 수용하며, `--body`/`--max-chars`와 함께 와도 메타데이터-only를 강제(우선순위 보장).
+
 ## [0.20.0] — 2026-05-13 (SPEC-EMAIL-DRAFTS-001)
 
 ### New Features
