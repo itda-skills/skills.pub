@@ -159,12 +159,13 @@ def _send_message(
     email = provider["email"]
     password = provider["password"]
 
-    if force_587:
+    # iCloud 등 smtp_port == 587인 provider는 465 시도 없이 STARTTLS 직행
+    if force_587 or provider.get("smtp_port") == 587:
         _send_with_retry(
             _send_via_587, host, email, password, recipients, msg_str,
             port_label="587",
         )
-        return "starttls_587_forced"
+        return "starttls_587_forced" if force_587 else "starttls_587"
 
     primary_error: Exception | None = None
     try:
@@ -242,7 +243,7 @@ def _build_attachment_part(filepath: str) -> MIMEBase:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Send email via SMTP SSL.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "custom"])
+    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
     parser.add_argument("--to", required=True)
     parser.add_argument("--subject", required=True)
     parser.add_argument("--body", required=True)

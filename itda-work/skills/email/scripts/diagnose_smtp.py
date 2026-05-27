@@ -122,21 +122,45 @@ def probe_smtp_465(host: str, port: int, timeout: float = DEFAULT_TIMEOUT) -> di
 
 
 def probe_smtp_587_starttls(host: str, timeout: float = DEFAULT_TIMEOUT) -> dict:
-    """SMTP plaintext connect on 587 + STARTTLS upgrade."""
+    """SMTP plaintext connect on 587 + STARTTLS upgrade with verified cert."""
     t0 = time.time()
+    ctx = ssl.create_default_context()
     try:
         with smtplib.SMTP(host, 587, timeout=timeout) as smtp:
             smtp.ehlo()
             if not smtp.has_extn("starttls"):
                 return {"status": "fail", "error": "no_starttls",
                         "detail": "Server did not advertise STARTTLS"}
-            smtp.starttls()
+            smtp.starttls(context=ctx)
             smtp.ehlo()
             return {"status": "ok", "elapsed_ms": _ms_since(t0)}
     except (TimeoutError, socket.timeout) as e:
         return {"status": "fail", "error": "starttls_timeout", "detail": str(e)}
     except Exception as e:  # noqa: BLE001
         return {"status": "fail", "error": "starttls_failed",
+                "detail": f"{type(e).__name__}: {e}"}
+
+
+def probe_smtp_587_auth(host: str, email: str, password: str,
+                         timeout: float = DEFAULT_TIMEOUT) -> dict:
+    """Full STARTTLS(587) + AUTH — iCloud 등 SSL 미지원 provider 전용."""
+    t0 = time.time()
+    try:
+        ctx = ssl.create_default_context()
+        with smtplib.SMTP(host, 587, timeout=timeout) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=ctx)
+            smtp.ehlo()
+            smtp.login(email, password)
+            return {"status": "ok", "elapsed_ms": _ms_since(t0)}
+    except smtplib.SMTPAuthenticationError as e:
+        return {"status": "fail", "error": "auth_failed",
+                "detail": f"code={e.smtp_code} {e.smtp_error!r}"}
+    except smtplib.SMTPServerDisconnected as e:
+        return {"status": "fail", "error": "server_disconnected_during_auth",
+                "detail": str(e)}
+    except Exception as e:  # noqa: BLE001
+        return {"status": "fail", "error": "auth_unknown",
                 "detail": f"{type(e).__name__}: {e}"}
 
 
@@ -187,6 +211,23 @@ def diagnose(report: dict) -> tuple[str, str]:
         return ("no_internet",
                 "google.com:443 도 안 되는 상황. 일반 인터넷 egress가 차단됨.")
 
+    # iCloud 등 STARTTLS 전용 provider 경로 (ssl_465 키 부재)
+    if "ssl_465" not in d:
+        if d.get("tcp_587", {}).get("status") == "fail":
+            return ("egress_block_587",
+                    "포트 587 차단됨. STARTTLS 전용 provider(iCloud 등)이므로 발송 불가.")
+        if d.get("starttls_587", {}).get("status") == "fail":
+            return ("starttls_failure",
+                    "STARTTLS 핸드셰이크 실패. 회사 프록시의 TLS intercept 또는 서버 측 차단.")
+        auth = d.get("smtp_auth_587")
+        if auth and auth.get("status") == "fail":
+            if auth.get("error") == "auth_failed":
+                return ("credentials_invalid",
+                        "STARTTLS+AUTH 실패. 앱 전용 비밀번호 만료/오타, 2FA 미활성 가능.")
+            return ("auth_layer_error",
+                    f"STARTTLS+AUTH 단계 비정상 오류 ({auth.get('error')}).")
+        return ("all_ok", "모든 레이어 정상 (STARTTLS 경로).")
+
     # 3. TCP 465 layer
     if d["tcp_465"]["status"] == "fail":
         if d.get("tcp_587", {}).get("status") == "ok":
@@ -231,7 +272,7 @@ def main() -> None:
         description="Layered SMTP diagnostic to identify connection failure root cause.",
     )
     parser.add_argument("--provider", required=True,
-                        choices=["naver", "google", "gmail", "daum", "custom"])
+                        choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
     parser.add_argument("--account", default=None)
     parser.add_argument("--no-auth", action="store_true",
                         help="Skip the AUTH probe (DNS+TCP+SSL+EHLO only).")
@@ -247,23 +288,38 @@ def main() -> None:
 
     smtp_host = provider["smtp_host"]
     smtp_port = provider["smtp_port"]
+    is_starttls_only = (smtp_port == 587)
 
-    diagnostics = {
-        "dns": probe_dns(smtp_host),
-        "tcp_465": probe_tcp(smtp_host, smtp_port, args.timeout),
-        "ssl_465": probe_ssl(smtp_host, smtp_port, args.timeout),
-        "smtp_465": probe_smtp_465(smtp_host, smtp_port, args.timeout),
-        "tcp_587": probe_tcp(smtp_host, 587, args.timeout),
-        "starttls_587": probe_smtp_587_starttls(smtp_host, args.timeout),
-        "baseline": {
-            f"{h}:{p}": probe_baseline(h, p, args.timeout) for h, p in COMPARE_HOSTS
-        },
-    }
-
-    if not args.no_auth and provider.get("email") and provider.get("password"):
-        diagnostics["smtp_auth_465"] = probe_smtp_auth(
-            smtp_host, smtp_port, provider["email"], provider["password"], args.timeout
-        )
+    if is_starttls_only:
+        # iCloud 등 587/STARTTLS 전용 provider: SSL 465 probe skip (의미 없는 거짓 fail 방지)
+        diagnostics = {
+            "dns": probe_dns(smtp_host),
+            "tcp_587": probe_tcp(smtp_host, 587, args.timeout),
+            "starttls_587": probe_smtp_587_starttls(smtp_host, args.timeout),
+            "baseline": {
+                f"{h}:{p}": probe_baseline(h, p, args.timeout) for h, p in COMPARE_HOSTS
+            },
+        }
+        if not args.no_auth and provider.get("email") and provider.get("password"):
+            diagnostics["smtp_auth_587"] = probe_smtp_587_auth(
+                smtp_host, provider["email"], provider["password"], args.timeout
+            )
+    else:
+        diagnostics = {
+            "dns": probe_dns(smtp_host),
+            "tcp_465": probe_tcp(smtp_host, smtp_port, args.timeout),
+            "ssl_465": probe_ssl(smtp_host, smtp_port, args.timeout),
+            "smtp_465": probe_smtp_465(smtp_host, smtp_port, args.timeout),
+            "tcp_587": probe_tcp(smtp_host, 587, args.timeout),
+            "starttls_587": probe_smtp_587_starttls(smtp_host, args.timeout),
+            "baseline": {
+                f"{h}:{p}": probe_baseline(h, p, args.timeout) for h, p in COMPARE_HOSTS
+            },
+        }
+        if not args.no_auth and provider.get("email") and provider.get("password"):
+            diagnostics["smtp_auth_465"] = probe_smtp_auth(
+                smtp_host, smtp_port, provider["email"], provider["password"], args.timeout
+            )
 
     report: dict = {
         "provider": args.provider,

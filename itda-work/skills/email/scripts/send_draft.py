@@ -61,11 +61,22 @@ def _send_via_smtp(
     recipients: list[str],
     raw_message: bytes,
 ) -> None:
-    """SSL(465) 또는 STARTTLS(587)로 SMTP 발송을 시도한다."""
+    """SMTP 발송: smtp_port==587 → STARTTLS 직행, 그 외 → SSL(465) 후 587 fallback."""
     host = provider_cfg["smtp_host"]
     email_addr = provider_cfg["email"]
     password = provider_cfg["password"]
+    smtp_port = provider_cfg.get("smtp_port", 465)
     ctx = ssl.create_default_context()
+
+    # iCloud 등 smtp_port == 587인 provider는 465 시도 없이 STARTTLS 직행
+    if smtp_port == 587:
+        with smtplib.SMTP(host, 587, timeout=20) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=ctx)
+            smtp.ehlo()
+            smtp.login(email_addr, password)
+            smtp.sendmail(email_addr, recipients, raw_message)
+        return
 
     try:
         with smtplib.SMTP_SSL(host, 465, timeout=20, context=ctx) as smtp:
@@ -213,7 +224,7 @@ def send_draft(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Drafts 초안을 SMTP로 발송합니다.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "custom"])
+    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
     parser.add_argument("--uid", required=True, type=int)
     parser.add_argument("--keep", action="store_true", help="발송 후 초안을 Drafts에 보존합니다.")
     parser.add_argument("--dry-run", action="store_true", dest="dry_run",

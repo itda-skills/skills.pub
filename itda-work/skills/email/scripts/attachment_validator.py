@@ -41,6 +41,17 @@ PROVIDER_LIMITS: dict[str, dict] = {
             ".bat", ".cmd", ".com", ".cpl", ".exe", ".js", ".scr", ".vbs", ".wsf",
         }),
     },
+    "icloud": {
+        # iCloud Mail: 20MB per attachment, 20MB total.
+        # Source: Apple Support — iCloud Mail attachment limits.
+        "max_single_file_mb": 20.0,
+        "max_total_mb": 20.0,
+        "warn_threshold_ratio": 0.75,
+        "warn_large_file_mb": 0.0,
+        "blocked_extensions": frozenset({
+            ".bat", ".cmd", ".com", ".cpl", ".exe", ".js", ".scr", ".vbs", ".wsf",
+        }),
+    },
     "custom": {
         "max_single_file_mb": 0.0,
         "max_total_mb": 0.0,

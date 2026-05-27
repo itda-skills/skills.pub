@@ -74,37 +74,131 @@ def _decode_header(raw: str) -> str:
     return "".join(parts)
 
 
-def _get_raw_body_text(msg: email.message.Message) -> str:
-    """Extract full raw text body from email message, stripping HTML tags if needed.
+def _get_raw_body_text(
+    msg: email.message.Message,
+    prefer_text: bool = False,
+) -> tuple[str, str]:
+    """Extract full raw text body from email message.
 
-    Returns the complete text body without truncation. Callers are responsible
-    for applying max_chars limits via _build_body_field().
+    Returns (raw_body, body_format) tuple where body_format is 'html', 'text', or ''.
+    Callers are responsible for applying max_chars limits via _build_body_field().
+
+    SPEC-EMAIL-MULTIPART-001 정합성:
+    - Content-Disposition: attachment 파트는 본문 후보에서 제외 (D-1 수정)
+    - multipart/alternative 내 HTML 우선 정책 (D-4 수정, OQ-1 권장안)
+    - prefer_text=True 시 text/plain 우선 (--prefer-text opt-out 지원)
     """
-    body = ""
-    if msg.is_multipart():
-        for part in msg.walk():
-            ct = part.get_content_type()
-            if ct == "text/plain":
-                payload = part.get_payload(decode=True)
-                if payload:
-                    charset = part.get_content_charset() or "utf-8"
-                    body = payload.decode(charset, errors="replace")
-                    break
-            elif ct == "text/html" and not body:
-                payload = part.get_payload(decode=True)
-                if payload:
-                    charset = part.get_content_charset() or "utf-8"
-                    body = _strip_tags(payload.decode(charset, errors="replace"))
-    else:
+    if not msg.is_multipart():
+        # 단순 메일: 기존 동작 유지 (회귀 보장)
         payload = msg.get_payload(decode=True)
-        if payload:
-            charset = msg.get_content_charset() or "utf-8"
-            raw_text = payload.decode(charset, errors="replace")
-            if msg.get_content_type() == "text/html":
-                body = _strip_tags(raw_text)
-            else:
-                body = raw_text
-    return body
+        if not payload:
+            return "", ""
+        charset = msg.get_content_charset() or "utf-8"
+        raw_text = payload.decode(charset, errors="replace")
+        if msg.get_content_type() == "text/html":
+            return _strip_tags(raw_text), "html"
+        return raw_text, "text"
+
+    # multipart: Content-Disposition:attachment 제외 후 두 패스로 후보 수집
+    html_candidate = ""
+    text_candidate = ""
+    for part in msg.walk():
+        if part.get_content_maintype() == "multipart":
+            continue  # 컨테이너 파트, 건너뜀
+        cd = (part.get("Content-Disposition") or "").lower()
+        if "attachment" in cd:
+            continue  # 첨부 파트 제외 (D-1 수정)
+        ct = part.get_content_type()
+        # text/* 타입만 본문 후보로 허용 (non-text inline은 건너뜀)
+        if not ct.startswith("text/"):
+            continue
+        payload = part.get_payload(decode=True)
+        if not payload:
+            continue
+        charset = part.get_content_charset() or "utf-8"
+        text = payload.decode(charset, errors="replace")
+        if ct == "text/html" and not html_candidate:
+            html_candidate = text
+        elif ct == "text/plain" and not text_candidate:
+            text_candidate = text
+
+    # OQ-1 권장안 (a): HTML 우선 / prefer_text=True 시 text 우선
+    if prefer_text:
+        if text_candidate:
+            return text_candidate, "text"
+        if html_candidate:
+            return html_candidate, "html"
+    else:
+        if html_candidate:
+            return html_candidate, "html"  # raw HTML 유지 (EXC-4)
+        if text_candidate:
+            return text_candidate, "text"
+    return "", ""
+
+
+def _extract_attachments(msg: email.message.Message) -> list[dict]:
+    """Walk message and collect attachment/inline metadata.
+
+    Returns list of {"filename", "content_type", "size_bytes", "content_id"}.
+    Content-Disposition: attachment 및 inline(with Content-ID) 파트 수집.
+    SPEC-EMAIL-MULTIPART-001 REQ-004/005/008, OQ-4.
+    """
+    attachments: list[dict] = []
+    for part in msg.walk():
+        if part.get_content_maintype() == "multipart":
+            continue
+        cd = (part.get("Content-Disposition") or "").lower()
+        cid_raw = part.get("Content-ID") or ""
+        is_attachment = "attachment" in cd
+        is_inline = "inline" in cd and cid_raw.strip()
+
+        if not (is_attachment or is_inline):
+            continue
+
+        # filename: get_filename()은 RFC 2047/5987 인코딩도 처리
+        filename_raw = part.get_filename()
+        if filename_raw:
+            filename: str | None = _decode_header(filename_raw)
+        else:
+            filename = None
+
+        payload = part.get_payload(decode=True)
+        size = len(payload) if payload else 0
+        # Content-ID의 꺾쇠 괄호 제거: <logo123> → logo123
+        cid = cid_raw.strip().strip("<>") or None
+
+        attachments.append({
+            "filename": filename,
+            "content_type": part.get_content_type(),
+            "size_bytes": size,
+            "content_id": cid,
+        })
+    return attachments
+
+
+def _decode_address_header(raw: str | None) -> list[dict]:
+    """Decode RFC 2047 encoded address header and parse multiple addresses.
+
+    Returns [{"name": str, "addr": str}, ...] or [] for empty/None input.
+    SPEC-EMAIL-MULTIPART-001 REQ-003/006, OQ-3 (c) 채택.
+    """
+    import email.utils as _eu
+
+    if not raw:
+        return []
+    # getaddresses는 복수 주소 파싱 (RFC 2822)
+    addrs = _eu.getaddresses([raw])
+    result: list[dict] = []
+    for name, addr in addrs:
+        if not addr:
+            continue
+        # RFC 2047 인코딩된 이름 디코딩
+        decoded_name = _decode_header(name) if name else ""
+        result.append({
+            "name": sanitize_for_llm(decoded_name, max_len=200),
+            "addr": sanitize_for_llm(addr, max_len=200),
+        })
+    return result
 
 
 def _build_body_field(
@@ -224,7 +318,7 @@ def _parse_uid_search_result(data: list) -> list[bytes]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Read email via IMAP SSL.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "custom"])
+    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
     parser.add_argument("--account", default=None,
                         help="Account suffix (default, work, personal, 1, 2, ...)")
     parser.add_argument("--folder", default="INBOX")
@@ -249,6 +343,14 @@ def main() -> None:
             "Maximum body characters to return (implies --body). "
             f"Default when --body without --max-chars: {DEFAULT_MAX_CHARS}. "
             "-1 = full body. 0 = empty body."
+        ),
+    )
+    parser.add_argument(
+        "--prefer-text",
+        action="store_true",
+        help=(
+            "When a message has both HTML and plain-text alternatives, prefer "
+            "text/plain over text/html. Default: HTML preferred (OQ-1)."
         ),
     )
     parser.add_argument(
@@ -411,8 +513,9 @@ def main() -> None:
             raw_from = _decode_header(msg.get("From", ""))
             raw_subject = _decode_header(msg.get("Subject", ""))
             if want_body:
+                raw_body_text, body_format = _get_raw_body_text(msg, prefer_text=args.prefer_text)
                 body_str, total_chars, truncated = _build_body_field(
-                    _get_raw_body_text(msg), effective_max_chars
+                    raw_body_text, effective_max_chars
                 )
             # Phishing signal extraction (SPEC-EMAIL-005)
             raw_auth = msg.get("Authentication-Results")
@@ -430,13 +533,18 @@ def main() -> None:
             entry: dict = {
                 "id": mid.decode(),
                 "from": sanitize_for_llm(raw_from, max_len=HEADER_FIELD_LIMIT),
+                "to": _decode_address_header(msg.get("To", "")),
+                "cc": _decode_address_header(msg.get("Cc", "")),
+                "bcc": _decode_address_header(msg.get("Bcc", "")),
                 "subject": sanitize_for_llm(raw_subject, max_len=HEADER_FIELD_LIMIT),
                 "date": sanitize_for_llm(msg.get("Date", ""), max_len=100),
+                "attachments": _extract_attachments(msg),
             }
             # Body keys present only when fetched (v0.21.0). Their absence is
             # the metadata-only signal — no fake empty content envelope.
             if want_body:
                 entry["body"] = body_str
+                entry["body_format"] = body_format
                 entry["total_chars"] = total_chars
                 entry["truncated"] = truncated
             entry.update({

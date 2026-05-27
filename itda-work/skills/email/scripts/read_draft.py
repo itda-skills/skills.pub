@@ -186,7 +186,7 @@ def read_draft(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="IMAP Drafts 폴더에서 초안 본문을 조회합니다.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "custom"])
+    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
     parser.add_argument("--uid", required=True, type=int)
     parser.add_argument("--account", default=None)
     args = parser.parse_args()

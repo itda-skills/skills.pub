@@ -171,7 +171,7 @@ def list_drafts(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="IMAP Drafts 폴더 메시지 목록을 조회합니다.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "custom"])
+    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--since", default=None, metavar="YYYY-MM-DD")
     parser.add_argument("--account", default=None)

@@ -201,7 +201,7 @@ def save_draft(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="IMAP Drafts 폴더에 초안을 저장합니다.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "custom"])
+    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
     parser.add_argument("--to", required=True, dest="to_addr")
     parser.add_argument("--subject", required=True)
     parser.add_argument("--body", required=True)

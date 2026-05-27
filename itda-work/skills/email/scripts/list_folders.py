@@ -90,7 +90,7 @@ def main() -> None:  # noqa: C901
     parser.add_argument(
         "--provider",
         required=True,
-        choices=["naver", "google", "gmail", "daum", "custom"],
+        choices=["naver", "google", "gmail", "daum", "icloud", "custom"],
         help="Email provider",
     )
     parser.add_argument(

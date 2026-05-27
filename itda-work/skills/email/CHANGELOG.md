@@ -1,5 +1,55 @@
 # Changelog — itda-email
 
+## [0.23.0] — 2026-05-27 (SPEC-EMAIL-MULTIPART-001)
+
+### Bug Fixes
+
+- **multipart MIME 파싱 결함 4건 일괄 수정** (`read_email.py`): SPEC-EMAIL-ICLOUD-001 라이브 검증서 적발된 결함을 단일 SPEC으로 묶어 해결. iCloud/naver/google 3 provider 라이브 매트릭스로 종단 확인.
+  - D-1 `_get_raw_body_text`: `Content-Disposition: attachment` 파트를 본문 후보에서 제외 — 첨부 텍스트가 `body`로 누출되던 결함 차단
+  - D-2 entry build: `to`/`cc`/`bcc` 헤더 `email.utils.getaddresses` + `decode_header`로 파싱 — 기존엔 호출 자체 부재
+  - D-3 `_extract_attachments` 신규 헬퍼: `attachments[]` 메타 빌드 (filename·content_type·size_bytes·content_id, RFC 2047 filename 디코딩)
+  - D-4 multipart/alternative: HTML 본문 우선 정책 (`--prefer-text`로 text/plain 우선 opt-out)
+
+### New Features
+
+- **출력 스키마 확장**: `to`/`cc`/`bcc` = `[{"name","addr"}]` dict list, `attachments` = `[{...}]` (want_body 무관 항상 반환), `body_format` = 평탄한 top-level 키 (`"html"`/`"text"`/`""`)
+- **`--prefer-text` 플래그**: multipart/alternative 메일에서 text/plain 우선 (기본은 HTML 우선)
+
+### Tests
+
+- 신규 단위 테스트 21개 (`test_multipart.py`): 합성 fixture(F-1 multipart/mixed, F-2 alternative, F-3 한글 헤더, F-4 한글 filename, F-5 inline+content_id, F-6 첨부만)로 AC-001~010 전수 검증
+- 라이브 매트릭스 (AC-007): naver/google/icloud 3 provider × send(HTML+CC+첨부) → read 종단 통과, `to/cc/attachments/body_format/<h2> 마커` 모두 정상
+- 누적: 452 → 473 passed / 0 failed / 0 skipped
+
+### Behavior Contracts
+
+- `attachments[]` 는 `--body` 무관 항상 반환 (메타라 토큰 비용 작음)
+- multipart/alternative 본문 우선순위 = HTML > text/plain (변경 가능 `--prefer-text`)
+- 단순 text 메일 (`is_multipart()=False`) 경로는 회귀 0 — 기존 동작 보장
+
+## [0.22.0] — 2026-05-27 (SPEC-EMAIL-ICLOUD-001)
+
+### New Features
+
+- **iCloud Mail 프로바이더 추가 (`icloud`)**: Apple iCloud Mail 을
+  `--provider icloud` 단축 경로로 송·수신. `imap.mail.me.com:993 SSL` +
+  `smtp.mail.me.com:587 STARTTLS`. `@icloud.com`·`@me.com`·`@mac.com` 도메인 동일 처리.
+- **환경변수**: `ICLOUD_EMAIL` / `ICLOUD_APP_PASSWORD`. 멀티 계정 suffix
+  지원 (`ICLOUD_EMAIL_WORK` 등 기존 패턴 그대로). 앱 전용 비밀번호 필수
+  (appleid.apple.com 2단계 인증 활성 상태에서 발급).
+- **GUIDE.md "처음 설정하기"**: iCloud 앱 전용 비밀번호 발급 절차 추가.
+
+### Behavior Contracts
+
+- iCloud SMTP 는 처음부터 587 STARTTLS 직행 (465 시도 안 함). 응답
+  `transport` 필드로 식별 가능 (`starttls_587`).
+
+### Tests
+
+- 신규 단위 테스트 35개: PROVIDERS 등록·`detect_providers` icloud 보고·멀티 계정
+  suffix·잘못된 자격증명 시 `credentials_missing` 반환. 네트워크 mock
+  강제(실 IMAP/SMTP 호출 0). 기존 406 + 신규 35 = 441 passed / 0 failed.
+
 ## [0.21.2] — 2026-05-22
 
 ### Improvements

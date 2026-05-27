@@ -6,6 +6,7 @@ import argparse
 import imaplib
 import json
 import smtplib
+import ssl
 import sys
 from pathlib import Path
 
@@ -17,11 +18,20 @@ TIMEOUT = 10
 
 
 def test_smtp(host: str, port: int, email: str, password: str) -> dict:
-    """Test SMTP SSL connection. Returns status dict."""
+    """Test SMTP connection. port=587 → STARTTLS, else → SMTP_SSL."""
     try:
+        if port == 587:
+            # iCloud 등: STARTTLS 직행 (465 SSL 시도 금지)
+            ctx = ssl.create_default_context()
+            with smtplib.SMTP(host, port, timeout=TIMEOUT) as smtp:
+                smtp.ehlo()
+                smtp.starttls(context=ctx)
+                smtp.ehlo()
+                smtp.login(email, password)
+            return {"status": "ok", "host": host, "port": port, "transport": "starttls_587"}
         with smtplib.SMTP_SSL(host, port, timeout=TIMEOUT) as smtp:
             smtp.login(email, password)
-        return {"status": "ok", "host": host, "port": port}
+        return {"status": "ok", "host": host, "port": port, "transport": "smtps_465"}
     except TimeoutError as e:
         return {
             "status": "error", "error": "timeout", "detail": str(e),
@@ -54,7 +64,7 @@ def test_imap(host: str, port: int, email: str, password: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Test email server connectivity.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "custom"])
+    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
     parser.add_argument("--account", default=None,
                         help="Account suffix (default, work, personal, 1, 2, ...)")
     args = parser.parse_args()

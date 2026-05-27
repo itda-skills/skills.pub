@@ -59,6 +59,22 @@ PROVIDERS: dict[str, dict] = {
         "email_env": "DAUM_EMAIL",
         "password_env": "DAUM_APP_PASSWORD",
     },
+    "icloud": {
+        "name": "icloud",
+        "aliases": [],
+        "smtp_host": "smtp.mail.me.com",
+        "smtp_port": 587,
+        "imap_host": "imap.mail.me.com",
+        "imap_port": 993,
+        "use_ssl": True,
+        "capabilities": ["send", "read"],
+        "email_prefix": "ICLOUD_EMAIL",
+        "password_prefix": "ICLOUD_APP_PASSWORD",
+        "legacy_email_prefix": None,
+        "legacy_password_prefix": None,
+        "email_env": "ICLOUD_EMAIL",
+        "password_env": "ICLOUD_APP_PASSWORD",
+    },
 }
 
 # Alias -> canonical mapping (e.g. "gmail" -> "google")
