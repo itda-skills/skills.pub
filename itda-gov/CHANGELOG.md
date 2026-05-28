@@ -1,5 +1,42 @@
 # Changelog — itda-gov
 
+## [4.2.0] — 2026-05-29 (SPEC-DART-FEEDBACK-001)
+
+### 🔴 BREAKING CHANGES (dart only)
+
+- **`itda-gov:dart --report half` 제거** — `--report q2`로 변경 (반기보고서 코드 11012 동일). 사용자 입력 `half` 시 친절한 deprecation 안내 메시지와 함께 SystemExit. 마이그레이션은 `--report half` → `--report q2` 한 곳 치환.
+- `dart_api.REPRT_CODES`에서 `'half'` 키 → `'q2'`로 변경 (외부 코드가 직접 import하는 경우만 영향).
+
+### Added — dart 사용자 피드백 7항목 일괄 반영
+
+- **dart `--unit auto|million|eok|jo`** (compare): 금액 한국 단위 표기. `auto`(기본) = |값|≥1조 `4조 3,923억 원`, ≥1억 `156억 원`, 미만 `5 백만원`. 외화는 unit 무시(기존 `M USD` 포맷 유지).
+- **dart `--with-ratios`** (compare): 영업이익률·순이익률 행 자동 추가. 매출액=0/누락이면 `N/A`. table/csv/json 출력 모두 통합.
+- **dart `--names` + `--corp-codes` 병기 가능** (compare): 두 옵션의 `mutually_exclusive_group` 해제. 둘 다 지정 시 corp_codes 순서대로 처리하되 names를 헤더 표시명으로 사용 (`SKT (00159023)`). 추가 API 호출 0.
+- **dart CSV `formatted_amount` 컬럼 신설**: 단위 변환된 표기 + ratio 행도 같은 컬럼에 percentage. 기존 `thstrm_amount` raw 보존.
+- **dart `DEFAULT_ACCOUNTS` 상수**: `("매출액","영업이익","당기순이익","자산총계")` 순서 보존. `--accounts` 기본값으로 사용 + `--help` 텍스트에 명시.
+
+### Improvements — 전 itda-gov 스킬 공통 (shared/env_loader)
+
+- **`~/.claude/settings.json` env 키 자동 탐색**: `claude config set env.X "value"`로 등록된 환경변수가 Claude Cowork 등 격리 subprocess에 자동 inject되지 않는 경우를 보조. 조회 우선순위: `cli_arg > os.environ > ~/.claude/settings.json env > .env files`. 신설 `_load_claude_settings_env()` (graceful — 파일 부재·malformed JSON·env 키 부재 모두 `{}` 반환). DART·KOSIS·ECOS·realestate·funding·g2b·stock-quote·stock-portfolio 모두 자동 수혜.
+
+### Documentation — dart SKILL.md
+
+- **"실행 경로 안내 (Cowork 환경)" 섹션 신설**: SKILL.md 첫줄 `Base directory` ≠ 실제 실행 경로 시나리오에 대한 3단계 탐색 가이드(`$CLAUDE_PROJECT_DIR` → `find /sessions -type d -name dart` → SKILL.md 그대로).
+- **파일 구조 false-confidence 해소**: 종전 SKILL.md `env_loader.py # API 키 관리` / `test_env_loader.py` 광고가 dart 직속 디렉토리에 실제로 존재하지 않던 문제를 정정. `shared/` 거주 명시.
+- CLI 옵션 표 갱신: `--report q2`, `--unit`, `--with-ratios`, `--accounts` 기본값(`매출액,영업이익,당기순이익,자산총계`) 명시.
+- `argument-hint` frontmatter에 `--unit`, `--with-ratios` 노출.
+
+### Acceptance Criteria
+
+- AC-1~AC-7: 사용자 피드백 7항목 모두 반영, 1줄 grep으로 검증 가능 (SPEC-DART-FEEDBACK-001 §3 참조).
+- AC-8: 회귀 0 — itda-gov 전체 + shared 707 passed, 3 skipped(사용자 환경 KO_DATA_API_KEY conditional), 0 failed.
+- AC-10: dart v0.15.0 CHANGELOG + SKILL.md metadata 정합.
+
+### Tests
+
+- 신규 30 케이스 (`TestFormatCompareAmount`·`TestComputeRatio`·`TestReportQ2Breaking`·`TestCompareNamesAndCodesTogether`·`TestCompareWithRatios`·`TestDefaultAccounts`·`TestCompareUnitOption`). itda-dart 248 passed (218→248), 회귀 0.
+- shared/tests 11 신규 케이스 (`TestClaudeSettingsEnv`). shared 52 passed (41→52), 회귀 0.
+
 ## [4.1.0] — 2026-05-16 (SPEC-GOV-STOCK-001)
 
 ### New Features

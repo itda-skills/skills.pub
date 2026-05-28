@@ -38,11 +38,11 @@ MAX_ZIP_ENTRY_SIZE = 50 * 1024 * 1024
 # ZIP 청크 단위 읽기 크기 (1MB)
 _ZIP_CHUNK_SIZE = 1 * 1024 * 1024
 
-# 보고서 코드
+# 보고서 코드 (SPEC-DART-FEEDBACK-001 REQ-006: half → q2 일관성)
 REPRT_CODES = {
     "annual": "11011",      # 사업보고서
-    "half": "11012",        # 반기보고서
     "q1": "11013",          # 1분기보고서
+    "q2": "11012",          # 2분기보고서 (구 'half' 반기보고서)
     "q3": "11014",          # 3분기보고서
 }
 
@@ -54,6 +54,10 @@ KEY_ACCOUNTS = {
     "매출액", "수익(매출액)", "영업이익(손실)", "영업이익",
     "당기순이익(손실)", "당기순이익", "자산총계", "부채총계", "자본총계",
 }
+
+# compare 기본 4계정 (SPEC-DART-FEEDBACK-001 REQ-007: --accounts 기본값 명시화)
+# 순서 보존 — table·csv 헤더 일관성을 위해 set 아닌 tuple
+DEFAULT_ACCOUNTS: tuple[str, ...] = ("매출액", "영업이익", "당기순이익", "자산총계")
 
 
 class DARTAPIError(Exception):

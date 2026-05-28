@@ -25,6 +25,15 @@ import env_loader
 # DART API 키 환경변수
 _KEY_VAR = "DART_API_KEY"
 
+# SPEC-DART-FEEDBACK-001: --report 한글 라벨 SSOT (cmd_finance·cmd_compare 공유)
+# REQ-006: 'half' 키 제거 (q2로 대체)
+_REPORT_LABELS = {
+    "annual": "사업보고서",
+    "q1": "1분기보고서",
+    "q2": "반기보고서",
+    "q3": "3분기보고서",
+}
+
 _SETUP_GUIDE = (
     "DART_API_KEY가 설정되지 않았습니다.\n\n"
     "DART 인증키 발급 방법:\n"
@@ -133,13 +142,7 @@ def cmd_finance(args: argparse.Namespace) -> int:
         year = report_info["bsns_year"]
         report_type = report_info.get("report_type", "annual")
         # stderr 메시지: 어떤 보고서 채택됐는지 명시 (UX 모호성 방지)
-        _type_labels = {
-            "annual": "사업보고서",
-            "half": "반기보고서",
-            "q1": "1분기보고서",
-            "q3": "3분기보고서",
-        }
-        label = _type_labels.get(report_type, report_type)
+        label = _REPORT_LABELS.get(report_type, report_type)
         print(
             f"[자동 폴백] {label} {year} 사용 (rcept_no={report_info['rcept_no']})",
             file=sys.stderr,
@@ -369,19 +372,71 @@ def _write_csv(rows: list[dict], headers: list[str]) -> None:
 
 # --- compare 커맨드 ---
 
-# 기업 비교에서 표시할 단위: 백만 원
+# 금액 단위 상수 (SPEC-DART-FEEDBACK-001 REQ-003)
 _MILLION = 1_000_000
+_EOK = 100_000_000              # 1억 = 10^8
+_JO = 1_000_000_000_000         # 1조 = 10^12
+
+UNIT_CHOICES = ("auto", "million", "eok", "jo")
 
 
-def _format_compare_amount(val: str, currency: str = "KRW") -> str:
-    """비교 테이블용 금액 포맷: 원본 값 + 천 단위 콤마 + 백만 단위.
+def _format_krw(num: int, unit: str = "auto") -> str:
+    """원(KRW) 금액을 단위 옵션에 따라 한글 단위로 포맷.
+
+    SPEC-DART-FEEDBACK-001 REQ-003:
+        auto = |num| >= 1조 → "X조 Y억 원"
+               |num| >= 1억 → "Z억 원"
+               그 외        → "W 백만원"
+
+    Args:
+        num: 원 단위 정수 (음수 허용).
+        unit: 'auto'|'million'|'eok'|'jo'.
+
+    Returns:
+        한글 단위 표기 문자열.
+    """
+    abs_num = abs(num)
+    sign = "-" if num < 0 else ""
+
+    if unit == "auto":
+        if abs_num >= _JO:
+            unit = "jo"
+        elif abs_num >= _EOK:
+            unit = "eok"
+        else:
+            unit = "million"
+
+    if unit == "jo":
+        jo = abs_num // _JO
+        rem = abs_num % _JO
+        eok = rem // _EOK
+        if eok > 0:
+            return f"{sign}{jo:,}조 {eok:,}억 원"
+        return f"{sign}{jo:,}조 원"
+
+    if unit == "eok":
+        eok = abs_num // _EOK
+        return f"{sign}{eok:,}억 원"
+
+    # default: million
+    millions = abs_num // _MILLION
+    return f"{sign}{millions:,} 백만원"
+
+
+def _format_compare_amount(val: str, currency: str = "KRW", unit: str = "auto") -> str:
+    """비교 테이블용 금액 포맷.
+
+    SPEC-DART-FEEDBACK-001 REQ-003: KRW는 한글 단위(auto/million/eok/jo) 적용.
+    KRW가 아닌 통화는 기존 'M {currency}' 포맷 유지 (하위호환).
 
     Args:
         val: 금액 문자열 (원 단위).
         currency: 통화 코드.
+        unit: 단위 옵션 — 'auto'|'million'|'eok'|'jo'.
+              'million'은 KRW일 때 '백만원' 표기, 외화는 'M' 표기.
 
     Returns:
-        "258,935,488M KRW" 형식의 문자열. 파싱 불가 시 원본 반환.
+        포맷된 금액 문자열. 파싱 불가 시 원본 반환.
     """
     if not val or val == "-":
         return "-"
@@ -389,15 +444,45 @@ def _format_compare_amount(val: str, currency: str = "KRW") -> str:
         num = int(val.replace(",", ""))
     except ValueError:
         return val
-    millions = num // _MILLION
-    suffix = f"M {currency}" if currency != "KRW" else "M KRW"
-    return f"{millions:,}{suffix}"
+
+    if currency != "KRW":
+        # 외화는 unit 무시 (기존 동작 유지)
+        millions = num // _MILLION
+        return f"{millions:,}M {currency}"
+
+    return _format_krw(num, unit)
+
+
+def _compute_ratio(numerator_val: str | None, denominator_val: str | None) -> str:
+    """파생 지표 비율 계산 (영업이익률·순이익률 등).
+
+    SPEC-DART-FEEDBACK-001 REQ-005: --with-ratios.
+    분모가 0이거나 누락이면 'N/A' 반환.
+
+    Args:
+        numerator_val: 분자 문자열 (영업이익·당기순이익).
+        denominator_val: 분모 문자열 (매출액).
+
+    Returns:
+        '12.34%' 형식 또는 'N/A'.
+    """
+    if not numerator_val or not denominator_val:
+        return "N/A"
+    try:
+        n = int(numerator_val.replace(",", ""))
+        d = int(denominator_val.replace(",", ""))
+    except ValueError:
+        return "N/A"
+    if d == 0:
+        return "N/A"
+    return f"{(n / d) * 100:.2f}%"
 
 
 def cmd_compare(args: argparse.Namespace) -> int:
     """다기업 재무 비교 커맨드.
 
-    --names 또는 --corp-codes로 기업 지정, --year와 --accounts로 조회.
+    --names 또는 --corp-codes로 기업 지정 (병기 가능 — REQ-004).
+    --year와 --accounts로 조회. --unit·--with-ratios 옵션 지원.
 
     --year 미지정 시 첫 corp_code 기준 find_latest_report()로 자동 폴백.
     prefer 옵션은 finance 커맨드와 동형: annual=사업보고서만, latest=분기·반기 포함.
@@ -405,22 +490,30 @@ def cmd_compare(args: argparse.Namespace) -> int:
     api_key = _get_api_key(args.api_key)
     report = getattr(args, "report", "annual")
     reprt_code = dart_api.REPRT_CODES.get(report, "11011")
+    unit = getattr(args, "unit", "auto")
+    with_ratios = getattr(args, "with_ratios", False)
 
-    # 기업 코드 목록 결정
+    # 기업 코드 목록 결정 — corp_codes 우선, names 보조 매핑 (REQ-004 OQ-5)
     corp_codes: list[str] = []
     corp_names: dict[str, str] = {}  # corp_code → 표시 이름
 
+    # 1) --names 입력값 파싱 (헤더 매핑 후보)
+    name_list: list[str] = []
+    if getattr(args, "names", None):
+        name_list = [n.strip() for n in args.names.split(",") if n.strip()]
+
     if getattr(args, "corp_codes", None):
-        for code in args.corp_codes.split(","):
-            code = code.strip()
-            if code:
-                corp_codes.append(code)
+        # --corp-codes 명시: 코드 그대로 사용, --names가 있으면 순서대로 헤더 매핑
+        code_list = [c.strip() for c in args.corp_codes.split(",") if c.strip()]
+        corp_codes.extend(code_list)
+        for idx, code in enumerate(code_list):
+            if idx < len(name_list):
+                corp_names[code] = name_list[idx]
+            else:
                 corp_names[code] = code
-    elif getattr(args, "names", None):
-        for name in args.names.split(","):
-            name = name.strip()
-            if not name:
-                continue
+    elif name_list:
+        # --corp-codes 없을 때만 검색 — 기존 동작
+        for name in name_list:
             matches = dart_api.find_corp_code(api_key, name, cache_path=_get_cache_path())
             if not matches:
                 print(f"[경고] '{name}' 검색 결과 없음 — 스킵", file=sys.stderr)
@@ -435,13 +528,16 @@ def cmd_compare(args: argparse.Namespace) -> int:
             corp = matches[0]
             corp_codes.append(corp["corp_code"])
             corp_names[corp["corp_code"]] = corp["corp_name"]
+    else:
+        # 둘 다 미지정 — 명시적 에러 (mutually_exclusive_group 해제 보강)
+        raise ValueError("--names 또는 --corp-codes 중 하나는 반드시 지정해야 합니다.")
 
-    # 계정 목록 결정
+    # 계정 목록 결정 (REQ-007: 기본 4계정 명시)
     accounts_str = getattr(args, "accounts", None)
     if accounts_str:
         accounts = [a.strip() for a in accounts_str.split(",") if a.strip()]
     else:
-        accounts = list(dart_api.KEY_ACCOUNTS)
+        accounts = list(dart_api.DEFAULT_ACCOUNTS)
 
     # REQ-DART-005: --year 미지정 시 첫 corp_code 기준 자동 폴백
     # finance --prefer와 동형 UX: stderr에 채택된 보고서 명시
@@ -460,13 +556,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
         year = report_info["bsns_year"]
         report = report_info.get("report_type", "annual")
         reprt_code = dart_api.REPRT_CODES.get(report, "11011")
-        _type_labels = {
-            "annual": "사업보고서",
-            "half": "반기보고서",
-            "q1": "1분기보고서",
-            "q3": "3분기보고서",
-        }
-        label = _type_labels.get(report, report)
+        label = _REPORT_LABELS.get(report, report)
         ref_name = corp_names.get(corp_codes[0], corp_codes[0])
         print(
             f"[자동 폴백] {label} {year} 사용 ({ref_name} 기준, rcept_no={report_info['rcept_no']})",
@@ -476,17 +566,45 @@ def cmd_compare(args: argparse.Namespace) -> int:
     # 비교 조회
     data = dart_api.compare_financials(api_key, corp_codes, year, accounts, reprt_code)
 
+    # 파생 지표 계산 (REQ-005: --with-ratios)
+    ratios: dict[str, dict[str, str]] = {}  # corp_code → {'영업이익률': '12.34%', '순이익률': ...}
+    if with_ratios:
+        for code in corp_codes:
+            corp_data = data.get(code, {})
+            sales = (corp_data.get("매출액") or {}).get("thstrm_amount")
+            op = (corp_data.get("영업이익") or {}).get("thstrm_amount")
+            ni = (corp_data.get("당기순이익") or {}).get("thstrm_amount")
+            ratios[code] = {
+                "영업이익률": _compute_ratio(op, sales),
+                "순이익률": _compute_ratio(ni, sales),
+            }
+
     if args.format == "csv":
-        _print_compare_csv(data, corp_codes, corp_names, accounts, year)
+        _print_compare_csv(data, corp_codes, corp_names, accounts, year, unit, ratios)
     elif args.format == "table":
-        _print_compare_table(data, corp_codes, corp_names, accounts, year, report)
+        _print_compare_table(data, corp_codes, corp_names, accounts, year, report, unit, ratios)
     else:
-        print(json.dumps(
-            {"status": "ok", "year": year, "report": report,
-             "corp_codes": corp_codes, "accounts": accounts, "data": data},
-            ensure_ascii=False, indent=2,
-        ))
+        out: dict[str, Any] = {
+            "status": "ok", "year": year, "report": report,
+            "corp_codes": corp_codes, "corp_names": corp_names,
+            "accounts": accounts, "unit": unit, "data": data,
+        }
+        if with_ratios:
+            out["ratios"] = ratios
+        print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0
+
+
+def _format_header_name(code: str, corp_names: dict[str, str]) -> str:
+    """compare 헤더 표기 — '회사명 (corp_code)' 또는 corp_code (REQ-004).
+
+    --names로 제공된 회사명이 있으면 'SKT (00159023)' 형식,
+    없으면 corp_code 그대로.
+    """
+    name = corp_names.get(code, code)
+    if name == code:
+        return code
+    return f"{name} ({code})"
 
 
 def _print_compare_table(
@@ -496,21 +614,21 @@ def _print_compare_table(
     accounts: list[str],
     year: str,
     report: str = "annual",
+    unit: str = "auto",
+    ratios: dict[str, dict[str, str]] | None = None,
 ) -> None:
-    """비교 결과 테이블 출력."""
-    _report_labels = {
-        "annual": "사업보고서",
-        "half": "반기보고서",
-        "q1": "1분기보고서",
-        "q3": "3분기보고서",
-    }
-    label = _report_labels.get(report, report)
-    names = [corp_names.get(c, c) for c in corp_codes]
+    """비교 결과 테이블 출력.
+
+    SPEC-DART-FEEDBACK-001 REQ-003·004·005: unit 단위, 회사명 헤더, ratio 행.
+    """
+    label = _REPORT_LABELS.get(report, report)
+    # REQ-004: 헤더에 '회사명 (corp_code)' 또는 corp_code
+    header_labels = [_format_header_name(c, corp_names) for c in corp_codes]
+    # 컬럼 폭: 헤더가 길어졌으므로 동적 조정
+    col_w = max(20, max((len(h) + 2 for h in header_labels), default=20))
 
     print(f"\n비교 — {year}년 {label} (CFS)\n")
-    col_w = 20
-    name_w = col_w * len(corp_codes)
-    header = f"{'계정':<16}" + "".join(f"{n:<{col_w}}" for n in names)
+    header = f"{'계정':<16}" + "".join(f"{h:<{col_w}}" for h in header_labels)
     print(header)
     print("-" * (16 + col_w * len(corp_codes)))
 
@@ -523,11 +641,22 @@ def _print_compare_table(
                 amt = _format_compare_amount(
                     acct_data.get("thstrm_amount", ""),
                     acct_data.get("currency", "KRW"),
+                    unit,
                 )
             else:
                 amt = "-"
             row += f"{amt:<{col_w}}"
         print(row)
+
+    # REQ-005: --with-ratios 행 추가
+    if ratios:
+        print("-" * (16 + col_w * len(corp_codes)))
+        for ratio_name in ("영업이익률", "순이익률"):
+            row = f"{ratio_name:<16}"
+            for code in corp_codes:
+                val = ratios.get(code, {}).get(ratio_name, "N/A")
+                row += f"{val:<{col_w}}"
+            print(row)
     print()
 
 
@@ -537,22 +666,53 @@ def _print_compare_csv(
     corp_names: dict[str, str],
     accounts: list[str],
     year: str,
+    unit: str = "auto",
+    ratios: dict[str, dict[str, str]] | None = None,
 ) -> None:
-    """비교 결과 CSV 출력: (account, corp_code, corp_name, thstrm_amount, currency)."""
+    """비교 결과 CSV 출력.
+
+    SPEC-DART-FEEDBACK-001 REQ-003·005:
+        - thstrm_amount는 raw 보존 (회귀 0)
+        - formatted_amount 컬럼 신설 (unit 적용)
+        - ratio가 있으면 추가 행 ('account'를 ratio_name으로)
+    """
     rows = []
     for acct in accounts:
         for corp_code in corp_codes:
             corp_data = data.get(corp_code, {})
             acct_data = corp_data.get(acct) or {}
+            raw = acct_data.get("thstrm_amount", "")
+            currency = acct_data.get("currency", "")
             rows.append({
                 "account": acct,
                 "corp_code": corp_code,
                 "corp_name": corp_names.get(corp_code, corp_code),
                 "year": year,
-                "thstrm_amount": acct_data.get("thstrm_amount", ""),
-                "currency": acct_data.get("currency", ""),
+                "thstrm_amount": raw,
+                "currency": currency,
+                "formatted_amount": (
+                    _format_compare_amount(raw, currency or "KRW", unit)
+                    if raw else ""
+                ),
             })
-    _write_csv(rows, ["account", "corp_code", "corp_name", "year", "thstrm_amount", "currency"])
+    # ratio 행: account 컬럼에 ratio_name 넣고 formatted_amount에 '%' 표기
+    if ratios:
+        for ratio_name in ("영업이익률", "순이익률"):
+            for corp_code in corp_codes:
+                val = ratios.get(corp_code, {}).get(ratio_name, "N/A")
+                rows.append({
+                    "account": ratio_name,
+                    "corp_code": corp_code,
+                    "corp_name": corp_names.get(corp_code, corp_code),
+                    "year": year,
+                    "thstrm_amount": "",
+                    "currency": "",
+                    "formatted_amount": val,
+                })
+    _write_csv(
+        rows,
+        ["account", "corp_code", "corp_name", "year", "thstrm_amount", "currency", "formatted_amount"],
+    )
 
 
 # --- 테이블 출력 헬퍼 ---
@@ -648,6 +808,26 @@ def _format_amount(val: str) -> str:
     return f"{num:,}"
 
 
+def _report_choice(s: str) -> str:
+    """--report 값 검증 + 'half' 입력 시 친절한 deprecation 안내.
+
+    SPEC-DART-FEEDBACK-001 REQ-006: v0.15.0부터 'half' → 'q2'.
+    argparse 표준 choices 에러 메시지("invalid choice: 'half'")만으로는
+    사용자가 마이그레이션 경로를 알기 어려우므로 명시적 메시지를 제공한다.
+    """
+    if s == "half":
+        raise argparse.ArgumentTypeError(
+            "'half'는 v0.15.0부터 'q2'로 변경되었습니다 (반기보고서). "
+            "--report q2 를 사용하세요."
+        )
+    if s not in dart_api.REPRT_CODES:
+        valid = ", ".join(dart_api.REPRT_CODES.keys())
+        raise argparse.ArgumentTypeError(
+            f"invalid choice: '{s}' (choose from {valid})"
+        )
+    return s
+
+
 def build_parser() -> argparse.ArgumentParser:
     """CLI 인자 파서 생성.
 
@@ -704,8 +884,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="사업연도 (예: 2024). 미지정 시 최신 사업보고서 자동 선택",
     )
     p_fin.add_argument(
-        "--report", "-r", choices=list(dart_api.REPRT_CODES.keys()),
-        default="annual", help="보고서 유형 (기본: annual)",
+        "--report", "-r", type=_report_choice,
+        default="annual",
+        help="보고서 유형: annual=사업, q1=1분기, q2=반기, q3=3분기 (기본: annual)",
     )
     p_fin.add_argument(
         "--fs-div", choices=["CFS", "OFS"], default="CFS",
@@ -745,8 +926,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_emp.add_argument("--corp-code", "-c", required=True, help="8자리 고유번호")
     p_emp.add_argument("--year", "-y", required=True, help="사업연도")
     p_emp.add_argument(
-        "--report", "-r", choices=list(dart_api.REPRT_CODES.keys()),
-        default="annual", help="보고서 유형",
+        "--report", "-r", type=_report_choice,
+        default="annual",
+        help="보고서 유형: annual=사업, q1=1분기, q2=반기, q3=3분기 (기본: annual)",
     )
 
     # profile (종합)
@@ -755,19 +937,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_prof.add_argument("--name", "-n", required=True, help="회사명")
     p_prof.add_argument("--year", "-y", required=True, help="사업연도")
     p_prof.add_argument(
-        "--report", "-r", choices=list(dart_api.REPRT_CODES.keys()),
-        default="annual", help="보고서 유형",
+        "--report", "-r", type=_report_choice,
+        default="annual",
+        help="보고서 유형: annual=사업, q1=1분기, q2=반기, q3=3분기 (기본: annual)",
     )
 
     # compare
     p_cmp = sub.add_parser("compare", help="다기업 재무 비교")
     _add_common(p_cmp)
-    p_cmp_group = p_cmp.add_mutually_exclusive_group(required=True)
-    p_cmp_group.add_argument(
+    # REQ-004: --names와 --corp-codes를 병기 가능하도록 mutually_exclusive 해제
+    # 둘 다 미지정 시 cmd_compare에서 ValueError 발생 (회귀 0)
+    p_cmp.add_argument(
         "--names", default=None,
-        help="회사명 (쉼표 구분, 예: '삼성전자,LG전자')",
+        help="회사명 (쉼표 구분, 예: '삼성전자,LG전자'). "
+             "--corp-codes와 병기 시 헤더 표시명으로 사용됨.",
     )
-    p_cmp_group.add_argument(
+    p_cmp.add_argument(
         "--corp-codes", dest="corp_codes", default=None,
         help="8자리 고유번호 (쉼표 구분, 예: '00126380,00401731')",
     )
@@ -775,17 +960,27 @@ def build_parser() -> argparse.ArgumentParser:
         "--year", "-y", default=None,
         help="사업연도 (예: 2024). 미지정 시 첫 기업 기준 최신 보고서 자동 선택",
     )
+    _default_accounts = ",".join(dart_api.DEFAULT_ACCOUNTS)
     p_cmp.add_argument(
         "--accounts", default=None,
-        help="계정명 (쉼표 구분, 기본: 매출액/영업이익/당기순이익/자산총계)",
+        help=f"계정명 (쉼표 구분, 기본: {_default_accounts})",
     )
     p_cmp.add_argument(
-        "--report", "-r", choices=list(dart_api.REPRT_CODES.keys()),
-        default="annual", help="보고서 유형 (기본: annual)",
+        "--report", "-r", type=_report_choice,
+        default="annual",
+        help="보고서 유형: annual=사업, q1=1분기, q2=반기, q3=3분기 (기본: annual)",
     )
     p_cmp.add_argument(
         "--prefer", choices=["annual", "latest"], default="annual",
         help="폴백 범위: annual=사업보고서만, latest=분기·반기 포함 (기본: annual)",
+    )
+    p_cmp.add_argument(
+        "--unit", choices=UNIT_CHOICES, default="auto",
+        help="금액 단위: auto(>=1조 jo, >=1억 eok, 미만 million) | million | eok | jo (기본: auto)",
+    )
+    p_cmp.add_argument(
+        "--with-ratios", dest="with_ratios", action="store_true",
+        help="영업이익률·순이익률 행 추가 (매출액 기준). 매출액=0/누락이면 N/A",
     )
 
     return parser

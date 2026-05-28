@@ -8,13 +8,13 @@ license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
-argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare] [--name 회사명] [--corp-code 코드] [--year 연도] [--report annual|half|q1|q3] [--prefer annual|latest] [--format json|table|csv]"
+argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare] [--name 회사명] [--corp-code 코드] [--year 연도] [--report annual|q1|q2|q3] [--prefer annual|latest] [--unit auto|million|eok|jo] [--with-ratios] [--format json|table|csv]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.14.0"
+  version: "0.15.0"
   created_at: "2026-03-29"
-  updated_at: "2026-05-28"
+  updated_at: "2026-05-29"
   tags: "DART, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
 ---
 
@@ -22,6 +22,19 @@ metadata:
 
 금융감독원 DART 전자공시시스템 API로 기업 정보를 수집합니다.
 경쟁사 분석, 입찰 제안서, 사업계획서에 필요한 기업 재무·직원 데이터를 제공합니다.
+
+## 실행 경로 안내 (Cowork 환경)
+
+Claude Cowork에서는 SKILL.md 첫줄에 표시되는 `Base directory`(예: `/var/folders/...`)와
+실제 스크립트 실행 경로(예: `/sessions/<id>/mnt/.remote-plugins/<plugin>/skills/dart`)가 다를 수 있습니다.
+
+실행 시 다음 순서로 경로를 확정하세요:
+
+1. `echo $CLAUDE_PROJECT_DIR` — 프로젝트 루트가 노출되어 있으면 그 하위의 `**/skills/dart` 검색
+2. `find /sessions -type d -name dart 2>/dev/null` — Cowork 마운트에서 직접 탐색
+3. 위 둘 다 실패 시 SKILL.md `Base directory` 그대로 사용
+
+본 SKILL.md 모든 명령 예시는 `python3 scripts/<name>.py` 상대경로 기준 — 위 단계로 확정된 디렉토리에서 실행하세요.
 
 ## 환경 변수
 
@@ -51,6 +64,11 @@ claude config set env.DART_API_KEY "발급받은_키"
 # 또는 .env 파일
 DART_API_KEY=발급받은_키
 ```
+
+> v0.15.0부터 `claude config set env.X`로 설정된 키는
+> `shared/env_loader.py`가 `~/.claude/settings.json`의 `env` 키를 직접 읽어
+> 보조 inject합니다 (Cowork 환경에서 subprocess inject 누락 시 동작).
+> 우선순위: `--api-key CLI` > `os.environ` > `~/.claude/settings.json` > `.env`.
 
 ### 첫 호출 실패 시 점검 절차
 
@@ -137,24 +155,33 @@ python3 scripts/collect_company.py finance --corp-code 00126380
 python3 scripts/collect_company.py finance --corp-code 00126380 --prefer latest
 ```
 
-### 다기업 재무 비교 (compare) — 신규
+### 다기업 재무 비교 (compare)
 
 ```bash
-# 회사명으로 비교 (쉼표 구분)
+# 회사명으로 비교 (쉼표 구분) — 자동 단위 변환(억/조)
 python3 scripts/collect_company.py --format table compare \
   --names "삼성전자,LG전자,SK하이닉스" \
   --year 2024 \
   --accounts "매출액,영업이익,자산총계"
 
-# 기업코드로 비교
-python3 scripts/collect_company.py compare \
-  --corp-codes "00126380,00401731" \
-  --year 2024
+# 기업코드로 비교 + 회사명 매핑(v0.15.0+: 둘 다 지정 가능 — 헤더에 회사명 표시)
+python3 scripts/collect_company.py --format table compare \
+  --corp-codes "00159023,00190321,00231363" \
+  --names "SKT,KT,LGU+" \
+  --year 2024 --report q1
 
-# CSV로 저장 (엑셀 호환)
+# 파생 지표 함께(v0.15.0+) — 영업이익률·순이익률 행 추가
+python3 scripts/collect_company.py --format table compare \
+  --names "삼성전자,LG전자" --year 2024 --with-ratios
+
+# 단위 강제(v0.15.0+) — 백만원/억/조
+python3 scripts/collect_company.py --format table compare \
+  --names "삼성전자" --year 2024 --unit eok
+
+# CSV로 저장 (엑셀 호환) — formatted_amount 컬럼 신설(v0.15.0+)
 python3 scripts/collect_company.py --format csv compare \
   --names "삼성전자,LG전자" \
-  --year 2024 > compare.csv
+  --year 2024 --unit auto > compare.csv
 
 # --year 미지정 → 첫 기업 기준 최신 사업보고서 자동 선택 (stderr 안내)
 python3 scripts/collect_company.py compare \
@@ -167,19 +194,24 @@ python3 scripts/collect_company.py compare \
 
 ### 분기 데이터가 필요할 때 — `--report` 옵션
 
-`finance`와 `compare` 양쪽 모두 `--report annual|half|q1|q3` 옵션을 받습니다.
-(연 보고서 = `annual`, 반기 = `half`, 1분기 = `q1`, 3분기 = `q3`)
+`finance`·`compare`·`employees`·`profile` 모두 `--report annual|q1|q2|q3` 옵션을 받습니다.
+(연 보고서 = `annual`, 1분기 = `q1`, 반기 = `q2`, 3분기 = `q3`)
+
+> **v0.15.0 BREAKING**: 구 `--report half` 는 제거되었습니다. `--report q2` 로 마이그레이션하세요.
+> `--report half` 입력 시 친절한 안내 메시지와 함께 즉시 에러로 안내됩니다.
 
 ```bash
 # 단일 기업의 1분기 재무 (2026 1분기보고서)
 python3 scripts/collect_company.py finance \
   --corp-code 00159023 --year 2026 --report q1
 
-# 다기업의 1분기 비교
+# 다기업의 반기(2분기) 비교 — 회사명 헤더 + 비율
 python3 scripts/collect_company.py --format table compare \
   --corp-codes "00159023,00190321,00231363" \
-  --year 2026 --report q1 \
-  --accounts "매출액,영업이익,당기순이익"
+  --names "SKT,KT,LGU+" \
+  --year 2026 --report q2 \
+  --accounts "매출액,영업이익,당기순이익" \
+  --with-ratios --unit auto
 ```
 
 > 미공시 연도(예: 2026 사업보고서가 아직 안 나온 시점)는 `--year`를 빼고 호출하면
@@ -204,7 +236,7 @@ python3 scripts/collect_company.py --format csv \
 | `--name` | 회사명 (search/profile 서브커맨드) | — |
 | `--corp-code` | DART 기업 코드 (8자리) | — |
 | `--year` | 사업연도 (미지정 시 자동 폴백) | — |
-| `--report` | 보고서 유형: `annual`(사업) / `half`(반기) / `q1`(1분기) / `q3`(3분기). `finance`·`compare`·`employees`·`profile` 공통 | `annual` |
+| `--report` | 보고서 유형: `annual`(사업) / `q1`(1분기) / `q2`(반기) / `q3`(3분기). `finance`·`compare`·`employees`·`profile` 공통 | `annual` |
 | `--prefer` | 폴백 범위: `annual`=사업보고서만, `latest`=분기·반기 포함. `finance`·`compare` 공통 | `annual` |
 | `--bgn` | 시작일 YYYYMMDD (disclosure) | — |
 | `--end` | 종료일 YYYYMMDD (disclosure) | — |
@@ -214,9 +246,11 @@ python3 scripts/collect_company.py --format csv \
 | `--rcept-no` | 접수번호 14자리 (business) | — |
 | `--section` | 섹션 정규식 (business) | None=전체 |
 | `--max-chars` | 최대 문자수 0=무제한 (business) | 5000 |
-| `--names` | 회사명 목록 쉼표 구분 (compare) | — |
+| `--names` | 회사명 목록 쉼표 구분 (compare). `--corp-codes`와 병기 시 헤더 표시명 | — |
 | `--corp-codes` | 기업코드 목록 쉼표 구분 (compare) | — |
-| `--accounts` | 계정명 목록 쉼표 구분 (compare) | 핵심 4계정 |
+| `--accounts` | 계정명 목록 쉼표 구분 (compare) | `매출액,영업이익,당기순이익,자산총계` |
+| `--unit` | 금액 단위 (compare): `auto`(>=1조 jo, >=1억 eok, 미만 million) / `million` / `eok` / `jo` | `auto` |
+| `--with-ratios` | 영업이익률·순이익률 행 추가 (compare, 매출액 기준) | OFF |
 | `--format` | `json` / `table` / `csv` | `json` |
 | `--api-key` | DART API 키 (CLI 직접 전달) | 환경변수 |
 
@@ -245,15 +279,16 @@ company info, financial statements, competitor analysis, DART
 ```
 dart/
   SKILL.md
+  CHANGELOG.md
+  GUIDE.md
+  requirements.txt
   scripts/
     dart_api.py         # DART API 모듈 (공시목록·사업보고서 텍스트 포함)
     collect_company.py  # 기업정보 수집 CLI (8개 커맨드)
-    env_loader.py       # API 키 관리
-    itda_path.py        # 데이터 경로 유틸리티
-    tests/
-      test_dart_api.py
-      test_collect_company.py
-      test_env_loader.py
+  tests/
+    test_dart_api.py
+    test_collect_company.py
+    test_collect_company_arg_position.py
   references/
     dart.md             # 요약 가이드
     공시정보/                  # DS001 (4)
@@ -263,6 +298,10 @@ dart/
     주요사항보고서-주요정보/      # DS005 (36)
     증권신고서-주요정보/         # DS006 (6)
 ```
+
+> API 키 관리(`env_loader.py`)와 데이터 경로 유틸리티(`itda_path.py`)는
+> 저장소 전역 `shared/` 디렉토리에 위치하며, PYTHONPATH로 import됩니다
+> (dart 직속 파일이 아님 — SPEC-DART-FEEDBACK-001 REQ-002a로 광고 정정됨).
 
 ## 오류 처리
 

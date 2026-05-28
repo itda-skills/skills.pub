@@ -1,10 +1,12 @@
 """API 키 및 OC 인증 정보 resolver — 한국 공공데이터 API 공통 모듈.
 
 조회 우선순위:
-    CLI 인자 > 환경변수 > .env 파일 (find_env_files()로 다중 경로 탐색)
+    CLI 인자 > 환경변수 > ~/.claude/settings.json env > .env 파일 (find_env_files())
 
 단일 경로 탐색 헬퍼를 제거하고 itda_path.find_env_files()를 사용하여
 모든 후보 경로의 .env를 병합한다 (SPEC-DATAPATH-002).
+Cowork 환경 등 subprocess inject가 누락되는 경우를 위해
+~/.claude/settings.json의 env 키를 추가 탐색한다 (SPEC-DART-FEEDBACK-001 REQ-002).
 
 지원 스킬:
     - API 계열 (DART, KOSIS, ECOS, 부동산, 복지급여, 나라장터):
@@ -14,11 +16,24 @@
 """
 from __future__ import annotations
 
+import json
 import os
 import urllib.parse
 from pathlib import Path
 
 from itda_path import find_env_files
+
+
+def _default_claude_settings_path() -> Path | None:
+    """~/.claude/settings.json 경로를 반환. HOME 미확정 환경이면 None.
+
+    SPEC-DART-FEEDBACK-001 REQ-002: Cowork 환경에서 subprocess env inject가
+    누락되는 경우를 위한 보조 탐색 경로.
+    """
+    try:
+        return Path.home() / ".claude" / "settings.json"
+    except RuntimeError:
+        return None
 
 # ---------------------------------------------------------------------------
 # law-korean 전용 상수
@@ -110,13 +125,56 @@ def load_env(env_path: str | Path | None = None) -> dict[str, str]:
     return result
 
 
+def _load_claude_settings_env(settings_path: str | Path | None = None) -> dict[str, str]:
+    """~/.claude/settings.json의 env 키를 파싱하여 딕셔너리로 반환.
+
+    SPEC-DART-FEEDBACK-001 REQ-002: `claude config set env.X "value"` 명령으로
+    설정된 환경변수가 Cowork 등 격리된 subprocess에 자동 inject되지 않는 경우를
+    보조하기 위해 settings.json을 직접 읽는다.
+
+    파싱 규칙:
+        - 파일 부재 시 {} 반환 (graceful)
+        - JSON 파싱 실패 시 {} 반환 (graceful)
+        - env 키가 dict가 아니면 {} 반환
+        - 값이 문자열이 아닌 항목은 스킵
+
+    주의: 이 함수는 os.environ을 수정하지 않는다.
+
+    Args:
+        settings_path: settings.json 경로. None이면 ~/.claude/settings.json 사용.
+
+    Returns:
+        env 키-값 딕셔너리. 어떤 사유로든 읽을 수 없으면 {}.
+    """
+    if settings_path is None:
+        path = _default_claude_settings_path()
+    else:
+        path = Path(settings_path)
+
+    if path is None or not path.exists():
+        return {}
+
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+    env_section = data.get("env") if isinstance(data, dict) else None
+    if not isinstance(env_section, dict):
+        return {}
+
+    return {k: v for k, v in env_section.items() if isinstance(k, str) and isinstance(v, str)}
+
+
 def merged_env(env_path: str | Path | None = None) -> dict[str, str]:
-    """환경변수와 .env 파일들을 병합하여 반환.
+    """환경변수와 .env 파일들, ~/.claude/settings.json env를 병합하여 반환.
 
     병합 우선순위 (높음 → 낮음):
         1. os.environ (항상 최우선)
-        2. 후순위 .env 파일 (나중에 발견된 파일이 선순위를 덮어씀)
-        3. 선순위 .env 파일
+        2. ~/.claude/settings.json의 env 키
+        3. 후순위 .env 파일 (나중에 발견된 파일이 선순위를 덮어씀)
+        4. 선순위 .env 파일
 
     env_path가 명시되면 그 파일만 사용한다 (기존 호환성 유지).
     None이면 find_env_files()로 다중 경로를 탐색하여 모두 병합한다.
@@ -137,6 +195,9 @@ def merged_env(env_path: str | Path | None = None) -> dict[str, str]:
         # 자동 탐색: 발견 순서대로 적재 (나중 발견이 먼저 발견을 덮어씀)
         for env_file in find_env_files():
             dotenv_merged.update(load_env(env_file))
+
+    # settings.json env 적재 — .env files보다 우선
+    dotenv_merged.update(_load_claude_settings_env())
 
     # os.environ을 마지막 적재 — 항상 최우선 승리
     result = dict(dotenv_merged)
@@ -172,7 +233,7 @@ def normalize_service_key(key: str) -> str:
 
 
 # @MX:ANCHOR: [AUTO] API key resolution entry point used by all skill scripts.
-# @MX:REASON: fan_in >= 5; lookup priority order (cli > environ > env-files) is a contract.
+# @MX:REASON: fan_in >= 5; lookup priority order (cli > environ > settings.json > env-files) is a contract.
 def resolve_api_key(
     var_name: str,
     cli_arg: str | None = None,
@@ -181,7 +242,11 @@ def resolve_api_key(
 ) -> str:
     """API 키를 해석.
 
-    조회 우선순위: CLI 인자 > 환경변수 > .env 파일 (find_env_files() 사용).
+    조회 우선순위:
+        1. CLI 인자
+        2. os.environ
+        3. ~/.claude/settings.json의 env 키 (SPEC-DART-FEEDBACK-001 REQ-002)
+        4. .env 파일 (find_env_files() 사용)
 
     Args:
         var_name: 환경변수 이름.
@@ -200,6 +265,9 @@ def resolve_api_key(
         resolved = cli_arg
     elif env_val := os.environ.get(var_name):
         resolved = env_val
+    elif settings_val := _load_claude_settings_env().get(var_name):
+        # ~/.claude/settings.json env 키 (Cowork 환경에서 subprocess inject 누락 보조)
+        resolved = settings_val
     else:
         # find_env_files()로 다중 경로 탐색
         dotenv_val = None
