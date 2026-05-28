@@ -25,7 +25,7 @@
 - `downloader.py`: PC Chrome User-Agent 고정, 지수 백오프 재시도(1s/2s/4s, 최대 3회), 0바이트 응답 실패 처리.
 - `unzipper.py`: ZIP 해제 + 모집공고/모집 공고 키워드로 `core_document` 식별 (hwp > hwpx > pdf 우선). EUC-KR 파일명 ZIP 자동 디코딩(cp437 → euc-kr).
 - 출력 트리: `{output_dir}/_index.json` + `{num}_{slug}/{meta.json, attachment/, extracted/}`.
-- 캐시 경로: `resolve_cache_dir("itda-mmaa")` 사용 (CLAUDE.local.md 정책 준수).
+- 캐시 경로: `resolve_cache_dir("itda-mmaa")` 사용 (AGENTS.md 정책 준수).
 
 ### Tests
 

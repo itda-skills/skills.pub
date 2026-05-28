@@ -1,5 +1,14 @@
 # Changelog — itda-data
 
+## [0.10.0] — 2026-05-28 (SPEC-DATA-ADVISOR-CLI-001)
+
+### New Features
+- **data-analysis-advisor v1.3.0**: `dispatch.read_table(path)` 사용자 CSV/TSV/XLSX
+  reader 신설. SKILL.md를 tidy 패턴(Python API form)으로 재작성하여 `python3 scripts/X.py`
+  silent no-op 광고 6건 제거. 광고-코드 정합 lint 게이트(`test_skill_md_advertised_surface`)
+  + deployed-style 종단 테스트(`test_deployed_style_handoff`) 신설. 자세한 내용은
+  data-analysis-advisor CHANGELOG 참조.
+
 ## [0.9.1] — 2026-05-20 (SPEC-DATA-HARDEN-001 v0.3.1)
 
 ### Breaking Changes
@@ -44,6 +53,6 @@
 ### Traceability
 
 - SSOT: `docs/reviews/itda-data-evaluation-2026-05-20.md` (6경로 교차검증)
-- SPEC: `.moai/specs/SPEC-DATA-HARDEN-001/spec.md` v0.3.1
+- SPEC: `.specs/SPEC-DATA-HARDEN-001/spec.md` v0.3.1
 - commits: `3c7af93` (TDD 본체, 20 파일 +1698/-47) + `11a87c7` (AC-12·AC-6 외과 수정)
 - 연계 SPEC: SPEC-DATA-ADVISOR-001 v0.7.0·SPEC-DATA-TIDY-001 v0.2.0 status 재오픈 없음 (EXC-4)

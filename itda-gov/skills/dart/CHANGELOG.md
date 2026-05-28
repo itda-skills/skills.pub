@@ -1,5 +1,19 @@
 # Changelog — itda-dart
 
+## [0.14.0] — 2026-05-28
+
+### Added
+- `compare` 커맨드에 `--prefer annual|latest` 옵션 추가 (finance와 동형).
+- `compare` 커맨드 `--year` 미지정 시 첫 corp_code 기준 `find_latest_report()`로 자동 폴백 + stderr `[자동 폴백]` 안내. finance와 동일한 UX로 옵션·동작 일관성 확보.
+
+### Documentation
+- SKILL.md CLI 옵션 표에 `--report annual|half|q1|q3` 행을 누락 보강. `finance`/`compare` 양쪽이 분기·반기 보고서를 모두 지원함을 명시.
+- "분기 데이터가 필요할 때" 사용 예시 섹션 추가 (단일 기업 finance + 다기업 compare). 미공시 연도(예: 2026 사업보고서 미공시 시점)의 `--year` 생략 자동 폴백 패턴 안내.
+- `argument-hint` 프론트매터에 `--report` 노출.
+
+### Tests
+- `TestCompareFallback` 5 케이스 추가 (218 passed, 회귀 0).
+
 ## [0.13.5] — 2026-05-22
 
 ### Improvements

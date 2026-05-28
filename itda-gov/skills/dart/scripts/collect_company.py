@@ -398,9 +398,13 @@ def cmd_compare(args: argparse.Namespace) -> int:
     """다기업 재무 비교 커맨드.
 
     --names 또는 --corp-codes로 기업 지정, --year와 --accounts로 조회.
+
+    --year 미지정 시 첫 corp_code 기준 find_latest_report()로 자동 폴백.
+    prefer 옵션은 finance 커맨드와 동형: annual=사업보고서만, latest=분기·반기 포함.
     """
     api_key = _get_api_key(args.api_key)
-    reprt_code = dart_api.REPRT_CODES.get(getattr(args, "report", "annual"), "11011")
+    report = getattr(args, "report", "annual")
+    reprt_code = dart_api.REPRT_CODES.get(report, "11011")
 
     # 기업 코드 목록 결정
     corp_codes: list[str] = []
@@ -439,16 +443,46 @@ def cmd_compare(args: argparse.Namespace) -> int:
     else:
         accounts = list(dart_api.KEY_ACCOUNTS)
 
+    # REQ-DART-005: --year 미지정 시 첫 corp_code 기준 자동 폴백
+    # finance --prefer와 동형 UX: stderr에 채택된 보고서 명시
+    year = getattr(args, "year", None)
+    prefer = getattr(args, "prefer", "annual")
+
+    if not year:
+        if not corp_codes:
+            print(json.dumps(
+                {"status": "error", "error": "args",
+                 "detail": "비교할 기업이 없습니다 (--names/--corp-codes 모두 매칭 실패)."},
+                ensure_ascii=False,
+            ))
+            return 2
+        report_info = dart_api.find_latest_report(api_key, corp_codes[0], prefer=prefer)
+        year = report_info["bsns_year"]
+        report = report_info.get("report_type", "annual")
+        reprt_code = dart_api.REPRT_CODES.get(report, "11011")
+        _type_labels = {
+            "annual": "사업보고서",
+            "half": "반기보고서",
+            "q1": "1분기보고서",
+            "q3": "3분기보고서",
+        }
+        label = _type_labels.get(report, report)
+        ref_name = corp_names.get(corp_codes[0], corp_codes[0])
+        print(
+            f"[자동 폴백] {label} {year} 사용 ({ref_name} 기준, rcept_no={report_info['rcept_no']})",
+            file=sys.stderr,
+        )
+
     # 비교 조회
-    data = dart_api.compare_financials(api_key, corp_codes, args.year, accounts, reprt_code)
+    data = dart_api.compare_financials(api_key, corp_codes, year, accounts, reprt_code)
 
     if args.format == "csv":
-        _print_compare_csv(data, corp_codes, corp_names, accounts, args.year)
+        _print_compare_csv(data, corp_codes, corp_names, accounts, year)
     elif args.format == "table":
-        _print_compare_table(data, corp_codes, corp_names, accounts, args.year, args.report)
+        _print_compare_table(data, corp_codes, corp_names, accounts, year, report)
     else:
         print(json.dumps(
-            {"status": "ok", "year": args.year, "report": getattr(args, "report", "annual"),
+            {"status": "ok", "year": year, "report": report,
              "corp_codes": corp_codes, "accounts": accounts, "data": data},
             ensure_ascii=False, indent=2,
         ))
@@ -737,7 +771,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--corp-codes", dest="corp_codes", default=None,
         help="8자리 고유번호 (쉼표 구분, 예: '00126380,00401731')",
     )
-    p_cmp.add_argument("--year", "-y", required=True, help="사업연도 (예: 2024)")
+    p_cmp.add_argument(
+        "--year", "-y", default=None,
+        help="사업연도 (예: 2024). 미지정 시 첫 기업 기준 최신 보고서 자동 선택",
+    )
     p_cmp.add_argument(
         "--accounts", default=None,
         help="계정명 (쉼표 구분, 기본: 매출액/영업이익/당기순이익/자산총계)",
@@ -745,6 +782,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_cmp.add_argument(
         "--report", "-r", choices=list(dart_api.REPRT_CODES.keys()),
         default="annual", help="보고서 유형 (기본: annual)",
+    )
+    p_cmp.add_argument(
+        "--prefer", choices=["annual", "latest"], default="annual",
+        help="폴백 범위: annual=사업보고서만, latest=분기·반기 포함 (기본: annual)",
     )
 
     return parser

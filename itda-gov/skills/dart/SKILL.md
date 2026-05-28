@@ -8,13 +8,13 @@ license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
-argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare] [--name 회사명] [--corp-code 코드] [--year 연도] [--prefer annual|latest] [--format json|table|csv]"
+argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare] [--name 회사명] [--corp-code 코드] [--year 연도] [--report annual|half|q1|q3] [--prefer annual|latest] [--format json|table|csv]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.13.5"
+  version: "0.14.0"
   created_at: "2026-03-29"
-  updated_at: "2026-05-22"
+  updated_at: "2026-05-28"
   tags: "DART, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
 ---
 
@@ -155,7 +155,35 @@ python3 scripts/collect_company.py compare \
 python3 scripts/collect_company.py --format csv compare \
   --names "삼성전자,LG전자" \
   --year 2024 > compare.csv
+
+# --year 미지정 → 첫 기업 기준 최신 사업보고서 자동 선택 (stderr 안내)
+python3 scripts/collect_company.py compare \
+  --names "삼성전자,LG전자,SK하이닉스"
+
+# --prefer latest → 분기·반기 포함 가장 최신 보고서 자동 선택
+python3 scripts/collect_company.py compare \
+  --names "삼성전자,LG전자" --prefer latest
 ```
+
+### 분기 데이터가 필요할 때 — `--report` 옵션
+
+`finance`와 `compare` 양쪽 모두 `--report annual|half|q1|q3` 옵션을 받습니다.
+(연 보고서 = `annual`, 반기 = `half`, 1분기 = `q1`, 3분기 = `q3`)
+
+```bash
+# 단일 기업의 1분기 재무 (2026 1분기보고서)
+python3 scripts/collect_company.py finance \
+  --corp-code 00159023 --year 2026 --report q1
+
+# 다기업의 1분기 비교
+python3 scripts/collect_company.py --format table compare \
+  --corp-codes "00159023,00190321,00231363" \
+  --year 2026 --report q1 \
+  --accounts "매출액,영업이익,당기순이익"
+```
+
+> 미공시 연도(예: 2026 사업보고서가 아직 안 나온 시점)는 `--year`를 빼고 호출하면
+> 첫 기업 기준 최신 보고서를 자동 채택합니다. 채택된 보고서는 stderr로 안내됩니다.
 
 ### CSV 출력 — 모든 커맨드 지원
 
@@ -176,7 +204,8 @@ python3 scripts/collect_company.py --format csv \
 | `--name` | 회사명 (search/profile 서브커맨드) | — |
 | `--corp-code` | DART 기업 코드 (8자리) | — |
 | `--year` | 사업연도 (미지정 시 자동 폴백) | — |
-| `--prefer` | 폴백 범위: `annual`=사업보고서만, `latest`=분기·반기 포함 | `annual` |
+| `--report` | 보고서 유형: `annual`(사업) / `half`(반기) / `q1`(1분기) / `q3`(3분기). `finance`·`compare`·`employees`·`profile` 공통 | `annual` |
+| `--prefer` | 폴백 범위: `annual`=사업보고서만, `latest`=분기·반기 포함. `finance`·`compare` 공통 | `annual` |
 | `--bgn` | 시작일 YYYYMMDD (disclosure) | — |
 | `--end` | 종료일 YYYYMMDD (disclosure) | — |
 | `--type` | 공시 유형 A/B/None (disclosure) | None=전체 |

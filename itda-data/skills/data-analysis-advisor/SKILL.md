@@ -11,11 +11,11 @@ allowed-tools: Read, Bash, Write, Glob, Grep
 argument-hint: "[분석 요청 또는 데이터 설명]"
 metadata:
   author: "Chinseok"
-  version: "1.2.0"
+  version: "1.3.0"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-05-19"
-  updated_at: "2026-05-22"
+  updated_at: "2026-05-28"
   tags: "data-analysis, statistics, stdlib"
 ---
 
@@ -40,19 +40,24 @@ metadata:
 
 ---
 
-### 관문1: 프로파일 카드 평가 (profile_card.py)
+### 관문1: 프로파일 카드 평가
 
 **목적:** 데이터의 기본 구조·품질을 사실 기반으로 평가한다.
 
 **실행:**
-```bash
-python3 scripts/profile_card.py
+```python
+import dispatch
+import profile_card
+
+rows = dispatch.read_table(source_path)        # CSV/TSV/XLSX → list[dict]
+card = profile_card.build_profile_card(rows)   # row_count, column_types, vif 등
 ```
 
-**출력:** `profile_card` dict (row_count, column_count, column_types, missing_rates,
-duplicate_rows, cardinality, cell_scan, correlation 등).
+**출력 (`card`):** `profile_card` dict — row_count, column_count, column_types,
+missing_rates, duplicate_rows, cardinality, cell_scan, correlation, vif,
+has_multicollinearity, status 등.
 
-**차단 조건:** `status == "분석 불가"` → 즉시 중단, 사유를 사용자에게 전달.
+**차단 조건:** `card["status"] == "분석 불가"` → 즉시 중단, 사유를 사용자에게 전달.
 (추측 채움·허위 사실 금지 — EXC-3·EXC-4)
 
 ---
@@ -71,16 +76,16 @@ duplicate_rows, cardinality, cell_scan, correlation 등).
 
 ---
 
-### 관문3: 방법 판정 게이트 (gate_orchestrator.py)
+### 관문3: 방법 판정 게이트
 
 **목적:** 요청 기법의 타당성을 5조건으로 판정하고 정본기법을 조회한다.
 
 **실행:**
-```bash
-python3 scripts/gate_orchestrator.py
-```
+```python
+import gate_orchestrator
 
-함수: `gate_orchestrator.run_gate3(profile_card, interview, gate_input)`
+gate3_result = gate_orchestrator.run_gate3(card, interview, gate_input)
+```
 
 **판정 기준 (method_gate.py · REQ-031~035):**
 - 변수당 N<10 → `rejected` (hard 거부, EXC-2 아첨 통과 금지)
@@ -106,17 +111,17 @@ python3 scripts/gate_orchestrator.py
 
 ---
 
-### 관문4: 디스패치 (gate_orchestrator.run_gate4)
+### 관문4: 디스패치
 
 **목적:** clean_pass 또는 gray_zone(사용자 확인 후) 기법을 general-purpose
 서브에이전트에 위임한다. 거부 기법은 페이로드에서 제외한다 (REQ-043).
 
 **실행:**
-```bash
-python3 scripts/gate_orchestrator.py
-```
+```python
+import gate_orchestrator
 
-함수: `gate_orchestrator.run_gate4(gate3_result, context)`
+dispatch_result = gate_orchestrator.run_gate4(gate3_result, context)
+```
 
 > 구현 모듈: `dispatch.py` (내부 전용 — 직접 호출 금지, gate_orchestrator 경유)
 
@@ -124,19 +129,21 @@ python3 scripts/gate_orchestrator.py
 
 ---
 
-### 관문5: 독립 재현 검증 + 정직 보고서 (gate_orchestrator.run_gate5)
+### 관문5: 독립 재현 검증 + 정직 보고서
 
 **목적:** 별도 서브에이전트(caller_id="gate5_verify")로 분석 결과를 독립 재현하고
 수치 불일치를 감지한다. 결과를 정직 보고서로 조립한다.
 
 **실행:**
-```bash
-python3 scripts/gate_orchestrator.py
-python3 scripts/honest_report.py
-```
+```python
+import gate_orchestrator
+import honest_report
 
-함수: `gate_orchestrator.run_gate5(original_result, cell_scan)`
-함수: `honest_report.build_honest_report(gate3_result, verify_result, n_rows, decision=...)`
+verify_result = gate_orchestrator.run_gate5(original_result, cell_scan)
+report_text = honest_report.build_honest_report(
+    gate3_result, verify_result, n_rows, decision=decision
+)
+```
 
 > 구현 모듈: `verify.py` · `honest_report.py` (내부 전용 — 직접 호출 금지, gate_orchestrator 경유)
 
@@ -165,13 +172,11 @@ curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
 
 # 의존성 설치 (statsmodels>=0.14, scipy>=1.11, numpy>=1.26)
 uv pip install --system -r requirements.txt
-
-# 실행
-# macOS/Linux
-python3 scripts/gate_orchestrator.py
-# Windows
-py -3 scripts/gate_orchestrator.py
 ```
+
+스킬 실행은 Claude 오케스트레이션 지시서에 따라 Python API form으로 모듈을 직접
+import한다 (예: `import gate_orchestrator as go; go.run_gate3(...)`). 별도의
+CLI entry는 제공하지 않는다 (Python API form이 정답 — `__main__` 블록 부재 의도).
 
 첫 호출 시 statsmodels·scipy·numpy cold-start 비용 ~5-8s가 발생할 수 있습니다(NFR-006). 이후 호출은 캐싱됩니다.
 

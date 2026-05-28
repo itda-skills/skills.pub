@@ -9,7 +9,7 @@
 - **사용 안내** (사용자용): [GUIDE.md](GUIDE.md) — 빠른 시작, 활용 시나리오, 출력 옵션, JS 페이지 처리, **v2 → v3 마이그레이션 안내**
 - **CLI 레퍼런스** (개발자용): [SKILL.md](SKILL.md) — frontmatter, Prerequisites, Script Reference, Troubleshooting, 보안 정책
 - **변경 이력**: [CHANGELOG.md](CHANGELOG.md)
-- **사양 문서**: `.moai/specs/SPEC-WEBREADER-LIGHTEN-001/spec.md` (v3.0.0 슬림화 사양)
+- **구현 기준**: `SKILL.md`, `GUIDE.md`, `scripts/`, `tests/`, `CHANGELOG.md`
 
 ## 핵심 use case (v3.0.0)
 

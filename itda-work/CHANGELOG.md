@@ -36,7 +36,7 @@
 - **itda-setup v0.9.2 → v1.0.0: 프로젝트 CLAUDE.md 자동 생성 (스킬 체인 정책)** — Cowork 환경에 hook이 없는 한계를 극복하기 위해 KNOWLEDGE.md §3의 "CLAUDE.md = 팀 매뉴얼" 패턴을 itda-work에 이식. 산출물별 스킬 체인을 [HARD] 규칙으로 명문화하여 모델이 매 턴 자율 준수하도록 강제.
   - `references/chain-map.yaml` (128 lines, 신규): 15개 산출물(blog/report/newsletter/proposal/customer_email/internal_memo/hwp_read/pdf_extract/web_research/finance_etf/finance_fx/image_edit/debug 등) → 권장 스킬 시퀀스 + enforcement(hard/soft/none) 매핑. review_strength_policy로 사용자 검수 강도(강/표준/약)를 enforcement 변환에 적용.
   - `references/templates/CLAUDE.md.tmpl` (79 lines, 신규): 사용자 프로젝트 CLAUDE.md 템플릿. 11개 슬롯({project_name}, {chain_table}, {trigger_examples}, {user_preserved_section} 등)으로 인터뷰 응답 주입.
-  - `SKILL.md` Phase 3 신규 (기존 Phase 3 완료보고 → Phase 4): 매핑 로드 → 기존 CLAUDE.md 처리 분기(머지/백업/취소 AskUserQuestion 프롬프트) → 5~7문항 인터뷰(2라운드, AskUserQuestion 4문항 한계 준수) → 정책 변환 → 슬롯 치환 → 분기별 파일 쓰기. cowork-plugins `moai-core:project` 패턴 차용.
+  - `SKILL.md` Phase 3 신규 (기존 Phase 3 완료보고 → Phase 4): 매핑 로드 → 기존 CLAUDE.md 처리 분기(머지/백업/취소 AskUserQuestion 프롬프트) → 5~7문항 인터뷰(2라운드, AskUserQuestion 4문항 한계 준수) → 정책 변환 → 슬롯 치환 → 분기별 파일 쓰기. cowork-plugins 프로젝트 컨텍스트 패턴 차용.
   - `allowed-tools`에 `Edit`, `AskUserQuestion` 추가 (머지 모드 in-place 교체 + 인터뷰).
   - 신규 스킬 추가 시 chain-map.yaml + itda-setup version bump 가이드 본문에 명시.
 
@@ -63,7 +63,7 @@
 ### Added
 
 - **itda-human-tone v1.0.0: AI 슬롭 후처리 검수 스킬 신규 도입** (콘텐츠·마케팅 카테고리)
-  - `moai-core/skills/ai-slop-reviewer`(MIT)에서 영감을 얻되 내용은 직장인 도메인(보고서·이메일·기획서·공지)에 맞춰 전면 재집필
+  - MIT 라이선스의 AI 글쓰기 탐지 패턴에서 영감을 얻되 내용은 직장인 도메인(보고서·이메일·기획서·공지)에 맞춰 전면 재집필
   - 4종 사무 한국어 AI 패턴(보고서식 군더더기·이메일 과공손·기획서 추상명사 인플레이션·ChatGPT 흔적) 우선 점검
   - 보존 영역 잠금(숫자·고유명사·인용·결재선·서명) → 환각 및 결재라인 사고 방지
   - `--scene` (report/email/proposal/notice), `--register`, `--diff` 옵션

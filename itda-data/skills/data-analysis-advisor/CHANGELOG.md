@@ -1,5 +1,32 @@
 # Changelog — data-analysis-advisor
 
+## [1.3.0] — 2026-05-28 (SPEC-DATA-ADVISOR-CLI-001)
+
+### New Features
+- **`dispatch.read_table(path)` 신설** — 사용자 CSV/TSV/XLSX 파일을 관문1 입력 형식
+  (`list[dict[str, str]]`)으로 읽는 reader. UTF-8-sig BOM → utf-8 → cp949 인코딩
+  fallback. XLSX는 openpyxl 옵션 의존(미설치 시 명확한 안내 메시지로 ImportError).
+  `__all__ = ["read_table"]`로 공개 표면 명시. tidy 자매 스킬의 `source_path` 패턴과
+  동형으로 SKILL.md 관문1 entry를 구성한다.
+
+### Improvements
+- **SKILL.md tidy 패턴 재작성 (REQ-001)** — `python3 scripts/X.py` 광고 6건을
+  Python API form(`import X; X.func(...)`)으로 모두 교체. 관문1은 `dispatch.read_table`
+  → `profile_card.build_profile_card` 사슬을 명시. silent no-op (`__main__` 부재)
+  광고 결함 해소. 5관문 thesis 본문 의미는 보존(EXC-2).
+- **`test_skill_md_advertised_surface.py` 신설 (REQ-004)** — SKILL.md의 ```python
+  블록에서 import/모듈 호출 패턴을 grep으로 추출, importlib로 실제 표면 존재 확인.
+  `python3 scripts/` 광고 0건 lint 게이트 (AC-1). 광고-코드 drift 자동 차단.
+- **`test_deployed_style_handoff.py` 신설 (AC-2)** — subprocess + PYTHONPATH=shared
+  환경(conftest 없음·repo cwd 없음)에서 사용자 CSV → 관문1 종단 실집행 검증.
+- **`test_dispatch_read_table.py` 신설** — CSV/TSV/XLSX·BOM·cp949·헤더만·빈 파일·
+  미존재 파일·미지원 확장자·openpyxl 미설치 graceful 안내까지 10 케이스.
+
+### Compatibility
+- 기존 `__all__` 공개 표면 확장: `[]` → `["read_table"]`. 기존 외부 호출 의도 없는
+  내부 함수(underscore prefix)는 그대로 유지.
+- `__main__` 블록 신설 0건 — Python API form이 정답 패턴 (EXC-3).
+
 ## [1.2.0] — 2026-05-22 (SPEC-DATA-ADVISOR-STATS-001)
 
 ### New Features

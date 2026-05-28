@@ -95,7 +95,7 @@
   - `calc_breakeven()`: Track B 누적이 Track A보다 저렴해지는 최초 호출 횟수 계산.
   - `count_tables_in_markdown()`: `| --- |` 패턴 기반 표 개수·셀 수 측정.
   - `count_images_in_dir()`: 이미지 디렉토리 glob 기반 추출 개수 측정.
-  - `load_track_a_result()`: MoAI 오케스트레이터가 외부 제공하는 Track A JSON 통합.
+  - `load_track_a_result()`: 외부 오케스트레이터가 제공하는 Track A JSON 통합.
   - 결과 저장: `evals/results/SPEC-HWPX-DIFF-001-{YYYYMMDD}.json`
 - **`evals/tests/test_compare_diff.py`** 신규 추가 — 19개 단위 테스트 (TDD RED→GREEN).
 

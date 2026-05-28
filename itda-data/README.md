@@ -41,18 +41,14 @@ claude --plugin-dir itda-data
 claude plugin install itda-skills/skills.pub itda-data
 ```
 
-## 트래커
+## 구현 기준
 
-| SPEC | 상태 | 비고 |
-|------|------|------|
-| [SPEC-DATA-ADVISOR-001](../.moai/specs/SPEC-DATA-ADVISOR-001/) | Completed (v0.7.0) | 초기 5관문 양심 게이트 |
-| [SPEC-DATA-TIDY-001](../.moai/specs/SPEC-DATA-TIDY-001/) | Completed (v0.2.0) | 구조 양심 / 정돈본 출력 |
-| [SPEC-DATA-HARDEN-001](../.moai/specs/SPEC-DATA-HARDEN-001/) | Completed (v0.3.1) | 8 High 결함 일괄 하드닝, 557 passed / 0 failed / 0 skipped |
-| [SPEC-DATA-ENFORCE-002](../.moai/specs/SPEC-DATA-ENFORCE-002/) | Completed (v0.2.0) | Gate4·5 wrap 경유 정합성, 572 passed |
-| [SPEC-DATA-ADVISOR-STATS-001](../.moai/specs/SPEC-DATA-ADVISOR-STATS-001/) | Completed (v0.3.0) | statsmodels 도입, VIF 다중공선성 진단, 278 passed |
+- 현재 동작 기준: 각 스킬의 `SKILL.md`, `GUIDE.md`, `scripts/`, `scripts/tests/`, `requirements.txt`
+- 변경 이력 기준: 각 스킬 `CHANGELOG.md`와 릴리즈 노트
+- 통합 계약 기준: `data-analysis-advisor/scripts/tests/test_handoff_integration.py`와 `data-tidy-advisor/scripts/tests/test_advisor_coupling.py`
 
 ## 라이선스
 
 MIT (plugin.json 및 각 SKILL.md frontmatter 일치).
 
-Last Updated: 2026-05-27 (SPEC-DOCS-AUDIT-001 + Codex review P2×3 적발 반영: 라이선스 MIT, 의존성 정확화, publish-root 4플러그인)
+Last Updated: 2026-05-28 (코드·테스트·CHANGELOG 중심 운영으로 트래커 링크 제거)

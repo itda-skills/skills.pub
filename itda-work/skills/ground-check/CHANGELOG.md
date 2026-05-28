@@ -2,6 +2,12 @@
 
 본 스킬의 변경 이력. [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따른다.
 
+## [0.10.3] — 2026-05-28
+
+### Improvements
+
+- 프로젝트 지침 재구성에 맞춰 삭제된 SPEC 링크를 제거하고 현재 코드·문서 기준을 명시.
+
 ## [0.10.2] — 2026-05-22
 
 ### Improvements

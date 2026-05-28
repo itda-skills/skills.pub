@@ -200,7 +200,7 @@ Cross-skill 외부 호출자: **0건** (`grep -rln "fetch_youtube\|youtube_trans
 
 - 본 릴리스의 자매 SPEC 짝(sibling pair) 은 hyve 레포의 SPEC-WEB-MCP-002 입니다.
 - 마이그레이션 가이드 전체는 [GUIDE.md](GUIDE.md) 의 "마이그레이션 안내 (v2 → v3)" 섹션을 참조.
-- baseline 측정 결과: `.moai/specs/SPEC-WEBREADER-LIGHTEN-001/baseline.md`
+- baseline 측정 결과: `.specs/SPEC-WEBREADER-LIGHTEN-001/baseline.md`
 
 ---
 
@@ -208,7 +208,7 @@ Cross-skill 외부 호출자: **0건** (`grep -rln "fetch_youtube\|youtube_trans
 
 ### Improvements
 
-- **description 트리거 범위 좁히기 (오발동 방지)**: 단순 URL 읽기 요청에서 progressive disclosure가 web-reader를 활성화하던 문제를 해결. description 첫 문장을 "WebFetch로 처리되지 않는 고급 웹 페치 전용"으로 좁히고, EUC-KR/CP949 · Playwright 동적 렌더링 · YouTube 자막 · 쿠키 인증 · SPA 어댑터 5종을 명시 활성화 조건으로 나열. "Do NOT use for" anti-trigger 절을 추가하여 일반 페치 요청은 Claude의 WebFetch로 위임되도록 유도. 기존 일반 트리거 문구("이 링크 읽어줘", "웹페이지 요약해줘", "사이트에서 ... 가져와")는 description에서 제거. SPEC-WEBREADER-TRIGGER-001 적용. (관련 SPEC: `.moai/specs/SPEC-WEBREADER-TRIGGER-001/`)
+- **description 트리거 범위 좁히기 (오발동 방지)**: 단순 URL 읽기 요청에서 progressive disclosure가 web-reader를 활성화하던 문제를 해결. description 첫 문장을 "WebFetch로 처리되지 않는 고급 웹 페치 전용"으로 좁히고, EUC-KR/CP949 · Playwright 동적 렌더링 · YouTube 자막 · 쿠키 인증 · SPA 어댑터 5종을 명시 활성화 조건으로 나열. "Do NOT use for" anti-trigger 절을 추가하여 일반 페치 요청은 Claude의 WebFetch로 위임되도록 유도. 기존 일반 트리거 문구("이 링크 읽어줘", "웹페이지 요약해줘", "사이트에서 ... 가져와")는 description에서 제거. SPEC-WEBREADER-TRIGGER-001 적용. (관련 SPEC: `.specs/SPEC-WEBREADER-TRIGGER-001/`)
 
 ### 동작 영향 (Behavioral Impact)
 
