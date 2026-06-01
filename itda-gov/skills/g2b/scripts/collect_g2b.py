@@ -28,10 +28,9 @@ _SETUP_GUIDE = (
     "  1. https://www.data.go.kr 회원가입\n"
     "  2. '조달청_나라장터 공공데이터개방표준서비스' 활용 신청\n"
     "  3. 발급된 일반 인증키(Decoding) 사용\n\n"
-    "설정 방법 (택 1):\n"
-    '  claude config set env.KO_DATA_API_KEY "발급받은_키"\n'
-    "  또는 .env 파일에 KO_DATA_API_KEY=발급받은_키\n"
-    '  또는 --api-key "발급받은_키"\n'
+    "설정 방법: 작업 폴더 루트(예: outputs/)에 .env 파일을 만들고 키를 추가하세요.\n"
+    "  KO_DATA_API_KEY=발급받은_키\n"
+    '  (또는 일회성으로 --api-key "발급받은_키")\n'
 )
 
 

@@ -32,9 +32,8 @@ _SETUP_GUIDE = (
     "주식시세정보 API 키 발급 방법:\n"
     f"  1. {_APPLY_URL} 접속\n"
     "  2. 동일 data.go.kr 계정으로 15094808 활용신청(자동승인) 필요\n"
-    "  3. 발급된 키로 환경변수 설정:\n"
-    '     claude config set env.KO_DATA_API_KEY "발급받은_키"\n'
-    "  또는 .env 파일에: KO_DATA_API_KEY=발급받은_키\n"
+    "  3. 작업 폴더 루트(예: outputs/)에 .env 파일을 만들고 키를 추가하세요:\n"
+    "       KO_DATA_API_KEY=발급받은_키\n"
 )
 
 # 고정 디스클레이머 (P-6, 자본시장법 §6·§17·§101·§176·§178·§178의2·§445)

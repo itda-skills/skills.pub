@@ -1,0 +1,29 @@
+{
+  "name": "itda-travel",
+  "description": "여행지·테마 유행 맛집 탐지 스킬팩 — 검색량 surge로 '지금 뜨는' 음식 트렌드 판별",
+  "version": "8.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "여행",
+    "맛집",
+    "유행",
+    "트렌드",
+    "핫플",
+    "맛집탐지",
+    "음식트렌드",
+    "검색량",
+    "surge",
+    "travel",
+    "eatery",
+    "trend",
+    "restaurant",
+    "naver-datalab",
+    "searchad"
+  ]
+}

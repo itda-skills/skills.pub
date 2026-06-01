@@ -37,13 +37,17 @@ metadata:
 |---------|-------|----------|
 | `KOSIS_API_KEY` | https://kosis.kr/openapi/ | 회원가입 → Open API → 활용신청 → **자동 승인 (즉시 이용)**, 마이페이지에서 인증키 확인 |
 
-```bash
-# Claude Cowork 설정 (권장)
-claude config set env.KOSIS_API_KEY "발급받은_키"
+**권장 (모든 환경) — 작업 폴더 루트에 `.env` 파일 배치:**
 
-# 또는 .env 파일
+```bash
+# <작업 폴더 루트>/.env 에 한 줄 추가
 KOSIS_API_KEY=발급받은_키
 ```
+
+- Cowork: 마운트된 작업 폴더(`outputs/` 등) 루트의 `.env`를 자동 탐색합니다. 한 번 두면 이후 호출에서 키를 다시 넣을 필요가 없습니다.
+- 세션별 절대경로(`/sessions/<id>/...`)를 고정으로 적지 마세요 — 세션마다 바뀝니다. `.env`는 작업 폴더 루트에만 두면 자동 탐색됩니다.
+
+> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.KOSIS_API_KEY "발급받은_키"` 또는 셸 환경변수도 사용할 수 있습니다.
 
 > **주의**: Base64 형태 키의 끝 `=` 패딩이 잘리지 않도록 전체 복사하세요.
 
@@ -142,7 +146,7 @@ kosis/
 
 | 오류 | 원인 | 해결 방법 |
 |------|------|-----------|
-| `KOSIS_API_KEY가 설정되지 않았습니다` | API 키 미설정 | `claude config set env.KOSIS_API_KEY "키"` |
+| `KOSIS_API_KEY가 설정되지 않았습니다` | API 키 미설정 | 작업 폴더 루트에 `.env` 생성 → `KOSIS_API_KEY=키` (로컬 CLI는 셸 환경변수도 가능) |
 | `통계표를 찾을 수 없습니다` | org-id/tbl-id 오류 | `search` 서브커맨드로 ID 재확인 |
 | `데이터가 없습니다` | 기간 또는 항목 오류 | period/item 옵션 확인 |
 

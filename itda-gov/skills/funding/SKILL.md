@@ -42,13 +42,17 @@ K-Startup 공공데이터 API로 정부 창업·중소기업 지원사업 공고
 > **호스트:** `nidapi.k-startup.go.kr` (data.go.kr 게이트웨이가 아닌 K-Startup 직접 호스트)
 > **응답 포맷:** JSON+XML, 갱신주기 실시간
 
-```bash
-# Claude Cowork 설정 (권장)
-claude config set env.KO_DATA_API_KEY "발급받은_키"
+**권장 (모든 환경) — 작업 폴더 루트에 `.env` 파일 배치:**
 
-# 또는 .env 파일
+```bash
+# <작업 폴더 루트>/.env 에 한 줄 추가
 KO_DATA_API_KEY=발급받은_키
 ```
+
+- Cowork: 마운트된 작업 폴더(`outputs/` 등) 루트의 `.env`를 자동 탐색합니다. 한 번 두면 이후 호출에서 키를 다시 넣을 필요가 없습니다.
+- 세션별 절대경로(`/sessions/<id>/...`)를 고정으로 적지 마세요 — 세션마다 바뀝니다. `.env`는 작업 폴더 루트에만 두면 자동 탐색됩니다.
+
+> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.KO_DATA_API_KEY "발급받은_키"` 또는 셸 환경변수도 사용할 수 있습니다.
 
 > **Decoding 키 사용**: 마이페이지 > Open API > 활용신청 현황 > 해당 API 상세에서 표시된 일반 인증키(Decoding)를 복사.
 
@@ -136,7 +140,7 @@ funding/
 
 | 오류 | 원인 | 해결 방법 |
 |------|------|-----------|
-| `KO_DATA_API_KEY가 설정되지 않았습니다` | API 키 미설정 | `claude config set env.KO_DATA_API_KEY "키"` |
+| `KO_DATA_API_KEY가 설정되지 않았습니다` | API 키 미설정 | 작업 폴더 루트에 `.env` 생성 → `KO_DATA_API_KEY=키` (로컬 CLI는 셸 환경변수도 가능) |
 | `검색 결과가 없습니다` | 해당 키워드 공고 없음 | 다른 키워드로 재검색 |
 
 ## Troubleshooting

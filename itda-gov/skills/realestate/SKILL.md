@@ -52,13 +52,17 @@ metadata:
 
 ### 키 등록
 
-```bash
-# Claude Cowork 설정 (권장)
-claude config set env.KO_DATA_API_KEY "발급받은_키"
+**권장 (모든 환경) — 작업 폴더 루트에 `.env` 파일 배치:**
 
-# 또는 .env 파일
+```bash
+# <작업 폴더 루트>/.env 에 한 줄 추가
 KO_DATA_API_KEY=발급받은_키
 ```
+
+- Cowork: 마운트된 작업 폴더(`outputs/` 등) 루트의 `.env`를 자동 탐색합니다. 한 번 두면 이후 호출에서 키를 다시 넣을 필요가 없습니다.
+- 세션별 절대경로(`/sessions/<id>/...`)를 고정으로 적지 마세요 — 세션마다 바뀝니다. `.env`는 작업 폴더 루트에만 두면 자동 탐색됩니다.
+
+> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.KO_DATA_API_KEY "발급받은_키"` 또는 셸 환경변수도 사용할 수 있습니다.
 
 > **Decoding 키(일반 인증키) 사용**: 마이페이지 > Open API > 활용신청 현황 > 해당 API 상세에서 표시된 일반 인증키(Decoding)를 그대로 복사. 스크립트가 URL 인코딩을 처리합니다.
 
@@ -146,7 +150,7 @@ realestate/
 
 | 오류 메시지 / 코드 | 원인 | 해결 방법 |
 |-------------------|------|-----------|
-| `KO_DATA_API_KEY가 설정되지 않았습니다` | 환경변수 미설정 | `claude config set env.KO_DATA_API_KEY "키"` |
+| `KO_DATA_API_KEY가 설정되지 않았습니다` | 환경변수 미설정 | 작업 폴더 루트에 `.env` 생성 → `KO_DATA_API_KEY=키` (로컬 CLI는 셸 환경변수도 가능) |
 | `지역 코드를 찾을 수 없습니다` | 지역명 불일치 | `regions` 서브커맨드로 정확한 지역명 확인 |
 | HTTP 403 + `Forbidden` (텍스트) | 게이트웨이 키 미반영 | 30분 후 재시도 (자동승인 동기화 지연) |
 | `resultCode=20` 활용 미승인 | 활용신청 미완료/대기 | 마이페이지 승인 상태 확인 |

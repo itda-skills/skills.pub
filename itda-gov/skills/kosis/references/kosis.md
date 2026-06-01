@@ -8,8 +8,9 @@
 # 1. https://kosis.kr 회원가입
 # 2. https://kosis.kr/openapi/ 에서 서비스 신청 (자동 승인) → 인증키 발급
 #    - 서비스 소개: https://kosis.kr/openapi/introduce/introduce_01List.do
-claude config set env.KOSIS_API_KEY "발급받은_인증키"
-# 또는 .env 파일에: KOSIS_API_KEY=발급받은_인증키
+# 3. 작업 폴더 루트(예: outputs/)에 .env 파일 생성 후 키 추가
+#    KOSIS_API_KEY=발급받은_인증키
+# (로컬 CLI 전용: claude config set env.KOSIS_API_KEY "키" 또는 셸 환경변수도 가능)
 ```
 
 > **주의**: KOSIS 인증키는 Base64 형태로 끝에 `=` 패딩 문자가 포함됩니다.

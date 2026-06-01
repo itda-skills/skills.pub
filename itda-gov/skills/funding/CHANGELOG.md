@@ -1,5 +1,10 @@
 # Changelog — itda-gov/funding
 
+## [Unreleased] — SPEC-COWORK-ENV-GUIDE-001
+
+### Changed
+- Cowork에서 `claude config set` 안내 제거 — 에러 메시지 `.env` 단일 통일, 문서는 `.env` 1순위 + config set은 '로컬 CLI 전용' 펜스로만.
+
 ## [0.9.7] — 2026-05-22
 
 ### Improvements

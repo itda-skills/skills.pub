@@ -25,7 +25,7 @@ title: "realestate 상세 가이드"
    - 오피스텔 매매: <https://www.data.go.kr/data/15126464/openapi.do>
    - 오피스텔 전월세: <https://www.data.go.kr/data/15126475/openapi.do>
 3. 마이페이지에서 **Decoding** 키(일반 인증키) 복사
-4. `claude config set env.KO_DATA_API_KEY "발급받은_키"` 또는 `.env` 파일에 저장
+4. 작업 폴더 루트(예: `outputs/`)에 `.env` 파일을 만들고 `KO_DATA_API_KEY=발급받은_키` 저장 (권장, 모든 환경). Cowork는 마운트된 작업 폴더 루트의 `.env`를 자동 탐색합니다. (로컬 CLI 전용으로 `claude config set env.KO_DATA_API_KEY "키"` 또는 셸 환경변수도 가능)
 
 > 동일 인증키 하나로 4개 모두 호출 가능하지만, **데이터셋마다 별도 활용신청**이 필요합니다. 신청하지 않은 서비스를 호출하면 오류 메시지에 해당 신청 링크가 자동으로 표시됩니다.
 >
@@ -84,7 +84,7 @@ title: "realestate 상세 가이드"
 
 | 오류 | 해결 |
 |------|------|
-| `KO_DATA_API_KEY가 설정되지 않았습니다` | `claude config set env.KO_DATA_API_KEY "키"` |
+| `KO_DATA_API_KEY가 설정되지 않았습니다` | 작업 폴더 루트에 `.env` 생성 → `KO_DATA_API_KEY=키` (로컬 CLI는 셸 환경변수도 가능) |
 | `지역 코드를 찾을 수 없습니다` | `regions` 명령으로 정확한 지역명 확인 |
 | `HTTP Error 403: Forbidden — 게이트웨이 권한 거부` | 메시지에 표시된 신청 링크에서 활용신청 (자동승인). 신청 직후라면 5~30분 후 재시도 |
 | `데이터가 없습니다` (resultCode=03) | 다른 년월로 재시도 (신고 지연 또는 거래 없음) |

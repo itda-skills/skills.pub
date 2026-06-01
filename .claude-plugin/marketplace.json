@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "7.5.0",
+    "version": "8.0.0",
     "language": "ko"
   },
   "plugins": [
@@ -26,9 +26,34 @@
       "description": "군인공제회 입찰 자동 모니터링"
     },
     {
+      "name": "itda-realty",
+      "source": "./itda-realty",
+      "description": "한국 부동산 공식 공개 API 기반 데이터 수집·분석 스킬팩"
+    },
+    {
       "name": "itda-data",
       "source": "./itda-data",
       "description": "데이터 분석 방법 추천·정직 보고서 생성 스킬팩 — 5관문 통계 양심 게이트"
+    },
+    {
+      "name": "itda-cs",
+      "source": "./itda-cs",
+      "description": "한국어 CS 상담·문의 텍스트 분석 스킬팩 — 측면 감정분석(ABSA)·인텐트 분류·라벨 일치도(κ) 측정"
+    },
+    {
+      "name": "itda-airport",
+      "source": "./itda-airport",
+      "description": "인천국제공항 공개 데이터 스킬팩 — 항공사별 운항·여객·화물 월별 통계"
+    },
+    {
+      "name": "itda-travel",
+      "source": "./itda-travel",
+      "description": "여행지·테마 유행 맛집 탐지 스킬팩 — 검색량 surge로 '지금 뜨는' 음식 트렌드 판별"
+    },
+    {
+      "name": "itda-shopping",
+      "source": "./itda-shopping",
+      "description": "한국 리테일 쇼핑 정보 스킬팩 — 다이소 상품·재고·매장 조회"
     }
   ]
 }

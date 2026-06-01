@@ -3,12 +3,10 @@
 이 파일은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [Unreleased] — 2026-05-21
+## [3.4.0] — 2026-05-21
 
 ### Removed
 - `itda-setup` 스킬 폐기. reactive 워크플로우(에러 발생 시 환경변수 설정)로 충분하다고 판단. env_vars frontmatter도 함께 폐기되며 발급 가이드는 각 스킬 SKILL.md body의 "## 환경 변수" 표로 이전됨.
-
-## [Unreleased]
 
 ### Improvements
 

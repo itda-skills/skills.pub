@@ -26,13 +26,9 @@ NAVER_SEARCHAD_SECRET_KEY=AQAAAADOZYWNxmtxNRHyJC98gUQ9FN...
 NAVER_SEARCHAD_CUSTOMER_ID=4332056
 ```
 
-Claude Cowork에 영구 등록:
+위 `.env`는 작업 폴더 루트(예: `outputs/`)에 두면 모든 환경에서 자동 탐색됩니다. Cowork도 마운트된 작업 폴더 루트의 `.env`를 자동으로 찾습니다.
 
-```bash
-claude config set env.NAVER_SEARCHAD_ACCESS_KEY "발급받은_Access_License"
-claude config set env.NAVER_SEARCHAD_SECRET_KEY "발급받은_Secret_Key"
-claude config set env.NAVER_SEARCHAD_CUSTOMER_ID "고객ID_숫자"
-```
+> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.NAVER_SEARCHAD_ACCESS_KEY "..."`(각 키별) 또는 셸 환경변수도 가능합니다.
 
 ---
 
@@ -65,12 +61,9 @@ NAVER_CLIENT_ID=42yH7hKOPe_eKqEmu4ZS
 NAVER_CLIENT_SECRET=y6NehxewNp
 ```
 
-Claude Cowork에 영구 등록:
+위 `.env`는 작업 폴더 루트(예: `outputs/`)에 두면 모든 환경에서 자동 탐색됩니다. Cowork도 마운트된 작업 폴더 루트의 `.env`를 자동으로 찾습니다.
 
-```bash
-claude config set env.NAVER_CLIENT_ID "발급받은_Client_ID"
-claude config set env.NAVER_CLIENT_SECRET "발급받은_Client_Secret"
-```
+> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.NAVER_CLIENT_ID "..."`(각 키별) 또는 셸 환경변수도 가능합니다.
 
 ---
 

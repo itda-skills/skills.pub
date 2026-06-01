@@ -73,8 +73,8 @@ _DART_APPLY_URL = "https://opendart.fss.or.kr"
 _DART_SETUP_GUIDE = (
     "\n[설정 안내] DART_API_KEY를 확인하세요:\n"
     f"  1. {_DART_APPLY_URL} 접속 → 오픈API → 인증키 신청/관리\n"
-    "  2. 40자리 인증키 발급 후 환경변수 설정:\n"
-    "     claude config set env.DART_API_KEY \"발급받은_키\"\n"
+    "  2. 40자리 인증키 발급 후, 작업 폴더 루트(예: outputs/)에 .env 파일로 설정:\n"
+    "       DART_API_KEY=발급받은_키\n"
     "  3. 첫 호출 실패 시 점검 절차:\n"
     "     - 키 문자열 40자리 정확성 확인 (앞뒤 공백 제거)\n"
     "     - URL 인코딩 이슈는 본 스크립트에서 자동 처리됨\n"
@@ -456,6 +456,39 @@ def get_financial_statements(
     return data.get("list", [])
 
 
+def get_financial_statements_all(
+    api_key: str,
+    corp_code: str,
+    bsns_year: str,
+    reprt_code: str = "11011",
+    fs_div: str = "CFS",
+) -> list[dict[str, Any]]:
+    """단일회사 전체 재무제표 조회 (fnlttSinglAcntAll).
+
+    주요계정(fnlttSinglAcnt, 약 30항목)이 아닌 전체 계정(약 176항목)을 반환한다.
+    sj_div: BS(재무상태표)/IS(손익계산서)/CIS(포괄손익)/CF(현금흐름)/SCE(자본변동)
+
+    Args:
+        api_key: DART API 인증키.
+        corp_code: 8자리 고유번호.
+        bsns_year: 사업연도 (예: "2024").
+        reprt_code: 보고서 코드 (기본: "11011" 사업보고서).
+        fs_div: "CFS"(연결) 또는 "OFS"(개별). 기본 연결.
+
+    Returns:
+        전체 재무제표 계정 목록 (176항목 내외).
+        각 항목: {sj_div, account_nm, thstrm_amount, frmtrm_amount, rcept_no, ...}
+    """
+    data = _request_json("fnlttSinglAcntAll", {
+        "crtfc_key": api_key,
+        "corp_code": corp_code,
+        "bsns_year": bsns_year,
+        "reprt_code": reprt_code,
+        "fs_div": fs_div,
+    })
+    return data.get("list", [])
+
+
 def get_employee_status(
     api_key: str,
     corp_code: str,
@@ -490,32 +523,54 @@ REPORT_SUBMISSION_LAG_DAYS = 95
 def filter_key_financials(
     statements: list[dict[str, Any]],
     fs_div: str = "CFS",
-) -> list[dict[str, str]]:
+) -> tuple[list[dict[str, str]], bool]:
     """재무제표에서 제안서용 핵심 계정만 추출.
+
+    CFS 결과가 비면 OFS로 자동 폴백한다.
+    동일 (fs_div, account_nm) 중복은 첫 건 유지(결정성 보장).
 
     Args:
         statements: get_financial_statements()의 반환값.
         fs_div: "CFS"(연결) 또는 "OFS"(개별). 기본 연결.
 
     Returns:
-        핵심 계정 목록: [{account_nm, thstrm_amount, frmtrm_amount}, ...]
+        (핵심 계정 목록, 폴백_발생_여부) 튜플.
+        핵심 계정 목록: [{account_nm, thstrm_amount, frmtrm_amount, rcept_no, ...}, ...]
+        폴백 발생 여부: True이면 요청 fs_div에 결과가 없어 반대 fs_div로 대체됨.
     """
-    results: list[dict[str, str]] = []
-
-    for item in statements:
-        if item.get("fs_div") != fs_div:
-            continue
-        account = item.get("account_nm", "")
-        if account in KEY_ACCOUNTS:
+    def _extract(div: str) -> list[dict[str, str]]:
+        seen_accounts: set[str] = set()
+        results: list[dict[str, str]] = []
+        for item in statements:
+            if item.get("fs_div") != div:
+                continue
+            account = item.get("account_nm", "")
+            if account not in KEY_ACCOUNTS:
+                continue
+            # 동일 (fs_div, account_nm) 중복 제거 — 첫 건 유지
+            dedup_key = f"{div}:{account}"
+            if dedup_key in seen_accounts:
+                continue
+            seen_accounts.add(dedup_key)
             results.append({
                 "account_nm": account,
                 "thstrm_amount": item.get("thstrm_amount", ""),
                 "frmtrm_amount": item.get("frmtrm_amount", ""),
+                "bfefrmtrm_amount": item.get("bfefrmtrm_amount", ""),
                 "bsns_year": item.get("bsns_year", ""),
                 "currency": item.get("currency", "KRW"),
+                "rcept_no": item.get("rcept_no", ""),
             })
+        return results
 
-    return results
+    primary = _extract(fs_div)
+    if primary:
+        return primary, False
+
+    # 폴백: CFS↔OFS 전환
+    fallback_div = "OFS" if fs_div == "CFS" else "CFS"
+    fallback = _extract(fallback_div)
+    return fallback, bool(fallback)
 
 
 # @MX:ANCHOR: [AUTO] 공시 목록 조회의 진입 함수.
@@ -970,6 +1025,7 @@ def compare_financials(
     year: str,
     accounts: list[str],
     reprt_code: str = "11011",
+    fs_div: str = "CFS",
 ) -> dict[str, dict]:
     """다기업 재무 비교 조회.
 
@@ -979,9 +1035,10 @@ def compare_financials(
         year: 사업연도 (예: "2024").
         accounts: 조회할 계정명 목록.
         reprt_code: 보고서 코드 (기본: "11011" 사업보고서).
+        fs_div: 연결(CFS)/개별(OFS). CFS 없으면 OFS로 자동 폴백.
 
     Returns:
-        {corp_code: {account_nm: {"thstrm_amount": "...", "currency": "..."}}}
+        {corp_code: {"data": {account_nm: {...}}, "fallback": bool, "rcept_no": str}}
         조회 실패 기업은 빈 dict.
     """
     result: dict[str, dict] = {}
@@ -989,8 +1046,9 @@ def compare_financials(
     for corp_code in corp_codes:
         try:
             statements = get_financial_statements(api_key, corp_code, year, reprt_code)
-            key_items = filter_key_financials(statements)
+            key_items, fallback = filter_key_financials(statements, fs_div)
             corp_result: dict[str, dict] = {}
+            rcept_no_val = ""
 
             for item in key_items:
                 matched = _match_account(item["account_nm"], accounts)
@@ -998,11 +1056,20 @@ def compare_financials(
                     # 정확 일치 우선 처리: 이미 등록된 경우 덮어쓰지 않음 (부분 일치 방지)
                     corp_result[matched] = {
                         "thstrm_amount": item.get("thstrm_amount", ""),
+                        "frmtrm_amount": item.get("frmtrm_amount", ""),
+                        "bfefrmtrm_amount": item.get("bfefrmtrm_amount", ""),
                         "currency": item.get("currency", "KRW"),
+                        "rcept_no": item.get("rcept_no", ""),
                     }
+                if not rcept_no_val:
+                    rcept_no_val = item.get("rcept_no", "")
 
-            result[corp_code] = corp_result
+            result[corp_code] = {
+                "data": corp_result,
+                "fallback": fallback,
+                "rcept_no": rcept_no_val,
+            }
         except DARTAPIError:
-            result[corp_code] = {}
+            result[corp_code] = {"data": {}, "fallback": False, "rcept_no": ""}
 
     return result

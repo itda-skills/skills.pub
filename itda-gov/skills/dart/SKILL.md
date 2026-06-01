@@ -8,11 +8,11 @@ license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
-argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare] [--name 회사명] [--corp-code 코드] [--year 연도] [--report annual|q1|q2|q3] [--prefer annual|latest] [--unit auto|million|eok|jo] [--with-ratios] [--format json|table|csv]"
+argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare] [--name 회사명] [--corp-code 코드] [--year 연도] [--report annual|q1|q2|q3] [--prefer annual|latest] [--detail] [--unit auto|million|eok|jo] [--with-ratios] [--with-prior] [--format json|table|csv]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.15.0"
+  version: "0.16.0"
   created_at: "2026-03-29"
   updated_at: "2026-05-29"
   tags: "DART, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
@@ -57,18 +57,18 @@ uv pip install --system "defusedxml>=0.7.1"
 |---------|-------|----------|
 | `DART_API_KEY` | https://opendart.fss.or.kr | 회원가입 → 오픈API → 인증키 신청/관리 → **즉시 발급** (40자리, 수동 승인 없음) |
 
-```bash
-# Claude Cowork 설정 (권장)
-claude config set env.DART_API_KEY "발급받은_키"
+**권장 (모든 환경) — 작업 폴더 루트에 `.env` 파일 배치:**
 
-# 또는 .env 파일
+```bash
+# <작업 폴더 루트>/.env 에 한 줄 추가
 DART_API_KEY=발급받은_키
 ```
 
-> v0.15.0부터 `claude config set env.X`로 설정된 키는
-> `shared/env_loader.py`가 `~/.claude/settings.json`의 `env` 키를 직접 읽어
-> 보조 inject합니다 (Cowork 환경에서 subprocess inject 누락 시 동작).
-> 우선순위: `--api-key CLI` > `os.environ` > `~/.claude/settings.json` > `.env`.
+- Cowork: 마운트된 작업 폴더(`outputs/` 등) 루트의 `.env`를 자동 탐색합니다. 한 번 두면 이후 호출에서 키를 다시 넣을 필요가 없습니다.
+- 세션별 절대경로(`/sessions/<id>/...`)를 고정으로 적지 마세요 — 세션마다 바뀝니다. `.env`는 작업 폴더 루트에만 두면 자동 탐색됩니다.
+
+> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.DART_API_KEY "발급받은_키"` 또는 셸 환경변수도 사용할 수 있습니다.
+> 우선순위: `--api-key` > `os.environ` > `~/.claude/settings.json` > `.env`(자동 탐색).
 
 ### 첫 호출 실패 시 점검 절차
 
@@ -100,9 +100,17 @@ python3 scripts/collect_company.py --format table info --corp-code 00126380
 ### 재무제표 (finance)
 
 ```bash
+# 주요계정 조회 (기본)
 python3 scripts/collect_company.py finance --corp-code 00126380 --year 2024
 python3 scripts/collect_company.py --format table finance --corp-code 00126380 --year 2024
+
+# 전체 재무제표 (v0.16.0+, --detail → fnlttSinglAcntAll, 176항목류)
+python3 scripts/collect_company.py finance --corp-code 00126380 --year 2023 --detail
+python3 scripts/collect_company.py --format table finance --corp-code 00126380 --year 2023 --detail
 ```
+
+> JSON 출력에는 공시원문 링크(`source.url`)가 기본 포함됩니다 (v0.16.0+).
+> 개별재무제표만 있는 기업은 자동으로 OFS 폴백 + stderr 안내합니다 (v0.16.0+).
 
 ### 직원현황 (employees)
 
@@ -190,7 +198,20 @@ python3 scripts/collect_company.py compare \
 # --prefer latest → 분기·반기 포함 가장 최신 보고서 자동 선택
 python3 scripts/collect_company.py compare \
   --names "삼성전자,LG전자" --prefer latest
+
+# 전기 열 포함 (v0.16.0+)
+python3 scripts/collect_company.py --format table compare \
+  --names "삼성전자" --year 2023 --with-prior
+
+# 전기 + 증감률 동시 (v0.16.0+)
+python3 scripts/collect_company.py compare \
+  --names "삼성전자" --year 2023 --with-prior --with-ratios
 ```
+
+> compare 계정 매칭은 정규화가 아닙니다. "영업이익" 검색어는 라벨로 표시되며,
+> 정확 일치 우선 + 부분 일치 fallback으로 동작합니다 (`_match_account` 동작).
+> 예: "영업이익" 검색 시 "영업이익(손실)"에도 매칭됩니다.
+> JSON 출력에 기업별 `source.rcept_no` + 공시원문 URL이 기본 포함됩니다 (v0.16.0+).
 
 ### 분기 데이터가 필요할 때 — `--report` 옵션
 
@@ -238,6 +259,7 @@ python3 scripts/collect_company.py --format csv \
 | `--year` | 사업연도 (미지정 시 자동 폴백) | — |
 | `--report` | 보고서 유형: `annual`(사업) / `q1`(1분기) / `q2`(반기) / `q3`(3분기). `finance`·`compare`·`employees`·`profile` 공통 | `annual` |
 | `--prefer` | 폴백 범위: `annual`=사업보고서만, `latest`=분기·반기 포함. `finance`·`compare` 공통 | `annual` |
+| `--detail` | 전체 재무제표(fnlttSinglAcntAll, 176항목류) 반환. `finance` 전용. 기본 OFF(주요계정 ~30항목) | OFF |
 | `--bgn` | 시작일 YYYYMMDD (disclosure) | — |
 | `--end` | 종료일 YYYYMMDD (disclosure) | — |
 | `--type` | 공시 유형 A/B/None (disclosure) | None=전체 |
@@ -251,6 +273,7 @@ python3 scripts/collect_company.py --format csv \
 | `--accounts` | 계정명 목록 쉼표 구분 (compare) | `매출액,영업이익,당기순이익,자산총계` |
 | `--unit` | 금액 단위 (compare): `auto`(>=1조 jo, >=1억 eok, 미만 million) / `million` / `eok` / `jo` | `auto` |
 | `--with-ratios` | 영업이익률·순이익률 행 추가 (compare, 매출액 기준) | OFF |
+| `--with-prior` | 전기(frmtrm_amount) 열/필드 추가 (compare). `--with-ratios` 병행 시 전기 대비 증감률 추가 | OFF |
 | `--format` | `json` / `table` / `csv` | `json` |
 | `--api-key` | DART API 키 (CLI 직접 전달) | 환경변수 |
 
@@ -309,7 +332,7 @@ dart/
 
 | 오류 | 원인 | 해결 방법 |
 |------|------|-----------|
-| `DART_API_KEY가 설정되지 않았습니다` | API 키 미설정 | `claude config set env.DART_API_KEY "키"` |
+| `DART_API_KEY가 설정되지 않았습니다` | API 키 미설정 | 작업 폴더 루트에 `.env` 생성 → `DART_API_KEY=키` (로컬 CLI는 셸 환경변수도 가능) |
 | `기업을 찾을 수 없습니다` | 회사명 불일치 | 공식 법인명 전체로 재검색 |
 | `재무 데이터가 없습니다` | 해당 연도 미공시 | 이전 연도로 재시도 |
 

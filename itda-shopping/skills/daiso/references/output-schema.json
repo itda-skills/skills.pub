@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "daiso output schemas (draft, v0.1.0)",
+  "description": "5개 서브커맨드(products·price·stores·inventory·display-location)의 출력 JSON 스키마 초안. 구현 시 확정. 응답은 UTF-8 pretty-print JSON.",
+  "definitions": {
+    "product": {
+      "type": "object",
+      "description": "상품검색(FindStoreGoods) resultDocuments 항목을 한국어 친화 키로 정규화.",
+      "properties": {
+        "product_id": { "type": "string", "description": "PD_NO" },
+        "name": { "type": "string", "description": "PDNM" },
+        "price": { "type": "integer", "description": "PD_PRC (원)" },
+        "brand": { "type": ["string", "null"], "description": "BRND_NM" },
+        "image_url": { "type": ["string", "null"], "description": "ATCH_FILE_URL → CDN 정규화 후" },
+        "sold_out": { "type": "boolean", "description": "SOLD_OUT_YN == 'Y'" },
+        "is_new": { "type": "boolean", "description": "NEW_PD_YN == 'Y'" },
+        "pickup_available": { "type": "boolean", "description": "PKUP_OR_PSBL_YN == 'Y'" }
+      },
+      "required": ["product_id", "name", "price"]
+    },
+    "store": {
+      "type": "object",
+      "description": "주변매장(selStr) data 항목. 레거시 매장검색(shop_search) 결과도 가능한 범위에서 동일 키로 매핑.",
+      "properties": {
+        "store_code": { "type": "string", "description": "strCd" },
+        "name": { "type": "string", "description": "strNm" },
+        "address": { "type": "string", "description": "strAddr" },
+        "phone": { "type": ["string", "null"], "description": "strTno" },
+        "open_time": { "type": ["string", "null"], "description": "opngTime" },
+        "close_time": { "type": ["string", "null"], "description": "clsngTime" },
+        "lat": { "type": ["number", "null"], "description": "strLttd (위도)" },
+        "lng": { "type": ["number", "null"], "description": "strLitd (경도)" },
+        "distance_km": { "type": ["number", "null"], "description": "km (좌표 조회 시)" },
+        "parking": { "type": ["boolean", "null"], "description": "parkYn" },
+        "pickup": { "type": ["boolean", "null"], "description": "pkupYn" },
+        "tax_free": { "type": ["boolean", "null"], "description": "taxfYn" },
+        "elevator": { "type": ["boolean", "null"], "description": "elvtYn" }
+      },
+      "required": ["store_code", "name", "address"]
+    },
+    "inventory_row": {
+      "type": "object",
+      "description": "매장별재고(selStrPkupStck) data 항목.",
+      "properties": {
+        "product_id": { "type": "string", "description": "pdNo" },
+        "store_code": { "type": "string", "description": "strCd" },
+        "stock": { "type": ["integer", "string"], "description": "stck (수량 또는 상태 코드)" },
+        "sale_status_code": { "type": ["string", "null"], "description": "sleStsCd" },
+        "store": { "$ref": "#/definitions/store", "description": "매장 메타(주변매장 조회로 병합, 선택)" }
+      },
+      "required": ["product_id", "store_code", "stock"]
+    },
+    "display_row": {
+      "type": "object",
+      "description": "진열위치(selIntPdStDispInfo) data 항목.",
+      "properties": {
+        "zone_no": { "type": ["string", "integer"], "description": "zoneNo (구역)" },
+        "stair_no": { "type": ["string", "integer"], "description": "stairNo (매대/층)" },
+        "store_erp": { "type": ["string", "null"], "description": "storeErp" }
+      },
+      "required": ["zone_no", "stair_no"]
+    },
+    "auth": {
+      "type": "object",
+      "description": "AES 인증 수행 여부(투명성). inventory는 store_inventory.auth, display-location은 최상위 auth에 항상 포함.",
+      "properties": {
+        "method": { "const": "daiso-aes" },
+        "performed": { "type": "boolean", "description": "AES 인증 조회 수행·성공 여부" },
+        "note": { "type": "string", "description": "performed=true일 때 설명" },
+        "reason": { "type": "string", "description": "performed=false일 때 사유(예: cryptography 미설치)" }
+      },
+      "required": ["method", "performed"]
+    }
+  },
+  "oneOf": [
+    {
+      "title": "products",
+      "type": "object",
+      "properties": {
+        "command": { "const": "products" },
+        "query": { "type": "string" },
+        "page": { "type": "integer" },
+        "page_size": { "type": "integer" },
+        "total_size": { "type": "integer", "description": "totalSize" },
+        "products": { "type": "array", "items": { "$ref": "#/definitions/product" } }
+      },
+      "required": ["command", "products"]
+    },
+    {
+      "title": "price",
+      "type": "object",
+      "properties": {
+        "command": { "const": "price" },
+        "product": { "$ref": "#/definitions/product" },
+        "online_stock": { "type": ["integer", "null"], "description": "selOnlStck data.stck (선택)" }
+      },
+      "required": ["command", "product"]
+    },
+    {
+      "title": "stores",
+      "type": "object",
+      "properties": {
+        "command": { "const": "stores" },
+        "query": { "type": ["string", "null"] },
+        "sido": { "type": ["string", "null"] },
+        "gugun": { "type": ["string", "null"] },
+        "dong": { "type": ["string", "null"] },
+        "stores": { "type": "array", "items": { "$ref": "#/definitions/store" } }
+      },
+      "required": ["command", "stores"]
+    },
+    {
+      "title": "inventory",
+      "type": "object",
+      "properties": {
+        "command": { "const": "inventory" },
+        "product_id": { "type": "string" },
+        "inventory": { "type": "array", "items": { "$ref": "#/definitions/inventory_row" } },
+        "auth": { "$ref": "#/definitions/auth", "description": "store_inventory.auth — AES 인증 수행 표시" }
+      },
+      "required": ["command", "product_id", "inventory"]
+    },
+    {
+      "title": "display-location",
+      "type": "object",
+      "properties": {
+        "command": { "const": "display-location" },
+        "product_id": { "type": "string" },
+        "store_code": { "type": "string" },
+        "locations": { "type": "array", "items": { "$ref": "#/definitions/display_row" } },
+        "auth": { "$ref": "#/definitions/auth", "description": "최상위 auth — 결과 반환 = AES 인증 수행됨" }
+      },
+      "required": ["command", "product_id", "store_code", "locations"]
+    }
+  ]
+}

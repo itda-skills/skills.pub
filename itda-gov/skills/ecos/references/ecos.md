@@ -6,8 +6,9 @@
 
 ```bash
 # 1. https://ecos.bok.or.kr/api/ 회원가입 → 인증키 자동 부여
-claude config set env.ECOS_API_KEY "발급받은_인증키"
-# 또는 .env 파일에: ECOS_API_KEY=발급받은_인증키
+# 2. 작업 폴더 루트(예: outputs/)에 .env 파일 생성 후 키 추가
+#    ECOS_API_KEY=발급받은_인증키
+# (로컬 CLI 전용: claude config set env.ECOS_API_KEY "키" 또는 셸 환경변수도 가능)
 ```
 
 > 테스트: API 키 대신 `sample`을 사용하면 최대 10건까지 테스트 조회 가능

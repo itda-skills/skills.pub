@@ -1,5 +1,37 @@
 # Changelog — itda-data
 
+## [0.13.0] — 2026-05-31 (CS 스킬 분리 → itda-cs 신설, #28·#29)
+
+### Breaking Changes
+- **CS 도메인 스킬 2종 분리**: `aspect-sentiment`·`cs-intent`를 신규 플러그인 **`itda-cs`**로 이동(`git mv`, 코드 무변경). itda-data는 **일반 데이터 분석 전용**(`data-analysis-advisor`·`data-tidy-advisor`)으로 정리.
+  - 분리 근거: 응집도(통계 양심 게이트 vs CS 텍스트 분류)·반복 주기·PII 민감도·`ml-absa`(PRIVATE) 백엔드 핸드오프가 일반 분석과 상이.
+  - `plugin.json`: description에서 ABSA·인텐트 문구 제거, CS keywords(`감정분석`·`측면감정`·`absa`·`aspect-sentiment`·`상담분석`·`인텐트분류`·`문의유형`·`intent`·`cs-intent`) 제거.
+  - 영향: itda-data를 통해 두 CS 스킬을 사용하던 사용자는 `itda-cs` 플러그인을 설치해야 함.
+
+## [0.12.0] — 2026-05-30 (SPEC-CS-INTENT-001)
+
+### New Features
+- **cs-intent v0.1.0** (신규 스킬, PoC): CS 문의 **인텐트(문의유형) 분류**. `aspect-sentiment`의 자매 — 직교("왜 연락했나" vs "무엇에 대해 어떻게 느끼나"). 같은 doc 병행 가능.
+  인텐트 10군+기타 · `primary_intent`+`secondary_intents`+`multi_intent` · stdlib 검증기 · `other_rate` 자기진단 · 운영 졸업 IAA 측정 게이트 명시.
+  원천: aspect-sentiment 목적-적합성 검토(#26 → 자매 분리 #27). 스킬 CHANGELOG 참조.
+
+## [0.11.1] — 2026-05-30 (SPEC-ABSA-SKILL-001 — 목적-적합성 검토 반영)
+
+### Improvements
+- **aspect-sentiment v0.1.1**: "통계+대처 목적-적합성" 11-에이전트 검토 결과 **계약 정합성** 수정(축 추가 없음).
+  `reopen_count` 단건 출력 제거(→집계 레이어, SSOT 내적 모순 해소) · `taxonomy_version` 출력 전파(시계열 단절 보정) ·
+  `other_rate` 비차단 자기진단 경고(기타>15% stderr) · `sub_aspect` 의미 고정(근본원인 흡수 금지) · `resolution=unknown` 가드.
+  신규 분류축(인텐트·근본원인·긴급도)은 IAA 측정 인프라 부재로 전면 거부, 인텐트는 별도 자매 스킬로 분리. 스킬 CHANGELOG 참조.
+
+## [0.11.0] — 2026-05-30 (SPEC-ABSA-SKILL-001)
+
+### New Features
+- **aspect-sentiment v0.1.0** (신규 스킬): 한국어 측면 기반 감정분석(ABSA) 라벨링 코어.
+  Claude 직접 추론(`backend=claude`), 무상태 단건 처리·closed-set taxonomy(평면 단일계층 +
+  `sub_aspect` 슬롯)·화자분리(CS, 고객 발화만)·상태 축(`process_signals`)·고정 출력 계약.
+  `references/`(taxonomy.ko.yaml·output-schema.json·few-shot.md) + `scripts/validate_output.py`(stdlib).
+  원천: `itda-skills/ml-absa` 기획서. 향후 ml-absa ML 백엔드 교체 가능. 자세한 내용은 스킬 CHANGELOG 참조.
+
 ## [0.10.0] — 2026-05-28 (SPEC-DATA-ADVISOR-CLI-001)
 
 ### New Features

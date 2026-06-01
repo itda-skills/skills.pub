@@ -27,9 +27,8 @@ _SETUP_GUIDE = (
     "  1. https://www.data.go.kr 회원가입\n"
     "  2. '국토교통부 아파트 매매 실거래 정보' 활용 신청\n"
     "  3. 발급된 일반 인증키(Decoding) 사용\n\n"
-    "설정 방법 (택 1):\n"
-    '  claude config set env.KO_DATA_API_KEY "발급받은_인증키"\n'
-    "  또는 .env 파일에: KO_DATA_API_KEY=발급받은_인증키\n"
+    "설정 방법: 작업 폴더 루트(예: outputs/)에 .env 파일을 만들고 키를 추가하세요.\n"
+    "  KO_DATA_API_KEY=발급받은_인증키\n"
 )
 
 

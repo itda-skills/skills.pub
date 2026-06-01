@@ -22,15 +22,16 @@ Claude가 자연어 요청을 `--keyword`, `--from`, `--to`, `--format`, `--deta
 1. https://www.data.go.kr 회원가입
 2. **조달청 나라장터 공공데이터개방표준서비스** 활용신청: <https://www.data.go.kr/data/15058815/openapi.do> (**자동승인**, 게이트웨이 동기화에 5~30분 소요)
 3. 마이페이지 → 개발계정 → **Decoding** 키(일반 인증키) 복사
-4. `claude config set env.KO_DATA_API_KEY "발급받은_키"` 또는 `.env` 파일에 저장
+4. 작업 폴더 루트(예: `outputs/`)에 `.env` 파일을 만들고 키를 저장 (권장, 모든 환경)
 
 ```bash
-# Claude Cowork 환경변수 등록 (권장)
-claude config set env.KO_DATA_API_KEY "발급받은_키"
-
-# 또는 .env 파일
+# <작업 폴더 루트>/.env 에 한 줄 추가
 KO_DATA_API_KEY=발급받은_키
 ```
+
+Cowork는 마운트된 작업 폴더(`outputs/` 등) 루트의 `.env`를 자동으로 찾습니다. 한 번 두면 이후 호출에서 키를 다시 넣지 않아도 됩니다.
+
+> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.KO_DATA_API_KEY "발급받은_키"` 또는 셸 환경변수도 가능합니다.
 
 > 같은 키를 `funding`·`realestate` 스킬에서도 공용으로 사용할 수 있습니다. 단, **각 API는 별도로 활용신청**해야 합니다. 미신청 서비스를 호출하면 HTTP 403 응답이 반환됩니다.
 

@@ -11,8 +11,17 @@
   1. ITDA_DATA_ROOT 환경변수 (테스트·CI 오버라이드)
   2. /proc/mounts에서 추출한 rw 마운트 포인트 (Linux 한정)
   3. $HOME/mnt/ 하위 비시스템 디렉토리 (Cowork 호스트 마운트)
-  4. $HOME (semi-persistent fallback)
-  5. Path.cwd() (macOS/Windows 로컬 fallback)
+  4. CLAUDE_PROJECT_DIR 및 그 상위 (Cowork $HOME 비의존 후보)
+  5. 현재 세션 /sessions/<slug>/mnt/* (Cowork 절대 마운트, 현재 세션 한정)
+  6. $HOME (semi-persistent fallback)
+  7. Path.cwd() (macOS/Windows 로컬 fallback)
+
+읽기(find_env_files)와 쓰기(pick_cache_location)의 후보 집합이 다르다:
+  - 쓰기(기본): outputs/uploads 제외 — 사용자 결과 폴더에 캐시를 쓰지 않는다.
+  - 읽기(include_output_dirs=True): outputs/uploads 포함 — Cowork는 영속 .env가
+    outputs에만 살 수 있으므로(실측 확정), .env 탐색은 이 둘을 후보에 넣는다.
+  #5는 전체 세션을 glob하지 않고 cwd·$HOME에서 유도한 현재 세션만 본다
+  (타 세션 .env 혼입·수백 세션 순회 방지).
 
 데이터 경로 패턴:
   <root>/.itda-skills/<skill_name>/[subdir]
@@ -101,15 +110,73 @@ def _list_rw_mounts() -> list[Path]:
     return results
 
 
-def _candidate_roots() -> list[Path]:
+def _mnt_child_ok(name: str, include_output_dirs: bool) -> bool:
+    """mnt/ 하위 디렉토리 이름이 후보로 적합한지 판정한다.
+
+    `.`-prefix 시스템 디렉토리는 항상 제외한다.
+    outputs/uploads는 쓰기 후보에서는 제외(사용자 결과 폴더 오염 방지),
+    읽기 후보(include_output_dirs=True)에서는 포함한다(Cowork .env 거주지).
+    """
+    if name.startswith("."):
+        return False
+    if not include_output_dirs and name in _MNT_EXCLUDE_NAMES:
+        return False
+    return True
+
+
+def _current_session_roots() -> list[Path]:
+    """현재 세션의 /sessions/<slug> 루트를 cwd·$HOME에서 유도한다.
+
+    전체 세션을 glob(`/sessions/*/mnt/*`)하면 수백 개 타 세션이 후보에 섞여
+    엉뚱한 .env가 혼입되고 매 호출 수백 디렉토리를 순회하게 된다.
+    대신 현재 런타임 경로(cwd, $HOME)가 실제로 `/sessions/<slug>/...` 아래
+    있을 때만 그 `<slug>` 세션 루트를 추출한다. 해당 세그먼트가 없으면
+    아무것도 반환하지 않는다(로컬 모드 등은 /proc/mounts·cwd가 이미 커버).
+
+    심볼릭 링크 해석(resolve)은 의도적으로 하지 않는다 — 로컬 에이전트 모드는
+    `/sessions/<slug>`가 사용자 Library 경로로의 심링크라 resolve하면 세그먼트가
+    사라진다. 마운트 네임스페이스 경로 그대로 사용한다.
+    """
+    sources: list[Path] = []
+    try:
+        sources.append(Path.cwd())
+    except OSError:
+        pass
+    try:
+        sources.append(Path.home())
+    except RuntimeError:
+        pass
+
+    roots: list[Path] = []
+    seen: set[str] = set()
+    for src in sources:
+        parts = src.parts
+        # parts 예: ('/', 'sessions', '<slug>', 'mnt', 'outputs', ...)
+        if len(parts) >= 3 and parts[0] == os.sep and parts[1] == "sessions":
+            sroot = Path(os.sep) / "sessions" / parts[2]
+            key = str(sroot)
+            if key not in seen:
+                seen.add(key)
+                roots.append(sroot)
+    return roots
+
+
+def _candidate_roots(include_output_dirs: bool = False) -> list[Path]:
     """데이터 루트 후보 경로 목록을 우선순위 순으로 반환한다.
 
     후보 우선순위 (높음 → 낮음):
         1. ITDA_DATA_ROOT 환경변수
         2. /proc/mounts rw 마운트 포인트 (Linux 한정)
         3. $HOME/mnt/ 하위 비시스템 디렉토리
-        4. $HOME
-        5. Path.cwd()
+        4. CLAUDE_PROJECT_DIR 및 그 상위
+        5. 현재 세션 /sessions/<slug>/mnt/* (현재 세션 한정)
+        6. $HOME
+        7. Path.cwd()
+
+    Args:
+        include_output_dirs: True면 mnt/ 하위에서 outputs/uploads도 후보에
+            포함한다(.env 읽기 전용). 기본 False는 쓰기 경로용으로
+            outputs/uploads를 제외해 사용자 결과 폴더 오염을 막는다.
 
     Returns:
         중복 제거된 Path 리스트 (resolve() 기준).
@@ -136,17 +203,46 @@ def _candidate_roots() -> list[Path]:
             subdirs = sorted(
                 (d for d in mnt_dir.iterdir()
                  if d.is_dir()
-                 and not d.name.startswith(".")
-                 and d.name not in _MNT_EXCLUDE_NAMES),
+                 and _mnt_child_ok(d.name, include_output_dirs)),
                 key=lambda d: d.name,
             )
             candidates.extend(subdirs)
 
-    # 4. $HOME
+    # 4. CLAUDE_PROJECT_DIR 및 그 상위 ($HOME 비의존, Cowork 환경)
+    _cpd = os.environ.get("CLAUDE_PROJECT_DIR")
+    if _cpd:
+        try:
+            _cpd_path = Path(_cpd)
+            if _cpd_path.is_dir():
+                candidates.append(_cpd_path)
+            # 상위 디렉토리도 후보 (워크스페이스 루트에 .env가 있는 경우)
+            _cpd_parent = _cpd_path.parent
+            if _cpd_parent.is_dir() and _cpd_parent != _cpd_path:
+                candidates.append(_cpd_parent)
+        except (OSError, ValueError):
+            pass
+
+    # 5. 현재 세션 /sessions/<slug>/mnt/* (Cowork 절대 마운트, 현재 세션 한정)
+    #    전체 세션 glob 금지 — 타 세션 .env 혼입·수백 세션 순회 방지.
+    for _sroot in _current_session_roots():
+        _mnt_dir = _sroot / "mnt"
+        try:
+            if _mnt_dir.is_dir():
+                _children = sorted(
+                    (d for d in _mnt_dir.iterdir()
+                     if d.is_dir()
+                     and _mnt_child_ok(d.name, include_output_dirs)),
+                    key=lambda d: d.name,
+                )
+                candidates.extend(_children)
+        except OSError:
+            pass
+
+    # 6. $HOME
     if home is not None:
         candidates.append(home)
 
-    # 5. Path.cwd()
+    # 7. Path.cwd()
     candidates.append(Path.cwd())
 
     # resolve() 기준 중복 제거 (순서 보존)
@@ -224,11 +320,15 @@ def find_env_files() -> list[Path]:
     각 후보 경로의 <root>/.env 를 검사하여 존재하는 파일만
     후보 우선순위 순으로 리스트로 반환한다.
 
+    캐시 쓰기와 달리 .env 읽기는 outputs/uploads도 후보에 포함한다
+    (include_output_dirs=True). Cowork는 영속 .env가 마운트된 작업 폴더
+    (outputs)에만 살 수 있기 때문이다(실측 확정).
+
     Returns:
         존재하는 .env 파일 Path 리스트 (우선순위 순).
     """
     result: list[Path] = []
-    for root in _candidate_roots():
+    for root in _candidate_roots(include_output_dirs=True):
         env_file = root / ".env"
         if env_file.exists():
             result.append(env_file)

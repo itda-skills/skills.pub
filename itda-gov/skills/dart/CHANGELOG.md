@@ -1,5 +1,42 @@
 # Changelog — itda-dart
 
+## [Unreleased] — SPEC-COWORK-ENV-GUIDE-001
+
+### Changed
+- **Cowork에서 `claude config set` 안내 제거** — 사용자 피드백: Cowork에선 `claude config set`이 적용되지 않아 헷갈림. 키 미설정 에러 메시지(`collect_company._SETUP_GUIDE`·`dart_api._DART_SETUP_GUIDE`)를 "작업 폴더 루트(outputs 등)에 `.env` 배치" 단일 안내로 통일(config set 문구 제거).
+- **SKILL.md·GUIDE.md·references/dart.md "API 키 설정"** — `.env`를 모든 환경 공통 권장으로 1순위 배치. `claude config set`은 명시적 "로컬 CLI 전용" 펜스로만 잔존(Cowork 노출 0). 세션별 절대경로(`/sessions/<id>/...`) 고정 기입 금지 문구 추가.
+
+## [0.16.0] — 2026-05-29
+
+### Added (사용자 2차 피드백 6항목 — SPEC-DART-FEEDBACK-002)
+
+- **REQ-001 — `shared/itda_path._candidate_roots()` Cowork 절대 마운트 탐색 추가**: `$HOME` 비의존 후보 2종 추가. ① `CLAUDE_PROJECT_DIR`(설정 시) 및 그 상위 디렉토리, ② `/sessions/*/mnt/*` glob (`.`-prefix·outputs·uploads 제외). 기존 후보·우선순위·중복제거(resolve 기준) 동작 100% 보존.
+- **REQ-003 — `filter_key_financials` CFS→OFS 자동 폴백 + 중복 제거**: CFS 결과가 비면 OFS로 폴백. 반환 시그니처 변경: `list` → `(list, fallback_bool)` 튜플. 폴백 시 `cmd_finance`/`cmd_compare`가 stderr로 `[참고] 연결재무제표 없음 — 개별재무제표(OFS) 기준` 안내. 동일 `(fs_div, account_nm)` 중복은 첫 건 유지(결정성 보장). `compare_financials`도 동일 폴백 적용.
+- **REQ-004 — `get_financial_statements_all` 신설 + `finance --detail` 플래그**: `fnlttSinglAcntAll.json` 호출(176항목류, BS/IS/CIS/CF/SCE). `--detail` 미지정 시 기존 주요계정 동작 100% 보존(하위호환).
+- **REQ-005 — rcept_no 출처 기본 노출**: `filter_key_financials`가 항목에 `rcept_no` 보존. `finance`·`compare` JSON 출력에 `source: {rcept_no, url}` 객체(`https://dart.fss.or.kr/dsaf001/main.do?rcpNo=...`). table 출력에 출처 1줄. CSV는 기존 컬럼 보존(변경 없음).
+- **REQ-006 — `compare --with-prior` opt-in**: `compare_financials`가 `frmtrm_amount`·`bfefrmtrm_amount` 보존. `--with-prior` 지정 시 출력에 전기 열/필드. `--with-prior --with-ratios` 병행 시 전기 대비 증감률(`매출액증감률`·`영업이익증감률`·`순이익증감률`) 추가. 미지정 시 기존 출력 100% 보존.
+
+### Changed
+- `compare_financials` 반환 구조 변경: `{corp_code: {acct: {...}}}` → `{corp_code: {"data": {...}, "fallback": bool, "rcept_no": str}}`. 이 변경에 맞춰 `cmd_compare`·관련 테스트 전면 업데이트.
+
+### Documentation
+- **SKILL.md "API 키 설정"** — Cowork에서 `claude config set env` 불가임을 명시. Cowork 권장 경로를 "워크스페이스 루트에 `.env` 배치"로 변경. 로컬 CLI는 config set/`.env` 둘 다 가능 유지.
+- **SKILL.md compare 사용법** — 계정 매칭이 "검색어 라벨 + 부분 일치 fallback"임을 1줄 명시(`_match_account` 동작, 정규화 아님).
+- **SKILL.md CLI 옵션 표** — `--detail`·`--with-prior` 신설 행 추가.
+- **`argument-hint`** — `--detail`·`--with-prior` 노출.
+
+### Tests
+- 신규 28 케이스:
+  - `TestCandidateRootsCowork` 6케이스 (shared/tests/test_itda_path.py)
+  - `TestFilterKeyFinancials` 기존 3 → 8케이스 (폴백·dedup·rcept_no 보존 추가)
+  - `TestCompareFinancials` 기존 5 → 10케이스 (fallback 전파·frmtrm 보존 추가)
+  - `TestGetFinancialStatementsAll` 4케이스
+  - `TestSourceMeta`·`TestFinanceJsonSourceOutput` 4케이스 (REQ-005)
+  - `TestFsDivFallback` 2케이스 (REQ-003)
+  - `TestWithPrior` 4케이스 (REQ-006)
+  - `TestFinanceDetail` 3케이스 (REQ-004)
+  - dart 278 passed (248→278), shared 57 passed (52→57), 합계 **378 passed**, 회귀 0, skip 0.
+
 ## [0.15.0] — 2026-05-29
 
 ### 🔴 BREAKING CHANGES

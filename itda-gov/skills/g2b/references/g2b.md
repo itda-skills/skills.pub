@@ -196,16 +196,15 @@ GET https://apis.data.go.kr/1230000/ao/PubDataOpnStdService/getDataSetOpnStdBidP
 3. 활용신청 (자동승인)
 4. 마이페이지 > 인증키 확인 (일반 인증키 Decoding 사용)
 
-**설정 방법 (택 1):**
+**설정 방법:**
 ```bash
-# Claude Cowork 설정 (권장)
-claude config set env.KO_DATA_API_KEY "발급받은_키"
-
-# .env 파일
+# 권장 (모든 환경): 작업 폴더 루트(예: outputs/)의 .env 파일
 KO_DATA_API_KEY=발급받은_키
 
-# CLI 직접 지정
+# CLI 직접 지정 (일회성)
 python3 scripts/collect_g2b.py --api-key "발급받은_키"
+
+# (로컬 CLI 전용: claude config set env.KO_DATA_API_KEY "키" 또는 셸 환경변수도 가능)
 ```
 
 ## 사용 시나리오

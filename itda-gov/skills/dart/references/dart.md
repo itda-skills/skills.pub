@@ -7,8 +7,9 @@
 ```bash
 # 1. https://opendart.fss.or.kr 회원가입
 # 2. 인증키 발급 (즉시 발급, 40자리)
-claude config set env.DART_API_KEY "발급받은_인증키"
-# 또는 .env 파일에: DART_API_KEY=발급받은_인증키
+# 3. 작업 폴더 루트(예: outputs/)에 .env 파일 생성 후 키 추가
+#    DART_API_KEY=발급받은_인증키
+# (로컬 CLI 전용: claude config set env.DART_API_KEY "키" 또는 셸 환경변수도 가능)
 ```
 
 > **주의**: 인증키 복사 시 앞뒤 공백이나 줄바꿈이 포함되지 않도록 하세요.

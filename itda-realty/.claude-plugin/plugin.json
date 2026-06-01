@@ -1,0 +1,22 @@
+{
+  "name": "itda-realty",
+  "description": "한국 부동산 공식 공개 API 기반 데이터 수집·분석 스킬팩",
+  "version": "8.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "Apache-2.0",
+  "keywords": [
+    "부동산",
+    "실거래가",
+    "전세가율",
+    "갭투자",
+    "공급통계",
+    "청약",
+    "한국부동산원",
+    "국토교통부"
+  ]
+}

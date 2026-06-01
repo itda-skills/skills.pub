@@ -20,11 +20,7 @@ _SEARCHAD_GUIDE = (
     "  1. https://searchad.naver.com 회원가입 (사업자 인증 필요)\n"
     "  2. 좌측 메뉴 → 도구 → API 관리\n"
     "  3. ACCESS KEY · SECRET KEY · CUSTOMER ID 발급/확인\n\n"
-    "설정 방법 (택 1):\n"
-    '  claude config set env.NAVER_SEARCHAD_ACCESS_KEY "..."\n'
-    '  claude config set env.NAVER_SEARCHAD_SECRET_KEY "..."\n'
-    '  claude config set env.NAVER_SEARCHAD_CUSTOMER_ID "..."\n\n'
-    "  또는 .env 파일에 3개 키 모두 설정:\n"
+    "설정 방법: 작업 폴더 루트(예: outputs/)에 .env 파일을 만들고 3개 키 모두 추가하세요.\n"
     "    NAVER_SEARCHAD_ACCESS_KEY=...\n"
     "    NAVER_SEARCHAD_SECRET_KEY=...\n"
     "    NAVER_SEARCHAD_CUSTOMER_ID=...\n"
@@ -40,10 +36,7 @@ _OPEN_API_GUIDE = (
     "  1. https://developers.naver.com 로그인\n"
     "  2. Application → 애플리케이션 등록\n"
     "  3. 사용 API에 '검색' 또는 '데이터랩' 체크 → Client ID/Secret 발급\n\n"
-    "설정 방법 (택 1):\n"
-    '  claude config set env.NAVER_CLIENT_ID "..."\n'
-    '  claude config set env.NAVER_CLIENT_SECRET "..."\n\n'
-    "  또는 .env 파일에 2개 키 설정:\n"
+    "설정 방법: 작업 폴더 루트(예: outputs/)에 .env 파일을 만들고 2개 키를 추가하세요.\n"
     "    NAVER_CLIENT_ID=...\n"
     "    NAVER_CLIENT_SECRET=...\n"
 )

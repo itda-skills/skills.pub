@@ -39,9 +39,8 @@ _SETUP_GUIDE = (
     "DART 인증키 발급 방법:\n"
     "  1. https://opendart.fss.or.kr 회원가입\n"
     "  2. 인증키 발급 (즉시 발급, 40자리)\n\n"
-    "설정 방법 (택 1):\n"
-    '  claude config set env.DART_API_KEY "발급받은_인증키"\n'
-    "  또는 .env 파일에: DART_API_KEY=발급받은_인증키\n"
+    "설정 방법: 작업 폴더 루트(예: outputs/)에 .env 파일을 만들고 키를 추가하세요.\n"
+    "  DART_API_KEY=발급받은_인증키\n"
 )
 
 # corpCode.xml 캐시 경로
@@ -124,17 +123,32 @@ def cmd_info(args: argparse.Namespace) -> int:
     return 0
 
 
+_DART_FILING_URL = "https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}"
+
+
+def _make_source_meta(rcept_no: str) -> dict[str, str]:
+    """rcept_no로 출처 메타 딕셔너리를 생성한다."""
+    if not rcept_no:
+        return {}
+    return {
+        "rcept_no": rcept_no,
+        "url": _DART_FILING_URL.format(rcept_no=rcept_no),
+    }
+
+
 def cmd_finance(args: argparse.Namespace) -> int:
     """재무제표 주요계정 조회.
 
     --year 미지정 시 find_latest_report()로 자동 폴백.
     prefer 옵션에 따라 사업/반기/분기 폴백 범위 결정.
+    --detail 플래그 시 fnlttSinglAcntAll(전체 176항목) 반환.
     """
     api_key = _get_api_key(args.api_key)
     reprt_code = dart_api.REPRT_CODES.get(args.report, "11011")
 
     year = getattr(args, "year", None)
     prefer = getattr(args, "prefer", "annual")
+    detail = getattr(args, "detail", False)
 
     if not year:
         # REQ-DART-004-001: 자동 폴백 — prefer에 따라 범위 결정
@@ -148,10 +162,51 @@ def cmd_finance(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
 
+    if detail:
+        # REQ-004: 전체 재무제표 (fnlttSinglAcntAll)
+        all_items = dart_api.get_financial_statements_all(
+            api_key, args.corp_code, year, reprt_code, args.fs_div,
+        )
+        # rcept_no 추출 (첫 항목에서)
+        rcept_no = all_items[0].get("rcept_no", "") if all_items else ""
+        source = _make_source_meta(rcept_no)
+
+        if args.format == "csv":
+            _write_csv(
+                [{"sj_div": i.get("sj_div", ""), "account_nm": i.get("account_nm", ""),
+                  "thstrm_amount": i.get("thstrm_amount", ""),
+                  "frmtrm_amount": i.get("frmtrm_amount", ""),
+                  "currency": i.get("currency", "KRW")}
+                 for i in all_items],
+                ["sj_div", "account_nm", "thstrm_amount", "frmtrm_amount", "currency"],
+            )
+        elif args.format == "table":
+            _print_finance_detail_table(all_items, year, source)
+        else:
+            print(json.dumps(
+                {"status": "ok", "corp_code": args.corp_code, "year": year,
+                 "report": args.report, "fs_div": args.fs_div,
+                 "count": len(all_items), "items": all_items,
+                 "source": source},
+                ensure_ascii=False, indent=2,
+            ))
+        return 0
+
+    # 기본: 주요계정 (fnlttSinglAcnt)
     statements = dart_api.get_financial_statements(
         api_key, args.corp_code, year, reprt_code,
     )
-    key_items = dart_api.filter_key_financials(statements, args.fs_div)
+    key_items, fallback = dart_api.filter_key_financials(statements, args.fs_div)
+
+    if fallback:
+        print(
+            "[참고] 연결재무제표 없음 — 개별재무제표(OFS) 기준",
+            file=sys.stderr,
+        )
+
+    # rcept_no 추출 (REQ-005)
+    rcept_no = key_items[0].get("rcept_no", "") if key_items else ""
+    source = _make_source_meta(rcept_no)
 
     if args.format == "csv":
         _write_csv(
@@ -161,12 +216,13 @@ def cmd_finance(args: argparse.Namespace) -> int:
             ["account_nm", "thstrm_amount", "frmtrm_amount", "currency"],
         )
     elif args.format == "table":
-        _print_finance_table(key_items, year)
+        _print_finance_table(key_items, year, source)
     else:
         print(json.dumps(
             {"status": "ok", "corp_code": args.corp_code, "year": year,
              "report": args.report, "fs_div": args.fs_div,
-             "count": len(key_items), "items": key_items},
+             "count": len(key_items), "items": key_items,
+             "source": source},
             ensure_ascii=False, indent=2,
         ))
     return 0
@@ -308,7 +364,7 @@ def cmd_profile(args: argparse.Namespace) -> int:
         statements = dart_api.get_financial_statements(
             api_key, corp_code, args.year, reprt_code,
         )
-        financials = dart_api.filter_key_financials(statements)
+        financials, _fallback = dart_api.filter_key_financials(statements)
     except dart_api.DARTAPIError as e:
         financials = [{"error": str(e)}]
 
@@ -478,6 +534,33 @@ def _compute_ratio(numerator_val: str | None, denominator_val: str | None) -> st
     return f"{(n / d) * 100:.2f}%"
 
 
+def _compute_growth_rate(current_val: str | None, prior_val: str | None) -> str:
+    """전기 대비 증감률 계산 ((당기-전기)/전기 × 100).
+
+    SPEC-DART-FEEDBACK-002 REQ-006: --with-prior --with-ratios 병행 시.
+    전기 = 0 이거나 누락이면 'N/A' 반환.
+
+    Args:
+        current_val: 당기 금액 문자열.
+        prior_val: 전기 금액 문자열.
+
+    Returns:
+        '+12.34%' 형식 또는 'N/A'.
+    """
+    if not current_val or not prior_val:
+        return "N/A"
+    try:
+        curr = int(current_val.replace(",", ""))
+        prior = int(prior_val.replace(",", ""))
+    except ValueError:
+        return "N/A"
+    if prior == 0:
+        return "N/A"
+    rate = (curr - prior) / prior * 100
+    sign = "+" if rate >= 0 else ""
+    return f"{sign}{rate:.2f}%"
+
+
 def cmd_compare(args: argparse.Namespace) -> int:
     """다기업 재무 비교 커맨드.
 
@@ -563,8 +646,26 @@ def cmd_compare(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
 
+    with_prior = getattr(args, "with_prior", False)
+
     # 비교 조회
-    data = dart_api.compare_financials(api_key, corp_codes, year, accounts, reprt_code)
+    raw_data = dart_api.compare_financials(api_key, corp_codes, year, accounts, reprt_code)
+
+    # 폴백 안내 + 데이터 평탄화 (REQ-003)
+    # raw_data: {corp_code: {"data": {...}, "fallback": bool, "rcept_no": str}}
+    data: dict[str, dict] = {}
+    corp_source: dict[str, dict] = {}  # corp_code → source meta
+    for code in corp_codes:
+        entry = raw_data.get(code, {"data": {}, "fallback": False, "rcept_no": ""})
+        data[code] = entry.get("data", {})
+        if entry.get("fallback"):
+            corp_name_display = corp_names.get(code, code)
+            print(
+                f"[참고] {corp_name_display}: 연결재무제표 없음 — 개별재무제표(OFS) 기준",
+                file=sys.stderr,
+            )
+        rcept_no = entry.get("rcept_no", "")
+        corp_source[code] = _make_source_meta(rcept_no)
 
     # 파생 지표 계산 (REQ-005: --with-ratios)
     ratios: dict[str, dict[str, str]] = {}  # corp_code → {'영업이익률': '12.34%', '순이익률': ...}
@@ -574,20 +675,31 @@ def cmd_compare(args: argparse.Namespace) -> int:
             sales = (corp_data.get("매출액") or {}).get("thstrm_amount")
             op = (corp_data.get("영업이익") or {}).get("thstrm_amount")
             ni = (corp_data.get("당기순이익") or {}).get("thstrm_amount")
-            ratios[code] = {
+            ratio_entry: dict[str, str] = {
                 "영업이익률": _compute_ratio(op, sales),
                 "순이익률": _compute_ratio(ni, sales),
             }
+            # REQ-006: --with-prior 병행 시 전기 대비 증감률 추가
+            if with_prior:
+                prior_sales = (corp_data.get("매출액") or {}).get("frmtrm_amount")
+                prior_op = (corp_data.get("영업이익") or {}).get("frmtrm_amount")
+                prior_ni = (corp_data.get("당기순이익") or {}).get("frmtrm_amount")
+                ratio_entry["매출액증감률"] = _compute_growth_rate(sales, prior_sales)
+                ratio_entry["영업이익증감률"] = _compute_growth_rate(op, prior_op)
+                ratio_entry["순이익증감률"] = _compute_growth_rate(ni, prior_ni)
+            ratios[code] = ratio_entry
 
     if args.format == "csv":
-        _print_compare_csv(data, corp_codes, corp_names, accounts, year, unit, ratios)
+        _print_compare_csv(data, corp_codes, corp_names, accounts, year, unit, ratios, with_prior)
     elif args.format == "table":
-        _print_compare_table(data, corp_codes, corp_names, accounts, year, report, unit, ratios)
+        _print_compare_table(data, corp_codes, corp_names, accounts, year, report, unit, ratios, with_prior, corp_source)
     else:
         out: dict[str, Any] = {
             "status": "ok", "year": year, "report": report,
             "corp_codes": corp_codes, "corp_names": corp_names,
-            "accounts": accounts, "unit": unit, "data": data,
+            "accounts": accounts, "unit": unit,
+            "with_prior": with_prior, "data": data,
+            "source": corp_source,
         }
         if with_ratios:
             out["ratios"] = ratios
@@ -616,10 +728,13 @@ def _print_compare_table(
     report: str = "annual",
     unit: str = "auto",
     ratios: dict[str, dict[str, str]] | None = None,
+    with_prior: bool = False,
+    corp_source: dict[str, dict] | None = None,
 ) -> None:
     """비교 결과 테이블 출력.
 
     SPEC-DART-FEEDBACK-001 REQ-003·004·005: unit 단위, 회사명 헤더, ratio 행.
+    SPEC-DART-FEEDBACK-002 REQ-005·006: rcept_no 출처, --with-prior 전기 열.
     """
     label = _REPORT_LABELS.get(report, report)
     # REQ-004: 헤더에 '회사명 (corp_code)' 또는 corp_code
@@ -627,10 +742,26 @@ def _print_compare_table(
     # 컬럼 폭: 헤더가 길어졌으므로 동적 조정
     col_w = max(20, max((len(h) + 2 for h in header_labels), default=20))
 
+    # with_prior 시 기간 열 배수
+    period_cols = 2 if with_prior else 1
+    total_data_cols = len(corp_codes) * period_cols
+
     print(f"\n비교 — {year}년 {label} (CFS)\n")
-    header = f"{'계정':<16}" + "".join(f"{h:<{col_w}}" for h in header_labels)
-    print(header)
-    print("-" * (16 + col_w * len(corp_codes)))
+
+    if with_prior:
+        # 헤더 2줄: 기업명 + 당기/전기
+        header_row1 = f"{'계정':<16}"
+        header_row2 = f"{'':16}"
+        for h in header_labels:
+            header_row1 += f"{h:<{col_w * 2}}"
+            header_row2 += f"{'당기':<{col_w}}{'전기':<{col_w}}"
+        print(header_row1)
+        print(header_row2)
+    else:
+        header = f"{'계정':<16}" + "".join(f"{h:<{col_w}}" for h in header_labels)
+        print(header)
+
+    print("-" * (16 + col_w * total_data_cols))
 
     for acct in accounts:
         row = f"{acct:<16}"
@@ -643,20 +774,40 @@ def _print_compare_table(
                     acct_data.get("currency", "KRW"),
                     unit,
                 )
+                row += f"{amt:<{col_w}}"
+                if with_prior:
+                    prior_amt = _format_compare_amount(
+                        acct_data.get("frmtrm_amount", ""),
+                        acct_data.get("currency", "KRW"),
+                        unit,
+                    )
+                    row += f"{prior_amt:<{col_w}}"
             else:
-                amt = "-"
-            row += f"{amt:<{col_w}}"
+                row += f"{'-':<{col_w}}"
+                if with_prior:
+                    row += f"{'-':<{col_w}}"
         print(row)
 
     # REQ-005: --with-ratios 행 추가
     if ratios:
-        print("-" * (16 + col_w * len(corp_codes)))
+        print("-" * (16 + col_w * total_data_cols))
         for ratio_name in ("영업이익률", "순이익률"):
             row = f"{ratio_name:<16}"
             for code in corp_codes:
                 val = ratios.get(code, {}).get(ratio_name, "N/A")
                 row += f"{val:<{col_w}}"
+                if with_prior:
+                    row += f"{'':< {col_w}}"
             print(row)
+
+    # REQ-005: 출처 1줄 (rcept_no + URL)
+    if corp_source:
+        print()
+        for code in corp_codes:
+            src = corp_source.get(code, {})
+            if src.get("rcept_no"):
+                name = corp_names.get(code, code)
+                print(f"출처({name}): rcpNo={src['rcept_no']}  {src['url']}")
     print()
 
 
@@ -668,6 +819,7 @@ def _print_compare_csv(
     year: str,
     unit: str = "auto",
     ratios: dict[str, dict[str, str]] | None = None,
+    with_prior: bool = False,
 ) -> None:
     """비교 결과 CSV 출력.
 
@@ -675,6 +827,8 @@ def _print_compare_csv(
         - thstrm_amount는 raw 보존 (회귀 0)
         - formatted_amount 컬럼 신설 (unit 적용)
         - ratio가 있으면 추가 행 ('account'를 ratio_name으로)
+    SPEC-DART-FEEDBACK-002 REQ-006:
+        - --with-prior 시 frmtrm_amount 컬럼 추가
     """
     rows = []
     for acct in accounts:
@@ -683,7 +837,7 @@ def _print_compare_csv(
             acct_data = corp_data.get(acct) or {}
             raw = acct_data.get("thstrm_amount", "")
             currency = acct_data.get("currency", "")
-            rows.append({
+            row: dict[str, str] = {
                 "account": acct,
                 "corp_code": corp_code,
                 "corp_name": corp_names.get(corp_code, corp_code),
@@ -694,13 +848,21 @@ def _print_compare_csv(
                     _format_compare_amount(raw, currency or "KRW", unit)
                     if raw else ""
                 ),
-            })
+            }
+            if with_prior:
+                prior_raw = acct_data.get("frmtrm_amount", "")
+                row["frmtrm_amount"] = prior_raw
+                row["formatted_frmtrm"] = (
+                    _format_compare_amount(prior_raw, currency or "KRW", unit)
+                    if prior_raw else ""
+                )
+            rows.append(row)
     # ratio 행: account 컬럼에 ratio_name 넣고 formatted_amount에 '%' 표기
     if ratios:
         for ratio_name in ("영업이익률", "순이익률"):
             for corp_code in corp_codes:
                 val = ratios.get(corp_code, {}).get(ratio_name, "N/A")
-                rows.append({
+                ratio_row: dict[str, str] = {
                     "account": ratio_name,
                     "corp_code": corp_code,
                     "corp_name": corp_names.get(corp_code, corp_code),
@@ -708,11 +870,16 @@ def _print_compare_csv(
                     "thstrm_amount": "",
                     "currency": "",
                     "formatted_amount": val,
-                })
-    _write_csv(
-        rows,
-        ["account", "corp_code", "corp_name", "year", "thstrm_amount", "currency", "formatted_amount"],
-    )
+                }
+                if with_prior:
+                    ratio_row["frmtrm_amount"] = ""
+                    ratio_row["formatted_frmtrm"] = ""
+                rows.append(ratio_row)
+
+    headers = ["account", "corp_code", "corp_name", "year", "thstrm_amount", "currency", "formatted_amount"]
+    if with_prior:
+        headers += ["frmtrm_amount", "formatted_frmtrm"]
+    _write_csv(rows, headers)
 
 
 # --- 테이블 출력 헬퍼 ---
@@ -764,7 +931,11 @@ def _print_info_table(data: dict[str, Any]) -> None:
     print()
 
 
-def _print_finance_table(items: list[dict[str, str]], year: str) -> None:
+def _print_finance_table(
+    items: list[dict[str, str]],
+    year: str,
+    source: dict[str, str] | None = None,
+) -> None:
     """재무 핵심 계정을 테이블로 출력."""
     print(f"\n재무제표 주요계정 ({year}년)\n")
     print(f"{'계정명':<20} {'당기':<20} {'전기':<20}")
@@ -774,6 +945,40 @@ def _print_finance_table(items: list[dict[str, str]], year: str) -> None:
         curr = _format_amount(item.get("thstrm_amount", ""))
         prev = _format_amount(item.get("frmtrm_amount", ""))
         print(f"{name:<20} {curr:<20} {prev:<20}")
+    # REQ-005: 출처 1줄
+    if source and source.get("rcept_no"):
+        print(f"\n출처: rcpNo={source['rcept_no']}  {source['url']}")
+    print()
+
+
+def _print_finance_detail_table(
+    items: list[dict[str, Any]],
+    year: str,
+    source: dict[str, str] | None = None,
+) -> None:
+    """전체 재무제표(--detail)를 sj_div 그룹별 테이블로 출력."""
+    print(f"\n재무제표 전체 ({year}년) — {len(items)}항목\n")
+
+    # sj_div 순서 유지를 위해 등장 순 그룹화
+    from collections import OrderedDict
+    groups: dict[str, list] = OrderedDict()
+    for item in items:
+        sj = item.get("sj_div", "기타")
+        groups.setdefault(sj, []).append(item)
+
+    for sj_div, group_items in groups.items():
+        print(f"[{sj_div}]")
+        print(f"  {'계정명':<30} {'당기':<20} {'전기':<20}")
+        print("  " + "-" * 70)
+        for item in group_items:
+            name = item.get("account_nm", "")[:28]
+            curr = _format_amount(item.get("thstrm_amount", ""))
+            prev = _format_amount(item.get("frmtrm_amount", ""))
+            print(f"  {name:<30} {curr:<20} {prev:<20}")
+        print()
+
+    if source and source.get("rcept_no"):
+        print(f"출처: rcpNo={source['rcept_no']}  {source['url']}")
     print()
 
 
@@ -896,6 +1101,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--prefer", choices=["annual", "latest"], default="annual",
         help="폴백 범위: annual=사업보고서만, latest=분기·반기 포함 (기본: annual)",
     )
+    p_fin.add_argument(
+        "--detail", action="store_true",
+        help="전체 재무제표 반환 (fnlttSinglAcntAll, 176항목). 기본 OFF (주요계정 약 30항목)",
+    )
 
     # disclosure
     p_disc = sub.add_parser("disclosure", help="공시 목록 조회")
@@ -981,6 +1190,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_cmp.add_argument(
         "--with-ratios", dest="with_ratios", action="store_true",
         help="영업이익률·순이익률 행 추가 (매출액 기준). 매출액=0/누락이면 N/A",
+    )
+    p_cmp.add_argument(
+        "--with-prior", dest="with_prior", action="store_true",
+        help="전기(frmtrm_amount) 열/필드 추가. --with-ratios 병행 시 전기 대비 증감률 추가 (기본 OFF)",
     )
 
     return parser

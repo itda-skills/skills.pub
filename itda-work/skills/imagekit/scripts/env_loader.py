@@ -47,13 +47,10 @@ _OC_GUIDE_MSG = (
     "OC 발급 방법:\n"
     f"  1. 법제처 Open API 신청 페이지 접속: {_OC_REGISTER_URL}\n"
     "  2. 회원가입 후 Open API 사용 신청\n"
-    "  3. 발급받은 OC를 아래 중 하나로 설정하세요:\n\n"
-    "     방법 A — CLAUDE.md에 추가 (권장):\n"
+    "  3. 발급받은 OC를 .env 파일로 설정하세요:\n\n"
+    "     작업 폴더 루트(예: outputs/) 또는 프로젝트 루트에 .env 생성 후:\n"
     "       LAW_API_OC=your-oc\n\n"
-    "     방법 B — 개인 맞춤 설정:\n"
-    "       claude config set env.LAW_API_OC \"your-oc\"\n\n"
-    "     방법 C — .env 파일:\n"
-    "       LAW_API_OC=your-oc\n"
+    "     (로컬 CLI는 셸 환경변수 LAW_API_OC 로도 가능)\n"
 )
 
 

@@ -26,9 +26,8 @@ _SETUP_GUIDE = (
     "KOSIS 인증키 발급 방법:\n"
     "  1. https://kosis.kr 회원가입\n"
     "  2. https://kosis.kr/openapi/ 에서 서비스 신청 (자동 승인)\n\n"
-    "설정 방법 (택 1):\n"
-    '  claude config set env.KOSIS_API_KEY "발급받은_인증키"\n'
-    "  또는 .env 파일에: KOSIS_API_KEY=발급받은_인증키\n"
+    "설정 방법: 작업 폴더 루트(예: outputs/)에 .env 파일을 만들고 키를 추가하세요.\n"
+    "  KOSIS_API_KEY=발급받은_인증키\n"
 )
 
 

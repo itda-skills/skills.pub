@@ -26,9 +26,8 @@ _SETUP_GUIDE = (
     "한국은행 ECOS 인증키 발급 방법:\n"
     "  1. https://ecos.bok.or.kr/api/ 회원가입\n"
     "  2. 인증키 신청 (가입 시 자동 부여)\n\n"
-    "설정 방법 (택 1):\n"
-    '  claude config set env.ECOS_API_KEY "발급받은_인증키"\n'
-    "  또는 .env 파일에: ECOS_API_KEY=발급받은_인증키\n"
+    "설정 방법: 작업 폴더 루트(예: outputs/)에 .env 파일을 만들고 키를 추가하세요.\n"
+    "  ECOS_API_KEY=발급받은_인증키\n"
 )
 
 
