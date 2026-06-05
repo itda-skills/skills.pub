@@ -5,12 +5,61 @@
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-06-05
+
+### Changed
+
+- **열차 스킬 이름 변경**: 디렉토리·스킬명을 `train-ktx`·`train-srt`로 통일 (마스터 결정 2026-06-05).
+  열차 예약 스킬을 `train-*` 접두사로 묶어 스킬 목록에서의 그루핑 가시성을 높임.
+  - 디렉토리·SKILL.md `name`·스킬 간 상호 참조·README(플러그인/루트)·GUIDE·`requirements.txt`·`v8.1.0` 릴리즈 노트·CI 테스트 경로(`release-skills.yml`)를 일괄 갱신 — 옛 이름 잔여·깨진 링크(404) 0.
+  - SPEC 제목·식별자(`SPEC-KTX-BOOKING-001`/`SPEC-SRT-BOOKING-001`)는 추적성 유지를 위해 보존, 본문 스킬 참조는 갱신.
+
+## [0.5.0] — 2026-06-05
+
+### Added
+
+- **place-finder** 스킬 신설 (PoC v0.1.0) — 카카오맵 목적별 근처 장소 찾기(SPEC-PLACE-FINDER-001).
+  - 위치(역명/동네/랜드마크) + 엄선 카테고리 4묶음(먹거리·여행·편의·교통, 11종) → 거리순 Top-N.
+  - 비공식 카카오맵 검색 엔드포인트(평점·리뷰수·편의시설 8종) — 실측으로 공식 로컬 API 대비
+    목적별 큐레이션 우위 확인. 거리는 anchor 지오코딩 + haversine 직접 계산(카카오 distance
+    필드는 서버 IP 추정 기준이라 부정확). 영업상태(openoff)는 실시간과 무관해 미노출(링크 위임).
+  - `--amenity`(주차·와이파이·반려동물·흡연·예약·배달·포장·장애인편의) 필터, `--sort distance|rating`.
+    urllib(stdlib only·의존성 0), 자격증명 불필요.
+  - `--category`는 11종 프리셋 외 **자유 키워드**(칼국수·돈까스 등 구체 음식/업종)도 수용 — 프리셋 미매칭 시 그대로 검색어로 사용(preset=null).
+  - 비공식 API·ToS 회색이라 PRIVATE 유지(읽기전용·1회성·매크로 금지). 단위 49 passed/0 skip·ruff clean.
+
+## [0.4.0] — 2026-06-05
+
+### Added
+
+- **flight-search** 스킬 신설 (PoC v0.1.0) — Google Flights 공개 검색 항공권
+  조회·비교(SPEC-FLIGHT-SEARCH-001, 기존 Skyscanner+web_browse 접근에서 전환).
+  - 범위: **검색 + 비교 전용**(예약·결제·좌석지정은 영구 비목표). **자격증명 0**
+    (공개 표면 무인증 — itda-travel 스킬 중 유일).
+  - 서브커맨드 `search`(편도/왕복) / `compare-month` / `compare-range` /
+    `compare-years`. 공통옵션은 서브커맨드 뒤 배치(--json 위치 함정 회피).
+  - 데이터: `fast-flights`(Google Flights 공개 표면). **직접 조회(common) 우선,
+    차단 시 외부 fetch 서버(fallback) 폴백** — 검색조건의 제3자 노출 최소화.
+  - 매크로 금지: 비교는 **일수 cap(31)·요청간격 하한(1초)을 코드로 강제**. 상세
+    누락(partial) 비결정성은 complete 우선 정렬 + 가격·band·링크 유효로 정직 안내.
+  - 한국어 도시명→IATA 힌트(모호 도시는 확인), KRW, 예약 검색 링크(deep link 아님).
+  - 어댑터(flights_adapter)에 fast-flights 지연 import·예외 변환 격리(fail-loud).
+  - 단위 77 passed/0 skip(itda-refine 5에이전트 게이트 후 dedup·₩0 가드·compare
+    fail-loud 대칭·차단메시지 우선순위 보강 포함). 라이브: ICN-NRT search + 2026-07
+    weekly 최저가 비교 검증. CI release-skills.yml test allowlist 에 등록.
+  - 공개 배포 디스클레이머: Google ToS 회색·CAPTCHA 우회 없음·가격 조회시점.
+
+### Changed
+
+- itda-travel: flight-search 추가로 **열차 검색·예약(ktx·srt) + 맛집 트렌드(eatery)
+  + 항공권 검색·비교(flight)** 4스킬. plugin.json description·keywords 확장.
+
 ## [0.3.0] — 2026-06-05
 
 ### Added
 
-- **srt-booking** 스킬 신설 (PoC v0.1.0) — SRT(수서고속철) 검색·예약(SPEC-SRT-BOOKING-001).
-  - ktx-booking 자매 스킬. SRTrain(비공식 SR 클라이언트) 어댑터(지연 import·예외 변환·마스킹).
+- **train-srt** 스킬 신설 (PoC v0.1.0) — SRT(수서고속철) 검색·예약(SPEC-SRT-BOOKING-001).
+  - train-ktx 자매 스킬. SRTrain(비공식 SR 클라이언트) 어댑터(지연 import·예외 변환·마스킹).
   - `search` / `reserve` / `reservations`. `reserve` 는 `--confirm` 코드 게이트(SAFE-1).
   - 자격증명 `SRT_USER_ID`/`SRT_PASSWORD`. SR 역명 정규화(KTX 전용역 SRT 미정차 안내).
   - 결제·취소 비목표(ktx와 동일). 단위 25 passed/0 skip. 공개 배포 디스클레이머.
@@ -19,7 +68,7 @@
 
 ### Added
 
-- **ktx-booking** 스킬 신설 (PoC v0.1.0) — KTX 열차 검색·예약(SPEC-KTX-BOOKING-001).
+- **train-ktx** 스킬 신설 (PoC v0.1.0) — KTX 열차 검색·예약(SPEC-KTX-BOOKING-001).
   - 범위: **검색 + 예약까지**(결제·취소는 사용자가 직접). 취소·매크로는 영구 비목표.
   - 서브커맨드 `search` / `reserve` / `reservations`. `reserve` 는 `--confirm` 코드
     게이트로 강제(SAFE-1) — 플래그 없으면 미리보기만, 실제 예약 호출 0.

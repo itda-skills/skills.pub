@@ -1,0 +1,8 @@
+# train-srt 의존성 (SPEC-SRT-BOOKING-001)
+#
+# SR(수서고속철) 예약은 SRTrain(비공식 SR 클라이언트)을 사용합니다.
+# SR 측 변경으로 동작이 멈출 수 있습니다(어댑터가 fail-loud 안내).
+#
+# 설치 예: uv pip install --system SRTrain
+
+SRTrain>=2.0

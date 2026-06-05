@@ -1,0 +1,15 @@
+# flight-search 의존성 (SPEC-FLIGHT-SEARCH-001)
+#
+# 항공권 검색은 Google Flights 공개 검색 표면을 fast-flights 로 조회합니다
+# (로그인·API key·결제·CAPTCHA 우회 없음 — 공개 표면만). Google 측 HTML/프론트
+# 구조 변경 시 파싱이 깨질 수 있으며, 어댑터(flights_adapter.py)가 fail-loud 로
+# 안내합니다.
+#
+# 직접 조회(fetch_mode=common)는 primp(Rust TLS impersonation)로 수행되어 추가
+# 브라우저가 필요 없습니다. 차단 시에만 fallback(외부 fetch 서버) 로 폴백합니다.
+# local 모드(playwright)는 사용하지 않습니다.
+#
+# 설치 예: uv pip install --system fast-flights
+#   (의존성: primp, protobuf, selectolax — 모두 휠 제공, 컴파일 불필요)
+
+fast-flights==2.2

@@ -1,7 +1,7 @@
 {
   "name": "itda-travel",
-  "description": "여행 스킬팩 — KTX·SRT 열차 검색·예약과 여행지 유행 맛집 탐지",
-  "version": "8.2.0",
+  "description": "여행 스킬팩 — KTX·SRT 열차 검색·예약, 항공권 검색·최저가 비교, 여행지 유행 맛집 탐지, 카카오맵 근처 장소 찾기",
+  "version": "8.3.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
@@ -35,6 +35,20 @@
     "trend",
     "restaurant",
     "naver-datalab",
-    "searchad"
+    "searchad",
+    "항공권",
+    "항공편",
+    "최저가",
+    "flight",
+    "airfare",
+    "google-flights",
+    "fast-flights",
+    "place-finder",
+    "장소",
+    "근처",
+    "카카오맵",
+    "kakao",
+    "nearby",
+    "place"
   ]
 }
