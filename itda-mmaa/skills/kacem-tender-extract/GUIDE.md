@@ -2,102 +2,70 @@
 title: "kacem-tender-extract 활용 가이드"
 ---
 
-## 빠른 시작
+# kacem-tender-extract 사용 가이드
 
-군인공제회 공고 첨부 파일(hwp·hwpx·pdf)에서 사업개요와 사업비를 뽑아 표·JSON으로 정리하는 가장 간단한 방법입니다.
+군인공제회 모집공고 첨부 파일(hwp·hwpx·pdf)에서 사업개요와 사업비를 추출해 표·JSON으로 정리합니다.
+**Claude에게 말로 부탁하면 됩니다** — "이 공고 사업비 정리해줘", "발주처랑 공급가액 뽑아줘"처럼요.
 
-```
-공고 사업비랑 사업개요 정리해줘
-```
+---
 
-```
-이 hwp에서 발주처랑 공급가액 뽑아줘
-```
+## 자주 쓰는 요청
 
-```
-공고 요약을 표로 정리해줘
-```
+| 하고 싶은 것 | 이렇게 말하세요 |
+|---|---|
+| 공고 파일 전체 정리 | "이 hwpx에서 사업개요랑 사업비 표로 뽑아줘" |
+| 특정 항목만 추출 | "이 공고에서 발주처랑 공급가액만 뽑아줘" |
+| 여러 파일 한 번에 | "이 폴더 안에 있는 공고 파일 전부 정리해줘" |
+| CSV도 함께 저장 | "표 정리하고 CSV 파일도 같이 만들어줘" |
+| 요약만 확인 | "공고 요약을 표로 보여줘" |
 
-이렇게 말하면 스크립트가 텍스트를 결정적으로 추출하고, Claude가 항목을 식별·구조화한 뒤, 최종적으로 Markdown 표 + JSON으로 정리합니다.
+---
 
-## 활용 시나리오
+## 어떻게 동작하나요
 
-이 스킬은 세 단계(extract → Claude 구조화 → render)로 동작합니다.
+세 단계를 순서대로 진행합니다.
 
-### 1단계: 텍스트 추출 (extract)
+**1단계 — 텍스트 추출**: hwp·hwpx·pdf 파일에서 텍스트를 결정론적으로(일관되게) 뽑아냅니다. 단일 파일도, 폴더 전체도 처리합니다.
 
-hwp/hwpx/pdf에서 텍스트를 추출합니다. 단일 파일은 stdout으로 출력하고, 디렉토리를 주면 일괄 처리합니다.
+**2단계 — 항목 구조화**: Claude가 추출된 텍스트를 읽고 사업명·발주처·사업기간·공급가액·부가세·합계 등을 정리합니다. 정리가 끝나면 저장 방식을 확인합니다.
+- **그대로 저장(권장)**: 요약 표(Markdown)와 구조화 데이터(JSON)를 저장합니다.
+- **CSV 추가**: 위 두 파일에 CSV 파일도 함께 만듭니다.
+- **종료**: 저장하지 않습니다.
 
-```bash
-# 단일 파일 — stdout으로 출력
-python3 scripts/main.py extract ./모집공고.hwpx
+**3단계 — 최종 저장**: 확인한 내용대로 파일을 지정 폴더에 저장합니다.
 
-# 단일 파일 — 파일로 저장
-python3 scripts/main.py extract ./모집공고.hwpx --output ./extracted.md
+---
 
-# 수집 스킬 출력 디렉토리 일괄 처리 (_index.json 기준)
-python3 scripts/main.py extract ./mmaa-2026-04/
+## 저장 결과물
 
-# 파일 타입을 직접 지정 (자동 감지 무시)
-python3 scripts/main.py extract ./공고파일 --doc hwp
-
-# Windows
-py -3 scripts/main.py extract ./모집공고.hwpx
-```
-
-### 2단계: Claude가 항목 구조화
-
-Claude가 추출된 텍스트를 읽고 `summary.json` 스키마(`overview`·`budget` 등)로 정리합니다. 이후 AskUserQuestion으로 Stage C 컨펌을 받습니다: 그대로 저장 / CSV 추가 / 종료.
-
-### 3단계: 렌더링 (render)
-
-Claude가 만든 `summary.json`을 검증한 뒤 최종 파일로 저장합니다. `--output-dir`는 필수입니다.
-
-```bash
-python3 scripts/main.py render ./summary.json \
-  --post-id 12345 \
-  --title "홍은동 감리자 모집" \
-  --output-dir ./results/12345_홍은동
-
-# CSV 포함
-python3 scripts/main.py render ./summary.json \
-  --post-id 12345 \
-  --title "홍은동 감리자 모집" \
-  --output-dir ./results/12345_홍은동 \
-  --include-csv
-```
-
-### 스키마 검증만 (validate)
-
-CI·디버깅용으로 `summary.json`이 스키마에 맞는지만 확인합니다(통과 시 exit 0, 실패 시 exit 1).
-
-```bash
-python3 scripts/main.py validate ./summary.json
-```
-
-## 출력 옵션
-
-| 서브커맨드 | 주요 인자/옵션 | 설명 |
-|------|------|------|
-| `extract <input>` | `--output`, `--doc {hwp,hwpx,pdf}` | 파일/디렉토리에서 텍스트 추출. `--output` 미지정 시 stdout |
-| `render <summary.json>` | `--post-id`, `--title`, `--output-dir`(필수), `--include-csv` | summary.json을 md/json/(csv)로 렌더링 |
-| `validate <summary.json>` | (없음) | 스키마 검증, exit 0/1 |
-| (글로벌) | `--no-confirm`, `-v / --verbose` | Stage C 컨펌 자동 승인(noop) / 상세 로그 |
-
-산출물 구조는 다음과 같습니다.
+공고 하나를 처리하면 아래 구조로 파일이 생깁니다.
 
 ```
-{output_dir}/{글번호}_{제목slug}/
+{저장폴더}/{글번호}_{제목}/
 ├── summary.md      # Markdown 표 (사업개요 + 사업비)
 ├── summary.json    # 구조화 데이터
-└── summary.csv     # (선택, --include-csv 또는 Stage C 선택 시)
+└── summary.csv     # (CSV 추가를 선택한 경우)
 ```
 
-## 팁
+---
 
-- **사전 준비 (PDF)**: PDF 추출은 `pdftotext`(poppler-utils)를 1차로 시도하고 미설치 시 `pdfplumber`로 폴백합니다. `apt install poppler-utils`(Debian/Ubuntu) 또는 `brew install poppler`(macOS)로 설치하면 빠릅니다.
-- **사전 준비 (hwp/hwpx)**: hwp/hwpx 변환에는 hwpx 바이너리가 필수입니다. `itda-work/skills/hwpx` 스킬을 쓰거나 PATH에 hwpx를 설치하세요. 없으면 `HwpxNotFoundError`로 설치 안내가 출력됩니다.
-- **Python 패키지**: `uv pip install --system -r requirements.txt`로 폴백용 의존성(pdfplumber)을 설치합니다.
-- **파일타입 감지**: 확장자를 우선 사용하고, 불명확하면 magic byte로 감지합니다(hwpx=ZIP PK + mimetype, hwp=OLE compound, pdf=`%PDF-`). 자동 감지를 무시하려면 `--doc`로 직접 지정하세요.
-- **데이터 경로 정책**: 최종 결과는 `--output-dir` 또는 입력 디렉토리에만 저장하며 `.itda-skills/` 내부에는 저장하지 않습니다.
-- **이전 단계 연결**: `kacem-tender-fetch`가 식별한 `core_document` 파일을 이 스킬의 입력으로 사용하면 수집부터 정리까지 이어집니다.
+## kacem-tender-fetch와 함께 쓰기
+
+`kacem-tender-fetch` 스킬로 군인공제회 게시판에서 공고 파일을 먼저 받아두면, 이 스킬이 그 파일을 바로 읽어 처리합니다. "공고 받아서 사업비 정리까지 해줘"처럼 말하면 두 스킬이 이어서 동작합니다.
+
+---
+
+## 안 될 때
+
+| 증상 | 원인 / 해결 |
+|---|---|
+| hwpx 파일을 읽지 못한다는 안내 (`HwpxNotFoundError`) | hwpx 변환 도구가 없습니다. `itda-work/skills/hwpx` 스킬 설치를 확인하거나 Claude에게 "hwpx 설치해줘"라고 말하세요 |
+| PDF에서 텍스트가 안 나온다는 안내 (`PdfExtractError`) | PDF 추출 도구가 없습니다. 필요한 패키지는 실행 환경이 준비합니다 — Claude에게 안내를 받으세요 |
+| 스키마 오류 안내 (`SchemaValidationError`) | 생성된 JSON 구조에 문제가 있습니다. 해당 필드 오류 내용을 Claude에게 그대로 전달하면 수정해드립니다 |
+| 텍스트가 비어 있다는 안내 | 스캔 이미지 PDF거나 보호된 파일일 수 있습니다. 다른 파일로 시도하거나 Claude에게 파일 상태를 알려주세요 |
+
+---
+
+## 파일 형식 자동 인식
+
+hwpx·hwp·pdf 파일은 확장자와 파일 내부 정보를 모두 보고 자동으로 형식을 판별합니다. 따로 파일 종류를 지정하지 않아도 됩니다.

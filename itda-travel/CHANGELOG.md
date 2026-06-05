@@ -5,6 +5,35 @@
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-06-05
+
+### Added
+
+- **srt-booking** 스킬 신설 (PoC v0.1.0) — SRT(수서고속철) 검색·예약(SPEC-SRT-BOOKING-001).
+  - ktx-booking 자매 스킬. SRTrain(비공식 SR 클라이언트) 어댑터(지연 import·예외 변환·마스킹).
+  - `search` / `reserve` / `reservations`. `reserve` 는 `--confirm` 코드 게이트(SAFE-1).
+  - 자격증명 `SRT_USER_ID`/`SRT_PASSWORD`. SR 역명 정규화(KTX 전용역 SRT 미정차 안내).
+  - 결제·취소 비목표(ktx와 동일). 단위 25 passed/0 skip. 공개 배포 디스클레이머.
+
+## [0.2.0] — 2026-06-05
+
+### Added
+
+- **ktx-booking** 스킬 신설 (PoC v0.1.0) — KTX 열차 검색·예약(SPEC-KTX-BOOKING-001).
+  - 범위: **검색 + 예약까지**(결제·취소는 사용자가 직접). 취소·매크로는 영구 비목표.
+  - 서브커맨드 `search` / `reserve` / `reservations`. `reserve` 는 `--confirm` 코드
+    게이트로 강제(SAFE-1) — 플래그 없으면 미리보기만, 실제 예약 호출 0.
+  - 코레일 비공식 API(korail2 계열) 어댑터 — 안티봇/로그인/매진/결과없음을 사람이
+    읽을 우리 예외로 변환(fail-loud, SAFE-4). 자격증명 `KORAIL_ID`/`KORAIL_PW`
+    (env_loader 재사용·마스킹, SAFE-3). 역명 정규화 + SRT 전용역 안내(REQ-009).
+  - 공개 배포 디스클레이머: 비공식 API·코레일 ToS·자기책임·매크로 금지(REQ-012).
+
+### Changed
+
+- itda-travel thesis 재정의: "맛집 트렌드 탐지 스킬팩" → **"여행 스킬팩"**(열차
+  예약 + 맛집 트렌드). plugin.json description·keywords 확장. eatery-trend는 변경
+  없이 한 슬라이스로 존속.
+
 ## [0.1.0] — 2026-06-01
 
 ### Added

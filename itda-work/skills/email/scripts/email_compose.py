@@ -55,6 +55,8 @@ def build_mime_message(
     body_html: str = "",
     attachments: list[str] | None = None,
     message_id: str | None = None,
+    in_reply_to: str | None = None,
+    references: str | None = None,
 ) -> MIMEMultipart | MIMEText:
     """MIME 메시지를 조립하여 반환한다.
 
@@ -95,6 +97,12 @@ def build_mime_message(
     msg["Subject"] = subject
     msg["Date"] = formatdate(localtime=False)
     msg["Message-ID"] = msg_id
+    # 회신 스레드 헤더 (SPEC-EMAIL-REPLY-CONTEXT-001): 받는 클라이언트가 같은
+    # 대화로 묶도록 함. reply_context.py 출력의 reply_headers를 그대로 넘긴다.
+    if in_reply_to:
+        msg["In-Reply-To"] = in_reply_to
+    if references:
+        msg["References"] = references
     if cc:
         msg["Cc"] = cc
     # BCC는 헤더에 포함하지 않고 SMTP sendmail 인자로만 사용됨

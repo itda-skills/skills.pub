@@ -1,5 +1,35 @@
 # Changelog — itda-email
 
+## [0.24.0] — 2026-06-02 (SPEC-EMAIL-REPLY-CONTEXT-001)
+
+### New Features
+
+- **`reply_context.py` 신규 — 회신용 컨텍스트 결정론 수집**: 대상 메일 1건(UID)을 주면 코드가 스레드 재구성(References 정/역참조, INBOX+Sent 교차) + 발신자 히스토리(FROM) + 결정론 스코어링·시간순·budget을 수행해 회신용 컨텍스트 묶음 JSON을 반환. **중복 내용 판단은 LLM 책임**(코드는 수집만). 영속 저장 없음, stdlib only.
+  - 탐색(IMAP IO)은 토큰 0, Claude가 읽는 출력만 `--max-chars-total` budget으로 제한
+  - HTML 본문은 `_strip_tags` 평문화로 토큰 절감 (raw HTML 태그가 budget 잠식 방지)
+  - 출력: `target` / `thread`(시간순·평문 본문) / `related`(스코어·사유) / `reply_headers`(In-Reply-To·References) / `budget` / `stats`
+- **`read_email.py` 스레딩 헤더 노출**: 출력에 `message_id`/`in_reply_to`/`references` 추가(메타조회·본문 모두). `_HEADER_FIELDS`에 MESSAGE-ID/IN-REPLY-TO/REFERENCES 페치 편입
+- **`send_email.py` 회신 스레드 헤더**: `--in-reply-to`/`--references` 플래그 — 받는 클라이언트가 같은 대화로 묶도록 헤더 세팅(reply_context 출력 `reply_headers`와 연결). `email_compose.build_mime_message`도 동일 파라미터 지원(하위호환)
+
+### Phase 0 라이브 검증 (네이버·iCloud 실계정)
+
+- 스레드 역참조 `HEADER REFERENCES`/`IN-REPLY-TO` SEARCH: iCloud OK(hits 4/1), 네이버 문법 OK → **채택**
+- 비ASCII(한국어) SUBJECT SEARCH: 양 서버 `BAD`(parse error) → 제목 IMAP 검색 폐기, 후보 내 로컬 계산
+- FROM 발신자 히스토리: 양 서버 OK(hits 6/82) → 관련메일 주력
+- Sent 폴더: `\Sent` SPECIAL-USE 플래그로 탐지(이름 추측 대신)
+
+### Tests
+
+- 신규 단위 25개 (`test_reply_context.py` 23: 정규화·스코어링·budget·정렬 / `test_email_compose.py` 2: 회신 헤더)
+- 라이브: iCloud 실제 스레드(안미현 DART 대화 8건) INBOX+Sent 교차 재구성·평문화·`reply_headers` RFC 정합 확인
+- 누적: 564 → 589 passed / 0 failed / 0 skipped
+
+### Behavior Contracts
+
+- `reply_context.py`는 영속 파일을 만들지 않는다 (수집 → stdout → 종료)
+- 코드는 중복 dedup을 하지 않는다 — 시간순 묶음을 LLM에 넘겨 중복 판단 위임 (HTML·interleaved·편집된 인용은 코드 휴리스틱의 천장)
+- read_email/send_email 변경은 하위호환 (신규 키·플래그 추가, 회귀 0)
+
 ## [0.23.0] — 2026-05-27 (SPEC-EMAIL-MULTIPART-001)
 
 ### Bug Fixes

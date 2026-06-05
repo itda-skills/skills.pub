@@ -9,15 +9,21 @@ allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "5.0.4"
+  version: "6.0.0"
   created_at: "2026-03-18"
-  updated_at: "2026-05-22"
+  updated_at: "2026-06-04"
   tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, lightpanda, dynamic, javascript, headless, spa"
 ---
 
 # web-reader
 
 웹페이지를 깔끔한 Markdown 또는 JSON으로 변환한다. 한국 웹사이트(EUC-KR/CP949), 쿠키 인증 정적 페이지, JavaScript 동적 페이지(Lightpanda 백엔드)에 최적화된 페치 전용 스킬.
+
+> **v6.0.0 안내**: 정적 HTTP fetch 백엔드가 `curl_cffi` 단일 경로로 전환되었습니다. 기본 TLS
+> impersonation은 `safari`이며, 첫 응답을 HTTP 200만으로 성공 처리하지 않고 challenge marker,
+> known bad size, cookie sensor, optional success selector 검증을 통과한 뒤 반환합니다. WAF/챌린지로
+> 보이면 `TLS impersonate × URL transform × Referer` 격자를 제한된 횟수로 자동 시도합니다.
+> 인코딩 감지, SSRF 방지, cross-domain 쿠키 scoping, 50MB 제한은 기존과 동일하게 유지됩니다.
 
 > **v5.0.0 안내**: 동적 fetch가 `--dynamic-only` 플래그로 부활했습니다. 백엔드는 **Lightpanda**
 > (Zig+V8 단일 바이너리, ~65–135MB, 24MB 메모리, 100ms 부팅). LIGHTEN(v3.0.0)에서 Playwright/Chromium의
@@ -39,7 +45,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
 # powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 
 # 필수 의존성 (Playwright/Chromium 불필요)
-uv pip install --system requests beautifulsoup4 markdownify
+uv pip install --system curl_cffi PyYAML beautifulsoup4 markdownify
 ```
 
 ## 추천 워크플로우 (Fetch → Extract)
@@ -151,11 +157,15 @@ python3 scripts/fetch_html.py --url "URL" --output page.html --no-verify
 ```
 CLI: fetch_html.py --url URL [--output FILE] [--timeout N] [--encoding CHARSET]
                    [--user-agent UA] [--header "Key: Value"] [--cookie "name=value"]
+                   [--impersonate TARGET] [--max-attempts N] [--trace]
                    [--no-verify] [--allow-private]
 
 Exit codes: 0=success, 1=network/HTTP error, 2=invalid args or SSRF
 SSRF 방지: http/https만 허용, private IP 차단, redirect 대상 검증
 응답 크기 제한: 50MB (Content-Length 및 chunked transfer 양쪽 적용)
+HTTP 백엔드: curl_cffi 단일 경로. 기본 --impersonate safari.
+차단 대응: challenge 검증 후에만 WAF 프로파일 기반 격자(TLS/URL/Referer)를 시도.
+--trace: 각 시도의 transform/impersonate/referer/verdict를 stderr JSON으로 출력.
 ```
 
 ### extract_content.py

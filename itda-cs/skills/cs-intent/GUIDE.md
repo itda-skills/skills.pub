@@ -36,15 +36,12 @@
 
 기대: `변경`. (내장 대신 사용자 목록 우선)
 
-### 예시 7 — 검증
-> 방금 출력을 scripts/validate_output.py로 검증해줘
+### 예시 7 — 출력 검증
+분류 결과를 저장한 뒤 Claude에게 말하세요.
 
-```bash
-# macOS/Linux
-python3 scripts/validate_output.py 결과.jsonl
-# Windows
-py -3 scripts/validate_output.py 결과.jsonl
-```
+> 방금 분류 출력을 스키마·인텐트 멤버십 기준으로 검증해줘
+
+---
 
 ## 팁
 
@@ -55,6 +52,8 @@ py -3 scripts/validate_output.py 결과.jsonl
 ## 운영 졸업 게이트 (PoC 탈출 전제)
 
 시연을 넘어 운영 분류기로 쓰려면 **IAA 측정 절차 선행**: 골드셋 100~200건 + 2인 이상 독립 라벨링 + Cohen κ/일치율. κ 낮은 인텐트군은 정의를 먼저 보강 후 재라벨. **측정 절차 없이 인텐트군을 늘리면 검증 불가능한 라벨만 쌓입니다.**
+
+IAA 측정은 같은 플러그인의 `iaa-builder` 스킬로 수행합니다. Claude에게 "cs-intent 분류 결과로 골드셋 만들어줘"라고 말하면 됩니다.
 
 ## 한계
 

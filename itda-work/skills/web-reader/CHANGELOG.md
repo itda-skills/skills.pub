@@ -1,5 +1,27 @@
 # Changelog — itda-web-reader
 
+## [6.0.0] — 2026-06-04
+
+### Breaking Changes
+
+- 정적 HTTP fetch 백엔드를 `requests`에서 `curl_cffi` 단일 경로로 전환했습니다.
+- 신규 필수 의존성: `curl_cffi>=0.11`, `PyYAML>=6.0`.
+
+### New Features
+
+- 기본 TLS impersonation을 `safari`로 설정했습니다. 기본 User-Agent도 impersonation family와 맞춰 자동 선택합니다.
+- challenge 검증 레이어를 추가했습니다: WAF marker, known bad size fingerprint, cookie sensor, optional success selector.
+- WAF 프로파일 감지와 격자 escalation을 추가했습니다. challenge/403/429 계열 응답에서만 `TLS impersonate × URL transform × Referer` 조합을 제한된 횟수로 시도합니다.
+- `fetch_html.py --impersonate`, `--max-attempts`, `--trace` 옵션을 추가했습니다. `--trace`는 시도별 transform/impersonate/referer/verdict를 stderr JSON으로 출력합니다.
+
+### Preserved
+
+- EUC-KR/CP949 포함 기존 bytes 기반 인코딩 감지 경로를 유지했습니다.
+- SSRF 방지와 redirect 대상 검증을 유지했습니다.
+- cross-domain redirect 시 원본 쿠키를 제거하는 수동 redirect scoping을 유지했습니다.
+- Content-Length 및 chunked transfer 양쪽의 50MB 응답 제한을 유지했습니다.
+
+
 ## [5.0.4] — 2026-05-22
 
 ### Improvements

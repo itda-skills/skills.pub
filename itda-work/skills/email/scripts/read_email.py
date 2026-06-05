@@ -39,6 +39,7 @@ DEFAULT_MAX_CHARS = 1500  # default body length for --max-chars (token-optimized
 # Used by --headers-only mode to fetch only required header fields, not the full RFC822 body.
 _HEADER_FIELDS = (
     "FROM SUBJECT DATE REPLY-TO TO CC AUTHENTICATION-RESULTS"
+    " MESSAGE-ID IN-REPLY-TO REFERENCES"
 )
 _HEADERS_ONLY_FETCH_SPEC = f"(BODY.PEEK[HEADER.FIELDS ({_HEADER_FIELDS})])"
 # Full message fetch via PEEK (does NOT mark \Seen flag, unlike RFC822).
@@ -538,6 +539,9 @@ def main() -> None:
                 "bcc": _decode_address_header(msg.get("Bcc", "")),
                 "subject": sanitize_for_llm(raw_subject, max_len=HEADER_FIELD_LIMIT),
                 "date": sanitize_for_llm(msg.get("Date", ""), max_len=100),
+                "message_id": sanitize_for_llm(msg.get("Message-ID", ""), max_len=400) or None,
+                "in_reply_to": sanitize_for_llm(msg.get("In-Reply-To", ""), max_len=400) or None,
+                "references": sanitize_for_llm(msg.get("References", ""), max_len=2000) or None,
                 "attachments": _extract_attachments(msg),
             }
             # Body keys present only when fetched (v0.21.0). Their absence is

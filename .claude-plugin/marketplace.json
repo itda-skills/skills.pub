@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.0.0",
+    "version": "8.1.0",
     "language": "ko"
   },
   "plugins": [
@@ -48,12 +48,17 @@
     {
       "name": "itda-travel",
       "source": "./itda-travel",
-      "description": "여행지·테마 유행 맛집 탐지 스킬팩 — 검색량 surge로 '지금 뜨는' 음식 트렌드 판별"
+      "description": "여행 스킬팩 — KTX·SRT 열차 검색·예약과 여행지 유행 맛집 탐지"
     },
     {
       "name": "itda-shopping",
       "source": "./itda-shopping",
       "description": "한국 리테일 쇼핑 정보 스킬팩 — 다이소 상품·재고·매장 조회"
+    },
+    {
+      "name": "itda-harness",
+      "source": "./itda-harness",
+      "description": "Claude Code 에이전트 팀·스킬을 설계하는 하네스 엔지니어링 메타 스킬팩 (revfactory/harness 기반)"
     }
   ]
 }

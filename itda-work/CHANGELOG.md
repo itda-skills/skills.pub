@@ -3,6 +3,21 @@
 이 파일은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [Unreleased]
+
+### Changed
+
+- **GUIDE.md 평이언어 정책 (SPEC-GUIDE-NO-SHELL-001)** — 전 플러그인 35개 `GUIDE.md`에서 셸 명령(`python3`·`pip`·`<name>.py`)·CLI 플래그를 자연어로 일괄 전환. GUIDE 는 일반 사용자 문서이며 사용자는 Claude 에게 자연어로 요청하지 터미널을 다루지 않는다 ([3.4.0] README/docs CLI 노출 금지 정책의 GUIDE 확장). 자격증명 설정값만 `dotenv` 블록으로 유지. calendar GUIDE 는 네이버 캘린더를 첫 번째로 재배치하고 지원 캘린더(네이버·iCloud·커스텀 CalDAV) 서비스 링크 표를 서두에 추가.
+
+### Added
+
+- **GUIDE 셸 명령 금지 강제 (코드 게이트)** — lint `shared/scripts/check_guide_no_shell.py` + 실저장소 전수 pytest `shared/tests/test_check_guide_no_shell.py`(release.yml CI `OS_NEUTRAL_DIRS` 에 `shared/tests` 편입 — 기존 check_* pytest 도 CI 자동 검증으로 승격) + justfile `check-guide` 타겟 + 작성 원칙 rule `.claude/rules/itda/skills/guide-authoring.md`.
+- **`guide-writer` v0.11.0** — 재발 방지 근본 수정. reference 3종(interview-heavy·media-generation·utility-tool) 을 자연어화본으로 동기화하고, SKILL.md REQ-GW-014/025 규칙을 "셸 명령·CLI 플래그 금지, 자연어 우선" 으로 전환. 자동 생성 시 셸 명령 재유입 차단.
+
+### Removed
+
+- **nano-banana 좀비 사슬 제거** — `scripts/sync_models.py`(itda-nano-banana 전용 Gemini 모델 동기화 CLI, 코드 참조 0·CI/마켓플레이스 미노출) + 테스트, `.claude/skills/itda/update-skill-nano-banana.md`, `.claude/rules/itda/skills/nano-banana-{guide,models}.md`. itda-nano-banana 스킬 본체는 이미 부재 상태로 갱신 부속물만 잔존하던 것을 묶음 폐기 (zombie 방지 — 자동화 사슬 동반 정리).
+
 ## [3.4.0] — 2026-05-21
 
 ### Removed

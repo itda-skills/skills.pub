@@ -249,6 +249,10 @@ def main() -> None:
     parser.add_argument("--body", required=True)
     parser.add_argument("--cc", default="")
     parser.add_argument("--bcc", default="")
+    parser.add_argument("--in-reply-to", dest="in_reply_to", default=None,
+                        help="회신 대상 Message-ID (reply_context.py의 reply_headers.in_reply_to)")
+    parser.add_argument("--references", default=None,
+                        help="회신 References 체인 (reply_context.py의 reply_headers.references)")
     parser.add_argument("--account", default=None)
     parser.add_argument("--html", action="store_true")
     parser.add_argument("--attach", action="append", default=[], metavar="FILE")
@@ -322,6 +326,12 @@ def main() -> None:
     msg["Subject"] = args.subject
     msg["Date"] = formatdate(localtime=False)
     msg["Message-ID"] = f"<{uuid.uuid4()}@itda-email>"
+    # 회신 스레드 헤더 (SPEC-EMAIL-REPLY-CONTEXT-001): 받는 클라이언트가 같은
+    # 대화로 묶도록 한다. reply_context.py 출력의 reply_headers를 그대로 넘긴다.
+    if args.in_reply_to:
+        msg["In-Reply-To"] = args.in_reply_to
+    if args.references:
+        msg["References"] = args.references
     if args.cc:
         msg["Cc"] = args.cc
 

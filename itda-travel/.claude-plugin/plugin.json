@@ -1,7 +1,7 @@
 {
   "name": "itda-travel",
-  "description": "여행지·테마 유행 맛집 탐지 스킬팩 — 검색량 surge로 '지금 뜨는' 음식 트렌드 판별",
-  "version": "8.0.0",
+  "description": "여행 스킬팩 — KTX·SRT 열차 검색·예약과 여행지 유행 맛집 탐지",
+  "version": "8.1.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
@@ -11,6 +11,18 @@
   "license": "MIT",
   "keywords": [
     "여행",
+    "travel",
+    "KTX",
+    "코레일",
+    "korail",
+    "SRT",
+    "srail",
+    "수서고속철",
+    "열차",
+    "기차표",
+    "예약",
+    "train",
+    "booking",
     "맛집",
     "유행",
     "트렌드",
@@ -19,7 +31,6 @@
     "음식트렌드",
     "검색량",
     "surge",
-    "travel",
     "eatery",
     "trend",
     "restaurant",

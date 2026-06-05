@@ -2,17 +2,17 @@
 name: email
 description: >
   네이버·Gmail·다음/카카오·아이클라우드·커스텀 SMTP/IMAP에서 멀티 계정으로 메일을 보내고 받는 스킬입니다.
-  "메일 보내줘", "받은편지함 확인해줘", "아이클라우드 메일 읽어줘"처럼 말하면 됩니다.
-  피싱 감지(SPF/DKIM/DMARC)와 증분 페치를 내장합니다.
+  "메일 보내줘", "받은편지함 확인해줘", "아이클라우드 메일 읽어줘", "이 메일에 회신하게 맥락 모아줘"처럼 말하면 됩니다.
+  피싱 감지(SPF/DKIM/DMARC)와 증분 페치를 내장하고, 회신 시 스레드·관련 메일 맥락을 결정론적으로 모아 줍니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+. No external dependencies."
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.23.0"
+  version: "0.24.0"
   created_at: "2026-03-18"
-  updated_at: "2026-05-27"
-  tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html"
+  updated_at: "2026-06-02"
+  tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references"
 ---
 
 # email
@@ -88,6 +88,7 @@ Arguments:
 - `--to`: 수신자 (필수). 쉼표로 복수 수신자 가능 (`"a@x.com,b@x.com"`)
 - `--subject` / `--body`: 제목 / 본문 (필수)
 - `--cc` / `--bcc`: 참조 / 숨은참조 (선택, bcc는 헤더 미포함)
+- `--in-reply-to` / `--references`: 회신 스레드 헤더 (선택). `reply_context.py` 출력의 `reply_headers`를 그대로 넘기면 받는 클라이언트가 같은 대화로 묶는다
 - `--html`: HTML 전송 (플래그)
 - `--attach FILE`: 첨부 (복수 지정 가능)
 - `--force-587`: 465 SMTPS 건너뛰고 587 STARTTLS 직접 사용. 응답 `transport: "starttls_587_forced"`
@@ -180,6 +181,7 @@ Output: 메시지 JSON 배열.
 |-------|------|-------------|
 | `id` | string | IMAP sequence number |
 | `from` / `subject` / `date` | string | sanitize 처리됨 |
+| `message_id` / `in_reply_to` / `references` | string\|null | 스레딩 헤더(RFC 5322). `reply_context.py`가 스레드 재구성에 사용 |
 | `to` / `cc` / `bcc` | array | `[{"name":"…","addr":"…"}]` dict list. 빈 헤더는 `[]`. RFC 2047 디코딩됨 |
 | `attachments` | array | `[{"filename","content_type","size_bytes","content_id"}]`. 첨부 없으면 `[]`. inline은 `content_id` 채움 |
 | `body` | string | 본문(sanitize+wrap). **`--body`/`--max-chars` 시에만 존재**. multipart/alternative는 HTML 우선(`--prefer-text`로 opt-out), `Content-Disposition: attachment` 파트는 본문 후보에서 제외 |
@@ -215,6 +217,38 @@ Output: 메시지 JSON 배열.
 - `new_count`: 이번 반환 건수
 
 `--since-last-run` 없으면 기존 평면 배열 반환(하위호환).
+
+### Reply Context — 회신 컨텍스트 수집
+
+회신을 쓰기 전, 코드가 결정론적으로 **관련 이메일을 수집**해 토큰 효율적인 컨텍스트 묶음을 만든다. 대상 메일 1건(UID)만 주면 된다.
+
+```bash
+python3 scripts/reply_context.py --provider icloud --uid 33027
+python3 scripts/reply_context.py --provider naver --uid 1234 --max-chars-total 8000 --top-n 5
+# Windows: py -3 scripts/reply_context.py --provider naver --uid 1234
+```
+
+Arguments:
+- `--provider` / `--account`: 다른 스크립트와 동일
+- `--uid`: 회신 대상 메일 UID (필수)
+- `--folder`: 대상 메일이 있는 폴더 (기본 `INBOX`)
+- `--top-n`: 관련 메일 최대 수 (기본 5)
+- `--max-chars-total`: 출력 본문 budget (기본 8000자)
+
+**수집 내용** (전부 결정론, LLM 0):
+- **스레드 재구성**: `References`/`In-Reply-To` 정참조 + `HEADER REFERENCES` 역참조 SEARCH, **INBOX+Sent 교차**(내 답장은 Sent에 있음), 시간순 정렬
+- **관련 메일**: 발신자 `FROM` 히스토리 + 제목 유사(로컬 계산) 스코어링 → top-N
+- **reply_headers**: 회신 발송용 `In-Reply-To`/`References` (RFC 5322)
+
+출력 JSON: `target` / `thread`(시간순·평문 본문) / `related`(score·reason) / `reply_headers` / `budget` / `stats`. 본문 HTML은 평문화되고 sanitize+마커 래핑된다.
+
+#### Claude 회신 워크플로우
+
+1. 회신 대상 식별 → `reply_context.py`로 묶음 1건 수집
+2. **묶음을 읽고 중복 인용을 판단**하며 회신 초안 작성 — 코드는 중복 제거를 하지 않는다(시간순 raw 묶음). 누적 인용·중복은 Claude가 가려낸다
+3. `send_email.py --in-reply-to "<reply_headers.in_reply_to>" --references "<reply_headers.references>"`로 스레드에 꽂아 발송 (또는 `save_draft.py`로 초안 검토 후 발송)
+
+> **토큰 전략**: 탐색(IMAP IO)은 토큰 0, Claude가 읽는 건 budget 내 묶음 하나뿐. `read_email.py`를 여러 번 호출해 본문을 쌓는 방식 대비 토큰을 크게 절감한다.
 
 ### List Folders
 
@@ -313,6 +347,7 @@ Custom provider도 동일 패턴 (`SMTP_HOST_COMPANY` 등 + `--account company`)
 - 아이클라우드 메일 읽어줘·보내줘, iCloud 메일 확인, 아이클라우드 이메일 설정
 - 메일 폴더 목록, 폴더 이름 알려줘
 - 임시보관함 저장/조회/발송
+- 회신 컨텍스트 모아줘, 답장 맥락, 이 메일 스레드 보고 회신, 관련 메일 모아줘, reply context
 - 이메일 연결 테스트, SMTP 테스트
 - send/compose/write email, read inbox, check email, list mail folders, test email connection
 

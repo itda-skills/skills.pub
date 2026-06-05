@@ -407,27 +407,28 @@ def _rewrite_url(url: str, strategy: str) -> str:
 # ---------------------------------------------------------------------------
 # HTTP fetch
 # ---------------------------------------------------------------------------
-_CHROME_UA = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36"
+_SAFARI_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+    "Version/17.0 Safari/605.1.15"
 )
 
 
 def _fetch(url: str) -> str | None:
     """Fetch URL and return decoded HTML string, or None on failure."""
     try:
-        import requests
+        from curl_cffi import requests as cffi
     except ImportError:
-        print("  [skip] requests library not installed", file=sys.stderr)
+        print("  [skip] curl_cffi library not installed", file=sys.stderr)
         return None
 
     try:
-        resp = requests.get(
+        resp = cffi.get(
             url,
             timeout=10,
             allow_redirects=True,
-            headers={"User-Agent": _CHROME_UA},
+            impersonate="safari",
+            headers={"User-Agent": _SAFARI_UA},
         )
         resp.raise_for_status()
     except Exception as exc:
