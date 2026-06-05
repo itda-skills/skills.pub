@@ -2,19 +2,20 @@
 name: dart
 description: >
   금융감독원 DART 전자공시 API로 기업 정보를 수집하는 스킬입니다.
-  "삼성전자 재무제표 조회해줘", "경쟁사 직원수 알려줘", "사업보고서 비교해줘"처럼 말하면 됩니다.
-  기업 프로필·재무·인력·사업보고서·공시 목록을 반환합니다.
+  "삼성전자 재무제표 조회해줘", "경쟁사 직원수 알려줘", "사업보고서 비교해줘",
+  "네이버 배당 현황", "셀트리온 소송 이력"처럼 말하면 됩니다.
+  기업 프로필·재무·인력·사업보고서·공시 목록에 더해 배당·증자·소송·전환사채 등 주요사항도 반환합니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
 user-invocable: true
-argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare] [--name 회사명] [--corp-code 코드] [--year 연도] [--report annual|q1|q2|q3] [--prefer annual|latest] [--detail] [--unit auto|million|eok|jo] [--with-ratios] [--with-prior] [--format json|table|csv]"
+argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare|raw] [--name 회사명] [--corp-code 코드] [--year 연도] [--report annual|q1|q2|q3] [--prefer annual|latest] [--detail] [--unit auto|million|eok|jo] [--with-ratios] [--with-prior] [--endpoint 엔드포인트] [--param key=value] [--format json|table|csv]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.16.0"
+  version: "0.17.0"
   created_at: "2026-03-29"
-  updated_at: "2026-05-29"
+  updated_at: "2026-06-05"
   tags: "DART, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
 ---
 
@@ -137,6 +138,12 @@ python3 scripts/collect_company.py --format table disclosure --corp-code 0012638
 py -3 scripts/collect_company.py disclosure --corp-code 00126380 --bgn 20240101 --end 20241231
 ```
 
+> **`--type`(pblntf_ty) 공시유형 코드:** A=정기공시, B=주요사항보고, C=발행공시, D=지분공시,
+> E=기타공시, F=외부감사관련, G=펀드공시, H=자산유동화, I=거래소공시, J=공정위공시. 미지정 시 전체 조회.
+>
+> **gotcha:** DART `list.json`은 `corp_name`(회사명)을 **요청 파라미터로 받지 않습니다**(응답에만 존재).
+> 회사명으로 특정 기업 공시를 좁히려면 `--corp-code`(8자리 고유번호)를 먼저 확보하세요(`search`/`profile`).
+
 ### 사업보고서 텍스트 (business) — 신규
 
 ```bash
@@ -152,6 +159,29 @@ python3 scripts/collect_company.py business --corp-code 00126380
 # 출력 길이 제한
 python3 scripts/collect_company.py business --rcept-no 20240401000123 --max-chars 2000
 ```
+
+### 미구현 엔드포인트 직접 호출 (raw) — 신규 (v0.17.0)
+
+`references/`에 명세는 있으나 전용 서브커맨드가 없는 80여 개 엔드포인트(배당·소송·전환사채·증자·해외상장 등)를
+직접 호출합니다. **JSON 원문만 반환** — 단위변환·CSV·출처링크는 미보장입니다(가공이 필요하면 `finance`/`compare` 사용).
+
+```bash
+# 배당에 관한 사항 (alotMatter)
+python3 scripts/collect_company.py raw --endpoint alotMatter \
+  --param corp_code=00126380 --param bsns_year=2023 --param reprt_code=11011
+
+# 소송 등의 제기 (lwstLg) — 기간 필요
+python3 scripts/collect_company.py raw --endpoint lwstLg \
+  --param corp_code=00126380 --param bgn_de=20240101 --param end_de=20241231
+
+# 전환사채 발행결정 (cvbdIsDecsn)
+python3 scripts/collect_company.py raw --endpoint cvbdIsDecsn \
+  --param corp_code=00126380 --param bgn_de=20200101 --param end_de=20241231
+```
+
+> `--endpoint`는 영숫자만 허용합니다(경로·URL·쿼리 주입 차단). `crtfc_key`는 자동 주입됩니다.
+> 엔드포인트 이름·파라미터는 [references/dart.md](references/dart.md)의 disambiguation 표와 각 분류 가이드를 참고하세요.
+> status `013`(데이터 없음)은 에러가 아니라 빈 결과로 반환됩니다.
 
 ### 재무제표 자동 폴백 (finance) — 갱신
 
@@ -274,7 +304,9 @@ python3 scripts/collect_company.py --format csv \
 | `--unit` | 금액 단위 (compare): `auto`(>=1조 jo, >=1억 eok, 미만 million) / `million` / `eok` / `jo` | `auto` |
 | `--with-ratios` | 영업이익률·순이익률 행 추가 (compare, 매출액 기준) | OFF |
 | `--with-prior` | 전기(frmtrm_amount) 열/필드 추가 (compare). `--with-ratios` 병행 시 전기 대비 증감률 추가 | OFF |
-| `--format` | `json` / `table` / `csv` | `json` |
+| `--endpoint` | DART 엔드포인트 이름 (raw 전용, 영숫자) | — |
+| `--param` | 쿼리 파라미터 `key=value` (raw 전용, 반복 가능). `crtfc_key` 자동 주입 | — |
+| `--format` | `json` / `table` / `csv` (raw는 json 전용) | `json` |
 | `--api-key` | DART API 키 (CLI 직접 전달) | 환경변수 |
 
 ## 출력 형식
@@ -282,6 +314,29 @@ python3 scripts/collect_company.py --format csv \
 - `--format json` (기본): 구조화된 JSON 출력
 - `--format table`: 사람이 읽기 쉬운 테이블
 - `--format csv`: UTF-8 BOM CSV (엑셀 한글 호환, RFC 4180)
+
+## 응답 규칙 (모델 표현)
+
+스크립트는 JSON/table/CSV를 **출력**합니다. 그 위에서 사용자에게 답할 때의 표현 규칙입니다
+(단위 변환·status 분류는 이미 코드가 처리하므로 여기서 중복 기술하지 않습니다).
+
+- **요약 우선**: 정상 응답이어도 JSON 원문을 그대로 붙여넣지 말고 핵심만 요약합니다.
+  - `info`: 회사명·대표자·업종·주소·결산월
+  - `finance`·`compare`: 매출액·영업이익·당기순이익·자산총계·부채총계·자본총계 우선
+  - `disclosure`: 최근 5~10건의 보고서명·접수일·제출인
+  - `business`: 요청 섹션의 요지
+- **원본 병기**: 금액을 억/조로 풀어 보여줄 때 원본 수치(원 단위)도 함께 남깁니다.
+- **비정상 status 안내**: `status`가 `000`이 아니면(스크립트가 error JSON·`error_code` 반환)
+  코드 의미를 사용자 언어로 안내합니다(예: `013`=해당 기간/보고서에 데이터 없음, `020`=요청 한도 초과 → 잠시 후 재시도).
+- **출처 동봉**: `finance`·`compare` JSON의 `source.url`(공시원문 링크)을 답변에 함께 제시합니다.
+- **면책 푸터**: 답변 말미에 한 줄 — `※ 금융감독원 DART 공시 데이터 기준이며 투자 조언이 아닙니다`.
+
+### Done when (작업 완료 기준)
+
+- `DART_API_KEY`(또는 작업 폴더 `.env`)를 확인했다.
+- 회사명만 받았으면 `search`/`profile`로 `corp_code`를 먼저 확보했다.
+- 요청에 맞는 서브커맨드를 실행하고 결과를 위 규칙대로 요약했다.
+- `source.url`(공시원문)을 동봉하고 면책 푸터를 남겼다.
 
 ## 종료 코드
 
@@ -307,7 +362,7 @@ dart/
   requirements.txt
   scripts/
     dart_api.py         # DART API 모듈 (공시목록·사업보고서 텍스트 포함)
-    collect_company.py  # 기업정보 수집 CLI (8개 커맨드)
+    collect_company.py  # 기업정보 수집 CLI (9개 커맨드: search/info/finance/disclosure/business/employees/profile/compare/raw)
   tests/
     test_dart_api.py
     test_collect_company.py
@@ -391,3 +446,8 @@ python3 collect_company.py search --name "삼성전자" > "$WORKSPACE_PATH/resul
 | 증권신고서 주요정보 | 6 | [references/증권신고서-주요정보/](references/증권신고서-주요정보/) |
 
 기존 요약본: [references/dart.md](references/dart.md)
+
+> **미구현 엔드포인트 호출**: 위 분류의 대부분은 전용 서브커맨드가 없습니다. 명세만 읽고 끝내지 말고
+> `collect_company.py raw --endpoint <이름> --param k=v ...`로 직접 호출하세요
+> (위 "미구현 엔드포인트 직접 호출 (raw)" 섹션 참고). 헷갈리는 엔드포인트(유무상/유상/무상 증자,
+> 주요계정/전체 재무제표 등)는 [references/dart.md](references/dart.md)의 disambiguation 표를 확인하세요.

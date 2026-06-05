@@ -304,6 +304,49 @@ def cmd_business(args: argparse.Namespace) -> int:
     return 0
 
 
+def _parse_raw_params(pairs: list[str]) -> dict[str, str]:
+    """`key=value` 문자열 목록을 쿼리 파라미터 dict로 파싱한다.
+
+    value에 '='가 포함될 수 있으므로 첫 '='만 분리(partition)한다.
+    형식 미준수 시 ValueError(→ exit 2).
+    """
+    params: dict[str, str] = {}
+    for pair in pairs:
+        if "=" not in pair:
+            raise ValueError(
+                f"잘못된 --param 형식: {pair!r} — 'key=value' 형식이어야 합니다 "
+                "(예: --param corp_code=00126380)."
+            )
+        key, _, value = pair.partition("=")
+        key = key.strip()
+        if not key:
+            raise ValueError(f"잘못된 --param 형식: {pair!r} — key가 비어 있습니다.")
+        params[key] = value
+    return params
+
+
+def cmd_raw(args: argparse.Namespace) -> int:
+    """임의 DART 엔드포인트 직접 호출 (escape-hatch, SPEC-DART-KDART-001).
+
+    references/에 명세만 있고 전용 서브커맨드가 없는 엔드포인트(배당·소송·전환사채 등)를
+    호출한다. JSON 원문만 반환 — 단위변환·CSV·출처링크 미보장(전용 finance/compare 사용).
+    """
+    api_key = _get_api_key(args.api_key)
+    params = _parse_raw_params(getattr(args, "param", None) or [])
+    data = dart_api.request_raw(api_key, args.endpoint, params)
+
+    # raw는 JSON 전용 — table/csv 가공은 임의 스키마라 보장 불가(EXC-6).
+    fmt = getattr(args, "format", "json")
+    if fmt != "json":
+        print(
+            f"[참고] raw 커맨드는 JSON 출력만 지원합니다 (--format {fmt} 무시). "
+            "표/CSV 가공이 필요하면 전용 서브커맨드(finance/compare)를 사용하세요.",
+            file=sys.stderr,
+        )
+    print(json.dumps(data, ensure_ascii=False, indent=2))
+    return 0
+
+
 def cmd_employees(args: argparse.Namespace) -> int:
     """직원현황 조회."""
     api_key = _get_api_key(args.api_key)
@@ -1129,6 +1172,21 @@ def build_parser() -> argparse.ArgumentParser:
     p_biz.add_argument("--max-chars", type=int, default=5000, dest="max_chars",
                        help="최대 출력 문자수 (기본: 5000, 0=무제한)")
 
+    # raw (escape-hatch: 임의 엔드포인트 — references 80개 doc-only API 직접 호출)
+    p_raw = sub.add_parser(
+        "raw", help="임의 DART 엔드포인트 직접 호출 (JSON 원문, 가공 없음)",
+    )
+    _add_common(p_raw)
+    p_raw.add_argument(
+        "--endpoint", "-e", required=True,
+        help="DART 엔드포인트 이름 (영숫자, 예: alotMatter, lwstLg, cvbdIsDecsn)",
+    )
+    p_raw.add_argument(
+        "--param", "-p", action="append", default=[], metavar="KEY=VALUE",
+        help="쿼리 파라미터 (반복 가능, 예: --param corp_code=00126380 "
+             "--param bsns_year=2024). crtfc_key는 자동 주입됨",
+    )
+
     # employees
     p_emp = sub.add_parser("employees", help="직원현황 조회")
     _add_common(p_emp)
@@ -1214,6 +1272,7 @@ def main(argv: list[str] | None = None) -> int:
             "disclosure": cmd_disclosure,
             "business": cmd_business,
             "compare": cmd_compare,
+            "raw": cmd_raw,
         }
         return commands[args.command](args)
 

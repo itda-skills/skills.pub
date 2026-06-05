@@ -88,6 +88,30 @@ py -3 scripts/collect_company.py search --name "삼성전자"
 }
 ```
 
+## raw 호출 — 엔드포인트 disambiguation
+
+`collect_company.py raw --endpoint <이름> --param k=v ...`로 미구현 엔드포인트를 직접 호출할 때,
+이름이 비슷해 헷갈리는 것들 (모두 우리 `references/` 분류 가이드에 정본 명세 존재):
+
+| 엔드포인트 | 한글명 | 비고 |
+|-----------|--------|------|
+| `fnlttSinglAcnt` | 단일회사 주요계정 | 약 30항목 (`finance` 기본) |
+| `fnlttSinglAcntAll` | 단일회사 전체 재무제표 | 약 176항목 (`finance --detail`) |
+| `pifricDecsn` | 유무상증자 결정 | 유상+무상 동시 |
+| `piicDecsn` | 유상증자 결정 | 유상만 |
+| `fricDecsn` | 무상증자 결정 | 무상만 |
+| `irdsSttus` | 증자(감자) 현황 | 정기보고서 |
+| `alotMatter` | 배당에 관한 사항 | 정기보고서 |
+| `tesstkAcqsDspsSttus` | 자기주식 취득·처분 현황 | 정기보고서 |
+| `accnutAdtorNmNdAdtOpinion` | 회계감사인 명칭·감사의견 | 정기보고서 |
+| `lwstLg` | 소송 등의 제기 | 주요사항, `bgn_de`·`end_de` 필요 |
+| `cvbdIsDecsn` | 전환사채권 발행결정 | 주요사항, 기간 필요 |
+| `exbdIsDecsn` | 교환사채권 발행결정 | 주요사항, 기간 필요 |
+
+> 정기보고서 계열은 `corp_code`·`bsns_year`·`reprt_code`(11011 사업 / 11012 반기 / 11013 1분기 / 11014 3분기),
+> 주요사항 결정 계열은 `corp_code`·`bgn_de`·`end_de`(YYYYMMDD)를 요구합니다.
+> 전체 80여 개 엔드포인트 명세는 상위 `references/` 6개 분류 가이드를 참고하세요.
+
 ## corpCode.xml 캐싱
 
 `search`와 `profile` 명령은 DART 전체 기업 목록(corpCode.xml, ~20MB ZIP)을 다운로드합니다.

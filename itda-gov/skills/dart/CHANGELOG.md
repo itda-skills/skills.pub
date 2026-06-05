@@ -1,10 +1,33 @@
 # Changelog — itda-dart
 
-## [Unreleased] — SPEC-COWORK-ENV-GUIDE-001
+## [0.17.0] — 2026-06-05
 
-### Changed
+> k-dart(NomaDamas) 비교 검토(Agent Team: 다각분석 4 + 적대검토 2 + 종합 1)에서 적대검토 양측을 통과한 차용분만 반영. SPEC-DART-KDART-001.
+
+### Added (k-dart 비교 차용 — SPEC-DART-KDART-001)
+
+- **REQ-001/002 — `raw` 제네릭 서브커맨드 (escape-hatch)**: `collect_company.py raw --endpoint <이름> --param k=v ...`로 references에 명세만 있던 80여 개 doc-only 엔드포인트(배당 `alotMatter`·소송 `lwstLg`·전환사채 `cvbdIsDecsn`·증자 `irdsSttus` 등)를 직접 호출. `dart_api.request_raw`가 `_request_json`에 위임 → 재시도(1s,2s)·HTTP403 안내·status 분류 상속. **보안 경계**: endpoint는 `^[A-Za-z][A-Za-z0-9]*$`만 허용(경로/URL/쿼리 주입 차단), `crtfc_key` 자동 주입(사용자 params의 crtfc_key 무시). status `013`/`014`(데이터 없음)는 빈 결과로 반환. **JSON 출력 전용**(단위변환·CSV·source.url 미보장 — 가공은 전용 서브커맨드 finance/compare). `_request_json` 시그니처·동작 불변(엔진 blast radius 0, catch-in-wrapper 방식).
+- **REQ-003 — SKILL.md "응답 규칙(모델 표현)" + Done when 섹션**: 모델이 받은 출력을 사용자에게 표현하는 규칙 — 요약 우선(서브커맨드별 우선 필드), 억/조 표기 시 원본 병기, 비정상 status 안내, `source.url` 동봉, **면책 푸터**(`※ 금융감독원 DART 공시 데이터 기준이며 투자 조언이 아닙니다`). "코드가 정본, 산문은 표현 레이어" — status/단위 변환은 코드가 처리하므로 산문 중복 금지. GUIDE.md엔 미반영(역할 분리).
+- **REQ-004 — `list.json` corp_name gotcha**: `list.json`은 `corp_name`을 요청 파라미터로 받지 않음(응답에만 존재) → 회사명으로 좁히려면 `corp_code` 선확보. 우리 `references/공시정보/dart-공시검색-가이드.md` 요청표로 교차검증(환각 0).
+- **REQ-005 — `references/dart.md` disambiguation 표 + `pblntf_ty` A~J**: 헷갈리는 12개 엔드포인트(유무상 `pifricDecsn`/유상 `piicDecsn`/무상 `fricDecsn`, 주요계정 `fnlttSinglAcnt`/전체 `fnlttSinglAcntAll` 등 — 전부 우리 references에 grep 실재 확인) + SKILL.md disclosure 섹션 `pblntf_ty` A~J 코드표. 전체 80행 인덱스는 작성 안 함(부피·drift 회피).
+
+### Changed (SPEC-COWORK-ENV-GUIDE-001)
 - **Cowork에서 `claude config set` 안내 제거** — 사용자 피드백: Cowork에선 `claude config set`이 적용되지 않아 헷갈림. 키 미설정 에러 메시지(`collect_company._SETUP_GUIDE`·`dart_api._DART_SETUP_GUIDE`)를 "작업 폴더 루트(outputs 등)에 `.env` 배치" 단일 안내로 통일(config set 문구 제거).
 - **SKILL.md·GUIDE.md·references/dart.md "API 키 설정"** — `.env`를 모든 환경 공통 권장으로 1순위 배치. `claude config set`은 명시적 "로컬 CLI 전용" 펜스로만 잔존(Cowork 노출 0). 세션별 절대경로(`/sessions/<id>/...`) 고정 기입 금지 문구 추가.
+
+### Documentation
+- **`argument-hint`** — `raw`·`--endpoint`·`--param` 노출. **파일 구조** — 9개 커맨드로 갱신. **상세 API 가이드** — 미구현 엔드포인트를 `raw`로 호출하라는 안내 + disambiguation 포인터.
+- **`description` 트리거 보강** (skill-creator 검수) — raw로 새로 가능해진 배당·소송·증자·전환사채 쿼리("네이버 배당 현황"·"셀트리온 소송 이력")를 description 예시·출력 목록에 추가해 언더트리거링 완화. (130→약 180자, 1024 한도 내.)
+
+### Excluded (적대검토 REJECT/DEFER)
+- corp_code 인라인 쉘 레시피 **REJECT**(find_corp_code의 defusedxml·ZIP폭탄 가드 우회 학습 위험). 인라인 curl로 스크립트 대체 **REJECT**(엔진 회귀). "corp_code 없으면 3개월 제한" **DEFER**(우리 reference 미검증). 에러코드표 3중복 dedup **DEFER**(차용 무관·컨텍스트 절감 아님 — references는 progressive-disclosure latent라 평상시 0토큰).
+
+### Tests
+- 신규: `TestRequestRaw`(위임·crtfc_key 주입·영숫자 검증·013 passthrough·단일레코드 passthrough·인증오류 재raise), `TestCmdRaw`(위임·`=` 보존·endpoint 거부·param 거부·비JSON 경고), arg-position 매트릭스 `raw` 추가. dart **297 passed** (270→297), 회귀 0, skip 0.
+- 라이브 스모크: `raw --endpoint company`(삼성전자 status 000)·`alotMatter`(배당 15건 부활)·`lwstLg`(013 빈결과) 통과.
+
+### Quality gate (itda-refine, 4-에이전트)
+- **✅ PASS** (HIGH 0). spec-auditor(SPEC 정합·EXC 역검증 6건 honored)·live-prober(라이브 3콜, 013 passthrough·crtfc_key 주입 실인증)·deployed-runner(conftest-less PYTHONPATH=shared subprocess 11/11)·skip-skeptic(skip 0, 거짓 안전망 0). 게이트 MEDIUM 2건(arg-position raw 누락·SPEC status)은 본 릴리스에서 즉시 해소.
 
 ## [0.16.0] — 2026-05-29
 

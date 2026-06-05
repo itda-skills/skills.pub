@@ -1,7 +1,7 @@
 {
   "name": "itda-realty",
   "description": "한국 부동산 공식 공개 API 기반 데이터 수집·분석 스킬팩",
-  "version": "8.1.0",
+  "version": "8.2.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

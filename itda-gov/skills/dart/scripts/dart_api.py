@@ -226,6 +226,63 @@ def _request_json(endpoint: str, params: dict[str, str]) -> dict[str, Any]:
     raise DARTAPIError("알 수 없는 오류로 요청 실패")
 
 
+# raw escape-hatch: endpoint 이름은 영문자로 시작하는 영숫자만 허용.
+# DART OpenAPI 엔드포인트는 전부 camelCase 영숫자(company, fnlttSinglAcntAll,
+# pifricDecsn 등)이며, 이 경계가 경로 traversal('..','/')·호스트/쿼리 주입(':','?','&')을
+# 차단한다(SSRF 방지). DART는 전부 read-only GET이라 쓰기 부작용도 구조적으로 없음.
+_RAW_ENDPOINT_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
+
+
+def request_raw(
+    api_key: str, endpoint: str, params: dict[str, str],
+) -> dict[str, Any]:
+    """임의의 DART OpenAPI GET 엔드포인트를 직접 호출한다 (escape-hatch).
+
+    references/에 정본 명세는 있으나 전용 서브커맨드가 없는 엔드포인트
+    (배당 alotMatter, 소송 lwstLg, 전환사채 cvbdIsDecsn, 증자 irdsSttus 등)를
+    모델이 직접 호출할 수 있게 하는 범용 통로다. ``_request_json``에 위임하므로
+    재시도(1s,2s)·HTTP403 안내·status≠000 분류를 그대로 상속한다.
+
+    보안: ``endpoint``는 ``_RAW_ENDPOINT_RE``(영문 시작 영숫자)만 허용 — 경로
+    traversal·호스트/쿼리 주입을 차단한다. ``crtfc_key``는 ``api_key``로 자동
+    주입되며, ``params``에 담긴 ``crtfc_key``는 무시(덮어쓰기)된다.
+
+    한계(설계상, SPEC-DART-KDART-001 EXC-6): JSON 원문만 반환한다. 임의
+    엔드포인트라 필드 스키마를 모르므로 단위변환·CSV·source.url 등 가공은
+    제공하지 않는다(가공이 필요하면 전용 finance/compare 사용). status
+    ``013``/``014``(데이터 없음)는 에러가 아니라 빈 결과 dict로 반환한다.
+
+    Args:
+        api_key: DART 인증키(40자리). crtfc_key로 주입된다.
+        endpoint: 엔드포인트 이름 (영숫자, 예: "alotMatter").
+        params: 추가 쿼리 파라미터 (corp_code, bsns_year 등). crtfc_key 제외.
+
+    Returns:
+        DART JSON 응답 dict (status/message/list 등 원형 그대로).
+
+    Raises:
+        ValueError: endpoint가 영숫자 형식이 아닐 때.
+        DARTAPIError: 인증/설정/서버 오류 등 (013·014 제외).
+    """
+    if not _RAW_ENDPOINT_RE.match(endpoint or ""):
+        raise ValueError(
+            f"잘못된 엔드포인트 이름: {endpoint!r} — 영문자로 시작하는 영숫자만 "
+            "허용됩니다 (예: alotMatter, lwstLg, cvbdIsDecsn). "
+            "경로(/)·URL·쿼리(?, &)는 넣을 수 없습니다."
+        )
+    # crtfc_key는 우리가 주입한다 — 사용자 params의 crtfc_key는 덮어쓴다.
+    merged = {k: v for k, v in params.items() if k != "crtfc_key"}
+    merged["crtfc_key"] = api_key
+
+    try:
+        return _request_json(endpoint, merged)
+    except DARTAPIError as exc:
+        # 데이터 없음(013)·파일 없음(014)은 정상적인 빈 결과로 처리.
+        if exc.error_code in ("013", "014"):
+            return {"status": exc.error_code, "message": str(exc), "list": []}
+        raise
+
+
 def _request_binary(url: str) -> bytes:
     """바이너리 데이터 다운로드.
 

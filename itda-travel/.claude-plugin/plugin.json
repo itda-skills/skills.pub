@@ -1,7 +1,7 @@
 {
   "name": "itda-travel",
   "description": "여행 스킬팩 — KTX·SRT 열차 검색·예약과 여행지 유행 맛집 탐지",
-  "version": "8.1.0",
+  "version": "8.2.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
