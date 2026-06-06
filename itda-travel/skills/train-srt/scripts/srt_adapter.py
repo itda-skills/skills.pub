@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from env_loader import resolve_api_key  # noqa: E402  (shared/)
+from env_loader import resolve_api_key  # noqa: E402  (저장소 루트 기준 PYTHONPATH=skills/shared)
 
 # ---------------------------------------------------------------------------
 # 예외 계층 (SAFE-4: 모든 실패를 사유와 함께 표면화)

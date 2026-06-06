@@ -13,10 +13,10 @@ argument-hint: "강남역 근처 술집 / 홍대 와이파이 카페 / 제주공
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.1.0"
+  version: "0.1.1"
   status: "experimental"
   created_at: "2026-06-05"
-  updated_at: "2026-06-05"
+  updated_at: "2026-06-06"
   tags: "place, kakao, map, nearby, restaurant, cafe, bar, hotel, search, location, travel, place-finder"
 ---
 
@@ -55,12 +55,12 @@ metadata:
 
 ```bash
 # macOS/Linux (저장소 루트 기준)
-python3 itda-travel/skills/place-finder/scripts/main.py search --near 강남역 --category 술집
-python3 itda-travel/skills/place-finder/scripts/main.py search --near 홍대입구역 --category 카페 --amenity wifi
-python3 itda-travel/skills/place-finder/scripts/main.py search --near 제주공항 --category 숙소 --sort rating --limit 5 --json
+python3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 강남역 --category 술집
+python3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 홍대입구역 --category 카페 --amenity wifi
+python3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 제주공항 --category 숙소 --sort rating --limit 5 --json
 
 # Windows
-py -3 itda-travel/skills/place-finder/scripts/main.py search --near 강남역 --category 술집
+py -3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 강남역 --category 술집
 ```
 
 옵션(모두 서브커맨드 `search` **뒤**에 둡니다):

@@ -13,10 +13,10 @@ argument-hint: "서울에서 부산 KTX / 금요일 저녁 동대구 가는 표"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.1.0"
+  version: "0.1.1"
   status: "experimental"
   created_at: "2026-06-05"
-  updated_at: "2026-06-05"
+  updated_at: "2026-06-06"
   tags: "ktx, korail, train, booking, reservation, travel"
 ---
 
@@ -49,19 +49,19 @@ KTX 열차를 **검색**하고 **예약**합니다. 사용자용 가이드는 GU
 ## 실행
 
 > **실행 전제**: 스크립트는 공용 `shared/` 모듈(`env_loader`)을 import 하므로
-> `shared/` 가 `PYTHONPATH` 에 있어야 합니다. Cowork·`just test-skill`·테스트
+> `skills/shared/` 가 `PYTHONPATH` 에 있어야 합니다. Cowork·`just test-skill`·테스트
 > 러너는 자동 처리합니다. 로컬에서 직접 실행할 때는 저장소 루트에서
-> `PYTHONPATH=shared` 를 앞에 붙입니다.
+> `PYTHONPATH=skills/shared` 를 앞에 붙입니다.
 
 ```bash
 # macOS/Linux (저장소 루트 기준)
-PYTHONPATH=shared python3 itda-travel/skills/train-ktx/scripts/main.py search --dep 서울 --arr 부산 --date 20260612 --time 140000
-PYTHONPATH=shared python3 itda-travel/skills/train-ktx/scripts/main.py reserve --dep 서울 --arr 부산 --date 20260612 --time 140000 --index 0            # 미리보기(예약 안 함)
-PYTHONPATH=shared python3 itda-travel/skills/train-ktx/scripts/main.py reserve --dep 서울 --arr 부산 --date 20260612 --time 140000 --index 0 --confirm  # 실제 예약
-PYTHONPATH=shared python3 itda-travel/skills/train-ktx/scripts/main.py reservations
+PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py search --dep 서울 --arr 부산 --date 20260612 --time 140000
+PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py reserve --dep 서울 --arr 부산 --date 20260612 --time 140000 --index 0            # 미리보기(예약 안 함)
+PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py reserve --dep 서울 --arr 부산 --date 20260612 --time 140000 --index 0 --confirm  # 실제 예약
+PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py reservations
 
 # Windows
-$env:PYTHONPATH="shared"; py -3 itda-travel/skills/train-ktx/scripts/main.py search --dep 서울 --arr 부산
+$env:PYTHONPATH="skills/shared"; py -3 skills/itda-travel/skills/train-ktx/scripts/main.py search --dep 서울 --arr 부산
 ```
 
 옵션: `--adults N`(기본 1) · `--children N` · `--seniors N` · `--train-type ktx|all` ·

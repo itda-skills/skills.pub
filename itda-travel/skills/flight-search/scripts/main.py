@@ -33,6 +33,11 @@ class FlightUsageError(ValueError):
     """CLI 입력 오류(날짜·연도 형식 등). 사용자에게 그대로 보일 사유."""
 
 
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
+_MONTH_DAY_RE = re.compile(r"^\d{2}-\d{2}$")
+
+
 # ---------------------------------------------------------------------------
 # 입력 검증 helpers
 # ---------------------------------------------------------------------------
@@ -60,6 +65,8 @@ def _resolve_route(args) -> tuple[str, str]:
 
 
 def _valid_date(value: str, field: str) -> str:
+    if not _DATE_RE.fullmatch(value or ""):
+        raise FlightUsageError(f"{field} 형식이 올바르지 않습니다(YYYY-MM-DD): {value!r}")
     try:
         datetime.strptime(value, "%Y-%m-%d")
     except ValueError as exc:
@@ -70,6 +77,8 @@ def _valid_date(value: str, field: str) -> str:
 
 
 def _valid_month(value: str) -> str:
+    if not _MONTH_RE.fullmatch(value or ""):
+        raise FlightUsageError(f"month 는 YYYY-MM 형식이어야 합니다: {value!r}")
     try:
         datetime.strptime(value + "-01", "%Y-%m-%d")
     except ValueError as exc:
@@ -78,6 +87,8 @@ def _valid_month(value: str) -> str:
 
 
 def _valid_month_day(value: str) -> str:
+    if not _MONTH_DAY_RE.fullmatch(value or ""):
+        raise FlightUsageError(f"month-day 는 MM-DD 형식이어야 합니다: {value!r}")
     try:
         datetime.strptime("2000-" + value, "%Y-%m-%d")
     except ValueError as exc:
@@ -92,6 +103,8 @@ def _parse_years(value: str) -> list[int]:
         raise FlightUsageError("years 는 쉼표로 구분된 연도여야 합니다(예: 2026,2027).") from exc
     if not years:
         raise FlightUsageError("years 가 비어 있습니다(예: 2026,2027).")
+    if any(y < 1000 or y > 9999 for y in years):
+        raise FlightUsageError("years 는 4자리 연도여야 합니다(예: 2026,2027).")
     return years
 
 
@@ -194,7 +207,12 @@ def cmd_compare_years(args) -> int:
     args._origin, args._dest = _resolve_route(args)
     years = _parse_years(args.years)
     _valid_month_day(args.month_day)
-    dates = compare.year_dates(years, args.month_day)
+    try:
+        dates = compare.year_dates(years, args.month_day)
+    except ValueError as exc:
+        raise FlightUsageError(
+            f"years 와 month-day 조합이 올바르지 않습니다: {args.years} / {args.month_day}"
+        ) from exc
     return _run_compare(args, dates, f"{args.month_day} 연도비교 {years}")
 
 

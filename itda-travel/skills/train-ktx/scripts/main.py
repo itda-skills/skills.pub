@@ -5,14 +5,16 @@
 SKILL.md / GUIDE.md 참조. 서브커맨드: search / reserve / reservations.
 예약(reserve)은 ``--confirm`` 없으면 미리보기만 수행한다(SAFE-1).
 
-실행 전제: shared/ 모듈을 import 하므로 ``PYTHONPATH=shared`` 가 필요하다.
-  예: PYTHONPATH=shared python3 itda-travel/skills/train-ktx/scripts/main.py search ...
+실행 전제: shared/ 모듈을 import 하므로 ``PYTHONPATH=skills/shared`` 가 필요하다.
+  예: PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py search ...
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 if sys.version_info < (3, 10):
@@ -27,11 +29,52 @@ from korail_adapter import KtxError, connect  # noqa: E402
 from stations import SrtOnlyStation, StationNotFound, normalize_station  # noqa: E402
 
 
+class TrainUsageError(ValueError):
+    """CLI 입력 오류. 외부 코레일 호출 전에 사용자에게 그대로 보일 사유."""
+
+
+_DATE_RE = re.compile(r"^\d{8}$")
+_TIME_RE = re.compile(r"^\d{6}$")
+
+
+def non_negative_int(value: str) -> int:
+    n = int(value)
+    if n < 0:
+        raise argparse.ArgumentTypeError("0 이상의 정수여야 합니다")
+    return n
+
+
+def valid_date(value: str) -> str:
+    if not _DATE_RE.fullmatch(value or ""):
+        raise argparse.ArgumentTypeError("YYYYMMDD 형식이어야 합니다")
+    try:
+        datetime.strptime(value, "%Y%m%d")
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("존재하는 날짜여야 합니다") from exc
+    return value
+
+
+def valid_time(value: str) -> str:
+    if not _TIME_RE.fullmatch(value or ""):
+        raise argparse.ArgumentTypeError("HHMMSS 형식이어야 합니다")
+    try:
+        datetime.strptime(value, "%H%M%S")
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("존재하는 시각이어야 합니다") from exc
+    return value
+
+
 def _resolve_stations(dep: str, arr: str) -> tuple[str, str]:
     return normalize_station(dep), normalize_station(arr)
 
 
+def _validate_passengers(args) -> None:
+    if args.adults + args.children + args.seniors < 1:
+        raise TrainUsageError("승객은 최소 1명 이상이어야 합니다.")
+
+
 def cmd_search(args) -> int:
+    _validate_passengers(args)
     dep, arr = _resolve_stations(args.dep, args.arr)
     client = connect(cli_id=args.id, cli_pw=args.pw)
     passengers = rsv.build_passengers(args.adults, args.children, args.seniors)
@@ -53,6 +96,7 @@ def cmd_search(args) -> int:
 
 
 def cmd_reserve(args) -> int:
+    _validate_passengers(args)
     dep, arr = _resolve_stations(args.dep, args.arr)
     client = connect(cli_id=args.id, cli_pw=args.pw)
     passengers = rsv.build_passengers(args.adults, args.children, args.seniors)
@@ -115,12 +159,17 @@ def cmd_reservations(args) -> int:
 def _add_search_args(sp: argparse.ArgumentParser) -> None:
     sp.add_argument("--dep", required=True, help="출발역(한글)")
     sp.add_argument("--arr", required=True, help="도착역(한글)")
-    sp.add_argument("--date", help="날짜 YYYYMMDD (미지정 시 오늘)")
-    sp.add_argument("--time", help="기준 시각 HHMMSS (이후 열차)")
-    sp.add_argument("--adults", type=int, default=1, help="성인 수(기본 1)")
-    sp.add_argument("--children", type=int, default=0, help="어린이 수")
-    sp.add_argument("--seniors", type=int, default=0, help="경로 수")
-    sp.add_argument("--train-type", default="ktx", help="ktx|all|saemaeul|mugunghwa")
+    sp.add_argument("--date", type=valid_date, help="날짜 YYYYMMDD (미지정 시 오늘)")
+    sp.add_argument("--time", type=valid_time, help="기준 시각 HHMMSS (이후 열차)")
+    sp.add_argument("--adults", type=non_negative_int, default=1, help="성인 수(기본 1)")
+    sp.add_argument("--children", type=non_negative_int, default=0, help="어린이 수")
+    sp.add_argument("--seniors", type=non_negative_int, default=0, help="경로 수")
+    sp.add_argument(
+        "--train-type",
+        choices=["ktx", "all", "saemaeul", "mugunghwa"],
+        default="ktx",
+        help="열차종",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -144,8 +193,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp_reserve = sub.add_parser("reserve", parents=[common], help="예약(--confirm 필요)")
     _add_search_args(sp_reserve)
-    sp_reserve.add_argument("--index", type=int, required=True, help="검색 결과 번호")
-    sp_reserve.add_argument("--seat", default="general", help="general|special")
+    sp_reserve.add_argument("--index", type=non_negative_int, required=True, help="검색 결과 번호")
+    sp_reserve.add_argument(
+        "--seat", choices=["general", "special"], default="general", help="좌석유형"
+    )
     sp_reserve.add_argument(
         "--seat-only", action="store_true", help="해당 좌석유형만(없으면 실패)"
     )
@@ -172,6 +223,9 @@ def main(argv=None) -> int:
     except MissingAPIKeyError as exc:
         print(str(exc), file=sys.stderr)
         return 1
+    except TrainUsageError as exc:
+        print(f"입력 오류: {exc}", file=sys.stderr)
+        return 2
     except KtxError as exc:  # 어댑터가 변환한 모든 코레일 측 실패(fail-loud)
         print(f"오류: {exc}", file=sys.stderr)
         return 1

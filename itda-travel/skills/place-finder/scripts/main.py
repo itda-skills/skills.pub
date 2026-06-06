@@ -2,8 +2,8 @@
 """place-finder CLI — 카카오맵 비공식 검색으로 목적별 근처 장소 찾기.
 
 사용 예 (저장소 루트 기준):
-    python3 itda-travel/skills/place-finder/scripts/main.py search --near 강남역 --category 술집
-    python3 itda-travel/skills/place-finder/scripts/main.py search --near 홍대입구역 --category 카페 --amenity wifi --json
+    python3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 강남역 --category 술집
+    python3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 홍대입구역 --category 카페 --amenity wifi --json
 
 옵션(--json·--amenity·--limit·--sort)은 모두 서브커맨드 ``search`` 뒤에 둔다.
 """
@@ -21,6 +21,14 @@ from categories import all_presets, label_of, resolve_preset, search_keyword
 from format_output import format_results
 from kakao_adapter import geocode_anchor, search_places
 from places import AMENITY_FIELDS, build_results
+
+
+def positive_int(value: str) -> int:
+    """argparse용 1 이상 정수 검증."""
+    n = int(value)
+    if n < 1:
+        raise argparse.ArgumentTypeError("1 이상의 정수여야 합니다")
+    return n
 
 
 def _parse_amenity(raw: str) -> list[str]:
@@ -123,7 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
     search.add_argument(
         "--amenity", default="", help="편의시설 필터(쉼표 구분): " + ",".join(AMENITY_FIELDS)
     )
-    search.add_argument("--limit", type=int, default=5, help="결과 개수(기본 5)")
+    search.add_argument("--limit", type=positive_int, default=5, help="결과 개수(기본 5)")
     search.add_argument(
         "--sort", choices=["distance", "rating"], default="distance", help="정렬(기본 거리순)"
     )

@@ -71,7 +71,7 @@ def geocode_anchor(location: str, *, timeout: int = 15) -> tuple[bool, dict | No
     if not location:
         return False, None, "기준 위치가 비어 있습니다. 역명·동네·랜드마크를 알려주세요."
 
-    ok, data, reason = _request({"q": location, "msFlag": "A", "sort": 0})
+    ok, data, reason = _request({"q": location, "msFlag": "A", "sort": 0}, timeout=timeout)
     if not ok:
         return False, None, reason
 
@@ -104,7 +104,9 @@ def search_places(
     if not query:
         return False, None, "검색어가 비어 있습니다."
 
-    ok, data, reason = _request({"q": query, "msFlag": "A", "sort": sort, "page": page})
+    ok, data, reason = _request(
+        {"q": query, "msFlag": "A", "sort": sort, "page": page}, timeout=timeout
+    )
     if not ok:
         return False, None, reason
     return True, list(data.get("place") or []), ""

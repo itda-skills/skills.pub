@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **place-finder v0.1.1**: `--limit` 0/음수 입력이 제한 없이 전체 결과를 출력하던 문제를
+  차단하고, `geocode_anchor`/`search_places`의 `timeout` 인자가 실제 HTTP 요청에
+  전달되도록 수정. 통합 저장소 기준 실행 경로(`skills/itda-travel/...`)로 문서 정정.
+- **train-ktx v0.1.1**: 승객 수·날짜·시각·열차종·좌석유형·예약 index 입력을
+  코레일 접속 전에 검증하도록 보강하고, 통합 저장소 기준 실행 경로
+  (`PYTHONPATH=skills/shared`, `skills/itda-travel/...`)로 문서 정정.
+- **train-srt v0.1.1**: 승객 수·날짜·시각·좌석유형·예약 index 입력을 SR 접속 전에
+  검증하도록 보강하고, 통합 저장소 기준 실행 경로(`PYTHONPATH=skills/shared`,
+  `skills/itda-travel/...`)로 문서 정정.
+
 ## [0.6.0] — 2026-06-05
 
 ### Changed

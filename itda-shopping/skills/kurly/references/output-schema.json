@@ -1,0 +1,54 @@
+{
+  "$comment": "kurly 서브커맨드별 출력 스키마 (JSON 포맷). --format json 기본 출력 계약. 미해당/없음 필드는 null.",
+  "products": {
+    "$comment": "products <검색어> 출력. search v4 1회 호출 결과.",
+    "query": "string — 입력 검색어",
+    "actual_keyword": "string — 마켓컬리가 실제 사용한 검색어 (교정/대체 시 다를 수 있음)",
+    "match_type": "string — 'exact'(정확 매칭) | 'semantic_retry'(매칭 실패 → 의미 유사 추천 대체)",
+    "page": "int — 페이지 번호",
+    "total_count": "int — 전체 결과 수 (meta.pagination.total)",
+    "count": "int — 이번 응답에 포함된 상품 수 (page_size 절단 후)",
+    "products": [
+      {
+        "id": "int|null — 상품 번호 (no)",
+        "name": "string — 상품명",
+        "short_description": "string|null — 한 줄 설명",
+        "price": "int|null — 현재가 (할인가 있으면 할인가, 없으면 정가)",
+        "base_price": "int|null — 정가 (salesPrice)",
+        "discounted_price": "int|null — 할인가 (없으면 null)",
+        "discount_rate": "number — 할인율 % (없으면 0.0)",
+        "currency": "string — 'KRW'",
+        "sold_out": "bool — 품절 여부",
+        "purchasable": "bool — 구매 가능 여부",
+        "adult_only": "bool — 성인 전용 여부",
+        "review_count": "string|null — 리뷰 수 (예: '9,999+')",
+        "image_url": "string|null — 대표 이미지 URL",
+        "link": "string|null — 상품 상세 페이지 URL (https://www.kurly.com/goods/{id})"
+      }
+    ]
+  },
+  "price": {
+    "$comment": "price (<상품번호> | --name <상품명>) 출력. goods __NEXT_DATA__ 파싱 결과. --name 조회 시 resolved_from_name·match_type 추가.",
+    "product_no": "int|null — 상품 번호",
+    "name": "string — 상품명",
+    "short_description": "string|null — 한 줄 설명",
+    "seller_name": "string|null — 판매자 (예: '컬리')",
+    "brand": "string|null — 브랜드 (예: '연세우유')",
+    "price": "int|null — 현재가 (할인가 우선)",
+    "base_price": "int|null — 정가",
+    "discounted_price": "int|null — 할인가",
+    "coupon_discounted_price": "int|null — 쿠폰 적용가 (조건부 — 현재가 계산엔 미반영, 참고용)",
+    "currency": "string — 'KRW'",
+    "sold_out": "bool — 품절 여부",
+    "purchasable": "bool — 구매 가능 여부",
+    "low_stock": "bool — 재고 임박 여부",
+    "stock_threshold": "int|null — 재고 임박 임계치",
+    "restock_notify": "bool — 재입고 알림 가능 여부",
+    "free_delivery": "bool — 무료배송 여부",
+    "delivery_types": ["string — 배송 타입 (예: '샛별배송')"],
+    "tags": ["string — 상품 태그 (예: 'Kurly Only')"],
+    "link": "string|null — 상품 상세 페이지 URL",
+    "resolved_from_name": "string — (--name 조회 시만) 입력한 상품명",
+    "match_type": "string — (--name 조회 시만) 'exact' | 'semantic_retry'"
+  }
+}

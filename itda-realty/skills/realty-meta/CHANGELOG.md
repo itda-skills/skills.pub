@@ -1,4 +1,4 @@
-# Changelog — itda-realty/_meta
+# Changelog — itda-realty/realty-meta
 
 ## [0.9.2] — 2026-05-22
 

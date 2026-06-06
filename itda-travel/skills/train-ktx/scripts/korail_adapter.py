@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-# shared/ 모듈 — PYTHONPATH=shared 또는 루트 conftest.py 로 주입된다.
+# shared/ 모듈 — 저장소 루트 기준 PYTHONPATH=skills/shared 또는 테스트 conftest.py 로 주입된다.
 from env_loader import resolve_api_key  # noqa: E402
 
 # ---------------------------------------------------------------------------
