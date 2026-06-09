@@ -1,0 +1,2 @@
+# artifact-packager는 Python 표준 라이브러리만 사용한다.
+# 추가 Python 패키지 의존성 없음.

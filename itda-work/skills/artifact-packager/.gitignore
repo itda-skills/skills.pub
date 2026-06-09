@@ -1,0 +1,14 @@
+# artifact-packager 생성 산출물
+artifact-packager-out/
+
+# Python 캐시
+__pycache__/
+*.py[cod]
+
+# serve 빌드 산출물
+scripts/serve/build/
+scripts/serve/serve
+scripts/serve/serve.exe
+scripts/serve/serve-poc
+scripts/serve/serve-poc-*
+scripts/serve/*.exe

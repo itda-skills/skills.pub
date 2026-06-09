@@ -5,12 +5,15 @@
 
 ## [Unreleased]
 
+## [3.5.0] — 2026-06-09
+
 ### Changed
 
 - **GUIDE.md 평이언어 정책 (SPEC-GUIDE-NO-SHELL-001)** — 전 플러그인 35개 `GUIDE.md`에서 셸 명령(`python3`·`pip`·`<name>.py`)·CLI 플래그를 자연어로 일괄 전환. GUIDE 는 일반 사용자 문서이며 사용자는 Claude 에게 자연어로 요청하지 터미널을 다루지 않는다 ([3.4.0] README/docs CLI 노출 금지 정책의 GUIDE 확장). 자격증명 설정값만 `dotenv` 블록으로 유지. calendar GUIDE 는 네이버 캘린더를 첫 번째로 재배치하고 지원 캘린더(네이버·iCloud·커스텀 CalDAV) 서비스 링크 표를 서두에 추가.
 
 ### Added
 
+- **market-scan** (신규·experimental): 인터뷰 기반 시장조사 스킬. 짧은 인터뷰로 목적·범위를 잡고 1차 출처 우선·교차검증·사실/추정 분리로 의사결정용 보고서 한 장을 생성한다("검색=뉴스 클리핑"과 구분, 0단계에서 개요 vs 조사 의도 분기). 데이터 소스는 가용성 점검 후 multiSelect 로 제시(웹·`itda-gov:*` 공공API·`deep-research`·`NotebookLM`·주제별 도메인 스킬), 엄격 검증은 `ground-check`·수집 폴백은 `web-reader` 에 위임. 시장규모 top-down/bottom-up 추정 + 단일출처·리포트밀·정형 단위검증 가드. 라이브 dogfood(KOSIS·DART·ECOS) + 트리거 실측 recall/precision 100%.
 - **GUIDE 셸 명령 금지 강제 (코드 게이트)** — lint `shared/scripts/check_guide_no_shell.py` + 실저장소 전수 pytest `shared/tests/test_check_guide_no_shell.py`(release.yml CI `OS_NEUTRAL_DIRS` 에 `shared/tests` 편입 — 기존 check_* pytest 도 CI 자동 검증으로 승격) + justfile `check-guide` 타겟 + 작성 원칙 rule `.claude/rules/itda/skills/guide-authoring.md`.
 - **`guide-writer` v0.11.0** — 재발 방지 근본 수정. reference 3종(interview-heavy·media-generation·utility-tool) 을 자연어화본으로 동기화하고, SKILL.md REQ-GW-014/025 규칙을 "셸 명령·CLI 플래그 금지, 자연어 우선" 으로 전환. 자동 생성 시 셸 명령 재유입 차단.
 
