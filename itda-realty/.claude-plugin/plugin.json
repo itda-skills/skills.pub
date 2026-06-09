@@ -1,7 +1,7 @@
 {
   "name": "itda-realty",
   "description": "한국 부동산 데이터 수집·분석 스킬팩 — 공식 공개 데이터(실거래·전세·공급·가격통계)와 법원경매 매각공고 조회",
-  "version": "8.5.0",
+  "version": "8.6.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
