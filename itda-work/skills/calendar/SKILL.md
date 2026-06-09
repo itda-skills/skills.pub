@@ -39,7 +39,7 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 
 ## Credentials
 
-자격증명은 환경변수 또는 `.env`에서 로드된다(환경변수 우선). 프로젝트 `CLAUDE.md`에 선언하면 Claude Cowork가 자동 로드한다.
+자격증명 1순위는 **사용자 지침**이다 — Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`. 거기에 선언된 값을 Claude가 읽어 실행 시 환경변수로 주입한다. 개발자는 환경변수·`.env` fallback도 쓸 수 있다(환경변수 우선).
 
 | Provider | 환경변수 | 비고 |
 |----------|----------|------|
@@ -49,7 +49,9 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 
 멀티 계정: 변수명에 `_{SUFFIX}` 부착 (예: `ICLOUD_EMAIL_WORK`). suffix 없는 계정은 `account_id=default`.
 
-**런타임 규칙 — 자격증명 누락 시**: 스크립트가 `{"status":"error","error":"credentials_missing"}` (exit 1) 또는 다계정 모호 시 `account_required` (exit 2)를 반환한다. 이때 Claude는 **해당 provider의 환경변수 이름을 사용자에게 알리고, 발급 절차는 `GUIDE.md`를 참조하도록 안내**한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명이 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 위 변수가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `ICLOUD_EMAIL=<값> ICLOUD_APP_PASSWORD=<값> python3 scripts/list_events.py ...`. 지침에도 없으면 GUIDE의 "처음 설정하기"를 안내한다.
+
+**런타임 규칙 — 자격증명 누락 시**: 스크립트가 `{"status":"error","error":"credentials_missing"}` (exit 1) 또는 다계정 모호 시 `account_required` (exit 2)를 반환한다. 이때 Claude는 **해당 provider의 환경변수 이름을 사용자에게 알리고, 발급 절차는 `GUIDE.md`를 참조하도록 안내**한다(1순위는 "Claude 지침"·`CLAUDE.md`, 개발자는 `.env`·셸 환경변수도 가능).
 
 ---
 

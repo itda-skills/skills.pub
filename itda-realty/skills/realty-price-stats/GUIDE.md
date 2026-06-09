@@ -17,15 +17,19 @@ title: "realty-price-stats 사용 가이드"
 
 1. [reb.or.kr](https://www.reb.or.kr/r-one/openapi/)에 회원가입합니다.
 2. Open API 활용신청을 합니다: https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do
-3. 발급받은 키를 환경변수에 등록합니다.
+3. 발급받은 키를 **Claude Desktop 지침**에 추가합니다 — Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 한 줄을 붙여넣고 저장하세요.
 
 ```dotenv
 RONE_API_KEY=발급받은_키
 ```
 
+한 번 넣으면 이후 모든 대화에서 Claude가 자동으로 사용합니다 — `.env` 같은 파일을 직접 만들 필요가 없습니다.
+
+> 개발자라면 작업 폴더 루트의 `.env`에 같은 한 줄을 넣어도 됩니다.
+
 ### 실거래 파생 통계 추가 조회
 
-실거래 데이터 기반 파생 통계(평균·중위·최대·최솟값)를 함께 보려면 공공데이터포털 키도 필요합니다. `realty-deals` 스킬을 이미 쓰고 있다면 같은 키를 그대로 씁니다.
+실거래 데이터 기반 파생 통계(평균·중위·최대·최솟값)를 함께 보려면 공공데이터포털 키도 필요합니다. `realty-deals` 스킬을 이미 쓰고 있다면 같은 키를 그대로 씁니다. 이 키도 같은 자리(**설정 → 일반 → "Claude 지침"**)에 한 줄 추가하면 됩니다.
 
 ```dotenv
 KO_DATA_API_KEY=발급받은_키
@@ -69,6 +73,6 @@ KO_DATA_API_KEY=발급받은_키
 
 | 증상 | 원인 / 해결 |
 |------|-------------|
-| "RONE 키가 없다"는 안내 (`config`) | `.env`에 `RONE_API_KEY`가 비어 있음. 위 "처음 설정하기" 확인 |
-| "공공데이터 키가 없다"는 안내 (`config`) | 실거래 파생 통계 요청 시 `KO_DATA_API_KEY`도 필요. `.env`에 추가 |
+| "RONE 키가 없다"는 안내 (`config`) | **Claude 지침**(또는 `.env`)에 `RONE_API_KEY`가 없거나 비어 있음. 위 "처음 설정하기" 확인 |
+| "공공데이터 키가 없다"는 안내 (`config`) | 실거래 파생 통계 요청 시 `KO_DATA_API_KEY`도 필요. **Claude 지침**(또는 `.env`)에 추가 |
 | API 서비스 오류 (`api`) | 각 포털 활용신청 승인 상태를 확인하고 다시 요청 |

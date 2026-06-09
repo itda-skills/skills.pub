@@ -90,7 +90,11 @@ Claude가 이 스킬을 실행할 때 반드시 따르는 행동 규칙입니다
 
 네이버 OpenAPI(데이터랩·검색)와 검색광고 API 키가 필요합니다.
 
-```
+**권장 (비개발자 포함 모든 사용자) — Claude Desktop 지침에 키 등록:**
+
+Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 다섯 줄을 추가하면 이후 모든 대화에서 자동 사용됩니다(파일 작성 불필요).
+
+```dotenv
 NAVER_CLIENT_ID=...
 NAVER_CLIENT_SECRET=...
 NAVER_SEARCHAD_ACCESS_KEY=...
@@ -98,10 +102,13 @@ NAVER_SEARCHAD_SECRET_KEY=...
 NAVER_SEARCHAD_CUSTOMER_ID=...
 ```
 
-키 조회 우선순위(REQ-008): **셸 환경변수 > `~/.claude/settings.json`의 env >
-실행 위치(cwd) 또는 `$HOME`의 `.env` 파일**. 임의 디렉토리에서 실행하면서 키가
-이 위치들에 없으면 해당 소스는 fail-loud로 사유를 표시합니다(크래시 아님).
-자동완성은 무인증이라 키 없이도 동작합니다.
+> **키 주입 (Claude 실행 규칙):** 위 키가 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `NAVER_CLIENT_ID=<...> ... python3 scripts/main.py ...`. 지침에도 없으면 해당 소스가 fail-loud로 사유를 표시한다.
+
+**개발자 (선택) — 환경변수 / `.env`:** 셸 환경변수, `~/.claude/settings.json`의 env, 실행 위치(cwd) 또는 `$HOME`의 `.env` 파일도 사용할 수 있습니다.
+> 키 조회 우선순위(REQ-008): **셸 환경변수 > `~/.claude/settings.json`의 env(Claude 주입 포함) >
+> 실행 위치(cwd) 또는 `$HOME`의 `.env` 파일**. 임의 디렉토리에서 실행하면서 키가
+> 이 위치들에 없으면 해당 소스는 fail-loud로 사유를 표시합니다(크래시 아님).
+> 자동완성은 무인증이라 키 없이도 동작합니다.
 
 ## 제약 (Exclusions)
 

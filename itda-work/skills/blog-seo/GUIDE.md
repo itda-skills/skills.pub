@@ -8,7 +8,9 @@ title: "blog-seo 활용 가이드"
 
 ## 처음 설정하기
 
-키워드 분석에는 네이버 API 키 두 종류가 필요합니다. 각각 한 번만 발급하면 이후에는 자동으로 사용됩니다.
+키워드 분석에는 네이버 API 키 두 종류(5개 값)가 필요합니다. 각각 한 번만 발급하면 이후에는 자동으로 사용됩니다.
+
+발급받은 키는 **Claude Desktop 지침**에 추가합니다 — Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 5줄을 붙여넣고 저장하세요.
 
 ```dotenv
 NAVER_SEARCHAD_ACCESS_KEY=검색광고_API키
@@ -17,6 +19,10 @@ NAVER_SEARCHAD_CUSTOMER_ID=광고주_고객ID
 NAVER_CLIENT_ID=네이버앱_클라이언트ID
 NAVER_CLIENT_SECRET=네이버앱_클라이언트시크릿
 ```
+
+한 번 넣으면 이후 모든 대화에서 Claude가 자동으로 사용합니다 — `.env` 같은 파일을 직접 만들 필요가 없습니다.
+
+> 개발자라면 작업 폴더 루트의 `.env`에 같은 5줄을 넣어도 됩니다.
 
 ### 1. 네이버 검색광고 API (3개 키)
 

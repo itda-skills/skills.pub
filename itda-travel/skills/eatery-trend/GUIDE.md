@@ -7,7 +7,7 @@
 
 ## 처음 설정하기 — API 키 등록
 
-네이버 OpenAPI(데이터랩·검색)와 검색광고 API 키가 필요합니다. 아래 값을 `.env` 파일(또는 환경변수)에 넣습니다.
+네이버 OpenAPI(데이터랩·검색)와 검색광고 API 키가 필요합니다. 발급받은 키를 **Claude Desktop 지침**에 등록해 두면 됩니다 — Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 다섯 줄을 붙여넣고 저장하세요.
 
 ```dotenv
 NAVER_CLIENT_ID=...
@@ -16,6 +16,10 @@ NAVER_SEARCHAD_ACCESS_KEY=...
 NAVER_SEARCHAD_SECRET_KEY=...
 NAVER_SEARCHAD_CUSTOMER_ID=...
 ```
+
+한 번 넣으면 이후 모든 대화에서 Claude가 자동으로 사용합니다 — `.env` 같은 파일을 직접 만들 필요가 없습니다.
+
+> 개발자라면 작업 폴더·홈의 `.env` 파일이나 환경변수에 같은 다섯 줄을 넣어도 됩니다.
 
 > API 키가 없으면 해당 데이터 소스를 가져오지 못한 이유를 알려줍니다(바로 멈추지 않고 원인을 표시합니다). 가게 이름 자동완성은 키 없이도 동작합니다.
 

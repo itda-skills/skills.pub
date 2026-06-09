@@ -45,17 +45,18 @@ metadata:
 > **호출 path:** `/getDataSetOpnStdBidPblancInfo` (입찰공고 데이터셋)
 > **응답 포맷:** JSON+XML, 갱신주기 실시간
 
-**권장 (모든 환경) — 작업 폴더 루트에 `.env` 파일 배치:**
+**권장 (비개발자 포함 모든 사용자) — Claude Desktop 지침에 키 등록:**
 
-```bash
-# <작업 폴더 루트>/.env 에 한 줄 추가
+Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 한 줄을 추가하면 이후 모든 대화에서 자동 사용됩니다(파일 작성 불필요).
+
+```
 KO_DATA_API_KEY=발급받은_키
 ```
 
-- Cowork: 마운트된 작업 폴더(`outputs/` 등) 루트의 `.env`를 자동 탐색합니다. 한 번 두면 이후 호출에서 키를 다시 넣을 필요가 없습니다.
-- 세션별 절대경로(`/sessions/<id>/...`)를 고정으로 적지 마세요 — 세션마다 바뀝니다. `.env`는 작업 폴더 루트에만 두면 자동 탐색됩니다.
+> **키 주입 (Claude 실행 규칙):** API 키가 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 `KO_DATA_API_KEY`가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `KO_DATA_API_KEY=<키> python3 scripts/...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다.
 
-> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.KO_DATA_API_KEY "발급받은_키"` 또는 셸 환경변수도 사용할 수 있습니다.
+**개발자 (선택) — 환경변수 / `.env`:** 작업 폴더 루트 `.env`에 `KO_DATA_API_KEY=키`, `claude config set env.KO_DATA_API_KEY "키"`, 또는 셸 환경변수도 사용할 수 있습니다.
+> 키 소스 우선순위: `--api-key` > `os.environ`(Claude 주입 포함) > `~/.claude/settings.json` > `.env`(자동 탐색).
 
 > **Decoding 키 사용**: 마이페이지 > Open API > 활용신청 현황 > 해당 API 상세에서 표시된 일반 인증키(Decoding)를 복사.
 
@@ -182,7 +183,7 @@ g2b/
 
 | 오류 | 원인 | 해결 방법 |
 |------|------|-----------|
-| `KO_DATA_API_KEY가 설정되지 않았습니다` | API 키 미설정 | 작업 폴더 루트에 `.env` 생성 → `KO_DATA_API_KEY=키` (로컬 CLI는 셸 환경변수도 가능) |
+| `KO_DATA_API_KEY가 설정되지 않았습니다` | API 키 미설정 | "Claude 지침"에 `KO_DATA_API_KEY=키` 추가(권장) — 지침의 키를 실행 시 환경변수로 주입. 개발자는 `.env`·셸 환경변수도 가능 |
 | `공고를 찾을 수 없습니다` | 해당 조건 공고 없음 | 기간 또는 키워드 조정 |
 
 ## 상세 API 가이드

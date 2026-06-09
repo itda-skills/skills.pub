@@ -35,16 +35,27 @@ KTX 열차를 **검색**하고 **예약**합니다. 사용자용 가이드는 GU
 - **매크로(취소표 자동 연타·반복 폴링)는 제공하지 않으며 금지**합니다. 1회성
   명령만 수행합니다.
 
-## 환경 변수
+## 자격증명 (계정)
 
 | Variable | 설명 | 발급 |
 |---|---|---|
 | `KORAIL_USER_ID` | 코레일 회원 ID (회원번호 8자리 / 휴대폰 / 이메일) | [letskorail.com](https://www.letskorail.com) 회원가입 |
 | `KORAIL_PASSWORD` | 코레일 로그인 비밀번호 | 위 계정의 비밀번호 |
 
-조회 우선순위: 셸 환경변수 > `~/.claude/settings.json` 의 env > 작업 폴더/홈의 `.env`.
-키가 없으면 fail-loud로 발급·설정 방법을 안내합니다(크래시 아님). 비밀번호는
-출력·로그에 평문으로 남기지 않습니다(마스킹).
+**권장 (비개발자 포함 모든 사용자) — Claude Desktop 지침에 계정 등록:**
+
+Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 두 줄을 추가하면 이후 모든 대화에서 자동 사용됩니다(파일 작성 불필요). 비밀번호는 본인만 보는 지침 영역에 둡니다.
+
+```dotenv
+KORAIL_USER_ID=코레일 회원번호 또는 휴대폰번호 또는 이메일
+KORAIL_PASSWORD=코레일 로그인 비밀번호
+```
+
+> **키 주입 (Claude 실행 규칙):** 계정이 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 `KORAIL_USER_ID`/`KORAIL_PASSWORD`가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `KORAIL_USER_ID=<ID> KORAIL_PASSWORD=<PW> python3 .../main.py ...`. 지침에도 없으면 fail-loud 안내를 제시한다. 주입한 값은 출력·요약·로그에 노출하지 않는다(SAFE-3).
+
+**개발자 (선택) — 환경변수 / `.env`:** 셸 환경변수, `~/.claude/settings.json` 의 env, 작업 폴더/홈의 `.env`도 사용할 수 있습니다.
+> 조회 우선순위: 셸 환경변수 > `~/.claude/settings.json` 의 env(Claude 주입 포함) > 작업 폴더/홈의 `.env`.
+> 키가 없으면 fail-loud로 발급·설정 방법을 안내합니다(크래시 아님). 비밀번호는 출력·로그에 평문으로 남기지 않습니다(마스킹).
 
 ## 실행
 

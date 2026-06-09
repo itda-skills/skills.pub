@@ -33,7 +33,8 @@
 # 1) 의존성
 uv pip install --system caldav icalendar
 
-# 2) 자격증명 (.env 또는 환경변수). iCloud는 itda-email 앱비번을 그대로 공유
+# 2) 자격증명 — 사용자는 "Claude 지침"/CLAUDE.md 권장(GUIDE.md 참고). 개발자는 .env/환경변수.
+#    iCloud는 itda-email 앱비번을 그대로 공유
 #    ICLOUD_EMAIL=you@icloud.com
 #    ICLOUD_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
 

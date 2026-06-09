@@ -34,6 +34,12 @@ metadata:
 |---|---|---|
 | `KO_DATA_API_KEY` | 공공데이터포털 ([data.go.kr](https://www.data.go.kr)) | 공공데이터포털 가입 후 원하는 실거래가 서비스 개별 활용신청.<br>아파트 매매: https://www.data.go.kr/data/15126469/openapi.do<br>아파트 전월세: https://www.data.go.kr/data/15126474/openapi.do<br>(서비스별 개별 신청, 자동승인이라도 동기화 5~30분 소요) |
 
+**권장 (비개발자 포함 모든 사용자) — Claude Desktop 지침에 키 등록:** Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 `KO_DATA_API_KEY=발급받은_키` 한 줄을 추가하면 이후 모든 대화에서 자동 사용됩니다(파일 작성 불필요).
+
+> **키 주입 (Claude 실행 규칙):** API 키가 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 `KO_DATA_API_KEY`가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `KO_DATA_API_KEY=<키> python3 scripts/deals_cli.py ...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다.
+
+**개발자 (선택) — 환경변수 / `.env`:** 작업 폴더 루트 `.env`에 `KO_DATA_API_KEY=키`, 또는 셸 환경변수도 사용할 수 있습니다.
+
 ## 사전 요구사항
 
 ```bash
@@ -162,7 +168,7 @@ python3 scripts/deals_cli.py regions
 
 | 상황 | status | error | 조치 |
 |------|--------|-------|------|
-| API 키 미설정 | error | config | KO_DATA_API_KEY 환경변수 설정 |
+| API 키 미설정 | error | config | "Claude 지침"에 `KO_DATA_API_KEY=키` 추가(권장). 개발자는 `.env`·셸 환경변수도 가능 |
 | 알 수 없는 지역명 | error | args | regions 명령으로 지역명 확인 |
 | API 서비스 오류 | error | api | resultCode 확인, 활용신청 상태 점검 |
 | 권한 오류(20/30) | error | api | 활용신청 승인 상태 확인 (5~30분 동기화) |

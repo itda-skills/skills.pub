@@ -18,13 +18,15 @@ title: "stock-quote 사용 가이드"
 1. [https://www.data.go.kr/data/15094808/openapi.do](https://www.data.go.kr/data/15094808/openapi.do) 접속
 2. "활용신청" 클릭 (자동승인)
 3. 마이페이지 → 개발계정 → **Decoding 인증키** 복사
-4. 작업 폴더 루트에 `.env` 파일을 만들고 아래처럼 저장:
+4. 발급받은 키를 **Claude Desktop 지침**에 추가합니다 — Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 한 줄을 붙여넣고 저장하세요.
 
 ```dotenv
 KO_DATA_API_KEY=발급받은_Decoding키
 ```
 
-Cowork는 마운트된 작업 폴더(`outputs/` 등) 루트의 `.env`를 자동 탐색합니다. 한 번 두면 이후 호출에서 키를 다시 넣을 필요가 없습니다.
+한 번 넣으면 이후 모든 대화에서 Claude가 자동으로 사용합니다 — `.env` 같은 파일을 직접 만들 필요가 없습니다.
+
+> 개발자라면 작업 폴더 루트의 `.env`에 같은 한 줄을 넣어도 됩니다.
 
 > 이 키는 itda-gov의 g2b·funding·realestate 스킬과 공유되지만, 금융위원회 주식시세정보 데이터셋(15094808)에는 **별도 활용신청**이 필요합니다.
 
@@ -85,7 +87,7 @@ Cowork는 마운트된 작업 폴더(`outputs/` 등) 루트의 `.env`를 자동 
 
 | 증상 | 원인 / 해결 |
 |------|-------------|
-| "API 키가 설정되지 않았습니다" | `.env`에 `KO_DATA_API_KEY=키` 누락. 위 "사전 준비" 확인 |
+| "API 키가 설정되지 않았습니다" | **Claude 지침**(또는 `.env`)에 `KO_DATA_API_KEY=키` 누락. 위 "사전 준비" 확인 |
 | HTTP 403 Forbidden | 금융위원회 주식시세정보(15094808) 활용신청 미완료. [data.go.kr](https://www.data.go.kr/data/15094808/openapi.do)에서 신청(자동승인) |
 | "모호한 종목" 표시 | 종목명이 복수 일치. 6자리 종목코드로 다시 말하세요 |
 | "종목 없음" 표시 | 종목코드·종목명 확인 후 재시도 |
