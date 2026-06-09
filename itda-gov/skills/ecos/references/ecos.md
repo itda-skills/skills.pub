@@ -33,8 +33,8 @@ python3 scripts/collect_econ.py --format table key
 # 소비자물가지수 (CPI) 연간 조회
 python3 scripts/collect_econ.py search --stat 901Y009 --start 2020 --end 2024
 
-# 환율 (원/달러) 월간 조회
-python3 scripts/collect_econ.py search --stat 731Y003 --period month --start 202401 --end 202412 --item1 0000001
+# 환율 (원/달러 종가) 일간 조회 — 731Y003은 일간(D) 주기, 종가 항목코드 0000003
+python3 scripts/collect_econ.py search --stat 731Y003 --period day --start 20240102 --end 20240131 --item1 0000003
 
 # 항목코드 확인 (search 전에 어떤 코드를 써야 하는지 확인)
 python3 scripts/collect_econ.py items --stat 901Y009
@@ -69,8 +69,8 @@ py -3 scripts/collect_econ.py key
 | 소비자물가지수 (CPI) | `901Y009` | M, A | (총지수 등 품목별) |
 | GDP (원계열, 실질) | `200Y106` | Q, A | |
 | GDP (원계열, 명목) | `200Y105` | Q, A | |
-| 환율 (원/달러) | `731Y003` | D | `0000001` (USD) |
-| 기준금리/콜금리 | `028Y001` | D, M | |
+| 환율 (원/달러 종가) | `731Y003` | D | `0000003` (원/달러 종가) |
+| 한국은행 기준금리·여수신금리 | `722Y001` | D | |
 | 국민소득 (명목, 연간) | `200Y113` | A | |
 
 > 코드를 모르면 `items` 명령으로 확인하세요.

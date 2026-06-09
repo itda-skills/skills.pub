@@ -66,13 +66,31 @@ def _build_parser() -> argparse.ArgumentParser:
         "--rows",
         type=int,
         default=10,
-        help="페이지당 결과 수 (기본: 10, 최대: 999)",
+        help=(
+            "단일 페이지 조회 모드: 페이지당 결과 수 (기본: 10, 최대: 999). "
+            "--rows 또는 --page를 명시하면 자동 전체 순회를 끄고 해당 페이지만 "
+            "조회한다. 미지정 시(특히 키워드 검색) 날짜범위 전 페이지를 자동 순회."
+        ),
     )
     parser.add_argument(
         "--page",
         type=int,
         default=1,
-        help="페이지 번호 (기본: 1)",
+        help=(
+            "단일 페이지 조회 모드: 페이지 번호 (기본: 1). --rows/--page 중 "
+            "하나라도 명시하면 자동 전체 순회를 끄고 해당 페이지만 조회한다."
+        ),
+    )
+    parser.add_argument(
+        "--max-pages",
+        dest="max_pages",
+        type=int,
+        default=g2b_api._MAX_PAGES,
+        help=(
+            f"자동 전체 순회 시 순회 상한 페이지 수 "
+            f"(기본: {g2b_api._MAX_PAGES}, 페이지당 최대 999건). "
+            "상한 도달 시 미조회분 경고를 출력한다."
+        ),
     )
     parser.add_argument(
         "--format",
@@ -315,6 +333,22 @@ def _output_error(error_type: str, detail: str) -> None:
     ))
 
 
+def _explicit_paging_requested(argv: list[str] | None) -> bool:
+    """사용자가 --page 또는 --rows를 명시적으로 지정했는지 판정.
+
+    argparse 기본값(page=1, rows=10)과 사용자가 동일 값을 명시한 경우를
+    구별하기 위해 raw argv를 직접 검사한다. 명시 시 단일 페이지 모드로,
+    미지정 시 자동 전체 순회 모드로 동작한다.
+    """
+    tokens = sys.argv[1:] if argv is None else argv
+    for tok in tokens:
+        if tok == "--page" or tok == "--rows":
+            return True
+        if tok.startswith("--page=") or tok.startswith("--rows="):
+            return True
+    return False
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI 진입점.
 
@@ -337,15 +371,43 @@ def main(argv: list[str] | None = None) -> int:
         _output_error("config", str(exc))
         return 1
 
-    # 입찰공고 조회
+    single_page_mode = _explicit_paging_requested(argv)
+
+    warnings: list[str] = []
+    truncated = False
     try:
-        result = g2b_api.search_bids(
-            api_key=api_key,
-            begin_dt=args.from_date,
-            end_dt=args.to,
-            page=args.page,
-            rows=args.rows,
-        )
+        if single_page_mode:
+            # 단일 페이지 조회 모드: 사용자가 --page/--rows로 명시한 페이지만.
+            result = g2b_api.search_bids(
+                api_key=api_key,
+                begin_dt=args.from_date,
+                end_dt=args.to,
+                page=args.page,
+                rows=args.rows,
+            )
+            items = result.get("items", [])
+            total_count = int(result.get("totalCount", 0) or 0)
+            page_label: int | str = args.page
+        else:
+            # 자동 전체 순회 모드: 날짜범위 내 모든 페이지를 순회 후 키워드 필터.
+            # 키워드가 첫 페이지 밖에 있어도 수집되어 거짓 0건을 방지한다.
+            result = g2b_api.collect_all_bids(
+                api_key=api_key,
+                begin_dt=args.from_date,
+                end_dt=args.to,
+                max_pages=args.max_pages,
+            )
+            items = result.get("items", [])
+            total_count = int(result.get("totalCount", 0) or 0)
+            truncated = bool(result.get("truncated", False))
+            page_label = "all"
+            if truncated:
+                warnings.append(
+                    f"전체 {total_count}건 중 {result.get('scanned_count', len(items))}건만 "
+                    f"스캔했습니다(상한 {args.max_pages}페이지 도달). 미조회분이 남아 "
+                    "있어 키워드가 미조회 구간에 있으면 누락될 수 있습니다. "
+                    "기간을 좁히거나 --max-pages를 늘리세요."
+                )
     except ValueError as exc:
         _output_error("argument", str(exc))
         return 1
@@ -353,8 +415,8 @@ def main(argv: list[str] | None = None) -> int:
         _output_error("api", str(exc))
         return 1
 
-    items = result.get("items", [])
-    total_count = result.get("totalCount", 0)
+    # 필터 전 스캔 건수(중복 제거 후 누적). 키워드 필터 의미 구분용.
+    scanned_count = len(items)
 
     # 키워드 필터링
     if args.keyword:
@@ -362,21 +424,40 @@ def main(argv: list[str] | None = None) -> int:
 
     # 결과 출력
     if args.format == "json":
-        print(json.dumps(
-            {
-                "status": "ok",
-                "count": len(items),
-                "total_count": total_count,
-                "page": args.page,
-                "results": items,
-            },
-            ensure_ascii=False,
-            indent=2,
-        ))
+        payload = {
+            "status": "ok",
+            # count: 키워드 필터 후 결과 수.
+            "count": len(items),
+            # total_count: API가 보고한 필터 전 날짜범위 전체 결과 수.
+            "total_count": total_count,
+            # scanned_count: 실제로 순회·스캔한(중복 제거 후) 항목 수.
+            #   total_count보다 작으면 truncated이거나 단일 페이지 모드.
+            "scanned_count": scanned_count,
+            "truncated": truncated,
+            "page": page_label,
+            "results": items,
+        }
+        if warnings:
+            payload["warnings"] = warnings
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
+        for w in warnings:
+            print(f"⚠️ {w}")
         if not items:
-            print("검색 결과가 없습니다.")
+            if args.keyword:
+                print(
+                    f"검색 결과가 없습니다. "
+                    f"(스캔 {scanned_count}건 / 전체 {total_count}건 중 "
+                    f"'{args.keyword}' 미발견)"
+                )
+            else:
+                print("검색 결과가 없습니다.")
         else:
+            if args.keyword:
+                print(
+                    f"'{args.keyword}' 검색 결과 {len(items)}건 "
+                    f"(스캔 {scanned_count}건 / 전체 {total_count}건)"
+                )
             _print_table(items, detail=args.detail)
 
     return 0

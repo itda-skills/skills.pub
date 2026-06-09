@@ -13,7 +13,8 @@ metadata:
   author: "Chinseok"
   version: "1.3.0"
   category: "data-analysis"
-  status: "experimental"
+  status: "beta"
+  recommended: true
   created_at: "2026-05-19"
   updated_at: "2026-05-28"
   tags: "data-analysis, statistics, stdlib"

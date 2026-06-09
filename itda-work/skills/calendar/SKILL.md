@@ -9,6 +9,7 @@ compatibility: "Designed for Claude Cowork. Python 3.10+. Requires caldav, icale
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
+  recommended: true
   version: "0.2.1"
   created_at: "2026-06-01"
   updated_at: "2026-06-01"

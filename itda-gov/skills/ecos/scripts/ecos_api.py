@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -112,16 +113,6 @@ def _classify_ecos_error(error_code: str) -> tuple[str, str]:
         hint["category"],
     )
 
-# 제안서에서 자주 참조하는 주요 통계표
-KEY_STAT_CODES = {
-    "cpi": ("021Y125", "소비자물가지수(2020=100)"),
-    "gdp": ("111Y017", "실질 GDP 성장률"),
-    "exchange": ("731Y003", "환율"),
-    "interest": ("028Y001", "기준금리/콜금리"),
-    "national_income": ("200Y001", "국민소득 통계"),
-}
-
-
 class ECOSAPIError(Exception):
     """ECOS API 호출 오류."""
 
@@ -134,14 +125,18 @@ def _build_url(*segments: str) -> str:
     """PATH 기반 URL 생성.
 
     ECOS API는 쿼리 파라미터가 아닌 경로(path) 기반으로 파라미터를 전달.
+    한글 검색어(StatisticWord의 단어 등) 비-ASCII 세그먼트는 percent-encoding
+    해야 한다. encode 없이 전송하면 urllib이 'ascii' codec UnicodeEncodeError로
+    실패한다 (라이브 검증: word --word "GDP디플레이터" 크래시, 2026-06-09).
 
     Args:
         segments: URL 경로 세그먼트.
 
     Returns:
-        완성된 URL (trailing slash 포함).
+        완성된 URL (trailing slash 포함, 각 세그먼트 percent-encoded).
     """
-    return _BASE_URL + "/" + "/".join(str(s) for s in segments) + "/"
+    encoded = [urllib.parse.quote(str(s), safe="") for s in segments]
+    return _BASE_URL + "/" + "/".join(encoded) + "/"
 
 
 def _request(url: str) -> dict[str, Any]:
@@ -241,7 +236,7 @@ def search_statistics(
 
     Args:
         api_key: ECOS 인증키.
-        stat_code: 통계표코드 (예: "021Y125").
+        stat_code: 통계표코드 (예: "901Y009").
         period: 주기 ("A", "Q", "M", "D").
         start_date: 시작일 (주기에 맞는 형식).
         end_date: 종료일.

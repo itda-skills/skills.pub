@@ -13,7 +13,8 @@ metadata:
   author: "스킬.잇다"
   version: "0.2.0"
   category: "document"
-  status: "experimental"
+  status: "beta"
+  recommended: true
   created_at: "2026-06-08"
   updated_at: "2026-06-08"
   tags: "pptx, presentation, design-md, deck, slides"

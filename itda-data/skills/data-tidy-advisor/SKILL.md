@@ -13,7 +13,8 @@ metadata:
   author: "Chinseok"
   version: "1.0.3"
   category: "data-tidy"
-  status: "experimental"
+  status: "beta"
+  recommended: true
   created_at: "2026-05-20"
   updated_at: "2026-05-22"
   tags: "tidy, data-tidy, stdlib"
@@ -149,8 +150,13 @@ summary = report.render_emit_summary(result)
 
 별도 패키지 설치 불필요. Python 3.10+ 표준 라이브러리만 사용합니다.
 
-xlsx 파일의 병합 셀을 처리하려면 general-purpose 서브에이전트를 통해
-openpyxl을 활용합니다 (자동 처리됨).
+CSV는 `dispatch.parse_csv_to_grid`가 stdlib `csv`로 자체 파싱하므로
+self-contained로 동작한다(서브에이전트 불요).
+
+xlsx는 `dispatch.dispatch_parse`가 직접 추출하지 않고 `status:"dispatched"`
+페이로드만 반환한다. 실데이터(raw 그리드·병합 셀 영역) 추출은 오케스트레이터가
+general-purpose 서브에이전트(openpyxl)로 수행해 grid를 채운 뒤 관문1로 넘겨야
+정돈이 진행된다. 이 추출 단계가 비면 그리드가 비어 진단이 차단된다.
 
 ---
 

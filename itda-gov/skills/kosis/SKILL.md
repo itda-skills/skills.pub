@@ -12,10 +12,12 @@ argument-hint: "[search|data] [--keyword 키워드] [--org-id ID] [--tbl-id ID] 
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
+  status: "active"
+  recommended: true
   version: "0.10.4"
   created_at: "2026-03-29"
   updated_at: "2026-05-22"
-  tags: "KOSIS, statistics, KOSIS, population, market"
+  tags: "KOSIS, statistics, population, market"
 ---
 
 # kosis

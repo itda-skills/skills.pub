@@ -19,6 +19,7 @@ metadata:
   category: "document"
   created_at: "2026-06-08"
   status: "experimental"
+  recommended: true
 ---
 
 # 마크다운 → 정부 보고서 HWPX (hwp-report)

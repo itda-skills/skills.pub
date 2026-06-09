@@ -1,5 +1,27 @@
 # Changelog — itda-g2b
 
+## [Unreleased] — 키워드 검색 거짓 0건(silent under-collect) 수정
+
+### Fixed
+- **[치명] 키워드 검색 거짓 0건 수정.** 기존엔 `rows=10` 단일 페이지만 조회 후
+  클라이언트 필터 → 키워드가 11번째 이후 공고에 있으면 `count:0`을 반환했다.
+  나라장터는 하루 약 3,300건이 등록되므로 라이브에서 `구매`·`교육` 키워드가
+  첫 10건엔 0건이나 전 범위엔 396·124건 존재함을 확인(거짓 0건 실증).
+  `g2b_api.collect_all_bids()` 추가 — totalCount 소진 또는 `--max-pages`(기본 20,
+  페이지당 999건) 상한까지 전 페이지를 순회·중복제거 후 누적, 그 위에서 키워드 필터.
+- 페이지 경계 중복 제거: `(bidNtceNo, bidNtceOrd, refNtceNo, refNtceOrd)` 안정 키.
+  같은 공고번호라도 차수가 다르면 별개 행으로 보존.
+
+### Changed
+- **출력 의미 구분.** `total_count`(API 필터 전 총계) vs `count`(필터 후) vs
+  신규 `scanned_count`(실제 순회 건수) 분리. `truncated` 플래그 + `warnings` 추가 —
+  `--max-pages` 상한 도달 시 "전체 N건 중 X건만 스캔, 미조회분 존재" 경고 출력.
+- `--rows`/`--page` 명시 시 자동 순회를 끄고 단일 페이지만 조회(브라우즈 모드).
+  미지정 시 키워드 검색은 전 페이지 자동 순회.
+- 신규 옵션 `--max-pages`. SKILL.md 옵션표·argument-hint·`references/g2b.md` 동기화.
+- SKILL.md "파일 구조" 환각 교정 — `env_loader.py`·`itda_path.py`는 g2b가 아니라
+  `shared/`에서 주입, 존재하지 않던 `test_env_loader.py` 제거.
+
 ## [Unreleased] — SPEC-COWORK-ENV-GUIDE-001
 
 ### Changed

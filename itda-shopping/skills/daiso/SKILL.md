@@ -13,7 +13,8 @@ metadata:
   author: "Chinseok"
   version: "0.2.0"
   category: "data-fetching"
-  status: "experimental"
+  status: "beta"
+  recommended: true
   created_at: "2026-06-01"
   updated_at: "2026-06-02"
   tags: "daiso, retail, inventory, product-search, store-locator, read-only"

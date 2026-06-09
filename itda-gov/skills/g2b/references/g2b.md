@@ -26,8 +26,11 @@ python3 scripts/collect_g2b.py --format table
 # 상세 필드 포함 (입찰자격, 담당자, 일정 등)
 python3 scripts/collect_g2b.py --format table --detail
 
-# 페이지네이션
+# 단일 페이지 조회 (--rows/--page 명시 시 자동 순회 끔)
 python3 scripts/collect_g2b.py --rows 50 --page 2
+
+# 키워드 자동 전체 순회 + 순회 상한 조정
+python3 scripts/collect_g2b.py --keyword "용역" --max-pages 5
 ```
 
 Windows: `python3` → `py -3`
@@ -38,12 +41,20 @@ Windows: `python3` → `py -3`
 |------|--------|------|
 | `--from` | 7일 전 | 조회 시작일 (YYYY-MM-DD) |
 | `--to` | 오늘 | 조회 종료일 (YYYY-MM-DD) |
-| `--keyword` | — | 공고명 키워드 필터 (부분 일치, 대소문자 무시) |
-| `--rows` | 10 | 페이지당 결과 수 (최대 999) |
-| `--page` | 1 | 페이지 번호 |
+| `--keyword` | — | 공고명 키워드 필터 (부분 일치, 대소문자 무시). 날짜 범위 전 페이지 자동 순회 후 필터 |
+| `--rows` | 10 | **단일 페이지 모드** — 페이지당 결과 수 (최대 999). 명시 시 자동 순회 끔 |
+| `--page` | 1 | **단일 페이지 모드** — 페이지 번호. 명시 시 자동 순회 끔 |
+| `--max-pages` | 20 | 자동 순회 상한 페이지 수 (페이지당 최대 999건). 상한 도달 시 미조회분 경고 |
 | `--format` | json | 출력 형식 (`json` \| `table`) |
 | `--detail` | false | 상세 필드 포함 (table 형식에서 유효) |
 | `--api-key` | — | 인증키 직접 지정 |
+
+> **자동 전체 순회 (기본)**: `--rows`/`--page` 미지정 시 키워드 검색은 날짜 범위
+> 전 페이지를 순회한다. 나라장터는 하루 수천 건이 등록되므로 첫 페이지만 보면
+> 키워드가 뒤쪽 공고에 있을 때 거짓 0건(false 0)이 발생한다 — 순회로 이를 방지한다.
+>
+> **단일 페이지 모드**: `--rows` 또는 `--page`를 명시하면 자동 순회를 끄고 해당
+> 페이지만 조회한다.
 
 ## 출력 포맷
 
@@ -53,8 +64,10 @@ Windows: `python3` → `py -3`
 {
   "status": "ok",
   "count": 5,
-  "total_count": 42,
-  "page": 1,
+  "total_count": 3342,
+  "scanned_count": 3342,
+  "truncated": false,
+  "page": "all",
   "results": [
     {
       "bidNtceNo": "20260318001",
@@ -66,6 +79,17 @@ Windows: `python3` → `py -3`
   ]
 }
 ```
+
+출력 필드 의미:
+
+| 필드 | 의미 |
+|------|------|
+| `total_count` | API가 보고한 **필터 전** 날짜 범위 전체 결과 수 |
+| `scanned_count` | 실제 순회·스캔한(중복 제거 후) 항목 수 |
+| `count` | **키워드 필터 후** 결과 수 (`results` 길이와 일치) |
+| `truncated` | `--max-pages` 상한으로 미조회분이 남으면 `true` |
+| `warnings` | `truncated`일 때만 추가되는 미조회분 안내 배열 |
+| `page` | 단일 페이지 모드면 번호, 자동 순회면 `"all"` |
 
 ### 에러 출력
 

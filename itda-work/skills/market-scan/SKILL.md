@@ -17,6 +17,7 @@ metadata:
   version: "0.1.0"
   category: "research"
   status: "experimental"
+  recommended: true
   created_at: "2026-06-08"
   updated_at: "2026-06-09"
   aliases: "시장조사, 시장분석, 경쟁분석, market research"

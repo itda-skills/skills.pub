@@ -13,10 +13,12 @@ argument-hint: "[search|info|finance|employees|profile|disclosure|business|compa
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
+  status: "active"
+  recommended: true
   version: "0.17.0"
   created_at: "2026-03-29"
   updated_at: "2026-06-05"
-  tags: "DART, CSV, company, financial, DART, disclosure, competitor, business report, compare, csv"
+  tags: "DART, CSV, company, financial, disclosure, competitor, business report, compare"
 ---
 
 # dart

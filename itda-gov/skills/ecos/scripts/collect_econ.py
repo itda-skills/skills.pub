@@ -3,10 +3,10 @@
 
 제안서/사업계획서에 필요한 거시경제 지표를 수집하여 JSON/Table로 출력.
 
-사용법:
+사용법 (통계표코드는 모두 라이브 검증 — 2026-06-09):
     python3 scripts/collect_econ.py key                              # 100대 주요 경제지표
-    python3 scripts/collect_econ.py search --stat 021Y125 --start 2020 --end 2024
-    python3 scripts/collect_econ.py items --stat 021Y125             # 항목코드 확인
+    python3 scripts/collect_econ.py search --stat 901Y009 --start 2020 --end 2024  # 소비자물가지수
+    python3 scripts/collect_econ.py items --stat 901Y009            # 항목코드 확인
     python3 scripts/collect_econ.py tables                           # 전체 통계표 목록
 """
 from __future__ import annotations
@@ -272,7 +272,7 @@ def build_parser() -> argparse.ArgumentParser:
     # search - 통계 데이터 조회
     p_search = sub.add_parser("search", help="통계 데이터 조회")
     _add_common(p_search)
-    p_search.add_argument("--stat", "-s", required=True, help="통계표코드 (예: 021Y125)")
+    p_search.add_argument("--stat", "-s", required=True, help="통계표코드 (예: 901Y009)")
     p_search.add_argument("--start", required=True, help="시작일 (예: 2020)")
     p_search.add_argument("--end", required=True, help="종료일 (예: 2024)")
     p_search.add_argument(
