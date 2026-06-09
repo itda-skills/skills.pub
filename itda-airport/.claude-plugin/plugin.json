@@ -1,7 +1,7 @@
 {
   "name": "itda-airport",
   "description": "인천국제공항 공개 데이터 스킬팩 — 항공사별 통계 (운항·여객·화물 월별)",
-  "version": "8.8.1",
+  "version": "8.9.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+## [3.6.0] — 2026-06-09
+
+### Added
+
+- **web-search** (신규·experimental): 다중 검색엔진 통합 조회 스킬. 질의어 하나로 키 보유 엔진(Perplexity·Tavily·Serper·Exa·Naver)을 fan-out 호출해 round-robin 병합·URL 중복 제거한 정규화 결과 목록을 돌려준다(조회 전용). `--engine auto`·`--engines` 서브셋·`--naver-type web|news|blog`·`--format json|markdown`·`--check-env`. Perplexity answer+citations 매핑, 기존 `NAVER_CLIENT_ID/SECRET` 폴백, 키 마스킹(stdout/stderr 미노출), 종료코드 매트릭스(0/2/3/4/5/6)+부분실패 `errors[]` envelope. 엔진 선택 가이드(상황별 라우팅 지침). Google CSE(2027 폐지)·Bing(2025 은퇴) 대신 Serper 채택. 표준 라이브러리만 사용. 단위 63 GREEN(0 skip) + tavily·naver·perplexity·serper·exa·auto 라이브 검증 통과. (Brave는 무료 구독 활성화 이슈로 v0.1 제외, 향후 재검토 — 구현 git 이력 보존.)
+- `itda-work` 스킬 수: 17개 → **18개** (README 웹·미디어 카테고리 등재).
+- `itda-work` 버전 bump: 3.5.0 → **3.6.0** (Minor — 신규 스킬 1건).
+
 ## [3.5.0] — 2026-06-09
 
 ### Changed

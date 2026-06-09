@@ -8,7 +8,7 @@
 
 **itda-skills**는 Claude Code, Cowork에 유용한 스킬을 추가하는 플러그인입니다.
 
-현재 **17개 스킬**을 제공합니다.
+현재 **18개 스킬**을 제공합니다.
 
 > ℹ️ **v3.0.0 변경 안내**: `itda-slide-ai`, `itda-stt`는 인큐베이팅(비공개) 스킬팩 `itda-egg`로 이전되었습니다. 안정화 검증 후 itda-work로 졸업할 수 있습니다.
 >
@@ -21,6 +21,7 @@
 | 스킬 | 설명 | 환경 |
 |------|------|:----:|
 | **itda-web-reader** | 웹페이지 읽기·요약·추출 (한국어 사이트, JS 렌더링 포함) | 🌐 |
+| **itda-web-search** | 여러 검색엔진(Tavily·Serper·Perplexity·Naver·Exa)으로 웹 검색 → 정규화 결과 목록 (조회 전용, 키 보유 엔진만 auto 선택) | 🌐 🔑 |
 | **itda-blog-reader** | 네이버 블로그 글 목록·본문·댓글 트리·블로그 내 검색 (로그인 없이, 공개 포스트 전용) | 🌐 |
 | **itda-email** | Naver/Gmail/Daum/iCloud/커스텀 SMTP로 이메일 전송, IMAP 수신 (iCloud는 STARTTLS 587 분기) | 🌐 🔑 |
 | **itda-imagekit** | 이미지 정보 조회, 리사이즈, 크롭, DPI 변경, 포맷 변환, 회전/반전 | 📦 |
@@ -78,6 +79,7 @@
 |------|:---:|:---:|------|
 | itda-pdf-context-refinery | — | — | `poppler-utils` |
 | itda-web-reader | `requests` | — | Playwright 선택 |
+| itda-web-search | — | 검색엔진별 키(최소 1개) | — |
 | itda-email | — | 메일 서비스별 앱 비밀번호 | — |
 | itda-imagekit | `Pillow` | — | — |
 | itda-exchange-rate | — | — | — |
