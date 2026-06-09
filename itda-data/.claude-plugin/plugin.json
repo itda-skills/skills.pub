@@ -1,7 +1,7 @@
 {
   "name": "itda-data",
   "description": "데이터 분석 방법 추천·비정돈 파일 정돈·정직 보고서 스킬팩 — 5관문 통계 양심 게이트",
-  "version": "8.8.0",
+  "version": "8.8.1",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
