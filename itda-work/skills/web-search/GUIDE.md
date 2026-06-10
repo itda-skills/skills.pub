@@ -51,7 +51,7 @@ EXA_API_KEY=발급받은_키
 
 **Tavily** — app.tavily.com에 이메일로 가입하면 바로 키가 나옵니다. 그 값을 위 "처음 설정하기"의 `TAVILY_API_KEY`에 넣으세요.
 
-**네이버** — developers.naver.com에 네이버 계정으로 로그인하고, 애플리케이션을 등록하면서 사용 API로 "검색"을 고르면 Client ID와 Secret이 나옵니다. 각각 `NAVER_SEARCH_CLIENT_ID`, `NAVER_SEARCH_CLIENT_SECRET`에 넣으세요.
+**네이버** — developers.naver.com에 네이버 계정으로 로그인하고, 애플리케이션을 등록하면서 사용 API로 "검색"을 고르면 Client ID와 Secret이 나옵니다. 각각 `NAVER_SEARCH_CLIENT_ID`, `NAVER_SEARCH_CLIENT_SECRET`에 넣으세요. 자세한 등록 절차는 [네이버 오픈API 발급 가이드](https://skills.itda.work/credentials/naver-openapi/)를 참고하세요(변수명만 `NAVER_SEARCH_CLIENT_*`로 다릅니다).
 
 ---
 

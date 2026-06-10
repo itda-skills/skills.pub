@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [3.7.2] — 2026-06-10
+
+### Changed
+
+- **web-search GUIDE**: 네이버 검색 API 키 발급 안내에 발급 가이드 페이지(<https://skills.itda.work/credentials/naver-openapi/>) 링크 추가 (SPEC-CREDENTIALS-GUIDE-001 역링크 전수 조사 보완).
+
+
 ## [3.7.1] — 2026-06-10
 
 ### Changed
