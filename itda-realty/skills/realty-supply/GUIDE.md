@@ -23,6 +23,8 @@ KOSIS Open API 키가 필요합니다.
 KOSIS_API_KEY=발급받은_키
 ```
 
+> KOSIS 가입·키 발급 절차는 [KOSIS 발급 가이드](https://skills.itda.work/credentials/kosis/)를 참고하세요.
+
 한 번 넣으면 이후 모든 대화에서 Claude가 자동으로 사용합니다 — `.env` 같은 파일을 직접 만들 필요가 없습니다.
 
 > 개발자라면 작업 폴더 루트의 `.env`에 같은 한 줄을 넣어도 됩니다.
@@ -34,6 +36,8 @@ KOSIS_API_KEY=발급받은_키
 ```dotenv
 KO_DATA_API_KEY=발급받은_키
 ```
+
+> 자세한 가입·키 발급 절차(Decoding 키 주의사항 포함)는 [공공데이터포털 발급 가이드](https://skills.itda.work/credentials/data-go-kr/)를 참고하세요.
 
 > 청약 경쟁률 데이터는 **2020년 2월부터** 제공됩니다. 그 이전 구간은 조회되지 않습니다.
 

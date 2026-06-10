@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-06-10
+
+### Added
+
+- **eatery-trend GUIDE 발급 안내 신설 (SPEC-CREDENTIALS-GUIDE-001)**: 네이버 오픈API·검색광고
+  발급 절차 요약과 "키가 없으면 빠지는 기능" 표 추가 — 검색광고 키 없이도 surge 분석은
+  부분 동작함을 안내. 상세 절차는 발급 가이드 페이지(<https://skills.itda.work/credentials/>) 링크로 연결.
+
 ### Fixed
 
 - **place-finder v0.1.1**: `--limit` 0/음수 입력이 제한 없이 전체 결과를 출력하던 문제를

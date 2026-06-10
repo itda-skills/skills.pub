@@ -35,6 +35,8 @@ RONE_API_KEY=발급받은_키
 KO_DATA_API_KEY=발급받은_키
 ```
 
+> 자세한 가입·키 발급 절차(Decoding 키 주의사항 포함)는 [공공데이터포털 발급 가이드](https://skills.itda.work/credentials/data-go-kr/)를 참고하세요.
+
 > KB 데이터허브는 공식 API가 없어 스크래핑하지 않습니다. KB 데이터가 필요하면 공식 다운로드 페이지(https://data.kbland.kr)에서 직접 파일을 받아 활용하세요.
 
 ---

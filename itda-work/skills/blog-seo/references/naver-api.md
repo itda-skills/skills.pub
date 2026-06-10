@@ -2,68 +2,15 @@
 
 ## API 키 발급 방법
 
-### 1. 네이버 검색광고 API 키 발급
+발급 절차의 정본은 저장소 `skills/docs/credentials/`에 있다 (SPEC-CREDENTIALS-GUIDE-001):
 
-> **광고주 계정 필요** — 일반 네이버 계정으로는 발급 불가합니다.
+- 네이버 검색광고 API (`NAVER_SEARCHAD_ACCESS_KEY/SECRET_KEY/CUSTOMER_ID`) → `docs/credentials/naver-searchad.md`
+- 네이버 오픈 API (`NAVER_CLIENT_ID/SECRET`) → `docs/credentials/naver-openapi.md`
 
-#### 가입 및 발급 절차
+사용자에게 발급을 안내할 때는 본 스킬 `GUIDE.md`의 "처음 설정하기" 요약 절차를 따른다.
+오픈 API 등록 시 사용 API는 **검색 + 데이터랩(검색어트렌드)** 체크 (쇼핑인사이트 불필요).
 
-1. **광고주 가입**: https://ads.naver.com 접속 → 사업자 또는 개인 광고주로 가입
-2. **관리 시스템 접속**: https://manage.searchad.naver.com 로그인
-3. **API 키 발급 메뉴**: 상단 메뉴 **도구** → **API 사용 관리** 클릭
-   - 직접 URL: `https://manage.searchad.naver.com/customers/{고객ID}/tool/api`
-4. **키 복사**:
-   - `Access License` → `NAVER_SEARCHAD_ACCESS_KEY` 환경변수
-   - `Secret Key` → `NAVER_SEARCHAD_SECRET_KEY` 환경변수
-   - 페이지 URL의 숫자(`/customers/숫자/`) → `NAVER_SEARCHAD_CUSTOMER_ID` 환경변수
-
-#### 환경변수 설정 예시
-
-```bash
-# .env 파일 또는 Claude Cowork 설정
-NAVER_SEARCHAD_ACCESS_KEY=0100000000ce65858dc66b713511f2...
-NAVER_SEARCHAD_SECRET_KEY=AQAAAADOZYWNxmtxNRHyJC98gUQ9FN...
-NAVER_SEARCHAD_CUSTOMER_ID=4332056
-```
-
-위 `.env`는 작업 폴더 루트(예: `outputs/`)에 두면 모든 환경에서 자동 탐색됩니다. Cowork도 마운트된 작업 폴더 루트의 `.env`를 자동으로 찾습니다.
-
-> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.NAVER_SEARCHAD_ACCESS_KEY "..."`(각 키별) 또는 셸 환경변수도 가능합니다.
-
----
-
-### 2. 네이버 오픈 API 키 발급
-
-> 일반 네이버 계정으로 발급 가능합니다 (광고주 계정 불필요).
-
-#### 가입 및 발급 절차
-
-1. **개발자 센터 접속**: https://developers.naver.com 접속 후 네이버 계정으로 로그인
-2. **애플리케이션 등록**: 상단 메뉴 **Application** → **애플리케이션 등록** 클릭
-3. **사용 API 선택** — 아래 두 항목을 반드시 체크:
-
-   | 항목 | 용도 | 필수 |
-   |------|------|------|
-   | **검색** | 블로그 검색 API — 키워드별 블로그 문서수 조회 | ✅ |
-   | **데이터랩(검색어트렌드)** | 월별 검색 트렌드 분석 (`--trend` 플래그) | ✅ |
-
-   > **참고**: 데이터랩 메뉴 아래 "데이터랩(쇼핑인사이트)"도 있지만, 이 스킬에서는 사용하지 않습니다.
-   > 쇼핑인사이트는 쇼핑 카테고리 트렌드 전용으로, 블로그 키워드 분석과는 무관합니다.
-
-4. **환경 설정**: **WEB 설정** → Callback URL에 `https://example.com` 입력 (테스트 목적)
-5. **등록 완료**: `Client ID` 와 `Client Secret` 복사
-
-#### 환경변수 설정 예시
-
-```bash
-# .env 파일 또는 Claude Cowork 설정
-NAVER_CLIENT_ID=42yH7hKOPe_eKqEmu4ZS
-NAVER_CLIENT_SECRET=y6NehxewNp
-```
-
-위 `.env`는 작업 폴더 루트(예: `outputs/`)에 두면 모든 환경에서 자동 탐색됩니다. Cowork도 마운트된 작업 폴더 루트의 `.env`를 자동으로 찾습니다.
-
-> **로컬 CLI 전용** (선택): `.env` 대신 `claude config set env.NAVER_CLIENT_ID "..."`(각 키별) 또는 셸 환경변수도 가능합니다.
+키 설정 위치: 작업 폴더 루트 `.env`(모든 환경 자동 탐색, Cowork 포함), 또는 셸 환경변수.
 
 ---
 

@@ -1,5 +1,11 @@
 # Changelog — itda-gov
 
+## [4.2.1] — 2026-06-10
+
+### Changed
+
+- **GUIDE 발급 안내 정비 (SPEC-CREDENTIALS-GUIDE-001)**: kosis·ecos·dart·realestate·g2b·stock-quote·stock-portfolio·funding GUIDE의 API 키 발급 안내를 발급 가이드 페이지(<https://skills.itda.work/credentials/>) 링크로 연결. 발급 절차 변경 시 웹 페이지가 먼저 갱신됩니다.
+
 ## [4.2.0] — 2026-05-29 (SPEC-DART-FEEDBACK-001)
 
 ### 🔴 BREAKING CHANGES (dart only)

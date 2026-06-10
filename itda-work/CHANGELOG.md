@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [3.7.1] — 2026-06-10
+
+### Changed
+
+- **GUIDE 발급 안내 정비 (SPEC-CREDENTIALS-GUIDE-001)**: blog-seo·market-scan·calendar·email·plan-work GUIDE의 API 키·앱 비밀번호 발급 안내를 발급 가이드 페이지(<https://skills.itda.work/credentials/>) 링크로 연결. blog-seo `references/naver-api.md`의 발급 상세는 저장소 정본(`docs/credentials/`)으로 이전.
+
+
 ## [3.7.0] — 2026-06-10
 
 ### Added

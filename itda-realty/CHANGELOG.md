@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.10.2] — 2026-06-10
+
+### Changed
+
+- **GUIDE 발급 안내 정비 (SPEC-CREDENTIALS-GUIDE-001)**: realty-deals·realty-jeonse-gap·realty-supply·realty-price-stats GUIDE의 공공데이터포털·KOSIS 키 발급 안내를 발급 가이드 페이지(<https://skills.itda.work/credentials/>) 링크로 연결.
+
+
 ## [0.10.1] — 2026-06-10
 
 ### Fixed

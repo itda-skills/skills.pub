@@ -139,6 +139,8 @@ Claude에게 이렇게 말하세요:
 - NAVER_EMAIL: 네이버 계정 이메일 주소
 - NAVER_APP_PASSWORD: 네이버 앱 비밀번호 (위 안내 참고)
 
+> 네이버 앱 비밀번호 발급 절차는 [네이버 앱 비밀번호 발급 가이드](https://skills.itda.work/credentials/naver-app-password/)를 참고하세요.
+
 ## 다음 세션에서 시작하기
 
 1. "이메일 스킬로 이번 주 거래처 견적 요청 이메일 읽어줘"

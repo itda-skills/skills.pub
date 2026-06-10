@@ -5,9 +5,36 @@
 
 ---
 
-## 처음 설정하기 — API 키 등록
+## 처음 설정하기 — API 키 발급과 등록
 
-네이버 OpenAPI(데이터랩·검색)와 검색광고 API 키가 필요합니다. 발급받은 키를 **Claude Desktop 지침**에 등록해 두면 됩니다 — Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 다섯 줄을 붙여넣고 저장하세요.
+네이버 API 키 **두 종류(5개 값)**가 필요합니다. 각각 한 번만 발급하면 됩니다. 키가 어떤 기능에 쓰이는지는 아래 표를 참고하세요 — **일부만 있어도 부분 동작**합니다.
+
+| 키 | 없으면 빠지는 기능 |
+|---|---|
+| 네이버 오픈API 2개 (`NAVER_CLIENT_ID/SECRET`) | 검색량 surge 측정 · 가게 매핑 · 협찬 거품 필터 — 사실상 핵심이니 꼭 발급하세요 |
+| 네이버 검색광고 3개 (`NAVER_SEARCHAD_*`) | 월 검색량(레벨) 지표만 빠집니다. 광고주 가입이 부담스러우면 나중에 추가해도 됩니다 |
+| (키 불필요) 자동완성 | 항상 동작합니다 |
+
+### 1. 네이버 오픈API 발급 — 일반 네이버 계정으로 가능
+
+1. [developers.naver.com](https://developers.naver.com) 로그인
+2. **Application → 애플리케이션 등록** (이름은 자유)
+3. 사용 API에서 **검색** + **데이터랩(검색어트렌드)** 두 항목 체크 ("데이터랩(쇼핑인사이트)"는 불필요)
+4. **WEB 설정 → Callback URL**에 `https://example.com` 입력 후 등록
+5. **Client ID**(→`NAVER_CLIENT_ID`)와 **Client Secret**(→`NAVER_CLIENT_SECRET`) 복사
+
+### 2. 네이버 검색광고 API 발급 — 광고주 가입 필요 (개인 가능, 무료)
+
+1. [ads.naver.com](https://ads.naver.com)에서 광고주 가입 (개인도 가능하며, 광고를 실제로 집행할 필요는 없습니다)
+2. [manage.searchad.naver.com](https://manage.searchad.naver.com) 로그인 → 상단 **도구 → API 사용 관리**
+3. **Access License**(→`NAVER_SEARCHAD_ACCESS_KEY`)와 **Secret Key**(→`NAVER_SEARCHAD_SECRET_KEY`) 복사
+4. 같은 페이지 주소창의 `/customers/숫자/` 부분 숫자가 `NAVER_SEARCHAD_CUSTOMER_ID`
+
+> 더 자세한 절차·주의사항은 [네이버 오픈API](https://skills.itda.work/credentials/naver-openapi/) · [네이버 검색광고](https://skills.itda.work/credentials/naver-searchad/) 발급 가이드를 참고하세요.
+
+### 3. 키 등록
+
+발급받은 키를 **Claude Desktop 지침**에 등록해 두면 됩니다 — Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 아래 다섯 줄을 붙여넣고 저장하세요.
 
 ```dotenv
 NAVER_CLIENT_ID=...

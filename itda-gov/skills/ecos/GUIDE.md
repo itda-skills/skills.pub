@@ -21,6 +21,8 @@ ECOS 스킬은 한국은행 ECOS Open API 키가 필요합니다.
 ECOS_API_KEY=발급받은_키
 ```
 
+> 자세한 가입·키 발급 절차는 [ECOS 발급 가이드](https://skills.itda.work/credentials/ecos/)를 참고하세요.
+
 한 번 넣으면 이후 모든 대화에서 Claude가 자동으로 사용합니다 — `.env` 같은 파일을 직접 만들 필요가 없습니다.
 
 > 개발자라면 작업 폴더 루트의 `.env`에 같은 한 줄을 넣어도 됩니다.

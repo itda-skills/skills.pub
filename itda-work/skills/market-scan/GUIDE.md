@@ -54,6 +54,8 @@
 
 > 키는 **Claude Desktop 지침**(설정 → 일반 → "Claude 지침")에 `KOSIS_API_KEY=발급받은키` 한 줄씩 추가하면 됩니다 — 한 번 넣으면 이후 자동 사용되며 `.env` 같은 파일을 만들 필요가 없습니다(개발자는 작업 폴더 루트 `.env`도 가능). 키가 없으면 해당 기관 공식 사이트를 직접 읽는 방식으로 자동 대체하니, **키 없이도 조사는 진행**됩니다(다만 정형 데이터는 키가 있을 때 더 정확·빠릅니다).
 
+> 각 키의 가입·발급 절차는 발급 가이드를 참고하세요 — [공공데이터포털](https://skills.itda.work/credentials/data-go-kr/)(Decoding 키 주의사항 포함) · [KOSIS](https://skills.itda.work/credentials/kosis/) · [ECOS](https://skills.itda.work/credentials/ecos/) · [DART](https://skills.itda.work/credentials/dart/).
+
 ### 주제에 따라 더 끌어오는 전문 스킬
 
 시장 주제에 맞으면 아래처럼 도메인 전문 스킬도 데이터 소스로 제안합니다(설치/가용 시에만).

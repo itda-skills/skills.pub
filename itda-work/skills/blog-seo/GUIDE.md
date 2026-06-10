@@ -43,6 +43,8 @@ NAVER_CLIENT_SECRET=네이버앱_클라이언트시크릿
 4. **WEB 설정 → Callback URL**에 `https://example.com` 입력 후 등록
 5. 등록 후 Client ID와 Client Secret 복사
 
+> 더 자세한 절차·주의사항(한도, 흔한 인증 오류 등)은 [네이버 오픈API](https://skills.itda.work/credentials/naver-openapi/) · [네이버 검색광고](https://skills.itda.work/credentials/naver-searchad/) 발급 가이드를 참고하세요.
+
 ---
 
 ## 빠른 시작

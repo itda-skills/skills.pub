@@ -44,6 +44,8 @@ NAVER_EMAIL=you@naver.com
 NAVER_APP_PASSWORD=발급된_앱비밀번호
 ```
 
+> 네이버 앱 비밀번호 발급 절차는 [네이버 앱 비밀번호 발급 가이드](https://skills.itda.work/credentials/naver-app-password/)를 참고하세요.
+
 `.env` 같은 파일을 직접 만들 필요가 없습니다. (개발자는 작업 폴더 루트 `.env`나 셸 환경변수도 가능합니다.)
 
 ### 4. 연결 확인
@@ -78,6 +80,8 @@ NAVER_APP_PASSWORD=발급된_앱비밀번호
 ICLOUD_EMAIL=you@icloud.com
 ICLOUD_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
 ```
+
+> 앱 전용 비밀번호 발급 절차는 [iCloud 앱 전용 비밀번호 발급 가이드](https://skills.itda.work/credentials/icloud-app-password/)를 참고하세요.
 
 > 앞뒤 하이픈 포함/제외 모두 동작하지만, 발급 화면에 보인 그대로 넣는 것을 권장합니다. `.env` 파일을 직접 만들 필요는 없으며, 개발자는 작업 폴더 루트 `.env`나 셸 환경변수도 쓸 수 있습니다.
 

@@ -20,6 +20,8 @@ NAVER_EMAIL=your-id@naver.com
 NAVER_APP_PASSWORD=발급받은-앱-비밀번호
 ```
 
+> 네이버·iCloud 앱 비밀번호 발급 절차는 [네이버](https://skills.itda.work/credentials/naver-app-password/) · [iCloud](https://skills.itda.work/credentials/icloud-app-password/) 발급 가이드를 참고하세요.
+
 > 개발자라면 작업 폴더 루트의 `.env`(또는 셸 환경변수)에 같은 줄을 넣어도 됩니다.
 
 ### 네이버
