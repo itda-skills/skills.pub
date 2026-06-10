@@ -2,6 +2,17 @@
 
 이 스킬의 주요 변경 이력입니다. (Keep a Changelog 형식)
 
+## [0.1.1] — 2026-06-10
+
+### Added
+
+- **market-scan 핸드오프 회귀 가드** (`tests/test_handoff_market_scan.py`) — market-scan Q4 '키 감지' 점검이 광고한 엔진 키 이름이 web-search `ENGINE_SPECS` required 키와 정합하는지 + `--check-env` 종착점이 격리 실행에서 살아있는지 검증(deployed-style, conftest 미의존). DATA-TIDY-001(광고된 파이프라인 실측 단절) 패턴 차단. 작성 즉시 market-scan 측 `NAVER_SEARCH_CLIENT_SECRET` 축약 표기로 인한 키 미감지 갭 1건 적발·교정.
+- **naver 종류별 날짜 shape 회귀 케이스** (`tests/test_naver_client.py`) — live-prober 실측 기반: web(webkr 날짜 필드 부재 → `published_at` None)·news(`pubDate` RFC-822)·blog(`postdate` YYYYMMDD) 3종을 `pubDate or postdate` 폴백이 graceful 처리하는지 검증(기존 fixture는 blog 1종만 표현). 단위 66→68 GREEN.
+
+### Changed
+
+- **SKILL.md 사용법에 소스트리 개발자 PYTHONPATH 캐비엇 1줄 추가** — 배포본은 `publish.py`의 `_inject_shared_modules`가 `shared/`를 번들해 그대로 동작하나, 소스트리 직접 실행 시 `PYTHONPATH=skills/shared`가 필요함을 명시(미설정 시 `ModuleNotFoundError: env_loader`). 일반 사용자는 무관.
+
 ## [0.1.0] — 2026-06-09
 
 ### Added

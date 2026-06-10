@@ -2,6 +2,21 @@
 
 본 스킬의 변경 이력. [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따른다.
 
+## [0.1.1] — 2026-06-10
+
+### Added
+
+- **`web-search` 스킬을 수집 엔진 포트폴리오에 편입**(양방향 핸드오프 비대칭 해소 — web-search는 이미
+  market-scan을 위임 대상으로 가리켰으나 그 역방향이 없었다). 다중 검색엔진(Tavily·Naver·Serper·Exa·
+  Perplexity) fan-out으로 내장 WebSearch의 단일 인덱스 한계를 보완해, 교차검증의 전제인 "서로 다른 유형의
+  독립 출처"를 넓힌다. 특히 **국내(지역=국내) 조사의 Naver 색인**·Exa 시맨틱이 차별점.
+  - 위계 보존: web-search는 인접 **위임 경계**가 아니라 §2단계 **하위 수집 엔진**(WebSearch·web-reader와
+    같은 층)으로 자리매김. URL·발췌만 돌려주므로 핵심 수치는 기존대로 WebFetch 원문 확인 후 반영.
+  - **거짓 메뉴 금지 준수**: Q4 데이터 소스 메뉴에 무조건 올리지 않고, `--check-env`(또는 환경·"Claude 지침"의
+    엔진 키) 점검으로 **키 보유 시에만** 노출. 키 0개면 보기에서 빼고 내장 WebSearch만.
+  - **비용 가드**: 기본 무료 엔진(`--engines tavily,naver`), 유료(Perplexity·Exa)는 핵심 수치 교차검증이
+    꼭 필요할 때만. 인접 스킬 참고 링크에 web-search 추가(핸드오프 대칭 완성).
+
 ## [0.1.0] — 2026-06-09
 
 ### Added

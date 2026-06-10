@@ -14,12 +14,12 @@ allowed-tools: Read, Write, Edit, Bash, WebSearch, WebFetch, AskUserQuestion, Sk
 argument-hint: "[시장·주제]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.1.0"
+  version: "0.1.1"
   category: "research"
   status: "experimental"
   recommended: true
   created_at: "2026-06-08"
-  updated_at: "2026-06-09"
+  updated_at: "2026-06-10"
   aliases: "시장조사, 시장분석, 경쟁분석, market research"
   tags: "market-research, competitive-analysis, market-sizing, source-verification, interview, cowork, research"
 ---
@@ -45,6 +45,7 @@ metadata:
 | 버그·성능·주장의 근본 원인을 가설-반증으로 규명 | `investigate` |
 | 비교표·보고서를 1차 소스 강제로 엄격 팩트체크 | `ground-check` (이 스킬이 고위험 시 **위임**) |
 | 국내 공식 통계·기업재무·거시지표 정형 데이터 조회 | `itda-gov:*` (이 스킬이 **라우팅**) |
+| 외부 자료를 **검색해 URL·출처를 수집**(다중 검색엔진 fan-out) | `web-search` (이 스킬이 수집 **엔진**으로 활용 — 위임 아닌 하위 수집 도구) |
 | 단일 URL·블로그 본문 추출 | `web-reader` / `blog-reader` (이 스킬이 수집 **폴백**으로 활용) |
 | 내가 이미 가진 매출·고객 데이터의 패턴 분석 | `itda-data:data-analysis-advisor` |
 
@@ -104,12 +105,13 @@ metadata:
 
 | 소스 | 가용성 점검 | 보기 처리 |
 | --- | --- | --- |
-| 웹 검색·원문 확인 | 항상 가용 | 항상 포함, 기본 ☑ |
+| 웹 검색·원문 확인 (내장 WebSearch) | 항상 가용(키 불요·단일 인덱스) | 항상 포함, 기본 ☑ |
+| **다중엔진 웹 검색** (`web-search`) | `web-search`의 `--check-env`(또는 환경·"Claude 지침"에 `TAVILY_API_KEY`·`NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`·`SERPER_API_KEY`·`EXA_API_KEY`·`PERPLEXITY_API_KEY` 중 **1개 이상**) 존재 확인 | **키 보유 시에만 포함**(거짓 메뉴 금지). 키 0개면 보기에서 빼고 내장 WebSearch만 — "(키 감지됨: tavily,naver…)" 표기 |
 | 공공데이터 API (`itda-gov:*`) | 작업폴더 `.env`/환경변수에 관련 키(`KOSIS_API_KEY`·`DART_API_KEY`·`ECOS_API_KEY` 등) 존재 확인 | 포함(키 없어도 공식사이트 폴백 가능). "(키 감지됨)" / "(키 미설정→발급 안내)" 표기 |
 | **주제 연관 전문 스킬** | **시장 주제로 후보 판별** 후 설치/가용 확인 — 부동산→`itda-realty:*`(실거래·가격지수), 주식·ETF·섹터→`itda-stocks:surge-data`, 외식·F&B→`itda-travel:eatery-trend`, 창업 상권·로컬→`naver-place`/`place-finder` | 주제 적합 + 가용 시 포함(예: "부동산 시장"이면 itda-realty 제안). 무관/미설치면 제외 |
 
 - 질문: "어떤 데이터 소스로 조사할까요? (여러 개 선택 가능)"
-- 기본 체크: 빠른 스캔 → [웹] + (키 있으면)[공공 API]. 심층 스캔 → 추가로 주제 연관 전문 스킬·공공 API를 권장 체크. 사용자가 더하거나 뺀다.
+- 기본 체크: 빠른 스캔 → [웹] + (키 있으면)[다중엔진 web-search]. 심층 스캔 → 추가로 주제 연관 전문 스킬·공공 API + (키 있으면)다중엔진 web-search를 권장 체크. 사용자가 더하거나 뺀다.
 - 미가용 소스는 보기에서 빼되, 가치가 크면 한 줄 안내한다("공공데이터 키를 발급받으면 KOSIS·DART 통계를 더 정확·빠르게 끌어올 수 있습니다").
 
 **Q5 — 이미 아는 것 / 핵심 질문 (주관식, 선택)**: "이미 알고 계신 사실이나, 특히 답을 알고 싶은 질문이 있나요?" 없으면 건너뛴다.
@@ -121,6 +123,8 @@ metadata:
 1단계 Q4에서 **선택된 소스 엔진으로 수집**한다. 웹은 항상 baseline, 공공 API는 정형 데이터 1순위, 주제 연관 전문 스킬은 선택됐을 때 함께 호출한다.
 
 - **심층 스캔 시**: 트렌드·경쟁사·해외 자료 같은 비정형 다출처 조사는 WebSearch로 후보를 넓게 펼친 뒤(키워드·기간·언어를 바꿔 여러 각도로) 후보 URL을 WebFetch로 **원문 확인**한다. 검색 스니펫만 보고 옮기지 말고, 핵심 수치는 § 교차검증 규칙대로 서로 다른 유형의 출처로 대조한다.
+- **출처 다양화 — `web-search` 선택 시**: 내장 WebSearch는 단일 인덱스라 출처가 한쪽으로 쏠린다. Q4에서 `web-search`가 선택됐으면(키 보유) 이를 활성화해 키 보유 엔진을 한 번에 fan-out 한다 — **국내 Naver 색인·Exa 시맨틱·Perplexity 요약**까지 겹치지 않는 인덱스를 병합해, 교차검증의 전제인 "서로 다른 유형의 독립 출처"를 넓힌다. **국내(지역=국내) 조사에서 Naver 색인은 글로벌 엔진이 못 메우는 영역**이라 특히 유효하다. `web-search`는 URL·발췌 목록만 돌려주므로, 핵심 수치는 여느 때처럼 WebFetch(막히면 `web-reader` 폴백)로 **원문 확인** 후 반영한다(스니펫 금지는 동일).
+  - **비용 가드**: `web-search auto`는 키 보유 엔진을 모두 호출하고 **Perplexity·Exa는 요청당 과금**이다. 기본은 무료 엔진(`--engines tavily,naver`)으로 돌리고, 유료 엔진은 시장 규모·점유율 같은 **핵심 수치 교차검증이 꼭 필요할 때만** 범위를 넓힌다.
 - **무거운 1차 자료(PDF·증권사 리포트·산업백서) 시**: 해당 자료의 URL을 WebFetch로 본문을 끌어온다. 본문이 비거나 막히면 `web-reader` 스킬로 폴백한다. 검색에 안 잡히는 비공개·유료 자료는 사용자가 원문 링크를 주거나 핵심 내용을 붙여넣으면 그대로 근거로 반영한다.
 - **공공 API 선택 시**: 아래 라우팅 표대로 `itda-gov:*` 호출.
 - **항상**: 핵심 수치는 원문 확인(스니펫 금지), 발행일·링크·등급 병기.
@@ -250,5 +254,5 @@ metadata:
 ## 참고
 
 - 사용자 가이드: [GUIDE.md](GUIDE.md)
-- 인접 스킬: [`ground-check`](../ground-check/)(엄격 검증 위임) · [`web-reader`](../web-reader/)(수집 폴백) · [`investigate`](../investigate/)(근본 원인) · `itda-gov:*`(정형 데이터)
+- 인접 스킬: [`ground-check`](../ground-check/)(엄격 검증 위임) · [`web-search`](../web-search/)(다중엔진 수집) · [`web-reader`](../web-reader/)(수집 폴백) · [`investigate`](../investigate/)(근본 원인) · `itda-gov:*`(정형 데이터)
 - 현재 동작 기준: `SKILL.md`, `templates/`, `CHANGELOG.md`

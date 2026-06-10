@@ -6,9 +6,9 @@
 |---|---|
 | [01-policy-report.md](01-policy-report.md) | 기본 개조식 — front-matter(제목·보고일·부서) + `##` 절 + □/❍ |
 | [02-budget-numbered.md](02-budget-numbered.md) | `##` 없이 `1. 2. 3.` 번호만으로 절을 나눈 순수 번호 보고서 |
-| [03-statistics-table.md](03-statistics-table.md) | 표(헤더+데이터) 포함 통계 보고서 |
+| [03-statistics-table.md](03-statistics-table.md) | 표(헤더+데이터) 포함 통계 보고서 — 열 정렬(`:--` 좌/`--:` 우/`:-:` 중) 데모 |
 | [04-meeting-result.md](04-meeting-result.md) | 회의 결과 — 특수문자(`「」`·`·`·`%`) 포함 |
-| [05-mixed-table.md](05-mixed-table.md) | 표 + 불릿 혼합, 인라인 링크 |
+| [05-mixed-table.md](05-mixed-table.md) | 표 + 불릿 혼합 — 표 인라인 위치(항목 사이) + 셀 정렬/굵게·기울임 데모 |
 | [06-inspection-nested.md](06-inspection-nested.md) | 깊은 중첩(자동으로 2단계까지 정리) |
 
 > 이 마크다운들을 직접 쓸 필요는 없습니다. "이런 내용으로 정부 보고서 만들어줘"라고 말하면 Claude가 알아서 이렇게 정리합니다.

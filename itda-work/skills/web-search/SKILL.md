@@ -14,9 +14,9 @@ argument-hint: "[질의어] [--engine auto|tavily|serper|perplexity|naver|exa] [
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "search"
-  version: "0.1.0"
+  version: "0.1.1"
   created_at: "2026-06-09"
-  updated_at: "2026-06-09"
+  updated_at: "2026-06-10"
   tags: "search, web search, query, multi engine, tavily, serper, perplexity, naver, exa"
 ---
 
@@ -104,6 +104,8 @@ python3 scripts/web_search.py "검색어"
 # Windows
 py -3 scripts/web_search.py "검색어"
 ```
+
+> **개발자 주의 — 이 저장소 소스트리에서 직접 실행 시:** 배포본은 `publish.py`가 `shared/` 모듈(`env_loader` 등)을 스킬 `scripts/`에 번들하므로 위 명령이 그대로 동작한다. 그러나 소스트리에서 직접 실행하면 `env_loader`를 찾도록 `PYTHONPATH`에 `skills/shared`를 추가해야 한다(없으면 `ModuleNotFoundError: env_loader`). 예: `PYTHONPATH=<repo>/skills/shared python3 scripts/web_search.py "검색어"`. 일반 사용자는 신경 쓸 필요 없다(배포본 자기치유).
 
 ### 주요 옵션
 

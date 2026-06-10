@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [3.7.0] — 2026-06-10
+
+### Added
+
+- **hwp-report v0.2.0** — 마크다운 표·이미지 표현력 대폭 확장 (#156, #158). 표: 열 정렬(`:--`/`:-:`/`--:`)→HWPX 본문 셀 정렬, 셀 내 굵게/기울임 서식, 열 너비 내용 비례 배분, 마크다운 표 인라인 위치 보존. 이미지: BinData 임베드 + 매퍼 배선(Go) + .NET parity — `![](path.png)` 가 실제 문서 내 이미지로 들어간다. `/refine` 이중 리뷰 반영 보강. frontmatter `updated_at` 누락 정비(check_versions --strict 위반 해소).
+- **web-search v0.1.1** — market-scan 핸드오프 회귀 가드(`tests/test_handoff_market_scan.py`, deployed-style) 신설: market-scan Q4 '키 감지'가 광고한 엔진 키 이름 ⊇ web-search `ENGINE_SPECS` required 키 + `--check-env` 종착점 alive 검증. 작성 즉시 market-scan `NAVER_SEARCH_CLIENT_SECRET` 축약 표기 갭 1건 적발·교정. naver 종류별 날짜 shape(web 부재/news `pubDate`/blog `postdate`) 회귀 케이스 보강(단위 66→68 GREEN). SKILL.md 사용법에 소스트리 개발자용 `PYTHONPATH=skills/shared` 캐비엇 1줄 추가(배포본은 `_inject_shared_modules` 자기치유로 무관). SPEC-WEB-SEARCH-001 status 정정(Draft→Done — 헤더 "라이브 미검증"↔본문 라이브 PASS 모순 해소). cf. #150 후속.
+
+### Changed
+
+- **market-scan v0.1.1** — `web-search` 스킬을 수집 엔진 포트폴리오에 편입(양방향 핸드오프 비대칭 해소 — web-search 는 이미 market-scan 을 위임 대상으로 가리켰으나 역방향이 부재했다). 내장 WebSearch 의 단일 인덱스 한계를 다중엔진 fan-out(Tavily·Naver·Serper·Exa·Perplexity)으로 보완해 교차검증의 전제인 "서로 다른 유형의 독립 출처"를 넓힌다 — **국내(지역=국내) 조사의 Naver 색인**·Exa 시맨틱이 차별점. 위계 보존(인접 **위임 경계**가 아닌 §2단계 **하위 수집 엔진**으로 자리매김), **거짓 메뉴 금지 준수**(`--check-env`/엔진 키 보유 시에만 Q4 메뉴 노출, 키 0개면 내장 WebSearch만), **비용 가드**(기본 무료 `--engines tavily,naver`; 유료 Perplexity·Exa 는 핵심 수치 교차검증 한정). cf. SPEC-WEB-SEARCH-001 §7 · #150.
+
 ## [3.6.0] — 2026-06-09
 
 ### Added
