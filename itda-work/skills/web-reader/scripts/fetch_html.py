@@ -984,7 +984,7 @@ def _escalate_grid(
         if best_result.get("error"):
             best_result["error"] = (
                 f"{best_result['error']}; curl_cffi grid exhausted. "
-                "JS challenge may require Lightpanda --dynamic-only or hyve MCP web_browse.render."
+                "JS challenge may require Lightpanda --dynamic-only or hyve MCP web_browse."
             )
         return best_result
 
@@ -993,7 +993,7 @@ def _escalate_grid(
         status_code=int(getattr(first_response, "status_code", 0) or 0),
         error=(
             "curl_cffi grid exhausted without a usable response. "
-            "JS challenge may require Lightpanda --dynamic-only or hyve MCP web_browse.render."
+            "JS challenge may require Lightpanda --dynamic-only or hyve MCP web_browse."
         ),
         size=first_body_size,
         content=first_decoded,
@@ -1164,7 +1164,7 @@ def main(argv: list[str] | None = None) -> int:
     content = str(result["content"])
 
     # NOTE: SPEC-WEBREADER-LIGHTEN-001 v3.0.0 — SPA 감지 / deep-link advisory 블록 제거.
-    # SPA 의심 페이지는 hyve MCP web_browse.render (SPEC-WEB-MCP-002) 로 위임.
+    # SPA 의심 페이지는 hyve MCP web_browse (SPEC-WEB-MCP-002) 로 위임.
     # 본 fetch_html.py 는 정적 fetch 단일 책임만 유지.
 
     if args.output:

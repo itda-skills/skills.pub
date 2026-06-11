@@ -21,6 +21,7 @@
 | 스킬 | 설명 | 환경 |
 |------|------|:----:|
 | **itda-web-reader** | 웹페이지 읽기·요약·추출 (한국어 사이트, JS 렌더링 포함) | 🌐 |
+| **itda-web-automation** | hyve `web_browse` MCP 웹 자동화 레시피 정본 (로그인 세션·폼 입력·대량 수집·차단 사이트 attach) | 🌐 🔧 |
 | **itda-web-search** | 여러 검색엔진(Tavily·Serper·Perplexity·Naver·Exa)으로 웹 검색 → 정규화 결과 목록 (조회 전용, 키 보유 엔진만 auto 선택) | 🌐 🔑 |
 | **itda-blog-reader** | 네이버 블로그 글 목록·본문·댓글 트리·블로그 내 검색 (로그인 없이, 공개 포스트 전용) | 🌐 |
 | **itda-email** | Naver/Gmail/Daum/iCloud/커스텀 SMTP로 이메일 전송, IMAP 수신 (iCloud는 STARTTLS 587 분기) | 🌐 🔑 |
@@ -79,6 +80,7 @@
 |------|:---:|:---:|------|
 | itda-pdf-context-refinery | — | — | `poppler-utils` |
 | itda-web-reader | `requests` | — | Playwright 선택 |
+| itda-web-automation | — | — | hyve MCP 커넥터 (`hyve serve`) |
 | itda-web-search | — | 검색엔진별 키(최소 1개) | — |
 | itda-email | — | 메일 서비스별 앱 비밀번호 | — |
 | itda-imagekit | `Pillow` | — | — |

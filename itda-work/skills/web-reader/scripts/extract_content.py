@@ -532,7 +532,7 @@ def main() -> None:
         sys.exit(2)
 
     # REQ-LIGHTEN-003.3: SPA 어댑터 플래그 fail-fast (web-reader v3.0.0)
-    # AC-3 검증 키워드: "SPA 어댑터", "naverplace", "web_browse.render"
+    # AC-3 검증 키워드: "SPA 어댑터", "naverplace", "web_browse"
     if (
         getattr(args, "from_capture", None)
         or getattr(args, "adapter", None)
@@ -541,8 +541,8 @@ def main() -> None:
         print(
             "[web-reader v3.0.0] SPA 어댑터 (--adapter / --adapter-page / --from-capture) 는 "
             "web-reader v3.0.0 에서 제거되었습니다.\n"
-            "- 네이버 부동산: hyve MCP 의 naverplace 도메인 사용 (이미 chromedp Go 포팅 완료)\n"
-            "- 기타 SPA: hyve MCP 의 web_browse.render 사용 (SPEC-WEB-MCP-002)\n"
+            "- 네이버 부동산: hyve MCP 의 naverplace 도메인 사용 (hyve 네이티브 도메인)\n"
+            "- 기타 SPA: hyve MCP 의 web_browse 사용 (SPEC-WEB-MCP-002)\n"
             "마이그레이션 안내: itda-work/skills/web-reader/GUIDE.md 참조.",
             file=sys.stderr,
         )

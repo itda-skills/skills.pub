@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [3.8.0] — 2026-06-11
+
+### Added
+
+- **web-automation 0.1.0 신설** (#241, #215 어댑션 축): hyve `web_browse` MCP 19 액션의 사용 레시피 정본 — 코드 없는 가이드 스킬. 작업 유형별 레시피 5종(단발 읽기·멀티스텝 상호작용·결정론 추출·대량 수집·attach 차단 우회) + 토큰 절약 원칙(`interactive_only`/`diff` 기본값) + 실측 기반 함정 표. 사이트 특화 스킬(coupang 등)이 복붙하던 공통 호출 패턴의 단일 정본 — hyve catalog 와 같은 저장소에서 함께 진화해 레시피 drift(#141 web-reader deprecated `render` 사례)를 차단.
+
 ## [3.7.2] — 2026-06-10
 
 ### Changed

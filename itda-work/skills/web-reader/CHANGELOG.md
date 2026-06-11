@@ -1,5 +1,16 @@
 # Changelog — itda-web-reader
 
+## [6.0.1] — 2026-06-10
+
+### Fixed
+
+- 활성 안내·escalation 메시지·문서 표의 `web_browse.render` 참조를 현행 `web_browse` 로 교정했습니다. `render` 는 `snapshot` 의 deprecated alias 라, 봇 차단/JS 렌더 폴백 안내가 폐기 예정 액션명을 가리키던 문제를 해소했습니다 (#141).
+- bot challenge escalation 메시지의 `chromedp` 표기를 현행 `Bun playwright` 엔진으로 정정했습니다(chromedp 는 hyve 에서 제거됨). naverplace 안내 문구의 stale 엔진 표기도 정리했습니다.
+
+### Notes
+
+- 문서/메시지 교정만 포함합니다 — fetch 동작·CLI 인터페이스 변경 없음. CHANGELOG·README 의 과거 버전(v3.0.0 등) 기록은 사실 보존을 위해 그대로 둡니다.
+
 ## [6.0.0] — 2026-06-04
 
 ### Breaking Changes

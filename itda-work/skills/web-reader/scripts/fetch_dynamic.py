@@ -134,7 +134,7 @@ def install_guide() -> str:
         guide = (
             "  # Windows 네이티브 미지원 — WSL2 필수\n"
             "  # WSL2 설치 후 WSL2 내부에서 Linux 명령으로 설치하세요.\n"
-            "  # 또는 hyve MCP의 web_browse.render 사용 (SPEC-WEB-MCP-002).\n"
+            "  # 또는 hyve MCP의 web_browse 사용 (SPEC-WEB-MCP-002).\n"
         )
     else:
         guide = "  https://github.com/lightpanda-io/browser/releases 에서 플랫폼 바이너리를 다운로드하세요.\n"
@@ -155,8 +155,8 @@ def hyve_escalation_message(url: str, signal: str) -> str:
     return (
         f"[web-reader] Bot challenge 감지: {signal!r}\n"
         f"Lightpanda는 anti-bot 우회 기능이 없습니다. 다음 경로를 시도하세요:\n\n"
-        f"1. hyve MCP web_browse.render (chromedp + stealth)\n"
-        f"   예: \"hyve의 web_browse.render로 {url} 가져와줘\"\n\n"
+        f"1. hyve MCP web_browse (Bun playwright + stealth)\n"
+        f"   예: \"hyve의 web_browse로 {url} 가져와줘\"\n\n"
         f"2. 네이버 부동산이면: naverplace 도메인 사용\n"
         f"   예: \"naverplace로 단지 정보 받아줘\"\n\n"
         f"3. SNS 로그인 필요 콘텐츠 (인스타·X): 별도 인증 흐름 필요 — 현재 미지원\n"

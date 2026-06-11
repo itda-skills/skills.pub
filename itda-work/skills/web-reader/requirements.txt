@@ -7,4 +7,4 @@ markdownify>=0.13
 # YouTube transcript extraction was removed in v4.0.0 (SPEC-WEBREADER-YOUTUBE-REMOVE-001).
 # Use yt-dlp directly: yt-dlp --write-auto-sub --sub-lang ko --skip-download <URL>
 #
-# JavaScript-rendered pages: use hyve MCP web_browse.render (SPEC-WEB-MCP-002).
+# JavaScript-rendered pages: use hyve MCP web_browse (SPEC-WEB-MCP-002).

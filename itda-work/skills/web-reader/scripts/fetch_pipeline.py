@@ -1,7 +1,7 @@
 """fetch_pipeline.py - 정적 fetch orchestrator (web-reader v3.0.0).
 
 # @MX:NOTE: [AUTO] SPEC-WEBREADER-LIGHTEN-001 v3.0.0 — 동적 fetch / SPA 어댑터 일체 제거.
-# 동적 use case 는 hyve MCP web_browse.render 도메인으로 위임 (SPEC-WEB-MCP-002).
+# 동적 use case 는 hyve MCP web_browse 도메인으로 위임 (SPEC-WEB-MCP-002).
 # 하위 호환을 위해 fetch_with_fallback() 시그니처는 유지하되, dynamic_only=True 또는
 # site_pattern.dynamic=True 호출 시 ValueError 로 fail-fast 한다 (REQ-LIGHTEN-003).
 
@@ -31,10 +31,10 @@ MIN_MEANINGFUL_TAGS_DEFAULT = 3
 
 # v3.0.0 마이그레이션 안내 메시지 (REQ-LIGHTEN-003.4)
 # AC-3 검증 키워드 모두 포함: "동적 fetch 는 web-reader v3.0.0 에서 제거",
-# "hyve MCP 의 web_browse.render", "SPEC-WEB-MCP-002"
+# "hyve MCP 의 web_browse", "SPEC-WEB-MCP-002"
 HYVE_DYNAMIC_MIGRATION_MSG = (
     "[web-reader v3.0.0] 동적 fetch 는 web-reader v3.0.0 에서 제거되었습니다.\n"
-    "JavaScript 렌더링이 필요한 페이지는 hyve MCP 의 web_browse.render 도메인을 사용하세요 "
+    "JavaScript 렌더링이 필요한 페이지는 hyve MCP 의 web_browse 도메인을 사용하세요 "
     "(SPEC-WEB-MCP-002).\n"
     "마이그레이션 안내: itda-work/skills/web-reader/GUIDE.md 참조.\n"
 )
@@ -264,7 +264,7 @@ def fetch_with_fallback(
             f"[web-reader] 정적 fetch 품질 진단: score={static_result.quality_score:.2f} "
             f"(text_length={int(static_result.quality_score * min_text_length)}, "
             f"meaningful_tags={static_result.meaningful_tag_count}). "
-            "JavaScript 렌더링이 필요한 페이지라면 hyve MCP web_browse.render 사용."
+            "JavaScript 렌더링이 필요한 페이지라면 hyve MCP web_browse 사용."
         )
 
     return static_result
