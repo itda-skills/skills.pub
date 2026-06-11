@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [3.8.1] — 2026-06-11
+
+### Changed
+
+- **web-automation 0.1.1** (#247): R5 에 takeover 경로 추가 — 어댑션 dogfooding run3 에서 에이전트가 `takeover_required`(hyve 의 로그인 자동입력 거부 정책) 흐름을 몰라 세션을 닫고 자격증명을 curl 평문 명령으로 우회한 갭을 봉합. R5a(takeover: 사용자 visible Chrome 인증 → `takeover.resume`)/R5b(attach) 재구성 + 함정 표에 "자격증명 스킬 밖 우회 금지" 행 추가.
+
 ## [3.8.0] — 2026-06-11
 
 ### Added

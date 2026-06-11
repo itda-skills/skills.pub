@@ -12,7 +12,7 @@ allowed-tools: Read, Write, Bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.1.0"
+  version: "0.1.1"
   status: "stable"
   created_at: "2026-06-11"
   updated_at: "2026-06-11"
@@ -148,9 +148,27 @@ web_browse harvest {url:"https://...", scroll:true,
 - R3 과 동일한 `where`/`sort_by`/`aggregate`/`group_by`/`omit_items` 후처리를 지원합니다.
 - 읽기 수집 전용입니다(로그인 폼 제출 같은 상호작용은 R2).
 
-### R5 — 로그인·차단 사이트 (attach 세션 + same-origin fetch)
+### R5 — 로그인·차단 사이트 (takeover / attach 두 경로)
 
-봇 차단(Akamai 등)·로그인 세션이 필요한 사이트는 **사용자가 직접 띄운 로그인 Chrome 에 붙습니다**:
+로그인이 필요한 사이트에서 **자격증명(비밀번호)을 에이전트가 자동 입력하는 것은 hyve 가
+이중 가드로 거부합니다** — navigate 가 로그인 페이지(URL 패턴·password 필드)를 감지하면
+`takeover_required`, `type` 액션도 password 계열 selector 를 거부. 이건 버그가 아니라
+의도된 거버넌스이며, **사용자가 직접 인증하는 두 경로** 중 하나로 진행합니다.
+
+**R5a — takeover (기본 — `takeover_required` 를 받았을 때):**
+
+```text
+a. (일반 세션 진행 중) web_browse navigate {...} → {error_code:"takeover_required",
+   headed:true, session_id:동일, resume_action:"takeover.resume"} 수신
+b. ⚠️ 세션을 닫지 않는다 — hyve 가 이미 같은 session_id 를 visible Chrome 으로 전환했고,
+   그 창이 사용자의 인증 창이다.
+c. 사용자 안내: "화면에 Chrome 창이 떴습니다. 직접 로그인해 주세요. 완료되면 알려주세요."
+d. 사용자 완료 후: web_browse takeover.resume {session_id}
+   → 아직 로그인 페이지면 다시 takeover_required(재안내), 벗어났으면 {status:"resumed"}
+e. 같은 session_id 로 일반 액션(snapshot/extract/fetch 등) 계속.
+```
+
+**R5b — attach (사전 준비형 — 봇 차단(Akamai 등)·기존 로그인 세션 활용):**
 
 ```text
 a. 사용자 안내: Chrome 을 --remote-debugging-port=9222 로 실행하고 대상 사이트에 로그인해 두세요.
@@ -164,6 +182,8 @@ e. web_browse session.close {session_id}
 - `fetch` 는 임의 JS 실행이 아니라 path·method·body·credentials·headers 스키마의 same-origin
   XHR 입니다 — document 요청(navigate)이 차단되는 사이트에서 내부 API 를 받는 표준 우회.
 - attach+워밍업(b~c)은 한 번만, 여러 조회는 d 만 반복합니다. 실사용 예: **coupang** 스킬.
+- `takeover.resume` 은 discovery 액션 목록에 없을 수 있으나 정상 호출됩니다 —
+  `takeover_required` 응답의 `resume_action` 필드가 정확한 액션명입니다.
 - 일반(비 attach) 세션의 `stealth:true` 는 기본 OFF 이며 환경 게이트(`HYVE_WEB_STEALTH`) 허용
   시에만 적용됩니다 — 실패해도 보호 우회를 반복 시도하지 않고 사용자에게 보고합니다.
 
@@ -176,6 +196,7 @@ e. web_browse session.close {session_id}
 | full a11y 로 링크 밀집 페이지 관측 | 응답 한도 초과로 도구 결과 거부 가능 — `interactive_only:true` 기본 |
 | 같은 페이지를 매 스텝 full 재관측 | `diff:true` — 무변경이면 수백 바이트로 끝 |
 | `not_implemented` 응답에 우회 루프 | `drag`/`fill_form`/`observe(screenshot)` 는 미구현이 정상 — 작업을 다른 액션으로 분해하거나 보고 |
+| 로그인 폼 자동 입력 시도 | `takeover_required`·password selector 거부가 **정상**(의도된 이중 가드). 자격증명을 curl/requests 등 스킬 밖 평문 명령으로 우회하지 말 것 — R5a takeover 또는 R5b attach 로. 이때 `session.close` 금지(visible Chrome = 인증 창) |
 | 대량 항목을 컨텍스트로 수신 | `harvest`+`output_path` 또는 `extract`+`omit_items`/`aggregate` |
 | 세션 방치 | 기본 idle 5분 자동 해제. 장기 작업은 `long_lived:true`, 끝나면 `session.close` |
 

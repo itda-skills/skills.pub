@@ -2,6 +2,13 @@
 
 이 파일은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.1.1] — 2026-06-11
+
+### Added
+
+- **R5 takeover 경로 추가** (#247, 어댑션 dogfooding run3 발견): 로그인 페이지에서 `takeover_required` 수신 시 세션을 닫지 않고(visible Chrome = 인증 창) 사용자 직접 인증 → `takeover.resume {session_id}` → 같은 세션 계속. R5 를 R5a(takeover)/R5b(attach) 두 경로로 재구성.
+- 함정 표 1행: 로그인 폼 자동 입력 거부(이중 가드)는 정상 — **자격증명을 curl/requests 등 스킬 밖 평문 명령으로 우회 금지**, `session.close` 금지.
+
 ## [0.1.0] — 2026-06-11
 
 ### Added
