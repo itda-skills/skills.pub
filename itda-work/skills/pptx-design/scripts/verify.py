@@ -6,8 +6,10 @@
   (C) OCR 렌더 대조(tesseract kor+eng, 다크 반전): 산출률·한글명 [advisory, 형식오탐 회피용]
   (D) ★한글 타이포 정적 검사: 한글 run 의 음수/과대 자간·비안전(세리프/라틴 디스플레이) 폰트
       [advisory] — 미적 결함(자간 벌어짐·명조 폴백)의 자동 트립와이어(SPEC-PPTX-DESIGN-002 REQ-005).
+  (E) ★스타일 휴리스틱: AI 기본값 안티패턴 — 구분 부호(·/—/–) 남발·좌측 액센트 바 남발·
+      수직 중앙 몰림 [advisory] — "엉성한 스타일" 자동 트립와이어(SPEC-PPTX-DESIGN-003 REQ-105).
 
-HARD GATE = (경계이탈 + 퇴화도형 + 빈슬라이드 + 토큰누락) == 0  → PASS 시 exit 0. (타이포는 advisory)
+HARD GATE = (경계이탈 + 퇴화도형 + 빈슬라이드 + 토큰누락) == 0  → PASS 시 exit 0. (타이포·스타일은 advisory)
 
 사용:
   python3 verify.py <pptx> [--tokens tokens.txt] [--ko 삼성전자,하이닉스]
@@ -141,6 +143,86 @@ def run_typo_issues(prs):
     return neg, wide, unsafe
 
 
+# ── (E) 스타일 휴리스틱 임계 (SPEC-PPTX-DESIGN-003 REQ-105, 튜닝 가능) ──
+STYLE_PUNCT_CHARS = "·—–"          # 구분 부호: 가운데점·em대시·en대시
+STYLE_PUNCT_MIN_PT = 18.0          # 이 크기 이상(또는 크기 미지정) run 만 카운트 — 메타/캡션 줄 제외 proxy
+STYLE_PUNCT_MAX_PER_SLIDE = 5      # 슬라이드당 초과 시 advisory
+STYLE_BAR_MAX_W_IN = 0.12          # 좌측 액센트 바 후보: 폭 ≤
+STYLE_BAR_MIN_H_IN = 0.35          #                       높이 ≥
+STYLE_BAR_SNAP_IN = 0.08           # 다른 도형 왼쪽 모서리 흡착 판정 거리
+STYLE_BAR_MAX_PER_DECK = 3         # 덱 전체 초과 시에만 advisory(절제 사용 1~3곳은 무죄)
+STYLE_VC_MAX_H_RATIO = 0.55        # 콘텐츠 union 높이 < 55%H 이면서
+STYLE_VC_TOL_RATIO = 0.08          # union 중심이 캔버스 중심 ±8%H → 중앙 몰림
+STYLE_VC_MIN_SHAPES = 3
+
+
+def run_style_issues(prs):
+    """(E) 스타일 휴리스틱 — 디자인 시스템 없는 AI 기본값 안티패턴 advisory 3종.
+
+    ① style_punct_overuse: 큰 글씨 run 의 '·'/'—'/'–' 합이 슬라이드당 임계 초과(부호 남발).
+    ② style_edge_bar_overuse: 다른 도형 왼쪽 모서리에 흡착된 얇은 세로 바가 덱 임계 초과
+       (좌측 액센트 라인 남발 — "적당해야 세련". 임계 이하 절제 사용은 보고하지 않음).
+    ③ style_v_center_cram: 비배경 도형 union 이 낮은 높이로 캔버스 수직 중앙에 몰림.
+    모두 advisory — HARD GATE 산식 불변. 임계는 모듈 상수로 노출(오탐 시 튜닝).
+    """
+    W, H = int(prs.slide_width), int(prs.slide_height)
+    SA = W * H
+    punct, bars, cram = [], [], []
+    for si, sl in enumerate(prs.slides, start=1):
+        boxes = []      # 비배경 도형 bbox
+        bar_cands = []  # 좌측 바 후보 bbox
+        pcount = 0
+        for sp in sl.shapes:
+            b = bbox(sp)
+            if b is None:
+                continue
+            w_in, h_in = (b[2] - b[0]) / EMU, (b[3] - b[1]) / EMU
+            if w_in <= 0 or h_in <= 0:
+                continue
+            is_bg = area(b) >= 0.92 * SA and b[0] <= TOL and b[1] <= TOL
+            if not is_bg:
+                boxes.append(b)
+                if w_in <= STYLE_BAR_MAX_W_IN and h_in >= STYLE_BAR_MIN_H_IN:
+                    bar_cands.append(b)
+            try:
+                has_tf = sp.has_text_frame
+            except Exception:
+                has_tf = False
+            if has_tf:
+                for para in sp.text_frame.paragraphs:
+                    for run in para.runs:
+                        sz = run.font.size
+                        if sz is not None and sz.pt < STYLE_PUNCT_MIN_PT:
+                            continue
+                        pcount += sum((run.text or "").count(ch) for ch in STYLE_PUNCT_CHARS)
+        if pcount > STYLE_PUNCT_MAX_PER_SLIDE:
+            punct.append({"slide": si, "count": pcount})
+        snap = int(STYLE_BAR_SNAP_IN * EMU)
+        for bb in bar_cands:
+            bw = bb[2] - bb[0]
+            for ob in boxes:
+                if ob == bb:
+                    continue
+                if (ob[2] - ob[0]) <= bw * 2:
+                    continue
+                if abs(ob[0] - bb[2]) <= snap:
+                    ov = min(bb[3], ob[3]) - max(bb[1], ob[1])
+                    if ov >= 0.5 * (bb[3] - bb[1]):
+                        bars.append({"slide": si})
+                        break
+        if len(boxes) >= STYLE_VC_MIN_SHAPES:
+            u0 = min(b[1] for b in boxes)
+            u1 = max(b[3] for b in boxes)
+            uh = u1 - u0
+            ucy = (u0 + u1) / 2
+            if uh < STYLE_VC_MAX_H_RATIO * H and abs(ucy - H / 2) < STYLE_VC_TOL_RATIO * H:
+                cram.append({"slide": si, "h_ratio": round(uh / H, 2),
+                             "center_off_ratio": round(abs(ucy - H / 2) / H, 3)})
+    if len(bars) <= STYLE_BAR_MAX_PER_DECK:
+        bars = []
+    return punct, bars, cram
+
+
 def ocr_blob(im):
     import numpy as np
     import pytesseract
@@ -164,7 +246,8 @@ def verify(pptx_path, tokens=None, ko=None, out_dir=None, dpi=110, do_ocr=True):
 
     issues = {"out_of_bounds": [], "zero_size": [], "blank_slide": [], "missing_content": [],
               "text_overlap": [], "ocr_low_yield": [], "ocr_missing_korean": [],
-              "kr_neg_spacing": [], "kr_wide_spacing": [], "kr_unsafe_font": []}
+              "kr_neg_spacing": [], "kr_wide_spacing": [], "kr_unsafe_font": [],
+              "style_punct_overuse": [], "style_edge_bar_overuse": [], "style_v_center_cram": []}
     perslide = {}
     sltext = slide_texts(prs)
 
@@ -173,6 +256,12 @@ def verify(pptx_path, tokens=None, ko=None, out_dir=None, dpi=110, do_ocr=True):
     issues["kr_neg_spacing"] = neg
     issues["kr_wide_spacing"] = wide
     issues["kr_unsafe_font"] = unsafe
+
+    # (E) 스타일 휴리스틱 (advisory) — AI 기본값 안티패턴 트립와이어
+    s_punct, s_bars, s_cram = run_style_issues(prs)
+    issues["style_punct_overuse"] = s_punct
+    issues["style_edge_bar_overuse"] = s_bars
+    issues["style_v_center_cram"] = s_cram
 
     # (A) 지오메트리
     for si, sl in enumerate(prs.slides, start=1):
@@ -316,6 +405,8 @@ def main():
           f"ocr_yield={c['ocr_low_yield']} ocr_ko={c['ocr_missing_korean']} (ocr_ran={r['ocr_ran']})")
     print(f"[ADVISORY/타이포] kr_neg_spacing={c['kr_neg_spacing']} "
           f"kr_wide_spacing={c['kr_wide_spacing']} kr_unsafe_font={c['kr_unsafe_font']}")
+    print(f"[ADVISORY/스타일] punct_overuse={c['style_punct_overuse']} "
+          f"edge_bar_overuse={c['style_edge_bar_overuse']} v_center_cram={c['style_v_center_cram']}")
     for o in r["issues"]["out_of_bounds"]:
         print(f"  [OOB] S{o['slide']}: {', '.join(o['over'])}  '{o['text']}'")
     for o in r["issues"]["ocr_low_yield"]:
@@ -326,6 +417,13 @@ def main():
         print(f"  [타이포] S{o['slide']}: 한글 과대 자간 {o['spc_pt']}pt  '{o['text']}'")
     for o in r["issues"]["kr_unsafe_font"]:
         print(f"  [타이포] S{o['slide']}: 한글에 비안전 폰트 '{o['font']}'  '{o['text']}' — 세리프/명조 폴백 의심")
+    for o in r["issues"]["style_punct_overuse"]:
+        print(f"  [스타일] S{o['slide']}: 큰 글씨 구분 부호(·/—/–) {o['count']}회 — 남발 의심, 문장으로 풀거나 레이아웃으로 분리")
+    if r["issues"]["style_edge_bar_overuse"]:
+        _sl = sorted({o['slide'] for o in r["issues"]["style_edge_bar_overuse"]})
+        print(f"  [스타일] 좌측 액센트 바 {c['style_edge_bar_overuse']}개(S{_sl}) — 남발 의심, 강조 1~2곳만 남기기")
+    for o in r["issues"]["style_v_center_cram"]:
+        print(f"  [스타일] S{o['slide']}: 콘텐츠가 수직 중앙에 몰림(높이 {o['h_ratio']}H) — 3존 리듬(헤더/콘텐츠/푸터)으로 재배치")
     print("HARD GATE:", "PASS" if r["hard_gate_pass"] else "FAIL")
     sys.exit(0 if r["hard_gate_pass"] else 1)
 
