@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch
 argument-hint: "<콘텐츠.md> [데이터.json] [DESIGN.md 경로 또는 URL] [출력.pptx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.3.0"
+  version: "0.3.1"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-08"
-  updated_at: "2026-06-11"
+  updated_at: "2026-06-13"
   tags: "pptx, presentation, design-md, deck, slides"
 ---
 

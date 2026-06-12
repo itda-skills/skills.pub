@@ -1,7 +1,7 @@
 # 웹 DESIGN.md → PPTX 디자인 토큰 매핑 가이드
 
 웹 UI 용으로 쓰인 DESIGN.md(awesome-design-md 등)의 토큰을 정적 PPTX 로 옮기는 방법, 그리고 **무엇이 잘 넘어오고 무엇이 구조적으로 막히는가**를 정리한다.
-근거: `out-pptx-design/REPORT.md` 의 7개 DESIGN.md 적용 실험(claude·binance·stripe·tesla·wired·spotify·nintendo-2001) §3 천장 규칙 / §4 한계 카탈로그 / §5 덱별 한계.
+근거: 7개 DESIGN.md 적용 실험(claude·binance·stripe·tesla·wired·spotify·nintendo-2001)의 천장 규칙·한계 카탈로그·덱별 한계(원문 실험 디렉토리 `out-pptx-design/`은 폐기 — 결과는 본 문서 §1~§3 에 전부 흡수됨).
 
 > **천장 규칙(한 줄)**: 정체성이 **색·레이아웃·평면 기하**에 살면 높은 재현(80~88%), **폰트·사진·모션**에 살면 한계가 있다. **시각 복잡도 자체는 장애물이 아니다** — Y2K 크롬(nintendo)이 충실도 1위, "깔끔한 미니멀"(tesla, 사진 의존)이 꼴찌였다. 재현도를 가르는 건 "정체성이 무엇으로 만들어졌나"다.
 
