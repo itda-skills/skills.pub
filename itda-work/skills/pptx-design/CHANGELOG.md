@@ -2,6 +2,12 @@
 
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.4.1] — 2026-06-13
+
+### Documentation
+
+- **GUIDE.md §3 — 60초 소개 영상 추가** — itda-work 채널 게시 영상(`https://www.youtube.com/watch?v=oJ9jvtLQHxg`, Remotion 제작 + ElevenLabs 나레이션, 모든 장면이 2026-06-11 실측 슬라이드). 단독 URL 문단은 skills.itda.work 가이드 페이지에서 자동으로 플레이어로 임베드된다(website SPEC-SKILLS-013 remark-youtube).
+
 ## [0.4.0] — 2026-06-13
 
 사용자 피드백("대충 입력해도 뽀대나게 — 엉성한 스타일 절대 금지" + AI 기본값 안티패턴 5종 인사이트) 반영(SPEC-PPTX-DESIGN-003, #325). 디자인 시스템 없는 범용 AI 의 기본값 — 수직 중앙 몰림·여백 부조화·좌측 액센트 바 남발·깔맞춤 실패·구분 부호(`·`/`—`) 남발 — 을 문서 규칙 + 자동 트립와이어로 차단합니다.
