@@ -68,7 +68,7 @@ SPEC-PPTX-DESIGN-002 §1 의 LibreOffice 폰트 렌더 실측 결과:
 ### ❌ PPTX 가 못 따라가는 것 (전 덱 공통 한계)
 
 1. **독점 디스플레이 서체 = 1순위 손실** — Copernicus·Söhne·BinanceNova·Universal Sans·WiredDisplay·CircularSp·Arial Black 박스아트가 전부 대체 폰트로 폴백. 브랜드 타이포 정체성이 가장 크게 깎인다.
-2. **음수 자간/미세 트래킹 미반영** — pptx `spc` 가 LibreOffice 에서 약하게만 적용. 음수 자간 run 에서 **em-dash 글리프가 통째로 드롭**된 사례(stripe) → middle-dot 으로 교체 필요.
+2. **음수 자간/미세 트래킹 미반영** — pptx `spc` 가 LibreOffice 에서 약하게만 적용. **em-dash(U+2014) 글리프가 통째로 드롭**되는 함정은 음수 자간 run(stripe)만이 아니라 **한글 인접 일반 run 에서도 실측**(2026-06-11) → en-dash(U+2013)·middle-dot 으로 교체.
 3. **폰트 weight 축 붕괴** — 가변폰트 300(thin)·600(semibold)이 regular/bold 2단계로 뭉개짐(stripe·spotify·tesla). LibreOffice 가 일부를 다른 weight 로 렌더.
 4. **한글 세리프/디스플레이 부재** — 세리프가 브랜드인 곳(claude·wired)에서 한글은 고딕 폴백 → 한 헤드라인에 "영문=세리프 / 한글=고딕" 이질 페어링. 한국어 덱 특유의 정체성 누수.
 5. **그라디언트·blur·glow 네이티브 미지원** — python-pptx 에 그라디언트 fill 없음 → 전부 **Pillow 래스터 PNG 베이크**(벡터 아님, 확대 시 픽셀화, 텍스트 그라디언트 불가).
@@ -92,6 +92,8 @@ SPEC-PPTX-DESIGN-002 §1 의 LibreOffice 폰트 렌더 실측 결과:
 ---
 
 ## 3. 내장 추천 팔레트 (DESIGN.md 없을 때 주제별 선택)
+
+> **먼저 `references/design-presets/` 를 확인하라** — 아래 팔레트 중 6종(컨설팅·트레이딩 다크·에디토리얼·신문·테크 다크·미니멀)은 슬라이드 문법 레시피까지 갖춘 **ready-to-use DESIGN.md 프리셋**으로 승격돼 있다(#303). 톤 키워드가 있으면 프리셋을 통째로 적용하는 쪽이 우선이고, 아래 표는 프리셋에 없는 톤을 조합할 때 쓴다.
 
 DESIGN.md 미제공 시 주제 적합 1종을 골라 `dk.set_bg`·`dk.rect(fill=..)`·차트 색·`set_run_font(color=..)` 에 hex 를 그대로 쓴다. 모두 위 실험 7덱에서 게이트 통과한 검증 팔레트의 핵심 축이다.
 

@@ -175,6 +175,11 @@ class KorailClient:
     def __repr__(self) -> str:  # 자격증명 노출 방지(SAFE-3)
         return f"KorailClient(id={mask_secret(self._id)!r}, logged_in={self._korail is not None})"
 
+    @property
+    def masked_id(self) -> str:
+        """마스킹된 로그인 ID (SAFE-3). check 등 사용자 출력은 항상 이 값을 쓴다."""
+        return mask_secret(self._id)
+
     def login(self) -> "KorailClient":
         """코레일 로그인. 실패/차단을 우리 예외로 변환(SAFE-4)."""
         try:

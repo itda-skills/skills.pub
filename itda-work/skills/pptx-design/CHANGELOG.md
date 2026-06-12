@@ -2,6 +2,29 @@
 
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.3.0] — 2026-06-11
+
+"MBB 티어1 컨설팅펌 스타일 삼성전자 주가 보고서" 동일 브리프 A/B 실측 비교(#303 — 공식 `pptx` 스킬 83.5 vs 본 스킬 90.0/100, 한글 처리·제작 비용 모두 역전 확인) 후속. 검증된 디자인 문법을 **프리셋으로 박제**하고, 조직 브랜드 박제 경로와 그림자 잔존 결함을 정비했습니다.
+
+### New Features
+
+- **★디자인 프리셋 6종(`references/design-presets/`)** — ready-to-use DESIGN.md: `consulting-mbb`(이번 실측 12장 덱의 문법 박제) · `equity-research-dark` · `warm-editorial` · `print-broadsheet` · `tech-vivid-dark` · `minimal-mono`. 각각 awesome-design-md 호환 frontmatter(colors 9키·typography·semantic_convention·motif·do/dont) + 슬라이드 문법 레시피(표지/요약/차트/그리드/클로징) 포함. 선택 표는 내부 `README.md`. SKILL.md 관문2의 1급 경로 ①로 승격 — 톤 키워드("컨설팅 스타일"…)가 오면 프리셋을 DESIGN.md 로 통째 적용.
+- **★DESIGN.md 생성 모드(조직 브랜드 박제)** — SKILL.md 관문1 라우팅 분기 + 관문2 생성 모드 신설: "우리 조직 DESIGN.md 만들어줘" 요청 시 브랜드 토큰 수집(말/문서/웹) → 톤 최근접 프리셋 베이스 복사 → hex·motif·do/dont 치환 → 파일 산출(덱 생성 없이 종료 가능). 외부 선례(Anthropic theme-factory 프리셋 디렉토리 + 커스텀 테마 플로우) 교차검증.
+- **의미색 관행 토글** — 프리셋 frontmatter `semantic_convention: international|krx`(국제 상승=그린 vs 한국 증시 상승=레드)로 가정을 명시화.
+
+### Fixed
+
+- **★deckkit `rect()` 그림자 잔존(#303 실측)** — `_kill_shadow` 가 빈 `effectLst` 만 주입해 LibreOffice 가 `<p:style><a:effectRef idx="2">` 테마 참조로 프리셋 드롭섀도를 계속 렌더하던 결함. shadow=False 시 `<p:style>` 을 통째로 제거해 플랫 의도를 복원(fill/line 은 항상 명시 지정이므로 시각 동등). shadow=True 는 `p:style` 보존.
+
+### Changed
+
+- **GUIDE.md 전면 개편** — 스타일 프리셋 6종 표("이렇게 말하세요")·MBB 실측 사례(12장 구성 표)·조직 DESIGN.md 박제 시나리오(§4.3)를 자연어 중심으로 추가, 내부 API 식별자 제거(SPEC-GUIDE-NO-SHELL-001 준수).
+- **`references/pptx-toolkit.md`·`design-md-mapping.md`** — 한글 인접 em-dash(U+2014) 글리프 드롭 함정을 일반화(음수 자간 한정 → 한글 인접 일반 run 실측, en-dash/middle-dot 대체 규칙). mapping §3 에 프리셋 우선 안내 추가.
+
+### Tests
+
+- 신규 11종 — rect `p:style` 제거/보존 회귀 2 + design-presets 구조·계약 9(디렉토리/README/≥6종/frontmatter 계약 키/colors 9키 hex 유효성/한글 필터 토큰 부재/semantic_convention enum/body 센티널/README 전수 나열). 기존 46 + 신규 11 = **57 GREEN**.
+
 ## [0.2.0] — 2026-06-08
 
 기본 Anthropic `pptx` 스킬의 **superset 재설계**(SPEC-PPTX-DESIGN-002). 0.1.0 의 단일 치명 결함 — 표지·섹션 **한글 제목이 자간 벌어진 명조/붓글씨로 렌더** — 를 폰트 체인 + 타이포 가드로 제거하고, 네이티브 편집 차트·기본 가이드 흡수·타이포 검증을 추가했습니다.

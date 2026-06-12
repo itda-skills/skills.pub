@@ -100,6 +100,7 @@ dk.add_paragraph(tb.text_frame,
 - 글머리표는 유니코드 "•" 를 텍스트에 직접 넣는 게 가장 안정적이다(이 toolkit 허용).
 - 세로 가운데 정렬: `anchor=MSO_ANCHOR.MIDDLE`. `add_text` 는 박스 margin 을 0 으로 잡아 정렬 어긋남을 방지한다.
 - 자간: `set_run_font(spacing=...)` (pt 단위, 음수 가능). 단 LibreOffice 에서 약하게만 적용된다(§한계는 design-md-mapping.md).
+- **★em-dash(U+2014) 함정**: 한글 인접 run 에서 em-dash 글리프가 **통째로 드롭**(유령 공백)될 수 있다 — 음수 자간 라틴 run(stripe 실험)만이 아니라 **일반 한글 본문에서도 실측**(2026-06-11 비교 덱, 54건). 구분 대시는 **en-dash(U+2013) 또는 middle-dot(·)** 을 쓴다.
 
 ### 한글 폰트명 선택 + ★자동 가드 (SPEC-PPTX-DESIGN-002 REQ-001/006)
 

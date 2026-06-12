@@ -1,7 +1,7 @@
 {
   "name": "itda-cs",
   "description": "한국어 CS 상담·문의 텍스트 분석 스킬팩 — 측면 기반 감정분석(ABSA)·인텐트(문의유형) 분류·어노테이터 일치도(IAA, Cohen·Fleiss κ) 측정·PII 비식별화 게이트. 무상태 단건·closed-set·고정 JSON 출력 계약. raw 로그는 PII 비식별화 선행, 모든 신규 분류축은 IAA 측정 게이트 선행.",
-  "version": "8.12.1",
+  "version": "8.13.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

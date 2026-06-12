@@ -3,8 +3,9 @@ name: train-ktx
 description: >
   KTX 열차를 검색하고 예약하는 스킬입니다.
   "다음 주 금요일 서울에서 부산 KTX 찾아줘", "오후 2시 이후 동대구 가는 표 있어?",
-  "아까 그 열차로 예약해줘"처럼 말하면 됩니다. 코레일 비공식 API를 사용하며,
-  예약은 반드시 확인을 거치고 결제·취소는 사용자가 직접 합니다.
+  "아까 그 열차로 예약해줘", "코레일 계정 확인해줘"처럼 말하면 됩니다.
+  코레일 비공식 API를 사용하며, 예약은 반드시 확인을 거치고
+  결제·취소는 사용자가 직접 합니다.
 license: MIT
 compatibility: "Python 3.10+. 코레일 비공식 API(korail2 계열) 의존."
 user-invocable: true
@@ -13,10 +14,10 @@ argument-hint: "서울에서 부산 KTX / 금요일 저녁 동대구 가는 표"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.1.1"
+  version: "0.2.0"
   status: "experimental"
   created_at: "2026-06-05"
-  updated_at: "2026-06-06"
+  updated_at: "2026-06-12"
   tags: "ktx, korail, train, booking, reservation, travel"
 ---
 
@@ -51,6 +52,9 @@ KORAIL_USER_ID=코레일 회원번호 또는 휴대폰번호 또는 이메일
 KORAIL_PASSWORD=코레일 로그인 비밀번호
 ```
 
+등록을 마쳤으면 **"코레일 계정 확인해줘"** 라고 요청해 로그인 1회로 설정을
+검증할 수 있습니다(`check` — 규칙 7 참조).
+
 > **키 주입 (Claude 실행 규칙):** 계정이 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 `KORAIL_USER_ID`/`KORAIL_PASSWORD`가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `KORAIL_USER_ID=<ID> KORAIL_PASSWORD=<PW> python3 .../main.py ...`. 지침에도 없으면 fail-loud 안내를 제시한다. 주입한 값은 출력·요약·로그에 노출하지 않는다(SAFE-3).
 
 **개발자 (선택) — 환경변수 / `.env`:** 셸 환경변수, `~/.claude/settings.json` 의 env, 작업 폴더/홈의 `.env`도 사용할 수 있습니다.
@@ -70,6 +74,7 @@ PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/mai
 PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py reserve --dep 서울 --arr 부산 --date 20260612 --time 140000 --index 0            # 미리보기(예약 안 함)
 PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py reserve --dep 서울 --arr 부산 --date 20260612 --time 140000 --index 0 --confirm  # 실제 예약
 PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py reservations
+PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py check           # 계정 확인(로그인 1회, read-only)
 
 # Windows
 $env:PYTHONPATH="skills/shared"; py -3 skills/itda-travel/skills/train-ktx/scripts/main.py search --dep 서울 --arr 부산
@@ -113,6 +118,12 @@ Claude가 이 스킬을 실행할 때 반드시 따르는 행동 규칙입니다
 **규칙 6 — 매크로 금지 (SAFE-6)**
 매진 시 자동 반복 조회·취소표 낚기 루프를 만들지 않습니다. 사용자가 다시
 요청할 때 1회 실행합니다.
+
+**규칙 7 — 계정 확인 (check)**
+"계정 확인해줘" 요청, 자격증명 최초 설정 직후, 로그인 오류 후 재설정 시에는
+`check` 를 실행해 로그인 1회로 자격증명을 검증합니다. 출력은 **마스킹된 ID와
+성공 여부만**입니다(SAFE-3 — 회원명 등 계정 정보 미출력). 검색·예약 흐름마다
+강제 실행하지는 않습니다(불필요한 로그인 왕복 최소화).
 
 ## 제약 (Exclusions)
 

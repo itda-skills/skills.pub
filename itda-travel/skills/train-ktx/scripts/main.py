@@ -2,8 +2,9 @@
 """train-ktx CLI — KTX 열차 검색·예약·예약조회.
 
 ⚠️ 코레일 비공식 모바일 API(letskorail.com)를 사용한다. 전체 디스클레이머는
-SKILL.md / GUIDE.md 참조. 서브커맨드: search / reserve / reservations.
+SKILL.md / GUIDE.md 참조. 서브커맨드: search / reserve / reservations / check.
 예약(reserve)은 ``--confirm`` 없으면 미리보기만 수행한다(SAFE-1).
+계정 확인(check)은 로그인 1회로 자격증명만 검증한다(read-only, 마스킹 출력).
 
 실행 전제: shared/ 모듈을 import 하므로 ``PYTHONPATH=skills/shared`` 가 필요하다.
   예: PYTHONPATH=skills/shared python3 skills/itda-travel/skills/train-ktx/scripts/main.py search ...
@@ -156,6 +157,20 @@ def cmd_reservations(args) -> int:
     return 0
 
 
+def cmd_check(args) -> int:
+    # 계정 확인 — 로그인 1회로 자격증명만 검증한다(read-only). 성공 시 마스킹된
+    # ID와 성공 여부만 출력하고(SAFE-3), 실패는 main()의 기존 예외 처리로 fail-loud.
+    client = connect(cli_id=args.id, cli_pw=args.pw)
+    if args.json:
+        print(json.dumps({"ok": True, "id": client.masked_id}, ensure_ascii=False))
+    else:
+        print(
+            "✅ 코레일 로그인 성공 — 계정이 올바르게 설정되었습니다."
+            f" (ID: {client.masked_id})"
+        )
+    return 0
+
+
 def _add_search_args(sp: argparse.ArgumentParser) -> None:
     sp.add_argument("--dep", required=True, help="출발역(한글)")
     sp.add_argument("--arr", required=True, help="도착역(한글)")
@@ -209,6 +224,11 @@ def build_parser() -> argparse.ArgumentParser:
         "reservations", parents=[common], help="내 예약 조회(read-only)"
     )
     sp_rsv.set_defaults(func=cmd_reservations)
+
+    sp_check = sub.add_parser(
+        "check", parents=[common], help="계정 확인 — 로그인 1회로 자격증명 검증(read-only)"
+    )
+    sp_check.set_defaults(func=cmd_check)
 
     return p
 

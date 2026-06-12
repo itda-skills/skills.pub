@@ -105,13 +105,22 @@ def set_bg(slide, hexcolor: str):
 
 
 def _kill_shadow(sp):
-    """LibreOffice 가 preset effectRef 로 강제 상속하는 드롭섀도를 XML 로 중화."""
+    """LibreOffice 가 preset effectRef 로 강제 상속하는 드롭섀도를 XML 로 중화.
+
+    빈 effectLst 주입만으로는 부족하다 — LibreOffice 는 <p:style> 의
+    <a:effectRef idx="2"> 테마 참조만으로도 프리셋 그림자를 렌더한다(#303 실측).
+    rect() 는 fill/line 을 항상 명시 지정하므로 테마 참조(<p:style>)를 통째로
+    제거해도 시각 결과가 달라지지 않는다(플랫 의도 보존).
+    """
     spPr = sp._element.spPr
     for tag in ("a:effectLst", "a:effectDag"):
         existing = spPr.find(qn(tag))
         if existing is not None:
             spPr.remove(existing)
     spPr.append(spPr.makeelement(qn("a:effectLst"), {}))
+    style = sp._element.find(qn("p:style"))
+    if style is not None:
+        sp._element.remove(style)
     try:
         sp.shadow.inherit = False
     except Exception:

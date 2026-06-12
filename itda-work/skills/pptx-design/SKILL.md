@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch
 argument-hint: "<콘텐츠.md> [데이터.json] [DESIGN.md 경로 또는 URL] [출력.pptx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.2.0"
+  version: "0.3.0"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-08"
-  updated_at: "2026-06-08"
+  updated_at: "2026-06-11"
   tags: "pptx, presentation, design-md, deck, slides"
 ---
 
@@ -56,6 +56,7 @@ py -3 -m pip install -r requirements.txt
 - **OCR 검증층(C, advisory)**은 `pytesseract` + `tesseract`(kor+eng)이 있을 때만 동작하며, 없으면 자동 스킵됩니다(하드게이트엔 영향 없음).
 
 레퍼런스:
+- **★디자인 프리셋(ready-to-use DESIGN.md 6종)**: `references/design-presets/` — 선택 표는 그 안의 `README.md`. 톤 키워드("컨설팅 스타일"·"다크 트레이딩"…)가 오면 여기서 1종을 골라 DESIGN.md 로 적용.
 - **기본 디자인 가이드(흡수·1급 경로)**: `references/anthropic-pptx-design-ideas.md` — 팔레트·타이포 페어링·레이아웃·QA 루프(DESIGN.md 없을 때 우선).
 - **레시피·함정·CJK 폰트·네이티브 차트·렌더 명령**: `references/pptx-toolkit.md`
 - **DESIGN.md → pptx 3열 필터 매핑(pptx 적용/한글 적용/필터) + 재현 카탈로그**: `references/design-md-mapping.md`
@@ -73,13 +74,16 @@ py -3 -m pip install -r requirements.txt
 
 1. **콘텐츠 명세(필수)** — 슬라이드 아웃라인 Markdown. 슬라이드 수·각 슬라이드의 제목/본문/시각요소 종류(차트·표·스탯·그리드)를 정의합니다. 콘텐츠는 SSoT로 고정하며 디자인만 변수입니다.
 2. **수치 데이터(차트·표가 있으면 필수)** — JSON 또는 표. 모든 차트/표 수치는 여기서 가져오며 1:1 일치시킵니다. 손 입력 금지 — 입력 데이터를 그대로 인용합니다(데이터 정확성 우선).
-3. **DESIGN.md(선택)** — 로컬 경로 또는 URL. URL이면 `WebFetch`로 가져옵니다. 미제공 시 관문2에서 내장 팔레트를 선택합니다.
+3. **DESIGN.md(선택)** — 로컬 경로 또는 URL. URL이면 `WebFetch`로 가져옵니다. 미제공 시 관문2에서 내장 프리셋/팔레트를 선택합니다.
 
 사용자 발화가 모호하면(예: 슬라이드 수·데이터 출처 불명) 진행 전 1회 확인합니다.
 
+**라우팅 분기**: 덱 생성이 아니라 **"우리 조직/브랜드 DESIGN.md 를 만들어 달라"**(박제)는 요청이면 관문2의 **DESIGN.md 생성 모드**로 진입합니다 — 이 경우 관문3~5(덱 생성·검증)는 건너뛰고 DESIGN.md 파일이 최종 산출물입니다.
+
 ### 관문2 — 디자인 시스템 해석 (superset: 기본 가이드 토대 + DESIGN.md 필터)
 
-- **DESIGN.md 미제공 시(1급 경로)**: `references/anthropic-pptx-design-ideas.md`(기본 스킬 흡수 가이드) + `references/design-md-mapping.md` §3 내장 검증 팔레트를 1급으로 씁니다. 주제·톤에 맞는 팔레트 1종(지배 색 60~70% + 보조 1~2 + 액센트 1) 을 선택하고, 타이포 페어링·레이아웃 다양화·"모든 슬라이드에 시각 요소"·여백 규칙을 따릅니다. 선택 근거를 한 줄로 남깁니다.
+- **DESIGN.md 미제공 시(1급 경로)**: ① 사용자가 톤·스타일 키워드("MBB/컨설팅"·"트레이딩 다크"·"에디토리얼"·"신문 감각"·"미니멀"…)를 줬으면 `references/design-presets/README.md` 선택 표에서 **프리셋 1종을 골라 그 파일을 DESIGN.md 로 적용**합니다(팔레트 + 슬라이드 문법 레시피 포함 — 이후 "DESIGN.md 제공 시"와 동일하게 처리). ② 맞는 프리셋이 없으면 `references/anthropic-pptx-design-ideas.md`(기본 스킬 흡수 가이드) + `references/design-md-mapping.md` §3 내장 검증 팔레트에서 주제·톤에 맞는 팔레트 1종(지배 색 60~70% + 보조 1~2 + 액센트 1)을 선택하고, 타이포 페어링·레이아웃 다양화·"모든 슬라이드에 시각 요소"·여백 규칙을 따릅니다. 어느 쪽이든 선택 근거를 한 줄로 남깁니다.
+- **★DESIGN.md 생성 모드(조직 브랜드 박제 — 관문1 라우팅 분기 시)**: 덱이 아니라 DESIGN.md 파일 자체가 산출물입니다. 절차 — ① 브랜드 토큰 수집: 사용자의 말("우리 컬러는 #1A73E8…")·기존 브랜드 가이드 문서·웹사이트(`WebFetch`)에서 canvas/surface/ink/muted/primary/accent/hairline/up/down hex 와 모티프·Do/Don't 를 모읍니다(불명 토큰은 1회 질문 또는 합리적 파생 후 명시). ② 톤이 가장 가까운 `references/design-presets/` 프리셋 1종을 **베이스로 복사**해 colors hex·motif·do/dont·semantic_convention 을 치환합니다(프리셋 frontmatter 계약 키 유지 — `design-presets/README.md` 참조). ③ 한글 필터 토큰(음수 letterSpacing·thin weight)은 넣지 않고, display 폰트는 라틴 전용임을 주석으로 남깁니다. ④ 사용자가 지정한 경로(기본: 작업 디렉토리 `<조직명>.design.md`)에 저장하고, 적용 방법("다음부터 이 파일로 만들어줘")을 안내합니다. 생성된 파일은 이후 관문2 "DESIGN.md 제공 시" 경로로 그대로 소비됩니다.
 - **DESIGN.md 제공 시(덧입히기)**: 위 기본 토대 위에, frontmatter의 `colors`(primary·ink·canvas·surface·semantic hex)·`typography`(display/body 폰트·weight·letterSpacing)·`rounded`·`spacing`·`motif`·Do/Don't를 추출해 **3열 필터 표**(pptx 적용 / 한글 적용 / 필터)로 정리합니다(`references/design-md-mapping.md` §1). 핵심 팔레트 hex는 도형·차트에 **실제로** 반영합니다.
 - **★DESIGN.md 한글 필터 인지(REQ-004)**: `typography.letterSpacing(음수)`·`fontWeight(thin)`·`serif display` 는 **한글=필터**입니다 — 웹 타이포를 한글 run 에 문자 그대로 적용하면 LibreOffice 가 자간 벌어진 명조/붓글씨로 폴백합니다. `set_run_font` 의 한글 가드가 이 셋을 **자동 차단**(비안전 폰트→안전 고딕, 음수 자간→0)하지만, 디자인 의도 자체를 **라틴 run 에만** 적용하도록 설계합니다.
 - **재현 천장 인지**: 독점 디스플레이 서체·weight 축·한글 세리프·그라디언트/blur/glow·사진-as-정체성은 PPTX 천장입니다(`design-md-mapping.md` §2 카탈로그). 색·레이아웃·평면 기하·반복 모티프는 높은 재현도입니다. 천장 토큰은 가장 가까운 대체(세리프→라틴 근접 대체 + 한글 안전 고딕, 그라디언트→Pillow 베이크)로 번역합니다.
