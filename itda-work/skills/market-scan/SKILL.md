@@ -231,7 +231,7 @@ metadata:
 저장 후 파일 경로를 알리고, **AskUserQuestion으로 다음 행동을 제시**한다:
 1. 특정 항목(예: 경쟁사 / 규제) 더 깊이 파기
 2. 핵심 수치를 ground-check로 재검증
-3. 이 보고서를 슬라이드/문서로 변환 (`document-skills:pptx` / `itda-work:hwpx` 등 연계)
+3. 이 보고서를 슬라이드/문서로 변환 (`document-skills:pptx` / `itda-work:hwpx-reader` 등 연계)
 4. 여기까지 — 보고서만 받고 종료
 
 ## 검증 강도 — 기본 vs ground-check 위임

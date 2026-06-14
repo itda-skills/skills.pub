@@ -44,7 +44,7 @@ blog-reader    → itda-work/skills/blog-reader/
 weather-here   → itda-work/skills/weather-here/
 web-reader     → itda-work/skills/web-reader/
 exchange-rate  → itda-work/skills/exchange-rate/
-hwpx           → itda-work/skills/hwpx/
+hwpx-reader    → itda-work/skills/hwpx-reader/
 human-tone     → itda-work/skills/human-tone/
 pdf-context-refinery → itda-work/skills/pdf-context-refinery/
 investigate    → itda-work/skills/investigate/

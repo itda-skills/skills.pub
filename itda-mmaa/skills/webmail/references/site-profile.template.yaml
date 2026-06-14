@@ -1,0 +1,21 @@
+provider: kacem
+login:
+  mode: manual_or_authorized_unattended
+  profile_id: default
+  base_url: "https://<군인공제회-웹메일>/"
+list:
+  primary: fetch
+  path: "/<probe로-확정한-목록-XHR>"
+  fallback: extract
+  selectors:
+    item: "<stable-row-selector>"
+    sender: "<relative-selector>"
+    subject: "<relative-selector>"
+    date: "<relative-selector>"
+    unread: "<relative-selector-or-attribute>"
+message:
+  open_strategy: click_or_fetch
+  body_selector: "<stable-body-selector>"
+attachments:
+  download_strategy: browser_download_or_fetch
+  item_selector: "<stable-attachment-selector>"
