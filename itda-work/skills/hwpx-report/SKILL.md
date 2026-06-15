@@ -15,7 +15,7 @@ argument-hint: "<보고서_마크다운_경로>"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   tags: "hwp, hwpx, report, government, markdown, docspec"
-  version: "0.3.0"
+  version: "0.3.1"
   category: "document"
   created_at: "2026-06-08"
   updated_at: "2026-06-14"
@@ -44,7 +44,7 @@ Claude(또는 사용자)가 **마크다운으로 쓴 보고서**를 대한민국
 `hwpx` CLI 바이너리는 필요 없습니다. 이 스킬은 포함된 Python 패키지(`hwpx_report`)로 HWPX ZIP을 직접 생성합니다.
 
 - Python 3.10+가 필요합니다.
-- 이미지 크기 산정을 위해 `Pillow`가 필요합니다. 누락 시 다음처럼 설치합니다.
+- 이미지를 넣는 보고서는 크기 산정을 위해 `Pillow`가 필요합니다. 누락 시 다음처럼 설치합니다.
 
 ```bash
 python3 -m pip install -r "${CLAUDE_SKILL_DIR}/requirements.txt"

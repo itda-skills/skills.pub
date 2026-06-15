@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "title": "K-뷰티, 세계 2위로",
+    "subtitle": "2025 한국 화장품 수출 — 사상 최대 114억 달러, 프랑스 다음의 수출 강국",
+    "scope": "글로벌 K-뷰티 수출 브리핑 · 2025 실적",
+    "as_of": "2026-06-15",
+    "sources": "자료: 관세청·식약처 수출통계 · KOTRA · The Korea Herald · IBTimes · Korea Times (2+ 출처 교차, 기준일 2026-06-15)"
+  },
+  "headline": {
+    "exports_2025_b": 11.4,
+    "exports_2025_won": "114억 달러",
+    "growth_2025_pct": 11.8,
+    "growth_2025_pct_customs": 12.3,
+    "world_rank_2025": 2,
+    "destinations_2025": 202
+  },
+  "world_rank_2025": [
+    {"name": "프랑스", "value_b": 24.3, "note": "부동의 1위"},
+    {"name": "한국", "value_b": 11.4, "note": "2위 (2024 3위→2025 2위)"},
+    {"name": "미국", "value_b": 10.8, "note": "3위로 하락"}
+  ],
+  "annual": [
+    {"year": "2021", "exports_b": 9.18, "flag": "확정"},
+    {"year": "2022", "exports_b": 7.95, "flag": "추정(반올림)"},
+    {"year": "2023", "exports_b": 8.46, "flag": "확정"},
+    {"year": "2024", "exports_b": 10.20, "flag": "확정"},
+    {"year": "2025", "exports_b": 11.40, "flag": "확정"}
+  ],
+  "top_markets_2025": [
+    {"name": "미국", "value_b": 2.2, "yoy_pct": 15, "note": "첫 1위 — 중국 추월"},
+    {"name": "중국", "value_b": 2.0, "yoy_pct": -19, "note": "2위로 하락"},
+    {"name": "일본", "value_b": 1.1, "yoy_pct": null, "note": "안정적 3위"}
+  ],
+  "category_2025": [
+    {"name": "스킨케어", "pct": 74.7, "value_b": 8.5},
+    {"name": "색조", "pct": 13.2, "value_b": 1.5},
+    {"name": "기타", "pct": 12.1, "value_b": 1.4}
+  ],
+  "diversification": {
+    "dest_2024": 172,
+    "dest_2025": 202,
+    "top10_share_pct": 70.7,
+    "china_share_2021_pct": 50,
+    "china_share_2024_pct": 24.5,
+    "surge": [
+      {"name": "폴란드", "yoy_pct": 111.7},
+      {"name": "아랍에미리트(UAE)", "yoy_pct": 67.2}
+    ]
+  },
+  "takeaways": [
+    ["114억 달러 · 사상 최대", "2025 수출 114억 달러(+11.8%) — 5년 연속 성장 끝에 세계 2위 수출국으로.", "$11.4B"],
+    ["미국이 중국을 추월", "최대 시장이 중국에서 미국(22억 달러·+15%)으로 교체 — 시장 다변화의 상징.", "미국 #1"],
+    ["202개국으로 확장", "수출 대상국 172→202개국, 폴란드·UAE 등 유럽·중동 급성장.", "202개국"]
+  ]
+}

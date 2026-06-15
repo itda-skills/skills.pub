@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "title": "스트리밍 전쟁,\n2026 포지셔닝 맵",
+    "kicker": "MEDIA · STREAMING WARS · 2026",
+    "subtitle": "글로벌 구독자(규모)와 월 구독료(가격) 두 축으로 일곱 플랫폼을 한 장에 — 누가 어디에 서 있나.",
+    "as_of": "기준일 2026-06-15",
+    "sources": "자료: 각 사 실적·The Wrap·Statista·BusinessStats·Deadline 등 2+ 출처 교차. ⚠ Prime Video·Apple TV+ 구독자는 미공개 3자 추정, Disney+는 Hotstar 분리 후 기준, 요금은 미국 광고 없는 표준 요금제(지역·요금제별 상이)."
+  },
+  "axes": {
+    "x": {"label": "월 구독료 (광고 없는 표준, US$)", "min": 8, "max": 21, "div": 14, "ticks": [8, 12, 16, 20]},
+    "y": {"label": "글로벌 구독자 (백만 명)", "min": 0, "max": 350, "div": 100, "ticks": [0, 100, 200, 300]}
+  },
+  "quadrants": {
+    "tr": {"label": "프리미엄 스케일", "desc": "고가 + 대형", "tint": "#EEF1FF", "color": "#4F46E5"},
+    "tl": {"label": "매스 · 번들", "desc": "저가 + 대형", "tint": "#E8F6F3", "color": "#0D9488"},
+    "br": {"label": "프리미엄 니치", "desc": "고가 + 소형", "tint": "#FDEEF1", "color": "#E11D48"},
+    "bl": {"label": "챌린저 · 가성비", "desc": "저가 + 소형", "tint": "#FBF3E6", "color": "#D97706"}
+  },
+  "items": [
+    {"name": "Netflix", "price": 19.99, "subs": 325, "lpos": "l", "lead": true},
+    {"name": "Prime Video", "price": 8.99, "subs": 200, "lpos": "r"},
+    {"name": "Disney+", "price": 16.99, "subs": 131.6, "jx": -16, "lpos": "l"},
+    {"name": "Max", "price": 16.99, "subs": 128, "jx": 16, "lpos": "r"},
+    {"name": "Paramount+", "price": 12.99, "subs": 83.8, "lpos": "l"},
+    {"name": "Apple TV+", "price": 12.99, "subs": 46, "lpos": "l"},
+    {"name": "Peacock", "price": 16.99, "subs": 44, "lpos": "r"}
+  ],
+  "table": {
+    "header": ["플랫폼", "구독자(M)", "월요금($)", "사분면"],
+    "rows": [
+      ["Netflix", "325", "19.99", "프리미엄 스케일"],
+      ["Prime Video", "~200", "8.99", "매스·번들"],
+      ["Disney+", "131.6", "16.99", "프리미엄 스케일"],
+      ["Max", "128", "16.99", "프리미엄 스케일"],
+      ["Paramount+", "83.8", "12.99", "챌린저·가성비"],
+      ["Apple TV+", "~46", "12.99", "챌린저·가성비"],
+      ["Peacock", "44", "16.99", "프리미엄 니치"]
+    ]
+  },
+  "insights": [
+    {"head": "넷플릭스 독주", "body": "325M으로 2위 Prime Video(~200M)의 1.6배, Disney+(131.6M)의 2.5배. 규모의 경제가 콘텐츠 투자 여력으로 이어진다."},
+    {"head": "번들이 가격을 지킨다", "body": "Prime Video는 저가($8.99)·대형(아마존 번들). Apple TV+·Peacock은 $2짜리 묶음으로 가격을 방어한다."},
+    {"head": "요금은 수렴 중", "body": "광고 없는 표준 요금이 $17~20에 몰린다(넷플 $19.99 · 디즈니·맥스·피콕 $16.99). 차별화 축은 가격이 아니라 콘텐츠다."}
+  ],
+  "closing": {
+    "statement": "스케일은 넷플릭스가, 가성비는 번들이.\n2026 스트리밍은 '규모'와 '묶음'의 싸움이 됐다.",
+    "tail": "가격은 한곳으로 수렴하고, 구독자는 한 곳으로 쏠린다 — 다음 전선은 콘텐츠와 번들이다."
+  }
+}

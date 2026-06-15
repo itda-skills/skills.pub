@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "title": "원두 한 잔의\n경제학",
+    "subtitle": "글로벌 커피 — 공급은 두 나라에 쏠리고, 가격은 13년 만의 최고",
+    "tag": "GLOBAL COFFEE · 2026",
+    "as_of": "2026-06-15",
+    "sources": "자료: USDA FAS Coffee Annual · Visual Capitalist · Grand View Research (2+ 출처 교차, 시장 규모는 정의별 편차 — 플래그)"
+  },
+  "market_2024_b": 137.97,
+  "cagr_pct": 6.2,
+  "market_2032_b": 223.25,
+  "production": [
+    {"name": "브라질", "share": 38},
+    {"name": "베트남", "share": 16},
+    {"name": "콜롬비아", "share": 8},
+    {"name": "인도네시아", "share": 6},
+    {"name": "기타", "share": 32}
+  ],
+  "prices": [
+    {"name": "아라비카", "yoy": 80, "usd": 264.88},
+    {"name": "로부스타", "yoy": 120, "usd": 251.88}
+  ],
+  "headline": {
+    "brazil_share": 38,
+    "brazil_vietnam": "절반 이상",
+    "global_price_yoy": 37,
+    "price_high": "13년 만의 최고(2024-12)",
+    "brazil_export_bags": 47.3,
+    "brazil_export_yoy": 32.7
+  },
+  "panels": {
+    "supply": "브라질 한 나라가 세계 공급의 38%. 브라질·베트남 둘이 절반을 넘긴다 — 두 나라의 날씨가 곧 세계의 커피값.",
+    "price": "2024년 아라비카는 80%, 로부스타는 120% 뛰었다. 브라질·베트남·인도네시아의 공급 차질이 13년 만의 최고가를 만들었다.",
+    "export": "브라질은 2023/24 시즌 4,730만 자루를 수출 — 사상 최대, 전년比 +32.7%. 가격 급등이 곧 수출액 급증으로."
+  }
+}

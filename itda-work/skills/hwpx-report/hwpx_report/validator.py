@@ -119,7 +119,12 @@ def _check_bindata_refs(zf: zipfile.ZipFile) -> CheckResult:
         manifest = _parse_manifest(zf)
     except KeyError:
         return CheckResult(name, True)
-    refs = _collect_bin_refs(zf)
+    except ET.ParseError as exc:
+        return CheckResult(name, False, str(exc))
+    try:
+        refs = _collect_bin_refs(zf)
+    except ET.ParseError as exc:
+        return CheckResult(name, False, str(exc))
     if not refs:
         return CheckResult(name, True)
     names = set(zf.namelist())
@@ -137,7 +142,10 @@ def _check_bindata_refs(zf: zipfile.ZipFile) -> CheckResult:
 
 
 def _parse_manifest(zf: zipfile.ZipFile) -> dict[str, str]:
-    root = ET.fromstring(zf.read("Contents/content.hpf"))
+    try:
+        root = ET.fromstring(zf.read("Contents/content.hpf"))
+    except ET.ParseError as exc:
+        raise ET.ParseError(f"Contents/content.hpf: {exc}") from exc
     result: dict[str, str] = {}
     for el in root.iter():
         if _local_name(el.tag) == "item":
@@ -154,7 +162,10 @@ def _collect_bin_refs(zf: zipfile.ZipFile) -> list[str]:
     for name in zf.namelist():
         if not _is_section_file(name):
             continue
-        root = ET.fromstring(zf.read(name))
+        try:
+            root = ET.fromstring(zf.read(name))
+        except ET.ParseError as exc:
+            raise ET.ParseError(f"{name}: {exc}") from exc
         for el in root.iter():
             for key, value in el.attrib.items():
                 if _local_name(key) == "binaryItemIDRef" and value and value not in seen:

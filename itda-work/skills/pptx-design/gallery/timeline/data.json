@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "title": "28nm에서 2nm로",
+    "subtitle": "반도체 미세공정 로드맵 — 무어의 법칙은 느려졌지만 멈추지 않았다",
+    "scope": "로직 파운드리 공정 노드 연표 · 1.4nm는 로드맵(전망)",
+    "as_of": "2026-06-15",
+    "sources": "자료: TSMC 공식 기술 페이지 · AnySilicon Node History · GSMArena (2+ 출처 교차, 1.4nm 전망 플래그)"
+  },
+  "nodes": [
+    {"year": "2011", "node": "28nm", "arch": "Planar", "note": "성숙 공정의 주력 — 지금도 광범위 사용", "era": "planar"},
+    {"year": "2015", "node": "16nm", "arch": "FinFET", "note": "3D 트랜지스터 도입 — 누설전류 제어의 전환", "era": "finfet"},
+    {"year": "2017", "node": "10nm", "arch": "FinFET", "note": "모바일 SoC 고밀도화 가속", "era": "finfet"},
+    {"year": "2018", "node": "7nm", "arch": "FinFET (N7)", "note": "Apple A12·AMD Zen2 — EUV 진입 시작", "era": "finfet"},
+    {"year": "2020", "node": "5nm", "arch": "FinFET (N5)", "note": "Apple A14·M1 — EUV 본격화", "era": "finfet"},
+    {"year": "2022", "node": "3nm", "arch": "FinFET (N3)", "note": "고밀도 양산 — Apple A17·M3(2023 제품)", "era": "finfet"},
+    {"year": "2025", "node": "2nm", "arch": "GAA 나노시트 (N2)", "note": "4Q25 양산 — 게이트올어라운드 1세대로 전환", "era": "gaa"},
+    {"year": "2027", "node": "1.4nm", "arch": "GAA (A14)", "note": "로드맵 — 차세대 미세화 [전망]", "era": "future"}
+  ],
+  "cadence": [
+    {"span": "28→16", "years": 4},
+    {"span": "16→10", "years": 2},
+    {"span": "10→7", "years": 1},
+    {"span": "7→5", "years": 2},
+    {"span": "5→3", "years": 2},
+    {"span": "3→2", "years": 3}
+  ],
+  "players": [
+    {"name": "TSMC", "lead": "N2 (2nm)", "note": "양산 선두 — EUV·GAA 전환 주도", "year": "2025"},
+    {"name": "삼성", "lead": "SF2 (2nm)", "note": "GAA 최초 도입(3nm 2022) — 수율 추격", "year": "2025"},
+    {"name": "인텔", "lead": "18A (~2nm급)", "note": "RibbonFET+PowerVia로 복귀 시도", "year": "2025"}
+  ],
+  "stats": {
+    "span_years": 14,
+    "nodes_count": 8,
+    "arch_shifts": 3
+  }
+}

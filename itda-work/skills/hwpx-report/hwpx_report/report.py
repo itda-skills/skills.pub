@@ -8,7 +8,7 @@ from datetime import date, datetime
 from importlib import resources
 from pathlib import PurePosixPath
 
-from .image import render_report_image
+from .image import ImageDependencyError, render_report_image
 from .models import DocSpec, ReportBlock, ReportImage, ReportItem, ReportTable
 from .profile import MIME_TYPE, VERSION_XML, ImageEntry, SpecProfile, xml_escape
 from .rawzip import RawZipWriter
@@ -307,6 +307,8 @@ def _render_table(ctx: WriteContext, table: ReportTable, tmpl: ReportTemplate) -
 def _render_image(ctx: WriteContext, image: ReportImage, img_idx: int, char_pr_id_ref: str) -> tuple[str, ImageEntry]:
     try:
         return render_report_image(ctx, image, img_idx, char_pr_id_ref)
+    except ImageDependencyError as exc:
+        raise HWPXReportError(str(exc)) from exc
     except OSError as exc:
         raise HWPXReportError(str(exc)) from exc
     except NotImplementedError as exc:

@@ -29,7 +29,7 @@ import re
 import sys
 import unicodedata
 
-if sys.version_info[0] < 3:  # pragma: no cover - 런타임 가드
+if sys.version_info < (3, 10):  # pragma: no cover - 런타임 가드
     sys.exit("Python 3.10+ 가 필요합니다.")
 
 # Windows 콘솔(cp949) 에서 한국어 stderr/stdout 깨짐 방지.
@@ -56,6 +56,9 @@ _FENCE = re.compile(r"^\s*(```|~~~)")
 
 # inline 서식 strip: [text](url) → text, ***x***/**x**/*x*/_x_ → x
 _LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
+_REF_LINK = re.compile(r"\[([^\]]+)\]\[[^\]]*\]")
+_AUTOLINK = re.compile(r"<([A-Za-z][A-Za-z0-9+.-]*:[^<>\s]*)>")
+_LINK_DEF = re.compile(r"^\s{0,3}\[[^\]]+\]:\s+\S.*$")
 # 코드 스팬: 강조 파싱 *전에* placeholder 로 마스킹한다(_mask_code_spans). 그래야
 # (1) 강조가 코드스팬 경계를 가로질러 닫히지 못하고(`*`a*` → `*a*`),
 # (2) 코드 안의 `*`/`_` 가 강조로 오인되지 않으며(코드 내용 literal 보존),
@@ -77,7 +80,7 @@ _EMPHASIS_TOKENS = [
 _DELIMS_ONLY = "*_ \t"
 
 
-def _mask_code_spans(text: str) -> tuple[str, dict[str, str]]:
+def _mask_code_spans(text: str, *, keep_markers: bool = False) -> tuple[str, dict[str, str]]:
     """코드 스팬을 NUL placeholder 로 치환해 (masked_text, restore_map) 를 반환한다.
 
     placeholder 는 강조·링크·이미지 마커를 포함하지 않으므로(NUL+숫자) 이후 파싱이
@@ -87,7 +90,7 @@ def _mask_code_spans(text: str) -> tuple[str, dict[str, str]]:
 
     def repl(m: re.Match) -> str:
         key = f"\x00{len(spans)}\x00"
-        spans[key] = m.group(1)  # 백틱 안 내용(평문 보존)
+        spans[key] = m.group(0) if keep_markers else m.group(1)  # 기본은 백틱 안 내용(평문 보존)
         return key
 
     return _CODE_SPAN.sub(repl, text), spans
@@ -104,6 +107,12 @@ _IMAGE_ONLY = re.compile(r"^!\[([^\]]*)\]\(([^)]+)\)$")
 _REMOTE_SRC = re.compile(r"^(?:https?:)?//|^data:", re.IGNORECASE)
 _TABLE_ROW = re.compile(r"^\s*\|.+\|\s*$")
 _TABLE_SEP_CELL = re.compile(r"^:?-+:?$")
+_XML_FORBIDDEN_CONTROLS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def _strip_forbidden_control_chars(text: str) -> str:
+    """XML 1.0 에 넣을 수 없는 제어문자를 제거한다. 탭/개행/CR 은 보존한다."""
+    return _XML_FORBIDDEN_CONTROLS.sub("", text)
 
 
 def _expand_indent(prefix: str) -> int:
@@ -118,21 +127,64 @@ def strip_inline(text: str) -> str:
     이어 붙이면 평문이 된다. 따라서 `report_2026_final` 의 언더스코어나 `가로 * 세로` 의
     별표처럼 강조가 아닌 문자는 삭제되지 않는다.
     """
+    text = _strip_forbidden_control_chars(text)
     masked, spans = _mask_code_spans(text)  # 코드 내용 보호(강조 교차 차단) — 가장 먼저
     masked = _IMAGE.sub("", masked)  # 이미지 토큰은 미지원 — 제거(누출 방지)
     masked = _LINK.sub(r"\1", masked)
+    masked = _REF_LINK.sub(r"\1", masked)
+    masked = _AUTOLINK.sub(r"\1", masked)
     runs = _parse_emphasis(masked, False, False)
     return _restore_code("".join(r["text"] for r in runs), spans).strip()
 
 
+def _ends_with_unescaped_pipe(text: str) -> bool:
+    s = text.rstrip()
+    if not s.endswith("|"):
+        return False
+    backslashes = 0
+    pos = len(s) - 2
+    while pos >= 0 and s[pos] == "\\":
+        backslashes += 1
+        pos -= 1
+    return backslashes % 2 == 0
+
+
+def _split_table_cells(line: str, *, plain: bool) -> list[str]:
+    """unescaped `|` 만 표 셀 구분자로 인식한다."""
+    source = _strip_forbidden_control_chars(line.strip())
+    masked, spans = _mask_code_spans(source, keep_markers=True)
+    cells: list[str] = []
+    buf: list[str] = []
+    pos = 0
+    while pos < len(masked):
+        ch = masked[pos]
+        if ch == "\\" and pos + 1 < len(masked) and masked[pos + 1] in {"|", "\\"}:
+            buf.append(masked[pos + 1])
+            pos += 2
+            continue
+        if ch == "|":
+            cells.append("".join(buf))
+            buf = []
+            pos += 1
+            continue
+        buf.append(ch)
+        pos += 1
+    cells.append("".join(buf))
+
+    if cells and masked.lstrip().startswith("|"):
+        cells = cells[1:]
+    if cells and _ends_with_unescaped_pipe(masked):
+        cells = cells[:-1]
+
+    restored = [_restore_code(cell.strip(), spans) for cell in cells]
+    if plain:
+        return [strip_inline(cell) for cell in restored]
+    return restored
+
+
 def _split_table_row(line: str) -> list[str]:
     """마크다운 표 행을 셀 텍스트 목록으로 변환한다."""
-    s = line.strip()
-    if s.startswith("|"):
-        s = s[1:]
-    if s.endswith("|"):
-        s = s[:-1]
-    return [strip_inline(cell.strip()) for cell in s.split("|")]
+    return _split_table_cells(line, plain=True)
 
 
 def _display_width(text: str) -> int:
@@ -142,12 +194,7 @@ def _display_width(text: str) -> int:
 
 def _split_table_row_raw(line: str) -> list[str]:
     """표 행을 셀별 **원본 텍스트**(inline 마커 보존) 목록으로 변환한다."""
-    s = line.strip()
-    if s.startswith("|"):
-        s = s[1:]
-    if s.endswith("|"):
-        s = s[:-1]
-    return [cell.strip() for cell in s.split("|")]
+    return _split_table_cells(line, plain=False)
 
 
 def _push_run(runs: list[dict], text: str, bold: bool, italic: bool) -> None:
@@ -221,9 +268,12 @@ def parse_cell_runs(text: str) -> list[dict]:
     굵게/기울임은 run 플래그로 보존한다. 코드 스팬 내용은 평문으로 보존하고(강조 교차
     차단), 셀 양끝 공백은 정리한다.
     """
+    text = _strip_forbidden_control_chars(text)
     masked, spans = _mask_code_spans(text)
     masked = _IMAGE.sub("", masked)
     masked = _LINK.sub(r"\1", masked)
+    masked = _REF_LINK.sub(r"\1", masked)
+    masked = _AUTOLINK.sub(r"\1", masked)
     runs = _parse_emphasis(masked, False, False)
     for run in runs:
         run["text"] = _restore_code(run["text"], spans)
@@ -298,6 +348,7 @@ def convert_markdown(
     `base_dir` 는 이미지 상대 경로 해석 기준 디렉터리(미지정 시 현재 작업 디렉터리).
     """
     warnings: list[str] = []
+    text = _strip_forbidden_control_chars(text)
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
 
     fm, body_start = _parse_front_matter(lines)
@@ -463,6 +514,9 @@ def convert_markdown(
         if not raw.strip():
             continue
         if _HR.match(raw):
+            reset_list_depth()
+            continue
+        if _LINK_DEF.match(raw):
             reset_list_depth()
             continue
 

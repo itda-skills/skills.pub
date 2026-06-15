@@ -1,0 +1,4 @@
+# 재생성 가능한 빌드 산출물 (build.py gen_assets() 가 PIL로 재생성)
+*/assets/
+__pycache__/
+*.pyc

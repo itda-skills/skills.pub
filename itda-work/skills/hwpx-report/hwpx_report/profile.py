@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 OWPML_NS = (
@@ -27,9 +28,11 @@ VERSION_XML = (
     'tagetApplication="WORDPROCESSOR" major="5" minor="1" micro="0" buildNumber="1" '
     'os="1" xmlVersion="1.4" application="cli.hwpx" appVersion="1, 0, 0, 1"/>'
 )
+_XML_FORBIDDEN_CONTROLS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 
 
 def xml_escape(value: str) -> str:
+    value = _XML_FORBIDDEN_CONTROLS.sub("", value)
     return (
         value.replace("&", "&amp;")
         .replace("<", "&lt;")

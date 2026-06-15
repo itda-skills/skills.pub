@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "title": "AI의 전력 청구서",
+    "subtitle": "데이터센터 전력 수요 — 2030년 2배, AI가 그 엔진이다",
+    "scope": "글로벌 데이터센터·AI 전력 브리핑 · 2024 실적 + 2030/2035 전망",
+    "as_of": "2026-06-15",
+    "sources": "자료: IEA Energy and AI(2025) · S&P Global · DCD · Pew Research · WRI (2+ 출처 교차, 기준일 2026-06-15)"
+  },
+  "headline": {
+    "global_2024_twh": 415,
+    "global_2030_twh": 945,
+    "global_2035_twh": 1193,
+    "global_2024_share_pct": 1.5,
+    "growth_5yr_pct": 12,
+    "dc_demand_growth_share_pct": 20
+  },
+  "global_trajectory": [
+    {"year": "2024", "twh": 415, "flag": "실적"},
+    {"year": "2030", "twh": 945, "flag": "전망"},
+    {"year": "2035", "twh": 1193, "flag": "전망"}
+  ],
+  "us": {
+    "twh_2024": 183, "twh_2030": 426, "growth_pct": 133, "delta_twh": 240,
+    "note": "증가분 세계 최대, 그다음 중국"
+  },
+  "server_growth": [
+    {"name": "가속 서버(AI)", "cagr_pct": 30, "note": "AI가 주도 — 2030까지 4배 이상"},
+    {"name": "일반 서버", "cagr_pct": 9, "note": "전통 워크로드 — 완만한 성장"}
+  ],
+  "flow": [
+    {"step": "발전", "en": "GENERATION", "detail": "가스·재생·원자력"},
+    {"step": "송전망", "en": "GRID", "detail": "송배전 병목"},
+    {"step": "데이터센터", "en": "DATA CENTER", "detail": "냉각+컴퓨트"},
+    {"step": "AI 워크로드", "en": "AI WORKLOAD", "detail": "학습·추론"}
+  ],
+  "us_energy_mix": [
+    {"name": "천연가스", "pct": 40},
+    {"name": "재생에너지", "pct": 24},
+    {"name": "원자력", "pct": 20},
+    {"name": "석탄", "pct": 15}
+  ],
+  "regional": [
+    {"name": "버지니아", "pct": 26},
+    {"name": "노스다코타", "pct": 15},
+    {"name": "네브래스카", "pct": 12},
+    {"name": "아이오와", "pct": 11},
+    {"name": "오리건", "pct": 11}
+  ],
+  "takeaways": [
+    ["2030년 945 TWh — 2배 이상", "2024년 415 TWh(전세계 전력의 1.5%)에서 2030년 945 TWh로 급증 — 일본 전체 소비량 수준.", "945 TWh"],
+    ["AI가 증가의 엔진", "가속 서버(AI) 전력은 연 30% 성장, 2030까지 4배 이상. 일반 서버(9%)를 압도.", "+30%/년"],
+    ["미국이 진앙", "미국 데이터센터 183→426 TWh(+133%). 증가분 세계 최대 — 그리드가 병목.", "미국 +133%"]
+  ]
+}

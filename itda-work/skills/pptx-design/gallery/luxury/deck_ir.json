@@ -1,0 +1,658 @@
+{
+  "schema": "pptx-design-ir/v1",
+  "slide_size": {
+    "w": 960,
+    "h": 540
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "background": {
+        "type": "solid",
+        "color": "#0E0E10"
+      },
+      "elements": [
+        {
+          "id": "hero",
+          "type": "image",
+          "bbox": {
+            "x": 626,
+            "y": 0,
+            "w": 334,
+            "h": 540
+          },
+          "image": "C:\\Apps\\hyve\\.claude\\worktrees\\feat+pptx-deck-20-401\\skills\\itda-work\\skills\\pptx-design\\gallery\\luxury\\assets\\gold_hero.png"
+        },
+        {
+          "id": "k1",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 116,
+            "w": 520,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "K-BEAUTY EXPORT BRIEFING · 2026",
+              "size": 10.5,
+              "bold": true,
+              "color": "#C9A24B"
+            }
+          ]
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 188,
+            "w": 540,
+            "h": 96
+          },
+          "runs": [
+            {
+              "text": "K-뷰티, 세계 2위로",
+              "size": 40,
+              "bold": true,
+              "color": "#E7D6A8",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "sub",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 300,
+            "w": 520,
+            "h": 50
+          },
+          "runs": [
+            {
+              "text": "2025 한국 화장품 수출 — 사상 최대 114억 달러, 프랑스 다음의 수출 강국",
+              "size": 14,
+              "color": "#9C9484"
+            }
+          ]
+        },
+        {
+          "id": "kpi1",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 392,
+            "w": 130,
+            "h": 50
+          },
+          "runs": [
+            {
+              "text": "$11.4B",
+              "size": 20,
+              "bold": true,
+              "color": "#C9A24B",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "kpi1l",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 424,
+            "w": 130,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "2025 수출",
+              "size": 8.5,
+              "color": "#9C9484"
+            }
+          ]
+        },
+        {
+          "id": "kpi2",
+          "type": "text",
+          "bbox": {
+            "x": 194,
+            "y": 392,
+            "w": 130,
+            "h": 50
+          },
+          "runs": [
+            {
+              "text": "세계 2위",
+              "size": 20,
+              "bold": true,
+              "color": "#E7D6A8",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "kpi2l",
+          "type": "text",
+          "bbox": {
+            "x": 194,
+            "y": 424,
+            "w": 130,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "수출국",
+              "size": 8.5,
+              "color": "#9C9484"
+            }
+          ]
+        },
+        {
+          "id": "kpi3",
+          "type": "text",
+          "bbox": {
+            "x": 324,
+            "y": 392,
+            "w": 130,
+            "h": 50
+          },
+          "runs": [
+            {
+              "text": "+11.8%",
+              "size": 20,
+              "bold": true,
+              "color": "#C9A24B",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "kpi3l",
+          "type": "text",
+          "bbox": {
+            "x": 324,
+            "y": 424,
+            "w": 130,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "전년比",
+              "size": 8.5,
+              "color": "#9C9484"
+            }
+          ]
+        },
+        {
+          "id": "kpi4",
+          "type": "text",
+          "bbox": {
+            "x": 454,
+            "y": 392,
+            "w": 130,
+            "h": 50
+          },
+          "runs": [
+            {
+              "text": "202개국",
+              "size": 20,
+              "bold": true,
+              "color": "#E7D6A8",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "kpi4l",
+          "type": "text",
+          "bbox": {
+            "x": 454,
+            "y": 424,
+            "w": 130,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "수출 대상국",
+              "size": 8.5,
+              "color": "#9C9484"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "background": {
+        "type": "solid",
+        "color": "#0E0E10"
+      },
+      "elements": [
+        {
+          "id": "k2",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 44,
+            "w": 520,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "WORLD RANKING",
+              "size": 10.5,
+              "bold": true,
+              "color": "#C9A24B"
+            }
+          ]
+        },
+        {
+          "id": "t2",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 74,
+            "w": 800,
+            "h": 50
+          },
+          "runs": [
+            {
+              "text": "프랑스 다음 — 세계 2위 수출국으로",
+              "size": 28,
+              "bold": true,
+              "color": "#F4F1EA",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "c2l",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 122,
+            "w": 540,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "2025 국가별 화장품 수출액 (십억 달러)",
+              "size": 11,
+              "bold": true,
+              "color": "#F4F1EA"
+            }
+          ]
+        },
+        {
+          "id": "ch2",
+          "type": "chart",
+          "bbox": {
+            "x": 58,
+            "y": 150,
+            "w": 560,
+            "h": 320
+          },
+          "chart": {
+            "kind": "column",
+            "categories": [
+              "프랑스",
+              "한국",
+              "미국"
+            ],
+            "series": [
+              {
+                "name": "수출액",
+                "values": [
+                  24.3,
+                  11.4,
+                  10.8
+                ]
+              }
+            ],
+            "point_colors": [
+              "#6E5A2E",
+              "#C9A24B",
+              "#6E5A2E"
+            ],
+            "axis": {
+              "font_color": "#9C9484",
+              "gridline_color": "#26262B",
+              "font_size": 9
+            },
+            "data_labels": {
+              "show_value": true,
+              "font_color": "#E7D6A8",
+              "font_size": 11
+            },
+            "legend": false
+          }
+        },
+        {
+          "id": "r2a",
+          "type": "text",
+          "bbox": {
+            "x": 660,
+            "y": 160,
+            "w": 240,
+            "h": 30
+          },
+          "runs": [
+            {
+              "text": "4→3→2위",
+              "size": 24,
+              "bold": true,
+              "color": "#C9A24B",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "r2b",
+          "type": "text",
+          "bbox": {
+            "x": 660,
+            "y": 196,
+            "w": 240,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "2023→2024→2025 순위 상승",
+              "size": 10,
+              "color": "#9C9484"
+            }
+          ]
+        },
+        {
+          "id": "r2c",
+          "type": "text",
+          "bbox": {
+            "x": 660,
+            "y": 250,
+            "w": 240,
+            "h": 30
+          },
+          "runs": [
+            {
+              "text": "$11.4B",
+              "size": 24,
+              "bold": true,
+              "color": "#E7D6A8",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "r2d",
+          "type": "text",
+          "bbox": {
+            "x": 660,
+            "y": 286,
+            "w": 240,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "2025 수출 (프랑스 $24.3B)",
+              "size": 10,
+              "color": "#9C9484"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "background": {
+        "type": "solid",
+        "color": "#0E0E10"
+      },
+      "elements": [
+        {
+          "id": "k3",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 44,
+            "w": 520,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "CATEGORY MIX",
+              "size": 10.5,
+              "bold": true,
+              "color": "#C9A24B"
+            }
+          ]
+        },
+        {
+          "id": "t3",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 74,
+            "w": 800,
+            "h": 50
+          },
+          "runs": [
+            {
+              "text": "스킨케어가 4분의 3 — 기초가 견인",
+              "size": 28,
+              "bold": true,
+              "color": "#F4F1EA",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "ch3",
+          "type": "chart",
+          "bbox": {
+            "x": 54,
+            "y": 150,
+            "w": 460,
+            "h": 326
+          },
+          "chart": {
+            "kind": "pie",
+            "categories": [
+              "스킨케어",
+              "색조",
+              "기타"
+            ],
+            "series": [
+              {
+                "name": "품목",
+                "values": [
+                  74.7,
+                  13.2,
+                  12.1
+                ]
+              }
+            ],
+            "point_colors": [
+              "#C9A24B",
+              "#E7D6A8",
+              "#6E5A2E"
+            ],
+            "data_labels": {
+              "show_percentage": true,
+              "show_category_name": true,
+              "font_color": "#F4F1EA",
+              "font_size": 11
+            },
+            "legend_style": {
+              "font_color": "#F4F1EA"
+            },
+            "legend": true
+          }
+        },
+        {
+          "id": "r3a",
+          "type": "text",
+          "bbox": {
+            "x": 560,
+            "y": 168,
+            "w": 320,
+            "h": 24
+          },
+          "runs": [
+            {
+              "text": "스킨케어 74.7%",
+              "size": 14,
+              "bold": true,
+              "color": "#C9A24B",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "r3b",
+          "type": "text",
+          "bbox": {
+            "x": 560,
+            "y": 210,
+            "w": 320,
+            "h": 24
+          },
+          "runs": [
+            {
+              "text": "색조 13.2%",
+              "size": 14,
+              "bold": true,
+              "color": "#E7D6A8",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "r3c",
+          "type": "text",
+          "bbox": {
+            "x": 560,
+            "y": 252,
+            "w": 320,
+            "h": 24
+          },
+          "runs": [
+            {
+              "text": "기타 12.1%",
+              "size": 14,
+              "bold": true,
+              "color": "#9C9484",
+              "font_ea": "바탕"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "background": {
+        "type": "solid",
+        "color": "#0E0E10"
+      },
+      "elements": [
+        {
+          "id": "k4",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 44,
+            "w": 520,
+            "h": 20
+          },
+          "runs": [
+            {
+              "text": "APPENDIX · DATA",
+              "size": 10.5,
+              "bold": true,
+              "color": "#C9A24B"
+            }
+          ]
+        },
+        {
+          "id": "t4",
+          "type": "text",
+          "bbox": {
+            "x": 64,
+            "y": 74,
+            "w": 800,
+            "h": 50
+          },
+          "runs": [
+            {
+              "text": "부록 — 연간 수출 시계열",
+              "size": 28,
+              "bold": true,
+              "color": "#F4F1EA",
+              "font_ea": "바탕"
+            }
+          ]
+        },
+        {
+          "id": "tb4",
+          "type": "table",
+          "bbox": {
+            "x": 64,
+            "y": 150,
+            "w": 470,
+            "h": 250
+          },
+          "table": {
+            "cells": [
+              [
+                "연도",
+                "수출액 ($B)",
+                "비고"
+              ],
+              [
+                "2021",
+                "9.18",
+                "확정"
+              ],
+              [
+                "2022",
+                "7.95",
+                "추정(반올림)"
+              ],
+              [
+                "2023",
+                "8.46",
+                "확정"
+              ],
+              [
+                "2024",
+                "10.20",
+                "확정"
+              ],
+              [
+                "2025",
+                "11.40",
+                "확정"
+              ]
+            ],
+            "fmt": {
+              "header_fill": "#C9A24B",
+              "header_fg": "#1A1408",
+              "zebra": "#1F1F26",
+              "body_fill": "#17171C",
+              "body_fg": "#F4F1EA",
+              "align": [
+                "left",
+                "right",
+                "left"
+              ],
+              "font_size": 11.5,
+              "head_font_size": 11.5,
+              "font_name": "맑은 고딕"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

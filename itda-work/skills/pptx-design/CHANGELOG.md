@@ -2,6 +2,19 @@
 
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.5.0] — 2026-06-14
+
+OpenXML 생성 백엔드 추가(SPEC-PPTX-DESIGN-004, #352). 스파이크 #351 → "Python/OpenXML 생성 → COM 협업 편집" 파이프라인의 생성 절반.
+
+### New Features
+
+- **OpenXML 생성 백엔드 (`apply_deck_ir`)** — `gen.py`(python-pptx) 외에 hyve `PowerPointOpenXmlEngine` 으로 생성하는 백엔드 추가. `scripts/deck_ir.py` 로 백엔드 중립 Deck IR(`pptx-design-ir/v1`)을 산출 → 에이전트가 hyve MCP verb `openxml.powerpoint.apply_deck_ir` 호출 → 크로스플랫폼 덱 생성(Office 불필요). **네이티브 편집 차트**(matplotlib 래스터 한글 tofu 회피) + custom_visual 슬라이더 + semantic id 도형 각인. 그라디언트/모티프는 Pillow baked PNG(picture 배경)로 Python 파리티.
+
+### Documentation
+
+- **SKILL.md 관문3-B(OpenXML 백엔드 경로) 신설** + 백엔드 선택(기본 Python / OpenXML 옵션, REQ-010).
+- **한글 가드 정책 명확화(REQ-008)** — `set_run_font` 한글 가드의 가치는 **LibreOffice 렌더 한정**(PowerPoint 렌더는 전 백엔드 한글 정상). 스파이크 실측 근거.
+
 ## [0.4.1] — 2026-06-13
 
 ### Documentation

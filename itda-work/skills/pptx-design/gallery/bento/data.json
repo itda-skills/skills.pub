@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "title": "2026 글로벌 게임 산업,\n타일 한 장으로",
+    "kicker": "INDUSTRY · GLOBAL GAMES · 2026",
+    "subtitle": "시장·플랫폼·플레이어·e스포츠를 가변 타일 모자이크에 담았다 — 한눈에 읽는 게임 산업.",
+    "as_of": "기준일 2026-06-15",
+    "sources": "자료: Newzoo Global Games Market Report · Statista · Konvoy · Mordor Intelligence · Fortune Business Insights 등 2+ 출처 교차. ⚠ 시장규모는 정의편차(소프트웨어 $205B / 하드웨어 포함 $236.9B), e스포츠·클라우드 매출은 firm별 편차 극심 → 관중·성장률 위주. 모두 전망/추정."
+  },
+  "market": {"total": 205, "yoy": 4.6, "prev": 188.8, "hw_incl": 236.9},
+  "platforms": [
+    {"name": "모바일", "rev": 107, "share": 52, "accent": "violet"},
+    {"name": "PC", "rev": 50, "share": 24, "accent": "cyan"},
+    {"name": "콘솔", "rev": 48, "share": 23, "accent": "lime"}
+  ],
+  "console_growth": 5.5,
+  "players": {"total": "3.4B", "range": "3.4–3.7B"},
+  "regions": {"apac_share": 53, "apac_players": "1.48B", "europe": "715M", "na": "285M"},
+  "esports": {"audience": 640.8, "enthusiasts": 318.1, "apac_share": 57},
+  "cloud": {"size": 6.2, "growth": 28, "range_hi": 23.8},
+  "cover_tiles": [
+    {"num": "$205B", "label": "글로벌 게임 시장 2026", "accent": "violet"},
+    {"num": "3.4B", "label": "전 세계 게이머", "accent": "cyan"},
+    {"num": "52%", "label": "모바일 점유율", "accent": "lime"}
+  ],
+  "insights": [
+    {"head": "모바일이 절반", "body": "$107B(52%)로 모바일이 시장의 절반. 콘솔($48B)은 +5.5%로 가장 빠르게 크지만 규모는 모바일의 절반 이하다."},
+    {"head": "아시아가 사람의 절반", "body": "전 세계 게이머 ~3.4B 중 아시아·태평양이 1.48B(53%). e스포츠 관중도 APAC가 57% — 무게중심은 동쪽이다."},
+    {"head": "숫자는 정의에 달렸다", "body": "시장 규모는 $205B(소프트웨어)~$236.9B(하드웨어 포함), e스포츠 매출은 firm별 $0.76B~$4.5B. 합계보다 추세·점유가 안전하다."}
+  ],
+  "closing": {
+    "statement": "절반은 모바일에서, 절반은 아시아에서.\n2026 게임은 '큰 화면'이 아니라 '많은 손'의 산업이다.",
+    "tail": "규모는 정의마다 다르지만 방향은 하나 — 모바일·아시아·서비스로 무게가 옮겨간다."
+  }
+}

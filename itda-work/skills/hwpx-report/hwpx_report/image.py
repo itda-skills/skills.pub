@@ -3,8 +3,6 @@ from __future__ import annotations
 from io import BytesIO
 from pathlib import Path
 
-from PIL import Image, UnidentifiedImageError
-
 from .models import ReportImage
 from .profile import ImageEntry, xml_escape
 
@@ -13,6 +11,10 @@ REPORT_IMAGE_MAX_WIDTH_HU = 47000
 REPORT_IMAGE_FALLBACK_W_HU = 30000
 REPORT_IMAGE_FALLBACK_H_HU = 22500
 REPORT_IMAGE_MAX_PX = 50000
+
+
+class ImageDependencyError(RuntimeError):
+    pass
 
 
 def render_report_image(ctx: object, image: ReportImage, idx: int, char_pr_id_ref: str) -> tuple[str, ImageEntry]:
@@ -52,6 +54,12 @@ def _image_media_type_for_ext(ext: str) -> str:
 
 
 def _report_image_size_hu(data: bytes) -> tuple[int, int, int, int]:
+    try:
+        from PIL import Image, UnidentifiedImageError
+    except ImportError as exc:
+        raise ImageDependencyError(
+            "hwpx report: 이미지 임베딩에 Pillow 필요 - pip install -r requirements.txt"
+        ) from exc
     try:
         with Image.open(BytesIO(data)) as img:
             px_w, px_h = img.size
