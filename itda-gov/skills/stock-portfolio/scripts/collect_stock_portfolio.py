@@ -162,7 +162,7 @@ def _attach_envelope(obj: dict[str, Any], *, bas_dt: str | None = None) -> dict[
 
 def _print_json(data: Any) -> None:
     """JSON 형식 출력."""
-    print(json.dumps(data, ensure_ascii=False, indent=2))
+    print(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
 
 
 def _print_table(holdings: list[dict[str, Any]]) -> None:

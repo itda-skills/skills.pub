@@ -54,7 +54,7 @@ def cmd_key(args: argparse.Namespace) -> int:
             })
         print(json.dumps(
             {"status": "ok", "count": len(items), "items": items},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -81,7 +81,7 @@ def cmd_search(args: argparse.Namespace) -> int:
         print(json.dumps(
             {"status": "ok", "stat_code": args.stat, "period": args.period,
              "count": len(summarized), "data": summarized},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -110,7 +110,7 @@ def cmd_items(args: argparse.Namespace) -> int:
         print(json.dumps(
             {"status": "ok", "stat_code": args.stat,
              "count": len(items), "items": items},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -133,7 +133,7 @@ def cmd_tables(args: argparse.Namespace) -> int:
             })
         print(json.dumps(
             {"status": "ok", "count": len(items), "items": items},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -155,7 +155,7 @@ def cmd_word(args: argparse.Namespace) -> int:
         print(json.dumps(
             {"status": "ok", "query": args.word,
              "count": len(items), "items": items},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 

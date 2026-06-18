@@ -133,7 +133,7 @@ def cmd_trade(args: argparse.Namespace) -> int:
     if args.format == "table":
         _print_trade_table(result)
     else:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
 
     return 0
 
@@ -176,7 +176,7 @@ def cmd_rent(args: argparse.Namespace) -> int:
     if args.format == "table":
         _print_rent_table(result)
     else:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
 
     return 0
 
@@ -201,7 +201,7 @@ def cmd_regions(args: argparse.Namespace) -> int:
         for r in regions_list:
             print(f"{r['name']:<25} {r['lawd_cd']:<8}")
     else:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
 
     return 0
 

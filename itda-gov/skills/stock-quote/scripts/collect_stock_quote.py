@@ -178,14 +178,14 @@ def cmd_quote(args: argparse.Namespace) -> int:
             error="config",
             message=f"KO_DATA_API_KEY 미설정. 활용신청: {_APPLY_URL}",
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 1
 
     try:
         resolved = stock_quote_api.resolve_ticker(api_key, args.ticker)
     except stock_quote_api.StockAPIError as exc:
         result = _make_envelope("error", error="api_error", message=str(exc))
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 1
 
     if resolved["status"] == "error":
@@ -194,7 +194,7 @@ def cmd_quote(args: argparse.Namespace) -> int:
             error=resolved.get("error_type", "not_found"),
             message=f"'{resolved.get('query', args.ticker)}'에 해당하는 종목을 찾을 수 없습니다.",
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 0
 
     if resolved["status"] == "ambiguous":
@@ -203,7 +203,7 @@ def cmd_quote(args: argparse.Namespace) -> int:
             candidates=resolved["candidates"],
             message=f"'{resolved.get('query', args.ticker)}'가 복수 종목과 일치합니다. 종목코드로 다시 조회하세요.",
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 0
 
     # resolved
@@ -223,7 +223,7 @@ def cmd_quote(args: argparse.Namespace) -> int:
     elif fmt == "table":
         _print_quote_table(result)
     else:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 
@@ -240,7 +240,7 @@ def cmd_history(args: argparse.Namespace) -> int:
             error="config",
             message=f"KO_DATA_API_KEY 미설정. 활용신청: {_APPLY_URL}",
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 1
 
     # 종목 단일 확정 — quote와 동일하게 resolve_ticker 경유 (ambiguous 혼입 방지)
@@ -248,7 +248,7 @@ def cmd_history(args: argparse.Namespace) -> int:
         resolved = stock_quote_api.resolve_ticker(api_key, args.ticker)
     except stock_quote_api.StockAPIError as exc:
         result = _make_envelope("error", error="api_error", message=str(exc))
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 1
     if resolved["status"] == "error":
         result = _make_envelope(
@@ -256,7 +256,7 @@ def cmd_history(args: argparse.Namespace) -> int:
             error=resolved.get("error_type", "not_found"),
             message=f"'{resolved.get('query', args.ticker)}'에 해당하는 종목을 찾을 수 없습니다.",
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 0
     if resolved["status"] == "ambiguous":
         result = _make_envelope(
@@ -264,7 +264,7 @@ def cmd_history(args: argparse.Namespace) -> int:
             candidates=resolved["candidates"],
             message=f"'{resolved.get('query', args.ticker)}'가 복수 종목과 일치합니다. 종목코드로 다시 조회하세요.",
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 0
     _srtn_cd = resolved.get("srtnCd", "")
 
@@ -274,7 +274,7 @@ def cmd_history(args: argparse.Namespace) -> int:
         end_bas_dt = _to_end_bas_dt(args.date_to)
     except ValueError as exc:
         result = _make_envelope("error", error="validation", message=str(exc))
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 1
 
     try:
@@ -287,7 +287,7 @@ def cmd_history(args: argparse.Namespace) -> int:
         )
     except stock_quote_api.StockAPIError as exc:
         result = _make_envelope("error", error="api_error", message=str(exc))
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 1
 
     items = resp["items"]
@@ -297,7 +297,7 @@ def cmd_history(args: argparse.Namespace) -> int:
             error="not_found",
             message=f"'{args.ticker}' 과거 시세를 찾을 수 없습니다.",
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 0
 
     result = _make_envelope(
@@ -321,7 +321,7 @@ def cmd_history(args: argparse.Namespace) -> int:
     elif fmt == "table":
         _print_history_table(items, args.ticker)
     else:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 
@@ -338,7 +338,7 @@ def cmd_search(args: argparse.Namespace) -> int:
             error="config",
             message=f"KO_DATA_API_KEY 미설정. 활용신청: {_APPLY_URL}",
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 1
 
     try:
@@ -349,7 +349,7 @@ def cmd_search(args: argparse.Namespace) -> int:
         )
     except stock_quote_api.StockAPIError as exc:
         result = _make_envelope("error", error="api_error", message=str(exc))
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 1
 
     items = resp["items"]
@@ -377,7 +377,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     elif fmt == "table":
         _print_search_table(unique, args.keyword)
     else:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 
@@ -520,5 +520,5 @@ if __name__ == "__main__":
         raise
     except Exception as exc:  # noqa: BLE001 — CLI 경계
         _safety = _make_envelope("error", error="unexpected", message=str(exc))
-        print(json.dumps(_safety, ensure_ascii=False, indent=2))
+        print(json.dumps(_safety, ensure_ascii=False, separators=(",", ":")))
         sys.exit(1)

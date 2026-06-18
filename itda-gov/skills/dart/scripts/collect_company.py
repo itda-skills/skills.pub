@@ -84,7 +84,7 @@ def cmd_search(args: argparse.Namespace) -> int:
         else:
             print(json.dumps(
                 {"status": "ok", "query": args.name, "count": 0, "results": []},
-                ensure_ascii=False, indent=2,
+                ensure_ascii=False, separators=(",", ":"),
             ))
         return 0
 
@@ -98,7 +98,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     else:
         print(json.dumps(
             {"status": "ok", "query": args.name, "count": len(results), "results": results},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -118,7 +118,7 @@ def cmd_info(args: argparse.Namespace) -> int:
         _print_info_table(data)
     else:
         print(json.dumps(
-            {"status": "ok", **data}, ensure_ascii=False, indent=2,
+            {"status": "ok", **data}, ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -188,7 +188,7 @@ def cmd_finance(args: argparse.Namespace) -> int:
                  "report": args.report, "fs_div": args.fs_div,
                  "count": len(all_items), "items": all_items,
                  "source": source},
-                ensure_ascii=False, indent=2,
+                ensure_ascii=False, separators=(",", ":"),
             ))
         return 0
 
@@ -223,7 +223,7 @@ def cmd_finance(args: argparse.Namespace) -> int:
              "report": args.report, "fs_div": args.fs_div,
              "count": len(key_items), "items": key_items,
              "source": source},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -262,7 +262,7 @@ def cmd_disclosure(args: argparse.Namespace) -> int:
             {"status": "ok", "corp_code": args.corp_code,
              "total_count": total, "count": len(items),
              "message": msg, "items": items},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -343,7 +343,7 @@ def cmd_raw(args: argparse.Namespace) -> int:
             "표/CSV 가공이 필요하면 전용 서브커맨드(finance/compare)를 사용하세요.",
             file=sys.stderr,
         )
-    print(json.dumps(data, ensure_ascii=False, indent=2))
+    print(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 
@@ -368,7 +368,7 @@ def cmd_employees(args: argparse.Namespace) -> int:
         print(json.dumps(
             {"status": "ok", "corp_code": args.corp_code, "year": args.year,
              "count": len(data), "items": data},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -439,7 +439,7 @@ def cmd_profile(args: argparse.Namespace) -> int:
         row["year"] = args.year
         _write_csv([row], ["corp_code", "year"] + info_fields)
     else:
-        print(json.dumps(profile, ensure_ascii=False, indent=2))
+        print(json.dumps(profile, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 
@@ -746,7 +746,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
         }
         if with_ratios:
             out["ratios"] = ratios
-        print(json.dumps(out, ensure_ascii=False, indent=2))
+        print(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 

@@ -63,7 +63,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     if args.format == "table":
         _print_search_table(result)
     else:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
 
     return 0
 
@@ -94,7 +94,7 @@ def cmd_overview(args: argparse.Namespace) -> int:
     if args.format == "table":
         _print_overview_table(result)
     else:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
 
     return 0
 

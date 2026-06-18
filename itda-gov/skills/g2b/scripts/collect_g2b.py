@@ -439,7 +439,7 @@ def main(argv: list[str] | None = None) -> int:
         }
         if warnings:
             payload["warnings"] = warnings
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
     else:
         for w in warnings:
             print(f"⚠️ {w}")

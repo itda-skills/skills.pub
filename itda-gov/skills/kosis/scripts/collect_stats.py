@@ -58,7 +58,7 @@ def cmd_search(args: argparse.Namespace) -> int:
             })
         print(json.dumps(
             {"status": "ok", "keyword": args.keyword, "count": len(output), "results": output},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 
@@ -95,7 +95,7 @@ def cmd_data(args: argparse.Namespace) -> int:
         print(json.dumps(
             {"status": "ok", "org_id": args.org_id, "tbl_id": args.tbl_id,
              "count": len(summarized), "data": summarized},
-            ensure_ascii=False, indent=2,
+            ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
 

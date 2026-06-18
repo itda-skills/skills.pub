@@ -1,5 +1,20 @@
 # Changelog — itda-gov
 
+## [4.3.0] — 2026-06-17 (이슈 #438)
+
+### Changed — 전 itda-gov 스킬 응답 포맷 슬리밍 (무손실)
+
+- **stdout JSON 응답을 compact 출력으로 전환**: 8개 스킬(dart·ecos·funding·g2b·kosis·realestate·stock-quote·stock-portfolio) scripts의 `json.dumps(...)` **41곳**에서 `indent=2` 제거 + `separators=(",", ":")` 적용. `ensure_ascii=False`는 유지(한글 보존). **무손실** — 필드·값·키 순서 불변, 파싱 결과 동일(전 스킬 테스트 681건 GREEN 유지).
+- 대표 샘플 실측 절감(공백 제거만): dart 24.1% · ecos 25.9% · kosis 25.6% · g2b 21.1% · stock-quote 12.4% (평균 ~22.6%). 절감폭은 구조 의존(중첩·짧은 필드가 많을수록 큼), 대형 실응답은 절대 절감 비례 확대.
+
+### Added
+
+- **회귀 가드** `dart/tests/test_response_compact_guard.py`: itda-gov 어느 스킬 `scripts/`에든 `indent=` 재유입 시 실패(cross-skill, CI 상시 실행되는 dart/tests 호스팅, vacuous-pass 방지 포함).
+
+### Note
+
+- 내용/필드 축소(default-small·`detail_level`)는 **비목표** — 본 변경은 포맷 전용(무손실).
+
 ## [4.2.1] — 2026-06-10
 
 ### Changed
