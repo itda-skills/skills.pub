@@ -142,7 +142,6 @@ metadata:
 | 시장 규모·산업·인구 통계 | `itda-gov:kosis` (KOSIS 국가통계) |
 | 거시지표(GDP·금리·환율·물가) | `itda-gov:ecos` (한국은행 ECOS) |
 | 기업 재무·직원수·사업보고서·배당·소송 | `itda-gov:dart` (전자공시 DART) |
-| 주가·시세 | `itda-gov:stock-quote` |
 | 정부 지원사업·창업 공고 | `itda-gov:funding` (K-Startup) |
 | 공공 입찰 동향 | `itda-gov:g2b` (나라장터) |
 | 부동산 실거래 | `itda-gov:realestate` |

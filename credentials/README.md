@@ -21,7 +21,7 @@
 |---|---|---|---|---|
 | 네이버 오픈API | [naver-openapi.md](naver-openapi.md) | `NAVER_CLIENT_ID` `NAVER_CLIENT_SECRET` | blog-seo · eatery-trend | 2026-06-10* |
 | 네이버 검색광고 API | [naver-searchad.md](naver-searchad.md) | `NAVER_SEARCHAD_ACCESS_KEY` `NAVER_SEARCHAD_SECRET_KEY` `NAVER_SEARCHAD_CUSTOMER_ID` | blog-seo · eatery-trend | 2026-06-10* |
-| 공공데이터포털 | [data-go-kr.md](data-go-kr.md) | `KO_DATA_API_KEY` | realestate · g2b · stock-quote · stock-portfolio · funding · realty-jeonse-gap · realty-supply · realty-deals · realty-price-stats · market-scan | 2026-06-10* |
+| 공공데이터포털 | [data-go-kr.md](data-go-kr.md) | `KO_DATA_API_KEY` | realestate · g2b · funding · realty-jeonse-gap · realty-supply · realty-deals · realty-price-stats · market-scan | 2026-06-10* |
 | 네이버 앱 비밀번호 | [naver-app-password.md](naver-app-password.md) | `NAVER_EMAIL` `NAVER_APP_PASSWORD` | email · calendar · plan-work | 2026-06-10* |
 | iCloud 앱 전용 비밀번호 | [icloud-app-password.md](icloud-app-password.md) | `ICLOUD_EMAIL` `ICLOUD_APP_PASSWORD` | email · calendar | 2026-06-10* |
 | KOSIS 국가통계포털 | [kosis.md](kosis.md) | `KOSIS_API_KEY` | kosis · realty-supply · market-scan | 2026-06-10* |

@@ -31,8 +31,7 @@ KO_DATA_API_KEY=...
 ```
 
 > **주의**
-> - `KO_DATA_API_KEY`는 공공데이터포털(data.go.kr) 키 하나로 `realestate`, `funding`, `g2b`, `stock-quote`, `stock-portfolio`에서 함께 사용합니다.
->   단, **주식시세(15094808)는 동일 계정으로 별도 활용신청(자동승인)**이 필요합니다: https://www.data.go.kr/data/15094808/openapi.do
+> - `KO_DATA_API_KEY`는 공공데이터포털(data.go.kr) 키 하나로 `realestate`, `funding`, `g2b`에서 함께 사용합니다.
 > - `KOSIS_API_KEY`는 Base64 형태일 수 있으므로 끝 `=` 패딩이 잘리지 않도록 전체를 복사하세요.
 
 ## 포함 스킬
@@ -45,8 +44,6 @@ KO_DATA_API_KEY=...
 | [`realestate`](skills/realestate/SKILL.md) | 국토교통부 실거래가 | 아파트·오피스텔 매매·전월세 |
 | [`funding`](skills/funding/SKILL.md) | K-Startup 지원사업 | 정부 창업·중소기업 지원사업 공고 |
 | [`g2b`](skills/g2b/SKILL.md) | 나라장터 (G2B) | 입찰공고 검색·상세 |
-| [`stock-quote`](skills/stock-quote/SKILL.md) | 금융위원회 주식시세정보 (15094808) | 주식 현재가·과거시세·종목검색 (`KO_DATA_API_KEY`·15094808 활용신청) |
-| [`stock-portfolio`](skills/stock-portfolio/SKILL.md) | 금융위원회 주식시세정보 (15094808) | 보유종목 평가손익·수익률 계산 (`KO_DATA_API_KEY`·15094808 활용신청) |
 
 > **정본 문서 가이드 (SPEC-ITDAGOV-DOCS-001, 2026-04-28 정비 완료)**: 6개 스킬 모두 발급처 정본 명세를 `skills/{스킬}/references/`에 보존하고, 각 SKILL.md 하단 "상세 API 가이드" 섹션에서 정본 파일을 직접 링크합니다. 활용신청 안내, 정본 에러 코드 매핑(한글 hint + 자동 활용신청 URL 부착), HTTP 403 처리, 라이브 응답 필드 매핑이 통일되어 있습니다.
 

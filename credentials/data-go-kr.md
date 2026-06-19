@@ -35,11 +35,11 @@ KO_DATA_API_KEY=발급받은_Decoding_키
 - 일일 트래픽 한도(데이터셋별 보통 1,000~10,000회)가 있으니 동일 조건 반복 조회는 피하세요.
 - 운영계정 전환 전 개발계정 한도로도 개인 사용에는 충분합니다.
 
-## 5. 이 키를 쓰는 스킬 (10개)
+## 5. 이 키를 쓰는 스킬 (8개)
 
 | 플러그인 | 스킬 |
 |---|---|
-| itda-gov | realestate · g2b · stock-quote · stock-portfolio · funding |
+| itda-gov | realestate · g2b · funding |
 | itda-realty | realty-jeonse-gap · realty-supply · realty-deals · realty-price-stats |
 | itda-work | market-scan |
 

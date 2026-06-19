@@ -180,8 +180,6 @@ _SKILL_DIR_MAP: dict[str, str] = {
     "draft-post": "itda-work/skills/draft-post",
     "blog-seo": "itda-work/skills/blog-seo",
     "imagekit": "itda-work/skills/imagekit",
-    "stock-quote": "itda-gov/skills/stock-quote",
-    "stock-portfolio": "itda-gov/skills/stock-portfolio",
     "dart": "itda-gov/skills/dart",
     "kosis": "itda-gov/skills/kosis",
     "ecos": "itda-gov/skills/ecos",

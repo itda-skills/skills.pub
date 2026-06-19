@@ -19,30 +19,31 @@ Lightpanda는 stdio MCP 서버 모드를 내장합니다. Claude Desktop의 `cla
 
 > **Lightpanda 설치 및 MCP 등록은 사용자 영역**입니다. 본 스킬은 등록 절차 안내·실행에 관여하지 않습니다 (정책). 미설치 시 `--dynamic-only` 호출은 exit 3 + 플랫폼별 설치 안내 메시지만 출력합니다.
 
-### 설치
+### 설치 (v6.1.0+: 관리 스크립트)
+
+web-reader v6.1.0부터 `install_lightpanda.py`로 설치합니다(플랫폼/아키텍처 자동 감지, 표준 라이브러리만 사용, 신규 의존성 0). **동적 fetch 요청 시 미설치면 자동 설치**되므로 보통 수동 실행은 불필요합니다.
 
 ```bash
-# macOS (Homebrew)
-brew install lightpanda
+# 최신 안정 버전 — 없으면 설치, 있으면 skip (멱등)
+python3 scripts/install_lightpanda.py
 
-# 또는 nightly 직접 다운로드
-# macOS arm64
-mkdir -p ~/.itda-skills/bin && curl -L \
-  https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-macos \
-  -o ~/.itda-skills/bin/lightpanda && chmod +x ~/.itda-skills/bin/lightpanda
-xattr -d com.apple.quarantine ~/.itda-skills/bin/lightpanda 2>/dev/null
+# 세션 간 재사용을 위해 영속 경로 지정 (권장) — 검출·설치 위치 둘 다 이 경로
+# 반드시 절대경로로 — 상대경로는 cwd가 바뀌면 검출과 어긋나 재사용이 깨진다.
+export ITDA_LIGHTPANDA_DIR="$(pwd)/tools"
+python3 scripts/install_lightpanda.py
 
-# Linux x86_64 (glibc 기반, musl/Alpine 미지원)
-mkdir -p ~/.itda-skills/bin && curl -L \
-  https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-linux \
-  -o ~/.itda-skills/bin/lightpanda && chmod +x ~/.itda-skills/bin/lightpanda
+# 특정 버전 / 다운그레이드
+python3 scripts/install_lightpanda.py --version 0.3.0
 
-# Windows
-# 네이티브 미지원 — WSL2 필수. WSL2 내부에서 Linux 명령으로 설치.
-# 또는 hyve MCP의 web_browse 사용.
+# 업데이트 (최신 안정으로 덮어쓰기)
+python3 scripts/install_lightpanda.py --version latest --force
+
+# Windows: 네이티브 미지원 — WSL2 내부(Linux)에서 위 명령 실행, 또는 hyve MCP web_browse
 ```
 
-검출 우선순위: `$PATH` → `~/.itda-skills/bin/lightpanda` → `./mnt/.itda-skills/bin/lightpanda` (Cowork 마운트) → `./.itda-skills/bin/lightpanda` (Cowork 세션 한정).
+최신 안정 해석은 `/releases/latest`(rolling `nightly` 반환)를 쓰지 않고, semver 태그(`v?X.Y.Z`) 중 prerelease/draft를 제외한 최고 버전을 선택합니다(nightly는 prerelease=false여도 semver가 아니라 제외). 릴리즈가 checksum을 제공하지 않아 `lightpanda version` 실행으로 무결성을 검증하며, 검증 통과 시에만 기존 바이너리를 원자적으로 교체합니다(손상 다운로드가 멀쩡한 바이너리를 덮어쓰지 않음).
+
+검출 우선순위 (v6.1.0): `--lightpanda-bin` → `$ITDA_LIGHTPANDA_BIN` → `$ITDA_LIGHTPANDA_DIR/lightpanda` → `$PATH` → `~/.itda-skills/bin/lightpanda`. (Cowork 세션에서 마운트와 어긋나 헛다리 + 세션 휘발하던 cwd 상대 추측 경로 `./mnt/...`·`./.itda-skills/...`는 제거되었습니다.)
 
 ### CLI 사용 (fallback / 자동화 스크립트용)
 

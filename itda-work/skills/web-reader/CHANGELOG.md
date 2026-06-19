@@ -1,5 +1,25 @@
 # Changelog — itda-web-reader
 
+## [6.1.0] — 2026-06-20
+
+### New Features
+
+- **Lightpanda 설치 관리 스크립트 `scripts/install_lightpanda.py` 신설** (SPEC-WEBREADER-LIGHTPANDA-INSTALLER-001, #513). 플랫폼/아키텍처 자동 감지(aarch64/x86_64 × macos/linux), GitHub 릴리즈 해석, 다운로드 → `chmod +x` → (macOS) `xattr` 제거 → `lightpanda version` 검증 → 원자적 교체. 표준 라이브러리만 사용해 신규 의존성 0.
+- **동적 fetch 자동 설치(ensure)**: `--dynamic-only`/`fetch_dynamic.py` 호출 시 바이너리가 없으면 추가 도구 호출 없이 최신 안정 버전을 자동 설치한 뒤 진행합니다. 기존 바이너리는 절대 덮어쓰지 않으며, `--no-auto-install`로 비활성(CI/테스트)할 수 있습니다.
+- **설치 위치 제어**: `--install-dir` → `$ITDA_LIGHTPANDA_DIR` → `~/.itda-skills/bin` 우선순위. `$ITDA_LIGHTPANDA_DIR`로 영속 경로를 지정하면 세션 간 재사용됩니다.
+- **업그레이드/다운그레이드**: `--version X.Y.Z`(다운그레이드), `--version latest --force`(업데이트), `--version nightly` 지원. `v` 접두사 유무 양쪽 태그를 시도합니다.
+
+### Changed
+
+- **바이너리 검출 체인 교체** (REQ-INST-006): `--lightpanda-bin` → `$ITDA_LIGHTPANDA_BIN` → `$ITDA_LIGHTPANDA_DIR/lightpanda` → `$PATH` → `~/.itda-skills/bin/lightpanda`. Cowork 세션에서 마운트와 어긋나 헛다리 + 세션 휘발하던 cwd 상대 추측 경로(`./mnt/...`·`./.itda-skills/...`)를 제거했습니다.
+- **최신 안정 해석 교정**: `/releases/latest`는 rolling `nightly`를 반환하므로 사용하지 않습니다. semver 태그(`v?X.Y.Z`) 중 prerelease/draft를 제외한 최고 버전을 선택합니다. lightpanda의 `nightly` 태그는 `prerelease=false`라서 prerelease 플래그만으로는 걸러지지 않아, semver 정규식이 nightly 제외의 실제 장치입니다.
+- `install_guide()`를 수동 `curl`/`brew` 안내에서 관리 스크립트 호출 안내로 교체했습니다(REQ-INST-010).
+- `fetch_dynamic.py`/`install_lightpanda.py`의 `--help`가 더 이상 exit 2가 아닌 exit 0을 반환합니다(argparse `SystemExit` 코드 보존).
+
+### Notes
+
+- 릴리즈가 checksum을 제공하지 않아 SHA 대조 대신 `lightpanda version` 실행으로 무결성을 검증합니다. 검증 통과 시에만 기존 바이너리를 원자적으로 교체해, 손상된 다운로드가 멀쩡한 바이너리를 덮어쓰지 않습니다. Windows 네이티브는 미지원(WSL2로 위임).
+
 ## [6.0.1] — 2026-06-10
 
 ### Fixed

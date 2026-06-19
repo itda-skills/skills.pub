@@ -479,6 +479,14 @@ def main() -> None:
         default=False,
         help="--dynamic-only와 함께 사용 시 Lightpanda의 --dump markdown 출력을 그대로 반환 (extract 파이프라인 우회). 한국 미디어 사이트에서 권장.",
     )
+    # SPEC-WEBREADER-LIGHTPANDA-INSTALLER-001 (#513): 미설치 시 자동 설치 비활성(CI/테스트)
+    parser.add_argument(
+        "--no-auto-install",
+        dest="no_auto_install",
+        action="store_true",
+        default=False,
+        help="--dynamic-only에서 Lightpanda 미설치 시 자동 설치를 끈다 (CI/테스트). 기본은 자동 설치 ON.",
+    )
     # --no-fallback은 --static-only의 alias (legacy 호환 별칭)
     parser.add_argument(
         "--no-fallback",
@@ -518,8 +526,9 @@ def main() -> None:
 
     try:
         args = parser.parse_args()
-    except SystemExit:
-        sys.exit(2)
+    except SystemExit as e:
+        # --help → 0, argparse 오류 → 2. 코드를 삼키지 않는다.
+        sys.exit(e.code if isinstance(e.code, int) else 2)
 
     # SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001 (v5.0.0): --dynamic-only는 Lightpanda 백엔드 호출.
     # LIGHTEN(v3.0.0)에서 fail-fast 처리하던 것을 Lightpanda 등장으로 복원.
@@ -604,6 +613,7 @@ def main() -> None:
                     terminate_ms=15000,
                     strip_mode="js,css" if getattr(args, "lp_markdown", False) else None,
                     dump_markdown=getattr(args, "lp_markdown", False),
+                    auto_install=not getattr(args, "no_auto_install", False),
                 )
                 if lp_result["exit_code"] == 3:
                     print(lp_result["stderr_tail"], file=sys.stderr)

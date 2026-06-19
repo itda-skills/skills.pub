@@ -7,16 +7,23 @@ SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001 (web-reader v5.0.0).
 `lightpanda fetch` CLI를 호출하여 JavaScript 렌더링이 필요한 페이지를 가져온다.
 Playwright/Chromium 대비 단일 바이너리(65~135MB), 24MB 메모리, 100ms 부팅.
 
+바이너리 검출 우선순위 (REQ-INST-006):
+    --lightpanda-bin → $ITDA_LIGHTPANDA_BIN → $ITDA_LIGHTPANDA_DIR/lightpanda
+    → $PATH → ~/.itda-skills/bin/lightpanda
+미설치 시 install_lightpanda.py를 자동 호출해 최신 안정 버전을 설치한다
+(REQ-INST-007, --no-auto-install로 비활성). 자동 설치는 절대 덮어쓰지 않는다.
+
 CLI 사용법:
     fetch_dynamic.py --url URL [--wait-until X] [--wait-selector CSS] [--wait-ms N]
                      [--terminate-ms N] [--strip-mode js,css] [--dump-markdown]
                      [--cookie-file FILE] [--http-proxy URL] [--output FILE]
+                     [--lightpanda-bin PATH] [--no-auto-install]
 
 Exit codes:
     0: 성공
     1: Lightpanda 런타임 오류 (subprocess rc != 0)
     2: 잘못된 인자
-    3: Lightpanda 바이너리 미설치 (stderr에 설치 안내)
+    3: Lightpanda 바이너리 미설치 (자동 설치 OFF/실패 — stderr에 설치 안내)
     4: Bot challenge 감지 (Access Denied / Cloudflare 등 — stderr에 hyve MCP escalation 안내)
 
 Non-goals (hyve MCP escalation 권장):
@@ -63,88 +70,134 @@ def _detect_bot_challenge(body: str) -> str | None:
     return None
 
 
-def _find_lightpanda() -> str | None:
-    """Lightpanda 바이너리 검출 (REQ-LP-007).
+def _is_executable_file(p: Path) -> bool:
+    # 접근 불가 경로(부모 디렉터리 권한 부족 등)에서 stat 이 OSError 를 던져도
+    # 검출이 크래시하지 않고 '없음'으로 흐르게 한다.
+    try:
+        return p.is_file() and os.access(p, os.X_OK)
+    except OSError:
+        return False
+
+
+def _find_lightpanda(explicit_bin: str | None = None) -> str | None:
+    """Lightpanda 바이너리 검출 (REQ-INST-006).
+
+    명시 입력 우선 체인. cwd 상대 추측 경로(`./mnt/...`·`./.itda-skills/...`)는
+    Cowork 세션에서 마운트와 어긋나 헛다리 + 세션 휘발 문제가 있어 제거했다.
 
     우선순위:
-        1. $PATH (which lightpanda)
-        2. $HOME/.itda-skills/bin/lightpanda
-        3. ./mnt/.itda-skills/bin/lightpanda (Cowork 마운트)
-        4. ./.itda-skills/bin/lightpanda (Cowork 세션 한정)
+        1. --lightpanda-bin 인자 (명시 바이너리 경로)
+        2. $ITDA_LIGHTPANDA_BIN (명시 바이너리 경로)
+        3. $ITDA_LIGHTPANDA_DIR/lightpanda (영속 설치 디렉터리 — 설치 위치와 대칭)
+        4. $PATH (which lightpanda)
+        5. ~/.itda-skills/bin/lightpanda (기본 설치 위치)
     """
-    # 1. PATH
+    # 1. 명시 인자
+    if explicit_bin:
+        p = Path(explicit_bin).expanduser()
+        if _is_executable_file(p):
+            return str(p)
+
+    # 2. $ITDA_LIGHTPANDA_BIN (바이너리 경로)
+    env_bin = os.environ.get("ITDA_LIGHTPANDA_BIN")
+    if env_bin:
+        p = Path(env_bin).expanduser()
+        if _is_executable_file(p):
+            return str(p)
+
+    # 3. $ITDA_LIGHTPANDA_DIR/lightpanda (설치 디렉터리)
+    env_dir = os.environ.get("ITDA_LIGHTPANDA_DIR")
+    if env_dir:
+        p = Path(env_dir).expanduser() / "lightpanda"
+        if _is_executable_file(p):
+            return str(p)
+
+    # 4. PATH
     found = shutil.which("lightpanda")
     if found:
         return found
 
-    # 2~4. 후보 경로 순회
-    home = Path.home()
-    cwd = Path.cwd()
-    candidates = [
-        home / ".itda-skills" / "bin" / "lightpanda",
-        cwd / "mnt" / ".itda-skills" / "bin" / "lightpanda",
-        cwd / ".itda-skills" / "bin" / "lightpanda",
-    ]
-    for p in candidates:
-        if p.is_file() and os.access(p, os.X_OK):
-            return str(p)
+    # 5. 기본 설치 위치
+    p = Path.home() / ".itda-skills" / "bin" / "lightpanda"
+    if _is_executable_file(p):
+        return str(p)
+
     return None
 
 
+def _auto_install_lightpanda(timeout: int = 600) -> str | None:
+    """미설치 시 install_lightpanda.py(ensure 모드)를 subprocess로 자동 호출.
+
+    REQ-INST-007: 기본 ON. ensure 모드라 기존 바이너리를 절대 덮어쓰지 않는다
+    (REQ-INST-008 — 검출 실패, 즉 바이너리 부재일 때만 도달). installer가 진행
+    상황을 stderr로 직접 출력하므로 여기서는 stderr를 inherit한다. 설치된
+    바이너리 경로(검증 통과 시)를 반환하고, 실패하면 None.
+    """
+    script = Path(__file__).resolve().parent / "install_lightpanda.py"
+    if not script.is_file():
+        return None
+    print(
+        "[web-reader] Lightpanda 미설치 — 최신 안정 버전을 자동 설치합니다...",
+        file=sys.stderr,
+    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script)],
+            stdout=subprocess.PIPE,
+            stderr=None,  # inherit → 다운로드 진행 상황 실시간 표시
+            text=True,
+            timeout=timeout,
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f"[web-reader] 자동 설치 실패: {e}", file=sys.stderr)
+        return None
+    if proc.returncode != 0:
+        print(
+            f"[web-reader] 자동 설치 실패 (exit {proc.returncode}). "
+            "수동 설치: python3 scripts/install_lightpanda.py",
+            file=sys.stderr,
+        )
+        return None
+    lines = (proc.stdout or "").strip().splitlines()
+    if not lines:
+        return None
+    candidate = Path(lines[-1].strip()).expanduser()
+    return str(candidate) if _is_executable_file(candidate) else None
+
+
 def install_guide() -> str:
-    """플랫폼별 Lightpanda 설치 안내 메시지."""
+    """Lightpanda 설치 안내 — 관리 스크립트(install_lightpanda.py) 호출 기준."""
     system = platform.system()
-    arch = platform.machine().lower()
 
     base = (
         "Lightpanda 바이너리를 찾을 수 없습니다.\n"
-        "설치 후 다시 시도하세요:\n\n"
+        "관리 스크립트로 설치하세요 (플랫폼/아키텍처 자동 감지, 표준 라이브러리만 사용):\n\n"
     )
 
-    if system == "Darwin":
-        guide = (
-            "  # macOS (Homebrew)\n"
-            "  brew install lightpanda\n\n"
-            "  # 또는 nightly 직접 다운로드\n"
-        )
-        if arch in ("arm64", "aarch64"):
-            guide += (
-                "  curl -L https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-macos \\\n"
-                "    -o ~/.itda-skills/bin/lightpanda && chmod +x ~/.itda-skills/bin/lightpanda\n"
-                "  xattr -d com.apple.quarantine ~/.itda-skills/bin/lightpanda 2>/dev/null\n"
-            )
-        else:
-            guide += (
-                "  curl -L https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-macos \\\n"
-                "    -o ~/.itda-skills/bin/lightpanda && chmod +x ~/.itda-skills/bin/lightpanda\n"
-                "  xattr -d com.apple.quarantine ~/.itda-skills/bin/lightpanda 2>/dev/null\n"
-            )
-    elif system == "Linux":
-        url = (
-            "https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-linux"
-            if arch in ("arm64", "aarch64")
-            else "https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-linux"
-        )
-        guide = (
-            "  # Linux (glibc 기반, musl/Alpine 미지원)\n"
-            f"  mkdir -p ~/.itda-skills/bin && curl -L {url} \\\n"
-            "    -o ~/.itda-skills/bin/lightpanda && chmod +x ~/.itda-skills/bin/lightpanda\n"
-        )
-    elif system == "Windows":
+    if system == "Windows":
         guide = (
             "  # Windows 네이티브 미지원 — WSL2 필수\n"
-            "  # WSL2 설치 후 WSL2 내부에서 Linux 명령으로 설치하세요.\n"
-            "  # 또는 hyve MCP의 web_browse 사용 (SPEC-WEB-MCP-002).\n"
+            "  # WSL2 설치 후 WSL2 내부(Linux)에서 실행:\n"
+            "  python3 scripts/install_lightpanda.py\n"
+            "  # 또는 hyve MCP의 web_browse 사용\n"
         )
     else:
-        guide = "  https://github.com/lightpanda-io/browser/releases 에서 플랫폼 바이너리를 다운로드하세요.\n"
+        guide = (
+            "  # 최신 안정 버전 자동 설치\n"
+            "  python3 scripts/install_lightpanda.py\n\n"
+            "  # 세션 간 재사용을 위해 영속 경로 지정 (권장)\n"
+            "  ITDA_LIGHTPANDA_DIR=<project>/tools python3 scripts/install_lightpanda.py\n\n"
+            "  # 특정 버전 / 다운그레이드\n"
+            "  python3 scripts/install_lightpanda.py --version 0.3.0\n"
+        )
 
     detect_order = (
         "\n검출 우선순위:\n"
-        "  1. $PATH (which lightpanda)\n"
-        "  2. ~/.itda-skills/bin/lightpanda\n"
-        "  3. ./mnt/.itda-skills/bin/lightpanda (Cowork 마운트)\n"
-        "  4. ./.itda-skills/bin/lightpanda (Cowork 세션)\n"
+        "  1. --lightpanda-bin 인자\n"
+        "  2. $ITDA_LIGHTPANDA_BIN (바이너리 경로)\n"
+        "  3. $ITDA_LIGHTPANDA_DIR/lightpanda (설치 디렉터리)\n"
+        "  4. $PATH (which lightpanda)\n"
+        "  5. ~/.itda-skills/bin/lightpanda (기본)\n"
     )
 
     return base + guide + detect_order
@@ -176,6 +229,8 @@ def fetch_dynamic(
     http_proxy: str | None = None,
     dump_markdown: bool = False,
     block_private_networks: bool = True,
+    lightpanda_bin: str | None = None,
+    auto_install: bool = True,
 ) -> dict:
     """Lightpanda를 호출하여 동적 페이지를 가져온다.
 
@@ -193,7 +248,11 @@ def fetch_dynamic(
     """
     t0 = time.time()
 
-    lp = _find_lightpanda()
+    lp = _find_lightpanda(lightpanda_bin)
+    if lp is None and auto_install:
+        # REQ-INST-007: 미설치 시 추가 토큰 없이 자동 ensure 설치 후 진행.
+        installed = _auto_install_lightpanda()
+        lp = installed or _find_lightpanda(lightpanda_bin)
     if lp is None:
         return {
             "content": "",
@@ -339,11 +398,21 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="--block-private-networks 비활성화 (기본: 활성)",
     )
+    parser.add_argument(
+        "--lightpanda-bin",
+        help="Lightpanda 바이너리 경로 명시 (검출 체인 최우선)",
+    )
+    parser.add_argument(
+        "--no-auto-install",
+        action="store_true",
+        help="미설치 시 자동 설치 비활성화 (CI/테스트). 기본은 자동 설치 ON.",
+    )
 
     try:
         args = parser.parse_args(argv if argv is not None else sys.argv[1:])
-    except SystemExit:
-        return 2
+    except SystemExit as e:
+        # --help → 0, argparse 오류 → 2. 코드를 삼키지 않는다.
+        return e.code if isinstance(e.code, int) else 2
 
     result = fetch_dynamic(
         args.url,
@@ -357,6 +426,8 @@ def main(argv: list[str] | None = None) -> int:
         http_proxy=args.http_proxy,
         dump_markdown=args.dump_markdown,
         block_private_networks=not args.allow_private,
+        lightpanda_bin=args.lightpanda_bin,
+        auto_install=not args.no_auto_install,
     )
 
     # 미설치

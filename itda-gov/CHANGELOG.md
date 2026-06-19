@@ -1,5 +1,18 @@
 # Changelog — itda-gov
 
+## [5.0.0] — 2026-06-20 (이슈 #515)
+
+### Removed — 공공 주식 스킬 묶음 제거 (BREAKING)
+
+- **stock-quote·stock-portfolio 제거**: 금융위 data.go.kr 중계 주식시세는 EOD·중계 한 단계·간헐 불안정으로 민간 KIS 실시간(`itda-stocks:kis-market`)과 중복·열위. 주식 데이터는 itda-stocks(KIS) 단일 트랙으로 일원화한다. 두 스킬은 닫힌 의존 사슬(`stock-portfolio` → `import stock_quote_api`)이라 묶음 제거.
+- itda-gov 스킬 **8 → 6** (dart·ecos·funding·g2b·kosis·realestate). `references/getStockSecuritiesInfoService-v1.0.{docx,md}` 정본 동반 제거.
+- `KO_DATA_API_KEY`는 **유지** — g2b·funding·realestate 3종이 계속 사용(닫힌 사슬 아님).
+- 참조 정리: `ground_check.py` 매핑, `test_gov_api_live.py` 케이스, 크레덴셜 가이드, `plan-work` 카탈로그, `market-scan` 주가·시세 라우팅(제거), `release-skills.yml` 주석.
+
+### Note
+
+- KRX OpenAPI 직접 연동은 검토 후 **보류** — 주식 시세는 민간 중복, 거시 데이터(지수·외인/기관 순매수·VKOSPI·마스터)는 market-radar #12 별개 레이어에서 필요 시 처리.
+
 ## [4.3.0] — 2026-06-17 (이슈 #438)
 
 ### Changed — 전 itda-gov 스킬 응답 포맷 슬리밍 (무손실)
