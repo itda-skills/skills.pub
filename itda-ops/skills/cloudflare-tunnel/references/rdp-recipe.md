@@ -22,7 +22,7 @@
    { "hostname": "rdp.example.com", "service": "rdp://localhost:3389" }
    ```
 3. SKILL.md "터널 생성·적용" 런북 수행: `cloudflared tunnel create` → `config.yml`(ingress에 위 라우트) → `cloudflared tunnel route dns` → `cloudflared service install`.
-4. Zero Trust 대시보드에서 `rdp.example.com` 에 **Access 애플리케이션(self-hosted)** 생성 + 정책(예: 이메일 `dexelop@gmail.com` 허용).
+4. Zero Trust 대시보드에서 `rdp.example.com` 에 **Access 애플리케이션(self-hosted)** 생성 + 정책(예: 이메일 `you@example.com` 허용).
 
 ## 클라이언트측 (접속하는 머신)
 

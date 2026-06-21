@@ -40,7 +40,7 @@ class Route:
     hostname: str
     service: str  # 예: "rdp://localhost:3389", "http://localhost:8080"
     access: AccessMode = "required"
-    policy: str | None = None  # Access 신원 정책 (예: "email:dexelop@gmail.com")
+    policy: str | None = None  # Access 신원 정책 (예: "email:you@example.com")
 
     @property
     def scheme(self) -> str:

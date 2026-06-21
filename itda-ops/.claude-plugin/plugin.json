@@ -1,7 +1,7 @@
 {
   "name": "itda-ops",
   "description": "내부 인프라 운영 스킬팩 — Cloudflare Tunnel/DDNS 등 크로스플랫폼(Windows/macOS/Linux) 셋업 자동화",
-  "version": "8.20.1",
+  "version": "8.20.2",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
