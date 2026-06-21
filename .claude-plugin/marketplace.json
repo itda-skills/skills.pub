@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.20.0",
+    "version": "8.20.1",
     "language": "ko"
   },
   "plugins": [
@@ -74,6 +74,11 @@
       "name": "itda-media",
       "source": "./itda-media",
       "description": "미디어 생성 스킬팩 — 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성 (imagegen)"
+    },
+    {
+      "name": "itda-coach",
+      "source": "./itda-coach",
+      "description": "강의·온보딩 facilitation 스킬팩 — 막연한 불편을 1시간 조각으로 자르고 반복 업무를 미니스킬로 굳힌다"
     }
   ]
 }
