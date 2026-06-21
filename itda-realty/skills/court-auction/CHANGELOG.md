@@ -2,6 +2,12 @@
 
 이 스킬의 주요 변경 사항을 기록합니다. 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 따릅니다.
 
+## [0.1.1] — 2026-06-21
+
+### Fixed
+
+- 라이브 조회(`codes courts` 등)의 warmup GET이 일시적 네트워크/타임아웃(예: 해외 CI 러너→KR 사이트 지연)에 단발 실패하던 문제를 backoff 재시도로 보강 (#492). transient(`URLError`/`TimeoutError`)만 재시도하고 `HTTPError`(서버 응답)는 즉시 반환하며, warmup은 호출 budget을 차감하지 않는다(기본 1회 재시도). 지속 장애는 종전대로 실패해 외부 점검을 유도한다.
+
 ## [0.1.0] — 2026-06-05
 
 ### Added

@@ -13,10 +13,10 @@ argument-hint: "서울중앙지법 오늘 경매 / 2024타경100001 사건 / 강
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.1.0"
+  version: "0.1.1"
   status: "experimental"
   created_at: "2026-06-05"
-  updated_at: "2026-06-06"
+  updated_at: "2026-06-21"
   tags: "court-auction, auction, realestate, courtauction, property, real-estate-auction, foreclosure, court"
 ---
 

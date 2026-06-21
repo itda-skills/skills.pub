@@ -69,6 +69,8 @@ class CourtAuctionClient:
         timeout: int = 15,
         min_delay: float = 2.0,
         max_calls: int = 10,
+        warmup_retries: int = 1,
+        retry_backoff: float = 0.5,
         now=None,
         sleep=None,
     ):
@@ -77,6 +79,10 @@ class CourtAuctionClient:
         self.timeout = timeout
         self.min_delay = float(min_delay)
         self.max_calls = int(max_calls)
+        # #492: warmup GET 의 일시적 네트워크/타임아웃(US 러너→KR 사이트 지연)에 대한 재시도.
+        # budget 비차감(warmup 은 _ensure_budget 전), transient(URLError/TimeoutError)만 재시도.
+        self.warmup_retries = max(0, int(warmup_retries))
+        self.retry_backoff = float(retry_backoff)
         self._now = now or time.monotonic
         self._sleep = sleep or time.sleep
         self._cookie_jar: dict[str, str] = {}
@@ -138,17 +144,24 @@ class CourtAuctionClient:
             return True, ""
         url = f"{self.base_url}{screen}"
         req = urllib.request.Request(url, headers=self._build_headers(endpoint_key, is_post=False), method="GET")
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310
-                self._ingest_cookies(resp)
-        except urllib.error.HTTPError as exc:
-            return False, f"법원경매 사이트 warmup 실패(HTTP {exc.code})."
-        except urllib.error.URLError as exc:
-            return False, f"네트워크 오류로 법원경매 사이트에 닿지 못했습니다(warmup): {exc.reason}"
-        except TimeoutError:
-            return False, "법원경매 사이트 warmup이 시간 초과됐습니다."
-        self._warmed = screen
-        return True, ""
+        # #492: transient(URLError/TimeoutError) 시 backoff 후 재시도. HTTPError 는 서버 응답이라
+        # 재시도 무의미 → 즉시 반환. HTTPError 는 URLError 의 서브클래스라 except 순서가 중요하다.
+        last_reason = ""
+        for attempt in range(self.warmup_retries + 1):
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310
+                    self._ingest_cookies(resp)
+                self._warmed = screen
+                return True, ""
+            except urllib.error.HTTPError as exc:
+                return False, f"법원경매 사이트 warmup 실패(HTTP {exc.code})."
+            except urllib.error.URLError as exc:
+                last_reason = f"네트워크 오류로 법원경매 사이트에 닿지 못했습니다(warmup): {exc.reason}"
+            except TimeoutError:
+                last_reason = "법원경매 사이트 warmup이 시간 초과됐습니다."
+            if attempt < self.warmup_retries:
+                self._sleep(self.retry_backoff * (attempt + 1))
+        return False, last_reason
 
     def _ensure_budget(self) -> tuple[bool, str]:
         if self._calls >= self.max_calls:

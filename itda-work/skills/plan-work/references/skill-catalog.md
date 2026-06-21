@@ -20,6 +20,7 @@ DP-1 Hybrid 방식: 이 파일은 큐레이션된 정적 목록입니다.
 | investigate | 원인 불명 문제를 체계적으로 파헤치는 스킬 | 없음 | "왜 이런 일이 생겼는지 분석해줘", "원인 찾아줘" |
 | ground-check | 비개발자가 만든 비교표·출처 검증 요청을 처리하는 스킬 | 없음 | "비교표 만들어줘", "출처 확인해줘" |
 | etf-naver | 네이버 금융 기반 국내 ETF 시세·분석 스킬 | 없음 | "ETF 시세 알려줘", "ETF 비교해줘" |
+| stock-us | 미국 증시 시황·지수·기술분석·시황 아티클 스킬 (WebFetch) | 없음 | "미국 증시 현황 알려줘", "NVDA 기술적 분석" |
 | draft-post | 블로그·보고서·SNS 등 글쓰기 초안 생성 스킬 | 없음 | "블로그 글 써줘", "보고서 초안 작성해줘" |
 | blog-seo | 네이버 검색광고 API 기반 블루키워드 발굴 스킬 | NAVER_SEARCHAD_ACCESS_KEY, NAVER_SEARCHAD_SECRET_KEY | "블루키워드 찾아줘", "SEO 키워드 분석해줘" |
 | imagekit | 이미지 정보 조회·리사이즈·크롭·포맷 변환 스킬 | 없음 | "이미지 크기 줄여줘", "사진 잘라줘" |
@@ -47,7 +48,8 @@ human-tone     → itda-work/skills/human-tone/
 pdf-context-refinery → itda-work/skills/pdf-context-refinery/
 investigate    → itda-work/skills/investigate/
 ground-check   → itda-work/skills/ground-check/
-etf-naver      → itda-work/skills/etf-naver/
+etf-naver      → itda-stocks/skills/etf-naver/
+stock-us       → itda-stocks/skills/stock-us/
 draft-post     → itda-work/skills/draft-post/
 blog-seo       → itda-work/skills/blog-seo/
 imagekit       → itda-work/skills/imagekit/
