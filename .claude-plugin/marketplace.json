@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.19.0",
+    "version": "8.20.0",
     "language": "ko"
   },
   "plugins": [
@@ -41,6 +41,11 @@
       "description": "한국어 CS 상담·문의 텍스트 분석 스킬팩 — 측면 감정분석(ABSA)·인텐트 분류·라벨 일치도(κ) 측정"
     },
     {
+      "name": "itda-audit",
+      "source": "./itda-audit",
+      "description": "감사 신뢰성 검수 스킬팩 — 회의·문서·데이터에서 확인/확인필요/예외를 근거와 함께 가른다"
+    },
+    {
       "name": "itda-airport",
       "source": "./itda-airport",
       "description": "인천국제공항 공개 데이터 스킬팩 — 항공사별 운항·여객·화물 월별 통계"
@@ -64,6 +69,11 @@
       "name": "itda-ops",
       "source": "./itda-ops",
       "description": "내부 인프라 운영 스킬팩 — Cloudflare Tunnel/DDNS 크로스플랫폼 셋업"
+    },
+    {
+      "name": "itda-media",
+      "source": "./itda-media",
+      "description": "미디어 생성 스킬팩 — 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성 (imagegen)"
     }
   ]
 }

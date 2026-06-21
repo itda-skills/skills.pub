@@ -1,0 +1,20 @@
+{
+  "name": "itda-media",
+  "description": "미디어 생성 스킬팩 — 콘텐츠(발표자료·블로그·문서)용 이미지/삽화를 품질 하한과 함께 생성. hyve image.generate MCP 소비.",
+  "version": "8.20.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "media",
+    "image",
+    "imagegen",
+    "generation",
+    "illustration",
+    "content"
+  ]
+}
