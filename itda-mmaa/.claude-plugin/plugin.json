@@ -1,7 +1,7 @@
 {
   "name": "itda-mmaa",
   "description": "군인공제회(MMAA) 업무 자동화 플러그인 — KACEM 입찰 공고 수집·추출 + IMAP 부재 웹메일 조회",
-  "version": "8.20.2",
+  "version": "8.20.3",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
