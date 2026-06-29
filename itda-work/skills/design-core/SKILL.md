@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 argument-hint: "<브랜드/톤 키워드 또는 DESIGN.md 경로>"
 metadata:
   author: "스킬.잇다"
-  version: "0.1.0"
+  version: "0.3.0"
   category: "design"
   status: "beta"
   recommended: true
   created_at: "2026-06-21"
-  updated_at: "2026-06-21"
+  updated_at: "2026-06-29"
   tags: "design-system, design-tokens, design-md, palette, typography, branding"
 ---
 
@@ -30,7 +30,7 @@ metadata:
 
 - **토큰 라이브러리**: `library/` — 6 프리셋(consulting-mbb·equity-research-dark·warm-editorial·print-broadsheet·tech-vivid-dark·minimal-mono) + 브랜드 토큰(samsung-sds·kari 등). 선택 표는 `library/README.md`.
 - **스키마**: `schema/design-md-v2.md`(토큰 그룹·constraints), `schema/token-layers.md`(4계층·allowlist).
-- **매체 매핑**: `mapping/pptx.md`(구현), `mapping/cardnews.md`·`mapping/web-css.md`(후속 SPEC).
+- **매체 매핑**: `mapping/pptx.md`·`mapping/docx.md`·`mapping/xlsx.md`·`mapping/web-css.md`(구현), `mapping/cardnews.md`(후속 SPEC).
 - **코드**: `scripts/design_core.py`(로더·정규화·조회), `scripts/validate.py`(검증기).
 
 ## 어떤 매체로 갈 것인가
@@ -38,6 +38,8 @@ metadata:
 | 매체 | 경로 | 상태 |
 |---|---|---|
 | **PPTX 발표자료** | `pptx-design` 스킬(형제) — 무거운 렌더 어댑터 | ✅ 가동. Claude 가 `.pptx` 를 직접 못 만들어 deckkit/LibreOffice 가 **필수** |
+| **DOCX 보고서/문서** | `docx-design` 스킬(형제) + `mapping/docx.md` + `docx_styles()` | ✅ 가동. python-docx 크로스플랫폼 1급(Office 불필요), hyve COM/OpenXML 옵션 |
+| **XLSX 스프레드시트** | `xlsx-design` 스킬(형제) + `mapping/xlsx.md` + `xlsx_styles()` | ✅ 가동. openpyxl 크로스플랫폼 1급(Office 불필요), hyve Excel COM 옵션 |
 | **웹/HTML·CSS** | `mapping/web-css.md` + `to_css_vars()` 또는 에이전트 직접 생성 | ✅ 가동. Claude 가 직접 렌더 — 무거운 어댑터 **불필요** |
 | 카드뉴스 이미지 | `mapping/cardnews.md` | 🔜 구조 스텁(후속) |
 

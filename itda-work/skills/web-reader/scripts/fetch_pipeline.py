@@ -154,12 +154,33 @@ def assess_static_quality(
 # 정적 fetch (단일 경로)
 # ---------------------------------------------------------------------------
 
+def _maybe_escalation(fetch_result: dict, url: str):
+    """fetch_html 결과 dict가 must_escalate 를 신호하면 StaticFetchEscalate 를 반환.
+
+    이게 P0 전파의 핵심 seam이다 — 정적 give-up 을 None(→ ContentExtractionError →
+    exit 1)으로 뭉개지 않고, extract_content 가 broad fallback 보다 먼저 catch 해
+    exit 4 (web_browse 에스컬레이트)로 라우팅하게 한다. 순수 함수라 단위테스트 가능."""
+    if not fetch_result.get("must_escalate"):
+        return None
+    from exceptions import StaticFetchEscalate  # type: ignore[import]
+
+    return StaticFetchEscalate(
+        url=url,
+        stop_reason=str(fetch_result.get("stop_reason", "")),
+        untried_routes=list(fetch_result.get("untried_routes") or []),
+    )
+
+
 def _do_static_fetch(
     url: str,
     min_text_length: int,
     min_meaningful_tags: int,
 ) -> FetchResult | None:
-    """fetch_html 모듈로 정적 fetch 를 수행하고 FetchResult 를 반환한다."""
+    """fetch_html 모듈로 정적 fetch 를 수행하고 FetchResult 를 반환한다.
+
+    Raises:
+        StaticFetchEscalate: 정적 격자가 WAF/차단으로 소진됐을 때 (P0 — exit 4 경로).
+    """
     import importlib.util as _ilu
 
     filepath = os.path.join(_scripts_dir, "fetch_html.py")
@@ -170,6 +191,9 @@ def _do_static_fetch(
     spec.loader.exec_module(fh)  # type: ignore[union-attr]
 
     fetch_result = fh.fetch_url(url)
+    _esc = _maybe_escalation(fetch_result, url)
+    if _esc is not None:
+        raise _esc
     if not fetch_result.get("content") or fetch_result.get("error"):
         return None
 

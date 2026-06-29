@@ -9,9 +9,9 @@ allowed-tools: Bash, Read, Write, Agent
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "6.1.0"
+  version: "6.2.0"
   created_at: "2026-03-18"
-  updated_at: "2026-06-20"
+  updated_at: "2026-06-25"
   tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, lightpanda, dynamic, javascript, headless, spa"
 ---
 
@@ -163,7 +163,7 @@ python3 scripts/extract_content.py page.html --selector "table.price" --format j
 | 1 | selector 매칭 0건 또는 Lightpanda runtime 오류 |
 | 2 | selector 문법 오류 또는 잘못된 인자 |
 | 3 | Lightpanda 바이너리 미설치 (stderr에 설치 안내) |
-| 4 | Bot challenge 감지(Access Denied/Cloudflare) 또는 SPA 어댑터 요청 → hyve MCP escalation |
+| 4 | Bot challenge 감지(동적 --dynamic-only) **또는 정적 curl WAF 격자 소진**(must_escalate) 또는 SPA 어댑터 요청 → hyve MCP web_browse escalation |
 
 ## 인증 및 쿠키
 
@@ -191,12 +191,23 @@ CLI: fetch_html.py --url URL [--output FILE] [--timeout N] [--encoding CHARSET]
                    [--impersonate TARGET] [--max-attempts N] [--trace]
                    [--no-verify] [--allow-private]
 
-Exit codes: 0=success, 1=network/HTTP error, 2=invalid args or SSRF
+Exit codes: 0=success, 1=network/HTTP error(404·timeout 등 종결), 2=invalid args or SSRF,
+            4=WAF/challenge 격자 소진 → 에스컬레이트(아래 실패 게이트 참조)
 SSRF 방지: http/https만 허용, private IP 차단, redirect 대상 검증
 응답 크기 제한: 50MB (Content-Length 및 chunked transfer 양쪽 적용)
 HTTP 백엔드: curl_cffi 단일 경로. 기본 --impersonate safari.
 차단 대응: challenge 검증 후에만 WAF 프로파일 기반 격자(TLS/URL/Referer)를 시도.
 --trace: 각 시도의 transform/impersonate/referer/verdict를 stderr JSON으로 출력.
+
+실패 게이트(R6식 — exit 4 를 보면 사이트를 '도달 불가'로 선언하지 말 것):
+  curl 격자가 WAF/차단으로 소진되면 exit 4 + stderr ⛔ NOT EXHAUSTED 배너를 출력하고,
+  결과 dict 에 must_escalate / stop_reason(challenge·forbidden) / untried_routes /
+  grid_exhausted / executed_attempts / content_is_challenge 를 담는다. exit 4 는
+  '차단됨, 다음 경로로 에스컬레이트' 의미(fetch_dynamic 의 bot-challenge exit 4 와 동일):
+  → Lightpanda 동적(--dynamic-only) 또는 hyve web_browse MCP(anti-bot stealth).
+  반대로 429(rate_limited)·401(auth_required)·404(not_found)·네트워크 에러는 must_escalate=False
+  이며 exit 1 로 종결(브라우저로 가도 무익) — 429 는 백오프 후 재시도. extract_content 가 이
+  신호를 읽어 자동으로 exit 4 를 surface 한다(에이전트가 프로즈를 추측할 필요 없음).
 ```
 
 ### extract_content.py
@@ -221,8 +232,8 @@ CLI: extract_content.py [INPUT_FILE] [--output FILE]
 Exit codes: 0=success, 1=I/O or parse error or selector 매칭 0건,
             2=invalid args or selector 문법 오류,
             3=Lightpanda 미설치(--dynamic-only, 자동 설치 OFF/실패),
-            4=bot challenge(--dynamic-only) 또는 SPA 어댑터 요청
-              (--adapter, --from-capture, --adapter-page) — hyve MCP escalation
+            4=bot challenge(--dynamic-only) 또는 정적 curl WAF 격자 소진(must_escalate)
+              또는 SPA 어댑터 요청 (--adapter, --from-capture, --adapter-page) — hyve MCP escalation
 
 v3.0.0 폐기 플래그 (호출 시 exit 4 + hyve MCP 안내):
   --adapter NAME            → hyve MCP naverplace 도메인(네이버 부동산) 또는 web_browse

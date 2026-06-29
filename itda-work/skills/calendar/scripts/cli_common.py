@@ -7,7 +7,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from caldav_providers import detect_providers, get_provider  # noqa: E402
+from caldav_providers import (detect_providers, get_provider,  # noqa: E402
+                              is_supported_provider, supported_provider_names)
 from env_loader import merged_env  # noqa: E402
 import caldav_client  # noqa: E402
 
@@ -27,7 +28,22 @@ def emit_error(error: str, detail=None, code: int = 1) -> None:
 
 
 def resolve_provider_or_exit(provider: str, account: str | None = None) -> dict:
-    """Resolve credentials, or exit 1 (missing) / 2 (ambiguous account)."""
+    """Resolve credentials, or exit with a classified error.
+
+    Exit 1: ``unsupported_provider`` (provider this skill cannot serve, e.g.
+    google/outlook/kakao — OAuth/iCal track) or ``credentials_missing``
+    (supported provider, env vars absent). Exit 2: ``account_required``
+    (supported provider, multiple ready accounts, no ``--account``).
+    """
+    # Unsupported provider (OAuth/iCal track) — distinct from a supported
+    # provider that simply lacks credentials. No env vars exist to "configure".
+    if not is_supported_provider(provider):
+        emit_error("unsupported_provider",
+                   f"provider '{provider}' is not supported. "
+                   f"supported: {', '.join(supported_provider_names())}. "
+                   f"구글·아웃룩·카카오는 OAuth/iCal 구독 방식이라 현재 미지원이다(별도 트랙).",
+                   code=1)
+
     env = merged_env()
     prov = get_provider(provider, env, account)
     if prov is not None:

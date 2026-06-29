@@ -8,8 +8,6 @@
 |------|------|
 | `cloudflare-tunnel` | 포트포워딩 없이 Cloudflare Tunnel로 서비스(RDP·SSH·HTTP)를 노출/접근. 라우트별 Zero Trust Access를 기본 적용하고, 선언형 desired-state로 ingress·DNS·Access를 멱등 구성. |
 
-> 후속: `cloudflare-ddns`(직접 inbound 연결용 동적 DNS) — #546.
-
 ## 설계 원칙
 
 - **순수 셋업 스킬**: `cloudflared` + Cloudflare REST API를 호출해 *세팅*만 한다. 상시 데몬은 `cloudflared`(OS 서비스)이며, 트래픽 중계는 스킬이 하지 않는다.

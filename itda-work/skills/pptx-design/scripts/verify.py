@@ -8,8 +8,10 @@
       [advisory] — 미적 결함(자간 벌어짐·명조 폴백)의 자동 트립와이어(SPEC-PPTX-DESIGN-002 REQ-005).
   (E) ★스타일 휴리스틱: AI 기본값 안티패턴 — 구분 부호(·/—/–) 남발·좌측 액센트 바 남발·
       수직 중앙 몰림 [advisory] — "엉성한 스타일" 자동 트립와이어(SPEC-PPTX-DESIGN-003 REQ-105).
+  (F) ★wrap 유발 오버플로(python-pptx): 긴 문단이 좁은 박스에서 래핑돼 필요 높이가 박스를 넘는 경우
+      [advisory] — view_issues L1(문단수×폰트×1.2)의 사각지대를 폭 근사로 보완(#413).
 
-HARD GATE = (경계이탈 + 퇴화도형 + 빈슬라이드 + 토큰누락) == 0  → PASS 시 exit 0. (타이포·스타일은 advisory)
+HARD GATE = (경계이탈 + 퇴화도형 + 빈슬라이드 + 토큰누락) == 0  → PASS 시 exit 0. (타이포·스타일·wrap 은 advisory)
 
 사용:
   python3 verify.py <pptx> [--tokens tokens.txt] [--ko 삼성전자,하이닉스]
@@ -21,6 +23,7 @@ import sys
 import json
 import glob
 import argparse
+import math
 
 from pptx import Presentation
 from pptx.oxml.ns import qn
@@ -223,6 +226,119 @@ def run_style_issues(prs):
     return punct, bars, cram
 
 
+# ── (F) wrap 유발 오버플로 임계 (#413, advisory — 폰트 메트릭 근사라 보수적) ──
+WRAP_LINE_HEIGHT = 1.2        # 기본 줄높이 계수 (view_issues L1 과 동일)
+WRAP_OVERFLOW_TOL = 1.05      # 추정 필요높이가 박스높이의 이 배수 초과 시 신호(em 근사 오차 여유)
+WRAP_DEFAULT_PT = 18.0        # run.font.size 미상속 시 보수적 기본 글자크기
+WRAP_MIN_BOX_W_IN = 0.5       # 장식용 초협소 박스 제외
+PT_EMU = 12700               # 1pt = 12700 EMU (72pt = 1in = 914400 EMU)
+
+
+def _est_line_em(s):
+    """문자 클래스 기반 1줄 텍스트 폭 근사(단위 em = font_size 배). 폰트 비의존·결정론.
+
+    정확한 글리프 폭 대신 CJK=1.0 / 라틴 대문자·숫자=0.62 / 소문자=0.5 / 공백·기호=0.3~0.42
+    의 평균 전진폭으로 근사한다. advisory 목적(픽셀 정밀이 아니라 wrap 위험 포착)에 충분하며,
+    시스템 폰트 로드(비결정)를 피해 동일 입력 → 동일 출력을 보장한다.
+    """
+    w = 0.0
+    for ch in s:
+        o = ord(ch)
+        if ch == "\t":
+            w += 2.0
+        elif (0xAC00 <= o <= 0xD7A3) or (0x3000 <= o <= 0x30FF) or \
+             (0x4E00 <= o <= 0x9FFF) or (0xFF00 <= o <= 0xFFEF):
+            w += 1.0                      # 한글·CJK·가나·전각
+        elif ch == " ":
+            w += 0.30
+        elif ch.isupper() or ch.isdigit():
+            w += 0.62
+        elif ch.islower():
+            w += 0.50
+        else:
+            w += 0.42                     # 라틴 구두점·기타
+    return w
+
+
+def run_wrap_issues(prs):
+    """(F) wrap 유발 오버플로 — 폭 보정 줄 수로 필요 높이를 재추정해 박스 초과를 적발.
+
+    view_issues 의 L1 휴리스틱(needed = 문단수 × 폰트 × 1.2)은 긴 단일 문단이 좁은 박스에서
+    여러 줄로 래핑돼도 1줄로 계산해 wrap 유발 오버플로를 놓친다(#413). 여기서는 각 문단의
+    추정 폭(_est_line_em)을 박스 가용 폭으로 나눠 줄 수를 보정한 뒤 필요 높이를 다시 잰다.
+
+    신호 조건: (보정 필요높이 > 가용높이 × TOL) AND (보정 줄 수 합 > 문단 수)
+      - 후자가 "naive(문단수)로는 통과하나 wrap 으로 넘침"이라는 #413 사각지대를 정확히 가둔다.
+    advisory — 폭 근사 특성상 보수적 임계. HARD GATE 산식 불변(오탐이 덱 빌드를 깨지 않음).
+    word_wrap=False(넘침은 OOB 가 담당)·AutoSize=TextToFitShape(글자 축소로 맞춤)·배경 도형은 제외.
+    SHAPE_TO_FIT_TEXT(python-pptx textbox 기본값)는 박스가 세로로 늘어나 선언 높이를 넘겨 아래
+    요소를 침범하므로(절대좌표라 자동으로 안 밀림) 검사 대상에 포함한다.
+    """
+    from pptx.enum.text import MSO_AUTO_SIZE
+    out = []
+    W, H = int(prs.slide_width), int(prs.slide_height)
+    SA = W * H
+    min_w = int(WRAP_MIN_BOX_W_IN * EMU)
+    for si, sl in enumerate(prs.slides, start=1):
+        for sp in sl.shapes:
+            try:
+                if not sp.has_text_frame:
+                    continue
+            except Exception:
+                continue
+            b = bbox(sp)
+            if b is None:
+                continue
+            box_w, box_h = b[2] - b[0], b[3] - b[1]
+            if box_w < min_w or box_h <= 0:
+                continue
+            if area(b) >= 0.92 * SA and b[0] <= TOL and b[1] <= TOL:
+                continue                  # 배경 도형
+            tf = sp.text_frame
+            try:
+                if tf.word_wrap is False:
+                    continue
+            except Exception:
+                pass
+            try:
+                if tf.auto_size == MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE:
+                    continue          # 글자 크기를 박스에 맞춰 축소 → 오버플로 없음
+            except Exception:
+                pass
+            ml = int(tf.margin_left) if tf.margin_left is not None else int(0.1 * EMU)
+            mr = int(tf.margin_right) if tf.margin_right is not None else int(0.1 * EMU)
+            mt = int(tf.margin_top) if tf.margin_top is not None else int(0.05 * EMU)
+            mb = int(tf.margin_bottom) if tf.margin_bottom is not None else int(0.05 * EMU)
+            usable_w, usable_h = box_w - ml - mr, box_h - mt - mb
+            if usable_w <= 0 or usable_h <= 0:
+                continue
+            cap_pt = usable_w / PT_EMU    # 가용 폭(pt)
+            naive_lines = wrapped_lines = 0
+            needed_pt = 0.0
+            for para in tf.paragraphs:
+                ptxt = "".join((r.text or "") for r in para.runs) or (para.text or "")
+                psz = 0.0
+                for r in para.runs:
+                    if r.font.size is not None:
+                        psz = max(psz, r.font.size.pt)
+                if psz <= 0:
+                    psz = WRAP_DEFAULT_PT
+                naive_lines += 1
+                if not ptxt.strip():
+                    wrapped_lines += 1
+                    needed_pt += psz * WRAP_LINE_HEIGHT
+                    continue
+                plines = max(1, math.ceil((_est_line_em(ptxt) * psz) / cap_pt)) if cap_pt > 0 else 1
+                wrapped_lines += plines
+                needed_pt += plines * psz * WRAP_LINE_HEIGHT
+            needed_emu = needed_pt * PT_EMU
+            if needed_emu > usable_h * WRAP_OVERFLOW_TOL and wrapped_lines > naive_lines:
+                out.append({"slide": si, "text": shape_text(sp)[:40].replace("\n", " "),
+                            "naive_lines": naive_lines, "est_lines": wrapped_lines,
+                            "box_h_in": round(box_h / EMU, 2), "needed_in": round(needed_emu / EMU, 2)})
+    return out
+
+
 def ocr_blob(im):
     import numpy as np
     import pytesseract
@@ -247,7 +363,8 @@ def verify(pptx_path, tokens=None, ko=None, out_dir=None, dpi=110, do_ocr=True):
     issues = {"out_of_bounds": [], "zero_size": [], "blank_slide": [], "missing_content": [],
               "text_overlap": [], "ocr_low_yield": [], "ocr_missing_korean": [],
               "kr_neg_spacing": [], "kr_wide_spacing": [], "kr_unsafe_font": [],
-              "style_punct_overuse": [], "style_edge_bar_overuse": [], "style_v_center_cram": []}
+              "style_punct_overuse": [], "style_edge_bar_overuse": [], "style_v_center_cram": [],
+              "text_wrap_overflow": [], "render_unavailable": []}
     perslide = {}
     sltext = slide_texts(prs)
 
@@ -262,6 +379,9 @@ def verify(pptx_path, tokens=None, ko=None, out_dir=None, dpi=110, do_ocr=True):
     issues["style_punct_overuse"] = s_punct
     issues["style_edge_bar_overuse"] = s_bars
     issues["style_v_center_cram"] = s_cram
+
+    # (F) wrap 유발 오버플로 (advisory) — view_issues L1 사각지대 보완(#413)
+    issues["text_wrap_overflow"] = run_wrap_issues(prs)
 
     # (A) 지오메트리
     for si, sl in enumerate(prs.slides, start=1):
@@ -319,8 +439,12 @@ def verify(pptx_path, tokens=None, ko=None, out_dir=None, dpi=110, do_ocr=True):
     try:
         jpgs = render_mod.render(pptx_path, out_dir=os.path.join(out_dir, f"{stem}_render"), dpi=dpi)
     except Exception as e:
+        # 렌더 도구(soffice/pdftoppm) 부재·실패는 인프라 문제이지 덱 결함이 아니다(#621).
+        # blank_slide(HARD GATE 항목)가 아니라 비차단 advisory(render_unavailable)로 분리한다.
+        # 렌더 의존 검사(OCR 층 C + 이미지 기반 빈슬라이드 탐지)는 jpgs 가 비어 자연히 생략된다.
         jpgs = []
-        issues["blank_slide"].append({"note": f"렌더 실패: {e}"})
+        issues["render_unavailable"].append(
+            {"note": f"렌더 도구 사용 불가 — 렌더 의존 검사(OCR·이미지 빈슬라이드) 생략: {e}"})
     if jpgs and len(jpgs) < len(list(prs.slides)):
         issues["blank_slide"].append({"note": f"렌더 {len(jpgs)}/{len(list(prs.slides))}장"})
 
@@ -381,11 +505,21 @@ def verify(pptx_path, tokens=None, ko=None, out_dir=None, dpi=110, do_ocr=True):
     gate = counts["out_of_bounds"] + counts["zero_size"] + counts["blank_slide"] + counts["missing_content"]
     result = {"pptx": pptx_path, "hard_gate_pass": gate == 0, "counts": counts,
               "ocr_ran": ocr_on, "issues": issues}
-    json.dump(result, open(os.path.join(out_dir, f"{stem}.json"), "w"), ensure_ascii=False, indent=2)
+    # ensure_ascii=False 로 한국어/특수문자(em-dash 등)를 그대로 쓰므로 utf-8 고정.
+    # (Windows 기본 cp949 로 열면 비-cp949 문자에서 UnicodeEncodeError, #621)
+    json.dump(result, open(os.path.join(out_dir, f"{stem}.json"), "w", encoding="utf-8"),
+              ensure_ascii=False, indent=2)
     return result
 
 
 def main():
+    # Windows 콘솔(cp949 등)에서 한국어·em-dash(—) 출력이 UnicodeEncodeError 로 죽지 않도록
+    # stdout/stderr 를 utf-8 로 강제한다(#621). 리다이렉트/비-TTY 등으로 실패하면 무시.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser()
     ap.add_argument("pptx")
     ap.add_argument("--tokens", help="필수 토큰 파일(1줄 1토큰). 미지정 시 콘텐츠 대조 생략")
@@ -407,6 +541,9 @@ def main():
           f"kr_wide_spacing={c['kr_wide_spacing']} kr_unsafe_font={c['kr_unsafe_font']}")
     print(f"[ADVISORY/스타일] punct_overuse={c['style_punct_overuse']} "
           f"edge_bar_overuse={c['style_edge_bar_overuse']} v_center_cram={c['style_v_center_cram']}")
+    print(f"[ADVISORY/wrap] text_wrap_overflow={c['text_wrap_overflow']}")
+    print(f"[ADVISORY/render] render_unavailable={c['render_unavailable']} "
+          f"(렌더 도구 부재 시 OCR·이미지 빈슬라이드 검사 생략 — HARD GATE 비차단)")
     for o in r["issues"]["out_of_bounds"]:
         print(f"  [OOB] S{o['slide']}: {', '.join(o['over'])}  '{o['text']}'")
     for o in r["issues"]["ocr_low_yield"]:
@@ -424,6 +561,11 @@ def main():
         print(f"  [스타일] 좌측 액센트 바 {c['style_edge_bar_overuse']}개(S{_sl}) — 남발 의심, 강조 1~2곳만 남기기")
     for o in r["issues"]["style_v_center_cram"]:
         print(f"  [스타일] S{o['slide']}: 콘텐츠가 수직 중앙에 몰림(높이 {o['h_ratio']}H) — 3존 리듬(헤더/콘텐츠/푸터)으로 재배치")
+    for o in r["issues"]["text_wrap_overflow"]:
+        print(f"  [wrap] S{o['slide']}: {o['naive_lines']}문단→{o['est_lines']}줄 추정, "
+              f"필요 {o['needed_in']}in > 박스 {o['box_h_in']}in  '{o['text']}' — 폭 부족 래핑 오버플로 의심(#413)")
+    for o in r["issues"]["render_unavailable"]:
+        print(f"  [render] {o['note']}")
     print("HARD GATE:", "PASS" if r["hard_gate_pass"] else "FAIL")
     sys.exit(0 if r["hard_gate_pass"] else 1)
 

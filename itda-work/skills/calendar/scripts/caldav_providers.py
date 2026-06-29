@@ -49,6 +49,26 @@ def resolve_provider_name(name: str) -> str:
     return PROVIDER_ALIASES.get(name, name)
 
 
+def supported_provider_names() -> list[str]:
+    """Canonical names of providers this skill can serve (track 1 + custom).
+
+    For user-facing messages. Excludes OAuth/iCal-track providers
+    (google/outlook/kakao) which are not implemented.
+    """
+    return list(PROVIDERS.keys()) + ["custom"]
+
+
+def is_supported_provider(name: str) -> bool:
+    """True if ``name`` is a known provider, an alias, or 'custom'.
+
+    Distinguishes an unsupported provider (e.g. 'google' — OAuth track,
+    no env vars exist) from a supported-but-unconfigured one (e.g. 'icloud'
+    with missing credentials).
+    """
+    canonical = resolve_provider_name(name)
+    return canonical in PROVIDERS or canonical == "custom"
+
+
 # ---------------------------------------------------------------------------
 # env scanning (suffix-based multi-account, identical rules to itda-email)
 # ---------------------------------------------------------------------------

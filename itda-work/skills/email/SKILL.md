@@ -10,9 +10,9 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.24.1"
+  version: "0.25.0"
   created_at: "2026-03-18"
-  updated_at: "2026-06-18"
+  updated_at: "2026-06-29"
   tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references"
 ---
 
@@ -77,6 +77,10 @@ python3 scripts/send_email.py --provider gmail \
   --to a@example.com --subject "HTML" --body "<h1>Hi</h1>" \
   --cc cc@example.com --bcc bcc@example.com --html --attach report.pdf
 
+# 발신자 표시 이름 (From 헤더 display name)
+python3 scripts/send_email.py --provider naver \
+  --to a@example.com --subject "안내" --body "본문" --from-name "현우테크 김민수"
+
 # iCloud (587 STARTTLS 직행, 465 시도 없음)
 python3 scripts/send_email.py --provider icloud \
   --to recipient@example.com --subject "Hello" --body "본문"
@@ -91,6 +95,7 @@ Arguments:
 - `--to`: 수신자 (필수). 쉼표로 복수 수신자 가능 (`"a@x.com,b@x.com"`)
 - `--subject` / `--body`: 제목 / 본문 (필수)
 - `--cc` / `--bcc`: 참조 / 숨은참조 (선택, bcc는 헤더 미포함)
+- `--from-name`: 발신자 표시 이름 (From 헤더 display name, 선택). 예: `"현우테크 김민수"` → `현우테크 김민수 <addr>` (RFC 5322 `formataddr`, 한국어는 RFC 2047 자동 인코딩). 미지정 시 계정 이메일 주소만 표시 (하위호환)
 - `--in-reply-to` / `--references`: 회신 스레드 헤더 (선택). `reply_context.py` 출력의 `reply_headers`를 그대로 넘기면 받는 클라이언트가 같은 대화로 묶는다
 - `--html`: HTML 전송 (플래그)
 - `--attach FILE`: 첨부 (복수 지정 가능)

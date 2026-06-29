@@ -653,6 +653,7 @@ def main() -> None:
                 fetch_pipeline_result = None
             else:
                 # 일반 URL: fetch_pipeline orchestrator 사용 (REQ-2, WI-2)
+                from exceptions import StaticFetchEscalate  # type: ignore[import]
                 try:
                     _fp = _load_module("fetch_pipeline")
                     _ws = _load_module("web_selectors")
@@ -667,10 +668,26 @@ def main() -> None:
                     )
                     html = fetch_pipeline_result.html
                     final_url = fetch_pipeline_result.final_url or args.url
+                except StaticFetchEscalate as _esc:
+                    # P0: WAF 차단 소진 → exit 4 (web_browse 에스컬레이트). broad fallback
+                    # 보다 먼저 catch — fetch_dynamic 의 bot-challenge exit 4 와 동일 의미.
+                    print(_esc.escalation_message(), file=sys.stderr)
+                    sys.exit(4)
                 except Exception as _fp_err:
                     # fetch_pipeline 미사용 환경 폴백: 기존 fetch_html 직접 호출
                     _fh = _load_module("fetch_html")
                     fetch_result = _fh.fetch_url(args.url)
+                    if fetch_result.get("must_escalate"):
+                        # 폴백 경로에서도 정적 give-up 을 exit 4 로 surface (P0).
+                        print(
+                            StaticFetchEscalate(
+                                url=args.url,
+                                stop_reason=str(fetch_result.get("stop_reason", "")),
+                                untried_routes=list(fetch_result.get("untried_routes") or []),
+                            ).escalation_message(),
+                            file=sys.stderr,
+                        )
+                        sys.exit(4)
                     if not fetch_result.get("content") or fetch_result.get("error"):
                         error_msg = fetch_result.get("error", "empty response")
                         print(f"Error fetching URL: {error_msg}", file=sys.stderr)

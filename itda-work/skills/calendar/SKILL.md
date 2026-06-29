@@ -10,9 +10,9 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.2.1"
+  version: "0.2.2"
   created_at: "2026-06-01"
-  updated_at: "2026-06-01"
+  updated_at: "2026-06-29"
   tags: "calendar, caldav, icloud, apple, naver, event, schedule, recurrence, rrule, valarm, alarm, reminder, timezone, etag, ical, icalendar, multi-account, custom-caldav"
 ---
 
@@ -52,6 +52,8 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 > **키 주입 (Claude 실행 규칙):** 자격증명이 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 위 변수가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `ICLOUD_EMAIL=<값> ICLOUD_APP_PASSWORD=<값> python3 scripts/list_events.py ...`. 지침에도 없으면 GUIDE의 "처음 설정하기"를 안내한다.
 
 **런타임 규칙 — 자격증명 누락 시**: 스크립트가 `{"status":"error","error":"credentials_missing"}` (exit 1) 또는 다계정 모호 시 `account_required` (exit 2)를 반환한다. 이때 Claude는 **해당 provider의 환경변수 이름을 사용자에게 알리고, 발급 절차는 `GUIDE.md`를 참조하도록 안내**한다(1순위는 "Claude 지침"·`CLAUDE.md`, 개발자는 `.env`·셸 환경변수도 가능).
+
+**런타임 규칙 — 미지원 provider 요청 시**: 지원 목록(`icloud`·`naver`·`custom`)에 없는 provider(예: `google`·`outlook`·`kakao`)는 `{"status":"error","error":"unsupported_provider"}` (exit 1)를 반환한다 — 채울 환경변수 자체가 없으므로 `credentials_missing`과 **구분**된다. 이때 Claude는 환경변수 설정을 권하지 말고, **지원 목록을 안내하고 구글·아웃룩·카카오는 OAuth/iCal 별도 트랙(미지원)임을 설명**한다. `detail`에 지원 목록이 함께 담긴다.
 
 ---
 
@@ -145,7 +147,7 @@ python3 scripts/delete_event.py --provider icloud --calendar "강의 일정" --u
 | Code | Meaning |
 |------|---------|
 | 0 | 성공 (또는 `confirm_required` 안내) |
-| 1 | 에러 (credentials_missing, auth_failed, calendar_not_found, event_not_found, network_error 등) |
+| 1 | 에러 (unsupported_provider, credentials_missing, auth_failed, calendar_not_found, event_not_found, network_error 등) |
 | 2 | 다계정 모호(`account_required`) 또는 ETag 충돌(`etag_conflict`) |
 
 `check_env.py`는 항상 exit 0 (정보성 보고).

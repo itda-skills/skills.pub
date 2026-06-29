@@ -1,5 +1,15 @@
 # Changelog — itda-email
 
+## [0.25.0] — 2026-06-29
+
+### New Features
+
+- **`send_email.py --from-name` — From 헤더 발신자 표시 이름(display name)**: `--from-name "현우테크 김민수"` 지정 시 From 헤더가 `현우테크 김민수 <addr>` 형태(RFC 5322 `email.utils.formataddr`)로 발송돼, 수신자 메일함에 이메일 주소 대신 발신자 이름이 표시된다. 한국어 이름은 RFC 2047로 자동 인코딩(수신측 디코딩 복원). 미지정 시 기존처럼 계정 이메일 주소만 — **하위호환**(기존 동작·테스트 회귀 0). `send_email.py` 단독 적용(`email_compose`·`save_draft` 경로는 비목표). (#678)
+
+### Tests
+
+- 신규 단위 3개 (`test_send_email.py`): `--from-name` ASCII display name / 한국어 display name RFC 2047 복원 / 미지정 시 주소-only 하위호환. email 스킬 누적 117 passed / 0 failed.
+
 ## [0.24.1] — 2026-06-18
 
 ### Docs

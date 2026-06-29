@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.20.3",
+    "version": "8.21.0",
     "language": "ko"
   },
   "plugins": [
@@ -33,7 +33,7 @@
     {
       "name": "itda-data",
       "source": "./itda-data",
-      "description": "데이터 분석 방법 추천·정직 보고서 생성 스킬팩 — 5관문 통계 양심 게이트"
+      "description": "엉망 CSV 정돈 + 한국어 질문을 실제 계산으로 답하는 데이터 양심 스킬팩(data-prep·data-ask)"
     },
     {
       "name": "itda-cs",

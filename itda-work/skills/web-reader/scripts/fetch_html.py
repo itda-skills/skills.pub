@@ -12,8 +12,9 @@ Usage:
 
 Exit codes:
     0 - Success
-    1 - Network or HTTP error
-    2 - Invalid arguments
+    1 - Network or HTTP error (404 / timeout / connection — terminal)
+    2 - Invalid arguments or SSRF-blocked URL
+    4 - WAF/challenge grid exhausted -> escalate (must_escalate; see failure gate)
 """
 from __future__ import annotations
 
@@ -441,6 +442,13 @@ def _error_result(
     trace: list[FetchAttempt] | None = None,
     challenge: object | None = None,
     profile_used: str | None = None,
+    stop_reason: str | None = None,
+    must_escalate: bool | None = None,
+    untried_routes: list[str] | None = None,
+    grid_exhausted: bool | None = None,
+    executed_attempts: int | None = None,
+    content_is_challenge: bool | None = None,
+    content_available: bool | None = None,
 ) -> dict[str, object]:
     result: dict[str, object] = {
         "content": content,
@@ -456,12 +464,87 @@ def _error_result(
         result["challenge"] = challenge.to_dict()
     if profile_used:
         result["waf_profile"] = profile_used
+    # Failure-gate contract (P0): only present when explicitly set, so existing
+    # consumers that read only content/error stay unaffected (additive).
+    for _key, _val in (
+        ("stop_reason", stop_reason),
+        ("must_escalate", must_escalate),
+        ("untried_routes", untried_routes),
+        ("grid_exhausted", grid_exhausted),
+        ("executed_attempts", executed_attempts),
+        ("content_is_challenge", content_is_challenge),
+        ("content_available", content_available),
+    ):
+        if _val is not None:
+            result[_key] = _val
     return result
 
 
 def _is_escalation_candidate(status_code: int, verdict: str) -> bool:
-    """Escalate WAF-like failures, but keep ordinary 404/400 behavior stable."""
-    return verdict == "challenge" or status_code in {401, 403, 429}
+    """Run the WAF grid only for failures a different TLS/transform can plausibly
+    clear: a detected challenge or a 403 forbidden wall.
+
+    401/407 (auth) and 429 (rate-limit) are VETOED FIRST — even when the body
+    also carries a challenge marker — because a tight retry grid cannot fix an
+    auth wall and only worsens a rate-limit (insane-search: 'do not hammer').
+    The status veto must precede the verdict check so a 429/401 challenge page
+    does not slip into the grid. They fall through to the 4xx give-up branch
+    where _classify_giveup (also status-first) tags them auth_required /
+    rate_limited with must_escalate=False (no browser escalation).
+    """
+    if status_code in {401, 407, 429}:
+        return False
+    return verdict == "challenge" or status_code == 403
+
+
+# Routes the static curl path structurally cannot run itself. Surfaced on give-up
+# so the agent/orchestrator escalates instead of declaring the site unreachable.
+_BROWSER_ESCALATION_ROUTES = [
+    "Lightpanda 동적 렌더: extract_content.py --url <URL> --dynamic-only",
+    "hyve web_browse MCP (anti-bot stealth / 상호작용): \"hyve web_browse 로 가져와줘\"",
+]
+
+
+def _classify_giveup(
+    status_code: int, verdict: str, *, grid_exhausted: bool
+) -> dict[str, object]:
+    """Classify a give-up into a machine-readable failure-gate contract (P0).
+
+    Returns {stop_reason, must_escalate, untried_routes}. The status taxonomy is
+    computed HERE (not by rewriting the v1 validator) so 429/401/404 are not
+    mistaken for "escalate to a browser" — a real browser cannot fix a
+    rate-limit, an auth wall, or a missing page. Only a WAF challenge or a 403
+    forbidden wall escalates. Mirrors upstream insane-search's TERMINAL vs
+    escalation split without touching challenge_validators.
+    """
+    sc = int(status_code or 0)
+    if sc == 429:
+        return {
+            "stop_reason": "rate_limited",
+            "must_escalate": False,
+            "untried_routes": [
+                "rate-limited (429) — 몇 초 백오프 후 재시도; 다른 시간대 또는 hyve web_browse 가 풀 수 있음. 격자를 두드리지 말 것",
+            ],
+        }
+    if sc in (401, 407):
+        return {"stop_reason": "auth_required", "must_escalate": False, "untried_routes": []}
+    if sc in (404, 410):
+        return {"stop_reason": "not_found", "must_escalate": False, "untried_routes": []}
+    if verdict == "challenge" or sc == 403:
+        routes = list(_BROWSER_ESCALATION_ROUTES)
+        if not grid_exhausted:
+            routes.append(
+                "정적 curl 격자가 budget-capped 됨 — 전수 시도하려면 --max-attempts 를 높여 재실행"
+            )
+        return {
+            "stop_reason": "challenge" if verdict == "challenge" else "forbidden",
+            "must_escalate": True,
+            "untried_routes": routes,
+        }
+    # Anything else (plain 4xx like 400/405, or an unclassified block). We do NOT
+    # escalate clear client errors to a browser — only verdict=="challenge"/403
+    # above does. Terminal-but-honest.
+    return {"stop_reason": "blocked", "must_escalate": False, "untried_routes": []}
 
 
 # ---------------------------------------------------------------------------
@@ -692,6 +775,9 @@ def fetch_url(
                 return grid_result
 
             if 400 <= status_code < 500:
+                _g = _classify_giveup(
+                    int(status_code), validation.verdict.value, grid_exhausted=True
+                )
                 return _error_result(
                     url=str(final_url),
                     status_code=int(status_code),
@@ -699,8 +785,14 @@ def fetch_url(
                     size=len(content_bytes),
                     trace=trace,
                     challenge=validation,
+                    stop_reason=_g["stop_reason"],
+                    must_escalate=_g["must_escalate"],
+                    untried_routes=_g["untried_routes"],
                 )
 
+            _g = _classify_giveup(
+                int(status_code), validation.verdict.value, grid_exhausted=True
+            )
             return _error_result(
                 url=str(final_url),
                 status_code=int(status_code),
@@ -710,6 +802,11 @@ def fetch_url(
                 content=decoded,
                 trace=trace,
                 challenge=validation,
+                stop_reason=_g["stop_reason"],
+                must_escalate=_g["must_escalate"],
+                untried_routes=_g["untried_routes"],
+                content_is_challenge=True,
+                content_available=False,
             )
 
         except (cffi.exceptions.ConnectionError, cffi.exceptions.Timeout) as exc:
@@ -743,6 +840,8 @@ def fetch_url(
         status_code=0,
         error=str(last_error),
         trace=trace,
+        stop_reason="network_error",
+        must_escalate=False,
     )
 
 
@@ -978,6 +1077,27 @@ def _escalate_grid(
                             return result
                     _jitter_between_grid_attempts()
 
+    # Failure-gate contract (P0): classify WHY we gave up so the caller escalates
+    # (challenge/forbidden) vs backs off (429) vs stops (auth/404) — instead of
+    # collapsing every give-up to a free-text error. Classify on the BEST/LATEST
+    # terminal result (a mid-grid 429/auth/404 must not be mislabelled by the
+    # first probe's status — Codex review #2). grid_exhausted is honest: True
+    # only if the grid drained before the budget cap.
+    _first_status = int(getattr(first_response, "status_code", 0) or 0)
+    if best_result is not None:
+        _giveup_status = int(best_result.get("status_code") or _first_status)
+        _giveup_verdict = (
+            best_validation.verdict.value if best_validation is not None else "challenge"
+        )
+    else:
+        _giveup_status = _first_status
+        _giveup_verdict = "challenge"
+    _grid_drained = attempts_used < max_attempts
+    _gate = _classify_giveup(_giveup_status, _giveup_verdict, grid_exhausted=_grid_drained)
+    # Only a genuine challenge/forbidden body is a 'challenge page'; a mid-grid
+    # 429/auth/404 retained body is not (avoids the misleading content flag).
+    _is_challenge_body = _gate["stop_reason"] in ("challenge", "forbidden")
+
     if best_result is not None:
         best_result["trace"] = [item.to_dict() for item in trace]
         best_result["waf_profile"] = profile_used or best_result.get("waf_profile", "")
@@ -986,11 +1106,23 @@ def _escalate_grid(
                 f"{best_result['error']}; curl_cffi grid exhausted. "
                 "JS challenge may require Lightpanda --dynamic-only or hyve MCP web_browse."
             )
+        best_result.update(
+            {
+                "stop_reason": _gate["stop_reason"],
+                "must_escalate": _gate["must_escalate"],
+                "untried_routes": _gate["untried_routes"],
+                "grid_exhausted": _grid_drained,
+                "executed_attempts": attempts_used,
+                # Retained body is the WAF/block page, never usable article content.
+                "content_is_challenge": _is_challenge_body,
+                "content_available": False,
+            }
+        )
         return best_result
 
     return _error_result(
         url=original_url,
-        status_code=int(getattr(first_response, "status_code", 0) or 0),
+        status_code=_giveup_status,
         error=(
             "curl_cffi grid exhausted without a usable response. "
             "JS challenge may require Lightpanda --dynamic-only or hyve MCP web_browse."
@@ -1000,6 +1132,13 @@ def _escalate_grid(
         trace=trace,
         challenge=best_validation,
         profile_used=profile_used,
+        stop_reason=_gate["stop_reason"],
+        must_escalate=_gate["must_escalate"],
+        untried_routes=_gate["untried_routes"],
+        grid_exhausted=_grid_drained,
+        executed_attempts=attempts_used,
+        content_is_challenge=_is_challenge_body,
+        content_available=False,
     )
 
 
@@ -1088,7 +1227,9 @@ def main(argv: list[str] | None = None) -> int:
     """CLI entry point.
 
     Returns:
-        0 on success, 1 on network/HTTP error, 2 on invalid args.
+        0 on success, 1 on terminal network/HTTP error (404/timeout), 2 on
+        invalid args/SSRF, 4 on WAF/challenge grid exhaustion (must_escalate ->
+        escalate to web-automation/web_browse; do NOT declare unreachable).
     """
     args = _parse_args(argv)
 
@@ -1152,6 +1293,25 @@ def main(argv: list[str] | None = None) -> int:
     if args.trace and "trace" in result:
         print("Trace:", file=sys.stderr)
         print(json.dumps(result["trace"], ensure_ascii=False, indent=2), file=sys.stderr)
+
+    # Failure-gate (P0): a WAF/challenge give-up is NOT 'unreachable' — exit 4
+    # so a standalone-CLI agent escalates to web-automation/web_browse (same exit
+    # code meaning as fetch_dynamic's bot-challenge). 404/network/timeout stay 1.
+    if result.get("must_escalate"):
+        print(
+            "⛔ NOT EXHAUSTED — 정적 curl 한계. 사이트를 '도달 불가'로 선언하지 마세요.",
+            file=sys.stderr,
+        )
+        print(
+            f"   stop_reason={result.get('stop_reason')} "
+            f"grid_exhausted={result.get('grid_exhausted')} "
+            f"attempts={result.get('executed_attempts')}",
+            file=sys.stderr,
+        )
+        print("   다음 경로로 에스컬레이트:", file=sys.stderr)
+        for _route in (result.get("untried_routes") or []):
+            print(f"     • {_route}", file=sys.stderr)
+        return 4
 
     if "error" in result:
         print(f"Error: {result['error']}", file=sys.stderr)

@@ -24,7 +24,7 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formatdate
+from email.utils import formataddr, formatdate
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -249,6 +249,8 @@ def main() -> None:
     parser.add_argument("--body", required=True)
     parser.add_argument("--cc", default="")
     parser.add_argument("--bcc", default="")
+    parser.add_argument("--from-name", dest="from_name", default=None,
+                        help="발신자 표시 이름 (From 헤더 display name). 예: '현우테크 김민수'. 미지정 시 계정 이메일만 표시.")
     parser.add_argument("--in-reply-to", dest="in_reply_to", default=None,
                         help="회신 대상 Message-ID (reply_context.py의 reply_headers.in_reply_to)")
     parser.add_argument("--references", default=None,
@@ -321,7 +323,7 @@ def main() -> None:
     else:
         msg = MIMEText(args.body, mime_type, "utf-8")
 
-    msg["From"] = provider["email"]
+    msg["From"] = formataddr((args.from_name, provider["email"])) if args.from_name else provider["email"]
     msg["To"] = args.to  # 원본 문자열 유지 (RFC 5322)
     msg["Subject"] = args.subject
     msg["Date"] = formatdate(localtime=False)

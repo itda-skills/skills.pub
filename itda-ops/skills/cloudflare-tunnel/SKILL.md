@@ -87,7 +87,7 @@ py -3 scripts/tunnel_policy.py plan state.json --tunnel-id <TUNNEL_UUID>
 
 ### 2) 터널 생성·적용 (cloudflared 런북)
 
-> v0.1.0 은 정책 검증·계획 산출을 자동화하고, 아래 cloudflared 단계는 에이전트가 계획에 따라 실행합니다(완전 apply 자동화는 후속 버전).
+> v0.1.0 은 정책 검증·계획 산출을 자동화하고, 아래 cloudflared 단계는 에이전트가 계획에 따라 실행합니다(완전 apply 자동화는 미도입 — #613 NOT_PLANNED).
 
 ```bash
 # (a) 최초 1회 로그인 — 브라우저로 zone 인증, cert.pem 생성
@@ -153,9 +153,9 @@ cloudflare-tunnel/
 
 ## 한계 / 로드맵
 
-- v0.1.0: 정책 검증·계획 산출 자동화 + cloudflared 수동 런북. **완전 apply 자동화**(config.yml 생성·DNS·Access·service install 일괄, reconcile)는 후속 커밋(#545).
+- v0.1.0: 정책 검증·계획 산출 자동화 + cloudflared 수동 런북 — 이 스킬의 의도된 종착점. **완전 apply 자동화**(config.yml 생성·DNS·Access·service install 일괄, reconcile)는 도입하지 않습니다(SPEC-OPS-TUNNEL-002 #613 NOT_PLANNED — RDP는 별도 터널 경로로 운영).
 - 라우터 포트포워딩·호스트 방화벽은 다루지 않습니다(터널은 불필요).
-- 직접 inbound(터널 밖) 동적 DNS는 `cloudflare-ddns` 스킬(#546).
+- 직접 inbound(터널 밖) 동적 DNS(`cloudflare-ddns`, #546)는 다루지 않습니다(NOT_PLANNED).
 - Windows 경로는 CI(Windows 러너) + 로컬 실측으로 검증합니다.
 
 ## 참고

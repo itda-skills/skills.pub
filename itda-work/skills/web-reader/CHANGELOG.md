@@ -1,5 +1,26 @@
 # Changelog — itda-web-reader
 
+## [6.2.0] — 2026-06-25
+
+### New Features
+
+- **정적 curl 경로 실패 게이트(R6식 machine-enforced escalation contract)** — `fetch_html.py`의 WAF/challenge 격자 소진이 더 이상 free-text `error` + exit 1로 뭉개지지 않는다. 이제 결과 dict에 `must_escalate` / `stop_reason` / `untried_routes` / `grid_exhausted` / `executed_attempts` / `content_is_challenge` / `content_available`를 담고, CLI는 `⛔ NOT EXHAUSTED` stderr 배너 + **exit 4**를 낸다(동적 경로 `fetch_dynamic`의 bot-challenge exit 4와 동일 의미). 차단 사이트를 잘못 '도달 불가'로 선언하던 실패 모드를 닫는다(upstream fivetaku insane-search R6 패턴 이식).
+- **Give-up status taxonomy** (`fetch_html._classify_giveup`) — v1 validator를 재작성하지 않고 give-up 지점에서 분류한다(blast radius 최소화): `challenge`/`403`→escalate(must_escalate=True), `429`→`rate_limited`(백오프, escalate ✗), `401/407`→`auth_required`, `404/410`→`not_found`, 네트워크→`network_error`. 브라우저로 가도 무익한 실패(rate-limit·auth·404)는 escalate하지 않는다.
+- **정직한 전수성 신호** — `grid_exhausted`는 격자가 budget cap(`--max-attempts`) 전에 자연 소진된 경우에만 True. capped면 `untried_routes`에 "--max-attempts 높여 재실행" 안내를 추가한다.
+
+### Changed
+
+- **전파**: `fetch_pipeline._do_static_fetch`가 must_escalate 신호 시 `StaticFetchEscalate`(신규, `exceptions.py`)를 raise하고, `extract_content`가 broad `ContentExtractionError` fallback보다 **먼저** catch해 `exit 4` + 에스컬레이션 안내를 surface한다. fetch_pipeline 미사용 폴백 경로도 동일 처리. 에이전트가 프로즈를 추측할 필요 없이 결정론적으로 web_browse로 라우팅된다.
+- `SKILL.md`: `fetch_html.py`/`extract_content.py` exit-code 표에 exit 4(정적 WAF 격자 소진) + 실패 게이트 계약 문서화.
+
+### Backward Compatibility
+
+- **Additive** — dict 게이트 필드는 명시적으로 설정될 때만 존재(기존 content/error 소비자 무영향). exit-code 변경은 **WAF/challenge 소진 케이스로만 좁혀짐**: 404·network·timeout은 exit 1 유지, 정상 fetch는 exit 0 유지("정상 static ≠ 4" 불변식 보존). 전체 회귀 스위트 573 passed, 5 skipped(신규 17 테스트 포함, 회귀 0).
+
+### Notes
+
+- 적대적 Codex 리뷰(blocker 2 + major 5) 반영: dict-primary 전파(exit 코드 아님)·grid budget-vs-exhausted 정직성·429/401 비-escalate·SSRF 계약 분리·best_result challenge HTML을 본문으로 surface 금지(`content_available=False`). 후속(미반영): validator v2 비종결 `SUSPECT_OK`(애매 응답에서 격자 계속 탐색)는 별도 PR로 분리.
+
 ## [6.1.0] — 2026-06-20
 
 ### New Features

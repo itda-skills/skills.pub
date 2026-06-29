@@ -3,6 +3,15 @@
 All notable changes to the `calendar` skill are documented here.
 This skill follows the itda-skills SPEC workflow (SPEC-CALENDAR-001).
 
+## [0.2.2] - 2026-06-29
+
+### Changed
+- **미지원 provider 분기**(#682): 지원하지 않는 provider(`google`·`outlook`·`kakao` 등 OAuth/iCal 트랙)를 요청하면 이제 `unsupported_provider`(exit 1)를 반환하고 `detail`에 지원 목록(`icloud`·`naver`·`custom`)을 담는다. 기존에는 `credentials_missing`("not configured, set its env vars")으로 빠져 "환경변수만 채우면 된다"는 오해를 줬다(미지원 provider는 채울 변수 자체가 없음). 지원하지만 **미설정**인 provider는 기존대로 `credentials_missing`을 유지한다(계약 경계).
+- `caldav_providers`에 `is_supported_provider()`·`supported_provider_names()` 추가, `cli_common.resolve_provider_or_exit`가 자격증명 조회 전 미지원 여부를 먼저 분기.
+
+### Tests
+- 단위(`is_supported_provider`·`supported_provider_names`) + 배포형(google→unsupported_provider, bogus→unsupported_provider, 미설정 naver→credentials_missing) 추가. **57 passed, 0 skipped**.
+
 ## [0.2.1] - 2026-06-01
 
 ### Performance

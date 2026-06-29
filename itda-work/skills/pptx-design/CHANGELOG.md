@@ -2,6 +2,34 @@
 
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.7.1] — 2026-06-26
+
+`verify.py`가 **렌더 도구(LibreOffice/poppler) 부재 시에도 HARD GATE를 정상 판정**하도록 견고화합니다([#621](https://github.com/itda-skills/hyve/issues/621)). 그동안 렌더 실패가 `blank_slide`(하드게이트 항목)로 기록돼, `soffice` 없는 환경에서 **깨끗한 덱조차 거짓 FAIL** 했습니다(PR #614 Windows 검증 중 표면화).
+
+### Fixed
+
+- **렌더 부재를 비차단 advisory로 분리** — 렌더(soffice→PDF→JPG) 실패를 `blank_slide`가 아니라 신규 `render_unavailable`(비차단)로 기록. 지오메트리·콘텐츠 하드게이트는 렌더와 무관하므로 도구가 없어도 정상 판정되고, 렌더 의존 검사(OCR 층 C + 이미지 기반 빈슬라이드 탐지)만 우아하게 생략됩니다. **실제 빈슬라이드(렌더 성공 + 단색)는 여전히 `blank_slide`로 차단**(회귀 가드).
+- **JSON 산출 utf-8 고정** — 결과 JSON을 `encoding="utf-8"`로 기록. Windows 기본 cp949로 열려 비-cp949 문자(em-dash 등)에서 `UnicodeEncodeError`가 나던 잠재 버그 해소.
+- **CLI stdout utf-8 강제** — `main()`이 Windows 콘솔(cp949)에서 한국어·em-dash 출력에 죽지 않도록 stdout/stderr를 utf-8로 reconfigure(실패 시 무시).
+
+### Verified
+
+- `test_verify.py` 14건 PASS(신규 2건: 렌더 부재 비차단 + 실제 빈슬라이드 차단 회귀). soffice 미설치 Windows에서 기존 거짓 FAIL 3건이 PASS로 전환. CLI 스모크 exit 0(soffice 없이 `HARD GATE: PASS`).
+
+## [0.7.0] — 2026-06-26
+
+`verify.py`에 **wrap 유발 오버플로 advisory** 검출을 추가합니다([#413](https://github.com/itda-skills/hyve/issues/413)). PowerPoint `view_issues`의 L1 휴리스틱(문단수×폰트×1.2)이 놓치던 — 긴 단일 문단이 좁은 박스에서 래핑돼 박스 높이를 넘는 — 오버플로를, Office/COM 없이 크로스플랫폼으로 1차 포착합니다.
+
+### Added
+
+- **wrap 유발 오버플로 advisory(`text_wrap_overflow`)** — 문자 클래스 기반 em 폭 근사(폰트 비의존·결정론)로 폭 보정 줄 수를 추정해 `needed_height > box`를 적발. 신호 조건은 `needed > box×1.05 AND 보정 줄 수 > 문단 수`(= naive 문단수로는 통과하나 wrap으로 넘침 = #413 사각지대만 가둠). `SHAPE_TO_FIT_TEXT`(python-pptx 텍스트박스 기본값)는 선언 높이를 침범하므로 검사 대상, `word_wrap=False`·`TEXT_TO_FIT_SHAPE`·배경 도형은 제외. **advisory — HARD GATE 산식 불변**(오탐이 덱 빌드를 깨지 않음).
+- 라이브 6종(정상 4 오탐 0 · 결함 2 정탐 — [#426](https://github.com/itda-skills/hyve/issues/426) 킥커 칩 wrap 재현 포함) + 단위 4종 검증.
+
+### Changed
+
+- **SKILL.md 관문4** — "자동 게이트는 [wrap을] 잡지 못하니 육안이 유일한 방어선"([#426]에서 자인)을, "`text_wrap_overflow` advisory가 1차 자동 포착 + orphan·미세 래핑은 육안 보강"으로 갱신.
+- **`view_issues` L1(COM) autosize parity 정합** — `PowerPointComEngine.View.cs`의 L1 오버플로 게이트를 `autoSize==0`(None 한정)에서 verify.py와 동일 기준(`TextToFitShape`=글자 축소만 제외, `TextFrame2.AutoSize`로 판정)으로 확장. PowerPoint 기본 `ShapeToFitText` 텍스트박스(생성 덱 대부분)의 wrap 오버플로가 이제 COM `view_issues`에서도 발화 — 기존엔 `text_wrap_overflow`(verify.py) advisory만 잡던 사각지대를 양 게이트가 함께 포착(진짜 1:1 parity). Windows COM 런타임 검증: wrap·naive 정탐 / good·shrink 오탐 0 / 단위 points(0.6in≈43pt) 확정 / 기존 L1 테스트(SPEC-DOTNET-018 Phase 4) 회귀 0.
+
 ## [0.6.1] — 2026-06-16
 
 갤러리 재현 프롬프트의 트리거를 결정적으로 만들고, GUIDE에서 디자인을 눈으로 확인할 길을 연다([#429](https://github.com/itda-skills/hyve/issues/429)). 문서 패치(생성·검증 로직 무변경).

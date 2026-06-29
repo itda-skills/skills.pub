@@ -63,6 +63,54 @@ class ContentExtractionError(Exception):
 
 
 # ---------------------------------------------------------------------------
+# 정적 fetch 실패 게이트 (P0) — WAF 차단 소진을 '도달 불가'와 구분해 에스컬레이션.
+# fetch_html.fetch_url() 가 must_escalate 를 신호하면 fetch_pipeline 이 이 예외를
+# raise 하고, extract_content 가 broad fallback 보다 먼저 catch → exit 4
+# (fetch_dynamic 의 bot-challenge exit 4 와 동일한 의미). 단순 네트워크/404 실패는
+# 이 예외를 쓰지 않고 기존대로 None → ContentExtractionError → exit 1 로 흐른다.
+# ---------------------------------------------------------------------------
+
+
+class StaticFetchEscalate(Exception):
+    """정적 curl 격자가 WAF/차단으로 소진됐고, 브라우저 경로로 에스컬레이트해야 함을 알린다.
+
+    Args:
+        url: 처리하던 URL.
+        stop_reason: 실패 분류 (challenge / forbidden 등 — fetch_html._classify_giveup).
+        untried_routes: 정적 경로가 못 하는 다음 단계(예: Lightpanda 동적, hyve web_browse MCP).
+    """
+
+    def __init__(
+        self,
+        *,
+        url: str,
+        stop_reason: str,
+        untried_routes: list[str],
+    ) -> None:
+        self.url = url
+        self.stop_reason = stop_reason
+        self.untried_routes = list(untried_routes)
+        super().__init__(str(self))
+
+    def escalation_message(self) -> str:
+        """에이전트가 다음 행동을 결정론적으로 고르도록 stderr 에 출력할 안내문."""
+        lines = [
+            f"[web-reader] 정적 curl 격자 소진(stop_reason={self.stop_reason}) — "
+            f"사이트를 '도달 불가'로 선언하지 마세요. {self.url}",
+            "Lightpanda/curl 로는 anti-bot 우회가 안 됩니다. 다음 경로로 에스컬레이트:",
+        ]
+        for route in self.untried_routes:
+            lines.append(f"  • {route}")
+        return "\n".join(lines)
+
+    def __str__(self) -> str:
+        return (
+            f"StaticFetchEscalate: {self.stop_reason} — {self.url} "
+            f"(untried: {', '.join(self.untried_routes) or '<none>'})"
+        )
+
+
+# ---------------------------------------------------------------------------
 # SPEC-WEBREADER-010 REQ-001: Selector 도메인 예외 계층
 # ContentExtractionError와 형제 관계 (상속 X) — selector 입력 오류는
 # 파이프라인 소진과 의미가 달라 별도 베이스로 분리.

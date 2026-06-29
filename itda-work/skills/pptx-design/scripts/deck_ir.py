@@ -113,6 +113,94 @@ def chart(eid: str, box: dict, *, kind: str, categories: list[str],
     return _el(eid, "chart", box, provenance, chart=spec)
 
 
+# ── Table style 프리셋 (SPEC-004 OQ-4 결정, #606) ─────────────────────────────
+# 정본(SSoT): 백엔드는 이 레지스트리를 미러(.NET TablePresets.cs)하거나 import 한다.
+# 값은 fmt 와 동일 의미 키(header_fill/header_fg/body_fill/body_fg/zebra)이며 색 스킴이다.
+# 셀 속성은 fill/글자색/볼드/크기/정렬/폰트만 지원(테두리 미지원) → 프리셋 = 색 스킴 + 헤더 볼드.
+TABLE_STYLE_PRESETS: dict[str, dict[str, str]] = {
+    "light": {"header_fill": "#F2F2F4", "header_fg": "#141413",
+              "body_fill": "#FFFFFF", "body_fg": "#141413", "zebra": "#F7F7F9"},
+    "dark": {"header_fill": "#2A2A33", "header_fg": "#F5F3EC",
+             "body_fill": "#17171C", "body_fg": "#E8E6DF", "zebra": "#1F1F26"},
+    "minimal": {},  # 색 없음 — 헤더 볼드만(백엔드가 1행 자동 볼드), body 기본.
+}
+
+
+def _normalize_style(style: str) -> str:
+    return style.strip().lower()
+
+
+def resolve_table_style(style: str | None, fmt: dict | None) -> dict | None:
+    """style 프리셋(베이스) + fmt(per-key override, fmt 우선) → 병합 fmt dict.
+
+    - style·fmt 모두 비면 None.
+    - style 만 있으면 프리셋 사본(minimal 은 빈 dict — '스타일 활성'을 뜻하는 non-None).
+    - 알 수 없는 style 이름은 ValueError(가능 목록 안내).
+
+    반환 dict 는 fmt 와 같은 의미 키(header_fill/header_fg/body_fill/body_fg/zebra +
+    align/font_size/head_font_size/font_name)이며, 각 백엔드가 자신의 셀 속성으로 매핑한다.
+    """
+    if style is None and not fmt:
+        return None
+    eff: dict[str, Any] = {}
+    if style is not None:
+        key = _normalize_style(style)
+        if key not in TABLE_STYLE_PRESETS:
+            raise ValueError(
+                f"알 수 없는 table style 프리셋: {style!r} "
+                f"(가능: {', '.join(TABLE_STYLE_PRESETS)})")
+        eff.update(TABLE_STYLE_PRESETS[key])
+    if fmt:
+        eff.update(fmt)  # fmt 키가 프리셋을 per-key override
+    return eff
+
+
+def table_cell_format_cmds(slide_index: int, table_index: int, n_rows: int,
+                           n_cols: int, *, style: str | None = None,
+                           fmt: dict | None = None) -> list[dict]:
+    """COM 백엔드(hyve-office ``set_table_cell_format``)용 셀 명령 리스트.
+
+    ``resolve_table_style`` 로 style+fmt 를 병합한 뒤 헤더(1행)/zebra(짝수행)/본문 규칙으로
+    셀별 props(``fill``/``font_color``/``font_bold``/``font_size``/``font_name``/``alignment``)를
+    만든다. OpenXML applier 와 동일 프리셋·동일 규칙 → 백엔드 간 동일 색. 스타일·색이 없으면 [].
+    """
+    eff = resolve_table_style(style, fmt)
+    if eff is None:
+        return []
+    align = eff.get("align")
+    font_name = eff.get("font_name")
+    body_size = eff.get("font_size")
+    head_size = eff.get("head_font_size", body_size)
+    cmds: list[dict] = []
+    for r in range(1, n_rows + 1):
+        is_h = r == 1
+        zebra = (not is_h) and (r % 2 == 0)
+        fill = (eff.get("header_fill") if is_h
+                else (eff.get("zebra") or eff.get("body_fill")) if zebra
+                else eff.get("body_fill"))
+        fg = eff.get("header_fg") if is_h else eff.get("body_fg")
+        size = head_size if is_h else body_size
+        for c in range(1, n_cols + 1):
+            props: dict[str, Any] = {}
+            if fill is not None:
+                props["fill"] = fill
+            if fg is not None:
+                props["font_color"] = fg
+            if is_h:
+                props["font_bold"] = True
+            if size is not None:
+                props["font_size"] = size
+            if font_name is not None:
+                props["font_name"] = font_name
+            if isinstance(align, list) and c - 1 < len(align):
+                props["alignment"] = align[c - 1]
+            if props:
+                cmds.append({"verb": "set_table_cell_format",
+                             "slide_index": slide_index, "table_index": table_index,
+                             "row": r, "col": c, "props": props})
+    return cmds
+
+
 def table(eid: str, box: dict, cells: list[list[str]], *, style: str | None = None,
           fmt: dict | None = None, provenance: str | None = None) -> dict:
     """cells 가 권위(rows/cols 는 백엔드에서 파생).
@@ -122,8 +210,13 @@ def table(eid: str, box: dict, cells: list[list[str]], *, style: str | None = No
         'align': ['left'|'center'|'right', ...],                   # 열별
         'font_size','head_font_size','font_name'
     } — applier 가 헤더(1행)/zebra(짝수행)/본문 규칙으로 셀별 SetTableCellFormat 산출.
-    style 은 SPEC-004 OQ-4 예약(미적용).
+    style(#606, SPEC-004 OQ-4 결정) = 'light'|'dark'|'minimal' 프리셋(베이스 색 스킴).
+        fmt 키가 per-key override(fmt 우선). 정본 = TABLE_STYLE_PRESETS. 알 수 없는 이름은 ValueError.
     """
+    if style is not None and _normalize_style(style) not in TABLE_STYLE_PRESETS:
+        raise ValueError(
+            f"알 수 없는 table style 프리셋: {style!r} "
+            f"(가능: {', '.join(TABLE_STYLE_PRESETS)})")
     spec: dict[str, Any] = {"cells": cells}
     if style is not None:
         spec["style"] = style

@@ -2,6 +2,26 @@
 
 이 파일은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.4.0] — 2026-06-26
+
+### Added
+
+- §4.1 "디버그 플레이북 — 증상 → 관측 → 원인 → 처방" 추가 (#433/#597 codex refine 회고). WEHAGO
+  분개장 자가치유 실측에서 나온 11개 증상(G11 enable 크래시·G12 캡처 page 바인딩·drain race·drain
+  enable 재호출·조회 selector·분개장 메뉴 오매칭·process.exit 세션 누수·callRequired·골든 false
+  green·sabk0113 응답 연결·이미 로그인 idempotent)을 "관측 먼저 → 원인 → 처방" 표로 박제.
+  `.claude/rules/itda/skills/browser-automation-explore-first.md`(탐색·실측·관측 우선) 연계.
+
+## [0.3.3] — 2026-06-25
+
+### Fixed
+
+- `observe(type=screenshot)` 가 #217(SPEC-WEB-BROWSE-SCREENSHOT-001)로 이미 실구현됐음에도
+  R2 본문·함정표에 "미구현"으로 남아 있던 stale 표기를 교정했습니다. screenshot 은
+  `mode:"viewport(기본)|full|element"` + `output_path`(미지정=MCP image, 지정=디스크 저장 토큰-프리)로
+  사용하며, `mode:"full"` 은 무거운 SPA 에서 타임아웃 가능(#445)하므로 `viewport` 를 권장합니다.
+  `not_implemented` 정상 목록은 `interact` 의 `drag`/`fill_form` 만 남습니다. (#433 AC3)
+
 ## [0.2.3] — 2026-06-13
 
 ### Changed
