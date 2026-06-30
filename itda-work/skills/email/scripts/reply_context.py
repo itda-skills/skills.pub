@@ -40,14 +40,21 @@ from read_email import (  # noqa: E402
 DEFAULT_TOP_N = 5
 DEFAULT_BUDGET = 8000
 MIN_PER_ITEM = 400
+# 관련 메일 배치 FETCH 청크 크기 (#694): 후보 UID 를 한 번의 UID FETCH 로 묶되
+# 서버 명령 길이 안전선에서 분할. 청크당 왕복 1회 → 순차 N회 왕복 제거.
+RELATED_FETCH_BATCH = 500
 
-_HEADER_FETCH = "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID IN-REPLY-TO REFERENCES SUBJECT FROM TO DATE)])"
+# UID prefix 포함 (#694): 배치 FETCH 응답을 메시지별로 UID 매핑하려면 prefix 에
+# UID 가 필요하다. UID FETCH 응답은 RFC 3501 상 UID 를 포함해야 하나 명시 요청으로
+# 서버 차이를 방어한다. payload 는 여전히 HEADER.FIELDS 뿐이라 기존 파싱은 불변.
+_HEADER_FETCH = "(UID BODY.PEEK[HEADER.FIELDS (MESSAGE-ID IN-REPLY-TO REFERENCES SUBJECT FROM TO DATE)])"
 _FULL_FETCH = "(BODY.PEEK[])"
 
 _RE_PREFIX = re.compile(r"^\s*((re|fwd|fw|답장|회신|전달)\s*:\s*)+", re.I)
 _MSGID = re.compile(r"<[^>]+>")
 _TOKEN = re.compile(r"[0-9a-z가-힣]{2,}")
 _ADDR = re.compile(r"[\w.\-+]+@[\w.\-]+")
+_UID_RE = re.compile(rb"\bUID\s+(\d+)")
 _EPOCH = datetime.min.replace(tzinfo=timezone.utc)
 
 
@@ -191,6 +198,30 @@ def fetch_msg(imap, uid, spec):
     return email.message_from_bytes(raw) if raw else None
 
 
+def _batched(seq, n):
+    """리스트를 길이 n 청크로 나눠 순서대로 yield (서버 명령 길이 안전선)."""
+    for i in range(0, len(seq), n):
+        yield seq[i:i + n]
+
+
+def _iter_fetch_messages(fetch_data):
+    """배치 FETCH 응답에서 (uid_bytes|None, email.message) 쌍을 순서대로 yield (#694).
+
+    배치 응답은 메시지마다 ``(envelope_prefix, literal)`` 튜플 + 구분자 ``b')'`` 가
+    섞여 온다. 각 튜플의 prefix 에서 UID 를 뽑고 그 메시지의 literal 만 파싱한다
+    (다른 메시지 payload 와 절대 합치지 않는다 — fetch_msg 의 단건 join 과 다른 점).
+    """
+    for part in fetch_data or []:
+        if not isinstance(part, tuple):
+            continue
+        prefix, raw = part[0], part[1]
+        if not raw:
+            continue
+        m = _UID_RE.search(prefix or b"")
+        uid = m.group(1) if m else None
+        yield uid, email.message_from_bytes(raw)
+
+
 def find_sent_folder(imap) -> str | None:
     try:
         typ, data = imap.list()
@@ -243,7 +274,17 @@ def collect_thread(imap, folders, target_mid, refs_chain) -> dict:
 
 
 def collect_related(imap, folders, target_addr, exclude_mids) -> list:
-    """발신자 히스토리(FROM) 수집. [(folder_name, uid, summary)] (스레드 제외)."""
+    """상대방과의 왕복 메일을 배치 FETCH 로 수집 (#694). [(folder, uid, summary)].
+
+    방향 교정: 받은 폴더는 ``FROM target_addr``(상대→나), 보낸 폴더(Sent)는
+    ``TO target_addr``(나→상대)로 검색해 '그 사람과의 대화'를 정확히 잡는다.
+    (기존엔 Sent 도 FROM 이라 외부 상대 회신 시 내 과거 답장이 0건이었고,
+    self-target 시 보낸함 전체가 잡혀 블로업했다.)
+
+    성능: 후보 UID 전체를 한 번의 ``UID FETCH``(청크당 1회)로 묶어 받아, 1건마다
+    순차 FETCH 하던 N회 왕복을 제거한다. 의미·스코어링은 불변(전 히스토리 대상).
+    스레드(exclude_mids)는 제외한다.
+    """
     out, seen = [], set(exclude_mids)
     if not target_addr:
         return out
@@ -254,16 +295,22 @@ def collect_related(imap, folders, target_addr, exclude_mids) -> list:
             continue
         if typ != "OK":
             continue
-        for u in imap_search(imap, "FROM", target_addr):
-            m = fetch_msg(imap, u, _HEADER_FETCH)
-            if not m:
+        header = "TO" if folder == "Sent" else "FROM"
+        uids = imap_search(imap, header, target_addr)
+        for chunk in _batched(uids, RELATED_FETCH_BATCH):
+            try:
+                typ, fd = imap.uid("FETCH", b",".join(chunk), _HEADER_FETCH)
+            except Exception:
                 continue
-            s = msg_summary(m)
-            mid = s["message_id"]
-            if mid in seen:
+            if typ != "OK" or not fd:
                 continue
-            seen.add(mid)
-            out.append((folder, u, s))
+            for u, m in _iter_fetch_messages(fd):
+                s = msg_summary(m)
+                mid = s["message_id"]
+                if not mid or mid in seen:
+                    continue
+                seen.add(mid)
+                out.append((folder, u, s))
     return out
 
 

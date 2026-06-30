@@ -10,7 +10,7 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.25.0"
+  version: "0.27.0"
   created_at: "2026-03-18"
   updated_at: "2026-06-29"
   tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references"
@@ -124,6 +124,11 @@ python3 scripts/save_draft.py --provider naver \
 python3 scripts/save_draft.py --provider google --to a@x.com --cc b@x.com \
   --subject "보고서 초안" --body-html "<h1>안녕하세요</h1>" --attachment report.pdf
 
+# 회신 초안 — reply_context.py의 reply_headers를 넘기면 스레드로 묶인다 (이슈 #692)
+python3 scripts/save_draft.py --provider naver --to lee@daehan.co.kr \
+  --subject "Re: A-220 단가 회신" --body "..." \
+  --in-reply-to "<reply_headers.in_reply_to>" --references "<reply_headers.references>"
+
 # send_email 흐름에서 발송 대신 초안 저장
 python3 scripts/send_email.py --provider naver --to a@b.com --subject "..." --body "..." --save-as-draft
 
@@ -187,7 +192,8 @@ Output: 메시지 JSON 배열.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | IMAP sequence number |
+| `uid` | string\|null | **IMAP UID — 안정 식별자.** `reply_context.py`/`read_draft.py`/`send_draft.py`/`delete_draft.py`의 `--uid`에 그대로 넘긴다. 회신·초안 조작은 항상 이 값을 쓴다 |
+| `id` | string | IMAP **sequence number**(세션 한정·휘발). 표시·디버그용. **`--uid`에 넣지 말 것** — UID와 다르다(이슈 #692) |
 | `from` / `subject` / `date` | string | sanitize 처리됨 |
 | `message_id` / `in_reply_to` / `references` | string\|null | 스레딩 헤더(RFC 5322). `reply_context.py`가 스레드 재구성에 사용 |
 | `to` / `cc` / `bcc` | array | `[{"name":"…","addr":"…"}]` dict list. 빈 헤더는 `[]`. RFC 2047 디코딩됨 |
@@ -228,7 +234,7 @@ Output: 메시지 JSON 배열.
 
 ### Reply Context — 회신 컨텍스트 수집
 
-회신을 쓰기 전, 코드가 결정론적으로 **관련 이메일을 수집**해 토큰 효율적인 컨텍스트 묶음을 만든다. 대상 메일 1건(UID)만 주면 된다.
+회신을 쓰기 전, 코드가 결정론적으로 **관련 이메일을 수집**해 토큰 효율적인 컨텍스트 묶음을 만든다. 대상 메일 1건의 **UID**만 주면 된다 — 이 UID는 `read_email.py` 출력의 `uid` 필드다(`id`(sequence number) **아님**, 이슈 #692).
 
 ```bash
 python3 scripts/reply_context.py --provider icloud --uid 33027
@@ -252,9 +258,11 @@ Arguments:
 
 #### Claude 회신 워크플로우
 
-1. 회신 대상 식별 → `reply_context.py`로 묶음 1건 수집
+1. **회신 대상 식별** → `read_email.py`로 목록을 받아 대상 메일의 **`uid`** 확보. 받은편지함이 크면 `--count`로 페이징하지 말고 `--search`로 좁힌다 — 예: `--search 'FROM "lee@daehan.co.kr"'`, `--search 'SUBJECT "A-220"'`, `--search 'UNSEEN'`(IMAP SEARCH 문법, 대문자 키워드). 그 `uid`를 `reply_context.py --uid <uid>`에 넘겨 묶음 1건 수집
 2. **묶음을 읽고 중복 인용을 판단**하며 회신 초안 작성 — 코드는 중복 제거를 하지 않는다(시간순 raw 묶음). 누적 인용·중복은 Claude가 가려낸다
-3. `send_email.py --in-reply-to "<reply_headers.in_reply_to>" --references "<reply_headers.references>"`로 스레드에 꽂아 발송 (또는 `save_draft.py`로 초안 검토 후 발송)
+3. `reply_headers`를 스레드 헤더로 그대로 전달해 발송하거나 초안 저장한다. **둘 다 스레딩을 지원한다**(이슈 #692):
+   - 즉시 발송: `send_email.py --in-reply-to "<reply_headers.in_reply_to>" --references "<reply_headers.references>"`
+   - 초안 검토 후 발송: `save_draft.py --in-reply-to "<reply_headers.in_reply_to>" --references "<reply_headers.references>"` → 임시보관함 초안도 같은 대화로 묶인다. 헤더를 빠뜨리면 초안이 스레드에 안 묶이니 회신 초안에는 반드시 넘긴다
 
 > **토큰 전략**: 탐색(IMAP IO)은 토큰 0, Claude가 읽는 건 budget 내 묶음 하나뿐. `read_email.py`를 여러 번 호출해 본문을 쌓는 방식 대비 토큰을 크게 절감한다.
 
@@ -427,11 +435,13 @@ Custom provider도 동일 패턴 (`SMTP_HOST_COMPANY` 등 + `--account company`)
 `read_email.py` 메타조회(기본):
 
 ```json
-[{"id": "42", "from": "sender@example.com", "subject": "Hello",
+[{"id": "42", "uid": "33027", "from": "sender@example.com", "subject": "Hello",
   "date": "Mon, 01 Jan 2026 12:00:00 +0000",
   "spf": "pass", "dkim": "pass", "dmarc": "pass",
   "auth_label": "SPF:pass | DKIM:pass | DMARC:pass",
   "reply_to": null, "reply_to_differs": false, "warnings": []}]
 ```
+
+회신·초안 조작은 `uid`(여기선 `"33027"`)를 쓴다. `id`(`"42"`, sequence number)는 표시용이며 `--uid`와 호환되지 않는다.
 
 `--body` 지정 시 위 객체에 `body`(`===EMAIL_CONTENT_START===\n...\n===EMAIL_CONTENT_END===`), `total_chars`, `truncated` 키가 추가된다. `list_folders.py`는 [List Folders](#list-folders) 섹션 스키마 참조.

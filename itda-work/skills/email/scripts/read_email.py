@@ -41,10 +41,19 @@ _HEADER_FIELDS = (
     "FROM SUBJECT DATE REPLY-TO TO CC AUTHENTICATION-RESULTS"
     " MESSAGE-ID IN-REPLY-TO REFERENCES"
 )
-_HEADERS_ONLY_FETCH_SPEC = f"(BODY.PEEK[HEADER.FIELDS ({_HEADER_FIELDS})])"
+# UID prefix in every FETCH (issue #692): the reply workflow (reply_context.py
+# --uid) and the draft tools all key off the *stable* UID. Plain imap.search()
+# yields a per-session sequence number, so without asking for UID here the JSON
+# output could only expose that sequence number — which is NOT a valid --uid.
+_HEADERS_ONLY_FETCH_SPEC = f"(UID BODY.PEEK[HEADER.FIELDS ({_HEADER_FIELDS})])"
 # Full message fetch via PEEK (does NOT mark \Seen flag, unlike RFC822).
-_FULL_FETCH_SPEC = "(BODY.PEEK[])"
+_FULL_FETCH_SPEC = "(UID BODY.PEEK[])"
 HEADER_FIELD_LIMIT = 500  # sanitize cap for header fields (from/subject/reply-to)
+
+# Parses the UID token from a FETCH response envelope, e.g.
+# b'12 (UID 33027 BODY[] {842}' -> b'33027'. Scanned only on the metadata
+# prefix, never the message payload, so a "UID ..." string in a body can't spoof it.
+_UID_RE = re.compile(rb"\bUID\s+(\d+)")
 
 # Truncation notice appended when body exceeds max_chars (FR-03).
 TRUNCATE_NOTICE_TEMPLATE = (
@@ -317,6 +326,29 @@ def _parse_uid_search_result(data: list) -> list[bytes]:
     return []
 
 
+def _extract_uid_from_fetch(fetch_data: list) -> str | None:
+    """Extract the stable UID from an imap FETCH response (issue #692).
+
+    A FETCH response part is a ``(envelope_prefix, literal_payload)`` tuple; the
+    UID lives in the prefix (``b'12 (UID 33027 BODY[] {842}'``). We scan only the
+    prefix (and any standalone bytes parts), never the literal payload, so a
+    ``UID 999`` string inside a message body cannot be mistaken for the real UID.
+    Returns the UID as a decoded string, or ``None`` if absent.
+    """
+    for part in fetch_data or []:
+        if isinstance(part, tuple):
+            head = part[0]
+        elif isinstance(part, (bytes, bytearray)):
+            head = part
+        else:
+            continue
+        if head:
+            m = _UID_RE.search(head)
+            if m:
+                return m.group(1).decode()
+    return None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Read email via IMAP SSL.")
     parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
@@ -506,6 +538,12 @@ def main() -> None:
                 continue
             raw = data[0][1]
             msg = email.message_from_bytes(raw)
+            # Stable UID (issue #692). Parsed from the FETCH envelope; in uid_mode
+            # ``mid`` already IS the UID, so it is the fallback when a server omits
+            # UID from the response.
+            uid_val = _extract_uid_from_fetch(data)
+            if uid_val is None and uid_mode:
+                uid_val = mid.decode() if isinstance(mid, (bytes, bytearray)) else str(mid)
             if uid_mode:
                 try:
                     fetched_uids.append(int(mid))
@@ -533,6 +571,7 @@ def main() -> None:
                 warnings_list.append("dmarc_fail")
             entry: dict = {
                 "id": mid.decode(),
+                "uid": uid_val,
                 "from": sanitize_for_llm(raw_from, max_len=HEADER_FIELD_LIMIT),
                 "to": _decode_address_header(msg.get("To", "")),
                 "cc": _decode_address_header(msg.get("Cc", "")),

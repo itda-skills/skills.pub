@@ -35,13 +35,17 @@ def resolve_provider_or_exit(provider: str, account: str | None = None) -> dict:
     (supported provider, env vars absent). Exit 2: ``account_required``
     (supported provider, multiple ready accounts, no ``--account``).
     """
-    # Unsupported provider (OAuth/iCal track) — distinct from a supported
-    # provider that simply lacks credentials. No env vars exist to "configure".
+    # Unsupported provider — intentionally NOT served (non-goal). Google Calendar
+    # is covered by Claude's official Google Calendar connector, so this skill does
+    # not reimplement it; Outlook/Kakao are also unsupported (OAuth/iCal model).
+    # Distinct from a supported provider that merely lacks credentials (no env vars
+    # exist to "configure" an unsupported provider).
     if not is_supported_provider(provider):
         emit_error("unsupported_provider",
                    f"provider '{provider}' is not supported. "
                    f"supported: {', '.join(supported_provider_names())}. "
-                   f"구글·아웃룩·카카오는 OAuth/iCal 구독 방식이라 현재 미지원이다(별도 트랙).",
+                   f"구글 캘린더는 Claude 공식 Google Calendar 커넥터를 쓰세요(이 스킬은 미지원). "
+                   f"아웃룩·카카오도 미지원.",
                    code=1)
 
     env = merged_env()

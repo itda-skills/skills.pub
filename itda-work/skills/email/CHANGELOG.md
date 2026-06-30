@@ -1,5 +1,50 @@
 # Changelog — itda-email
 
+## [0.27.0] — 2026-06-30 (이슈 #694)
+
+### Performance
+
+- **`reply_context.collect_related` 배치 FETCH — 순차 N회 왕복 제거**: 관련 메일(상대방 히스토리)을 모을 때 후보 UID를 **1건씩 순차 FETCH**하던 것을, 청크(≤500)당 **단일 `UID FETCH`**로 묶었다. self-target 실측(gmail): FETCH 왕복 **2095회 → 2회**, `reply_context` 소요 **150s+ → ~5s**(단일 연결). 응답은 메시지별로 분리 파싱(`_iter_fetch_messages`, prefix의 UID로 매핑). 의미·스코어링·토큰 0(IMAP IO) 불변.
+
+### Bug Fixes
+
+- **`collect_related` 보낸함 방향 교정 `FROM`→`TO`**: "상대 X와의 왕복"은 받은함=`FROM X`, 보낸함=`TO X`인데 기존엔 보낸함도 `FROM X`였다. 그래서 (a) 외부 X 회신 시 **내가 X에게 보낸 과거 메일이 관련 맥락에 0건**이었고, (b) self-target일 때 보낸함 전체가 잡혀 블로업했다. 실측: gmail 보낸함 후보 `FROM self` 2014 → `TO self` **168(12× 축소)**, 동시에 내가 보낸 답장이 관련 맥락에 정상 포함된다.
+
+### Tests
+
+- `_batched`·`_iter_fetch_messages`(배치 응답 메시지별 UID 분리·payload 비혼합) + fake-IMAP `collect_related`(폴더별 FROM/TO 방향·폴더당 FETCH 1회·스레드 dedup·target 없음). email 누적 605 passed / 배포형 격리 122 passed.
+
+### Live Verification
+
+- gmail self-target(uid 572470): `collect_related` FETCH 왕복 **2회**·**5.1s**·관련 **191건** 수집(status ok). 구버전 동일 케이스 150s+(#694 배경 실측, FROM self 2014건 순차).
+
+## [0.26.0] — 2026-06-30 (이슈 #692)
+
+### Bug Fixes
+
+- **받은편지함 회신 워크플로 `id`↔`uid` 계약 결손 수정**: `read_email.py` 일반 모드(`--since-last-run` 없음)는 `imap.search()` 결과인 **sequence number**를 `id`로 냈는데, `reply_context.py`/`read_draft.py`/`send_draft.py`/`delete_draft.py`의 `--uid`는 **UID**를 요구한다. `id`를 그대로 `--uid`에 넘기면 UID와 어긋나 `target_not_found`(또는 오매칭) → 스레드 재구성이 끊기고 회신 워크플로가 본문 수동 파싱으로 폴백했다. 네이버처럼 큰 메일함에서 seq≠uid가 항상 성립해 재현됐다.
+
+### New Features
+
+- **`read_email.py` 출력에 `uid` 필드 상시 추가**: FETCH spec을 `(UID BODY.PEEK[...])`로 바꿔 envelope에서 안정 UID를 파싱(`_extract_uid_from_fetch`, 프리픽스만 신뢰 — 본문 `UID ...` 스푸핑 차단), 매 메시지에 노출한다. 회신·초안 조작은 이 `uid`를 쓴다. 기존 `id`(sequence number)는 표시·디버그용으로 유지(**하위호환**). 초안 워크플로(`list_drafts→*_draft`)가 이미 `uid` 필드로 정합이던 것과 동일 계약으로 통일.
+- **`save_draft.py --in-reply-to`/`--references` 추가**: 회신을 임시보관함 초안으로 저장할 때도 스레딩 헤더를 주입해, 모바일·웹메일에서 발송 시 같은 대화로 묶인다. `build_mime_message`가 이미 지원하던 파라미터를 CLI·`save_draft()`까지 배관(`send_email.py`와 동일 계약). 미지정 시 헤더 없음(**하위호환**).
+- **SKILL.md 회신 워크플로/검색 레시피 정합**: 대상 메일은 `read_email`의 `uid`로 식별(`id` 아님)하고, 받은편지함이 크면 `--search`로 좁히도록 명시. 출력 표에 `uid` 행 추가 + `id`는 `--uid` 비호환 경고. `save_draft` 회신 초안 예시 추가.
+
+### Docs
+
+- **GUIDE.md에 "받은 메일에 답장하기" 시나리오 신설**: 사용자용 가이드에 답장 워크플로가 통째로 빠져 있던 갭을 메움 — 답장 시 대화 맥락·관련 메일을 자동 수집하고, 임시보관함에 저장한 **회신 초안이 원래 대화에 묶인 채** 저장됨을 자연어로 설명(빠른 시작에 "이 메일에 답장해줘" 추가). 기존 임시보관함 절은 유지. GUIDE 규칙(SPEC-GUIDE-NO-SHELL-001) 준수 — CLI 노출 0(전체 61 GUIDE lint PASS).
+
+### Tests
+
+- `_extract_uid_from_fetch` 단위 4(프리픽스 파싱·부재·페이로드 스푸핑 무시·빈 입력) + 일반 모드 `uid` 노출·FETCH spec UID 요청 통합 2. `save_draft` 스레드 헤더 주입·미지정 하위호환 2. 기존 fetch-spec 정확매칭 2건을 `(UID BODY.PEEK[])`로 갱신(BODY.PEEK invariant 유지). email 누적 600 passed.
+
+### Live Verification
+
+- **naver**: 스레드 A→B→C self 발송 후 `reply_context --uid`가 해당 스레드만 격리 재구성(thread 3·decoy는 thread 제외/related 포함), seq(`id`)를 `--uid`로 오용 시 `target_not_found` 재현(버그 클래스 실증).
+- **daum**·**google(gmail)**: `read_email` `uid` 노출 확인(daum 9/9, gmail 20/20, 모두 `id`≠`uid`). daum은 기존 메일로 `reply_context --uid` thread 3 재구성까지 확인.
+- **nate**: 빌트인 provider 아님 → `custom` IMAP/SMTP 자격증명 필요(미설정)으로 후속.
+- 별개 발견(비-#692): `reply_context.collect_related`가 발신자 `FROM` 히스토리를 1건씩 순차 fetch → 대용량 메일함(gmail Sent 2025건)에서 느림. 후속 이슈 후보.
+
 ## [0.25.0] — 2026-06-29
 
 ### New Features

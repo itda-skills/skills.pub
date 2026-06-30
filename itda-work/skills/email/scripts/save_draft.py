@@ -85,6 +85,8 @@ def save_draft(
     body_html: str = "",
     attachments: list[str] | None = None,
     account: str | None = None,
+    in_reply_to: str | None = None,
+    references: str | None = None,
 ) -> dict:
     """MIME 메시지를 조립하고 IMAP Drafts 폴더에 APPEND 한다.
 
@@ -135,6 +137,8 @@ def save_draft(
         bcc=bcc,
         body_html=body_html,
         attachments=attachments or [],
+        in_reply_to=in_reply_to,
+        references=references,
     )
 
     drafts_folder = _get_drafts_folder(canonical)
@@ -210,6 +214,12 @@ def main() -> None:
     parser.add_argument("--body-html", default="", dest="body_html")
     parser.add_argument("--attachment", action="append", default=[], metavar="FILE")
     parser.add_argument("--account", default=None)
+    # 회신 스레드 헤더 (issue #692): reply_context.py 출력 reply_headers를 그대로 넘기면
+    # 임시보관함 초안도 발송 시 같은 대화로 묶인다. send_email.py와 동일한 계약.
+    parser.add_argument("--in-reply-to", dest="in_reply_to", default=None,
+                        help="회신 대상 Message-ID (reply_context.py의 reply_headers.in_reply_to)")
+    parser.add_argument("--references", default=None,
+                        help="회신 References 체인 (reply_context.py의 reply_headers.references)")
     args = parser.parse_args()
 
     result = save_draft(
@@ -222,6 +232,8 @@ def main() -> None:
         body_html=args.body_html,
         attachments=args.attachment,
         account=args.account,
+        in_reply_to=args.in_reply_to,
+        references=args.references,
     )
     print(json.dumps(result, ensure_ascii=False))
     sys.exit(0)

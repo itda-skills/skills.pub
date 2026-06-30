@@ -3,6 +3,11 @@
 All notable changes to the `calendar` skill are documented here.
 This skill follows the itda-skills SPEC workflow (SPEC-CALENDAR-001).
 
+## [0.2.3] - 2026-06-29
+
+### Changed
+- **구글 캘린더 비목표 확정**(#686): 구글 캘린더는 **Claude 공식 Google Calendar 커넥터**가 이미 지원하므로, 본 스킬에서는 OAuth 트랙으로 **중복 구현하지 않는다 — 비목표(non-goal)**. 문서·런타임 메시지의 '별도 트랙으로 분리/후속 버전 대상/준비 중' 같은 **미래 약속** 표현을 제거하고 '지원하지 않음 + 공식 커넥터 사용'으로 못 박았다(SKILL.md·README.md·GUIDE.md, `cli_common`의 `unsupported_provider` detail). 런타임 동작(`google` → `unsupported_provider` exit 1)은 0.2.2에서 이미 구현됨 — 본 버전은 **의도 명문화**다. 마이크로소프트(Outlook)·카카오도 '현재 미지원'으로 동일 표기.
+
 ## [0.2.2] - 2026-06-29
 
 ### Changed

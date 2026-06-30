@@ -23,7 +23,7 @@
 | **네이버** | 앱 비밀번호 (2FA) | `caldav.calendar.naver.com`, itda-email과 변수 공유, 라이브 검증 |
 | **Custom CalDAV** | 앱 비밀번호 Basic Auth | Fastmail · Nextcloud · mailbox.org · Posteo · Zoho 등 |
 
-> 구글·마이크로소프트·카카오는 인증 모델이 달라(OAuth / iCal 구독) 별도 트랙이며 후속 버전 대상이다.
+> **구글 캘린더는 본 스킬에서 지원하지 않는다(비목표).** 구글은 Claude 공식 Google Calendar 커넥터로 이미 지원되므로 중복 구현하지 않는다. 마이크로소프트(Outlook)·카카오도 인증 모델이 달라(OAuth / iCal 구독) 미지원이다.
 
 ## 빠른 시작
 
