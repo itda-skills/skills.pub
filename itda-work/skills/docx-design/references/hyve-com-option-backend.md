@@ -13,14 +13,12 @@ TOC 필드 등)를 hyve Word COM 으로 **보강**하는 옵션 경로를 정의
   ③ **스킬 Python 이 raw 를 후처리**(python-docx 로 읽기검수 / `verify.py` / `render.py`).
 - MCP 결과(raw JSON)는 에이전트가 받아 검수에 쓴다. Python→MCP 직접 transport 는 금지.
 
-## Prerequisites — hyve 가동 + `.mcp.json`
+## Prerequisites — hyve 가동 + MCP 등록
 
 | 상황 | transport | 기동 |
 |---|---|---|
-| **개발/검증** | stdio | `hyve mcp` (프록시) |
-| **유저 설치(배포)** | streamable HTTP | `hyve serve` → `/mcp` + Bearer token |
-
-- 클라이언트 `.mcp.json` 에 hyve MCP 서버를 등록한다(배포는 HTTP+Bearer 기준).
+| **개발/검증 (개발 전용)** | stdio | `hyve mcp stdio` |
+| **유저 설치(배포) — 정본** | streamable HTTP 프리셋 | `hyve serve` → 설정 > MCP 탭에서 **문서(office) 프리셋** 등록 (`/mcp/office` — 전체 `/mcp` 폐지, #852·#887) |
 - COM 보강은 **Windows + Microsoft Office 설치** 전제(`office_compute` 가 Windows-only).
 - 보강 중 Word 가 화면에 뜬다(`Visible=true` HARD) — 정상 동작이다.
 

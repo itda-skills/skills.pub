@@ -23,8 +23,15 @@ SKILL_ROOT = os.path.dirname(os.path.dirname(HERE))           # .../xlsx-design
 sys.path.insert(0, os.path.join(SKILL_ROOT, "scripts"))      # sheetkit
 sys.path.insert(0, os.path.join(os.path.dirname(SKILL_ROOT), "design-core", "scripts"))
 
-import sheetkit as sk        # noqa: E402
-import design_core as dc     # noqa: E402
+try:
+    import sheetkit as sk        # noqa: E402
+    import design_core as dc     # noqa: E402
+except ModuleNotFoundError as _e:  # design-core 형제 스킬 미동봉 진단(loud)
+    sys.exit(
+        f"[xlsx-design] 의존 모듈 로드 실패: {_e}. "
+        "design-core 형제 스킬이 같은 플러그인(itda-work)에 함께 설치돼야 합니다 "
+        f"(기대 경로: {os.path.join(os.path.dirname(SKILL_ROOT), 'design-core', 'scripts')})."
+    )
 from openpyxl.chart import Reference  # noqa: E402
 
 PRESET = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("XLSX_DESIGN_PRESET", "consulting-mbb")

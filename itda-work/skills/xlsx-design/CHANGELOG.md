@@ -1,5 +1,11 @@
 # Changelog — xlsx-design
 
+## 0.3.1 (2026-07-06)
+
+MCP 온보딩 정본화 (hyve#921).
+
+- 옵션 백엔드 Prerequisites 의 배포 안내를 폐지된 전체 `/mcp`+Bearer 에서 **hyve 설정 > MCP 탭의 문서(office) 프리셋 등록**(`/mcp/office`, hyve#852·#887)으로 교체. stdio `hyve mcp` 는 개발·검증 전용 명시. `references/hyve-com-option-backend.md` 표 동반 갱신.
+
 ## 0.3.0 (2026-06-29)
 
 옵션 백엔드(hyve Excel COM) 실연동 — 길X 레시피 명문화 (#669, SPEC-OFFICE-DOC-GEN-DEEPEN-001 후속).

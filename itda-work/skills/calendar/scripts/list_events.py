@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from caldav_client import get_calendars_fast, search_events  # noqa: E402
 from cli_common import classify_error, emit, emit_error, resolve_provider_or_exit  # noqa: E402
 from event_model import DEFAULT_TZ, normalize_event, parse_dt  # noqa: E402
-from sanitize import sanitize_for_llm  # noqa: E402
+from email_security import sanitize_for_llm  # noqa: E402
 
 
 def _as_dt(value, tz) -> datetime:

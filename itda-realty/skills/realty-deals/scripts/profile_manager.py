@@ -4,11 +4,14 @@
 profile_manager.py - 영속 브라우저 프로필 관리 CLI.
 
 {CWD}/.itda-skills/browser/profiles/ 아래에 Playwright 브라우저 프로필을 관리한다.
-web-reader, naver-place 등 여러 스킬이 프로필을 공유한다.
+'browser' 네임스페이스 프로필은 web-reader 스킬이 사용한다.
 list, delete, info, warmup 서브커맨드를 지원한다.
 
+(naver-place 는 v0.10.0(#816)에서 hyve web_browse MCP(mode=shared)로 전환되어
+ 독립 Playwright 프로필을 더 이상 쓰지 않는다. 'browser' 네임스페이스는 web-reader 가
+ 계속 쓰므로 본 모듈은 유지한다.)
+
 SPEC: SPEC-WEBREADER-004 REQ-2.1~REQ-2.9
-SPEC: SPEC-NAVER-PLACE-001 (browser namespace)
 
 종료 코드:
     0 - 성공

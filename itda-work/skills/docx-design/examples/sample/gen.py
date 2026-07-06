@@ -26,8 +26,15 @@ SKILL_ROOT = os.path.dirname(os.path.dirname(HERE))            # .../docx-design
 sys.path.insert(0, os.path.join(SKILL_ROOT, "scripts"))       # dockit
 sys.path.insert(0, os.path.join(os.path.dirname(SKILL_ROOT), "design-core", "scripts"))  # design_core
 
-import dockit as dk           # noqa: E402
-import design_core as dc      # noqa: E402
+try:
+    import dockit as dk           # noqa: E402
+    import design_core as dc      # noqa: E402
+except ModuleNotFoundError as _e:  # design-core 형제 스킬 미동봉 진단(loud)
+    sys.exit(
+        f"[docx-design] 의존 모듈 로드 실패: {_e}. "
+        "design-core 형제 스킬이 같은 플러그인(itda-work)에 함께 설치돼야 합니다 "
+        f"(기대 경로: {os.path.join(os.path.dirname(SKILL_ROOT), 'design-core', 'scripts')})."
+    )
 
 # ── 입력 -------------------------------------------------------------------
 PRESET = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("DOCX_DESIGN_PRESET", "consulting-mbb")

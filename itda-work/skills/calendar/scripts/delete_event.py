@@ -15,7 +15,7 @@ from caldav_client import find_calendar, find_event_by_uid  # noqa: E402
 from cli_common import (classify_error, connect_or_exit, emit, emit_error,  # noqa: E402
                         resolve_provider_or_exit)
 from event_model import normalize_event  # noqa: E402
-from sanitize import sanitize_for_llm  # noqa: E402
+from email_security import sanitize_for_llm  # noqa: E402
 
 
 def main() -> None:

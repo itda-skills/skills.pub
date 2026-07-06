@@ -12,11 +12,11 @@ allowed-tools: Read
 argument-hint: "[케이스: blog-hero|slide-visual|icon-logo|character-illust|video-illust|figurine|photoreal-portrait|product-catalog|poster] <주제> [장수]"
 metadata:
   author: "Chinseok"
-  version: "0.8.0"
+  version: "0.8.1"
   category: "media"
   status: "experimental"
   created_at: "2026-05-30"
-  updated_at: "2026-06-16"
+  updated_at: "2026-07-06"
   tags: "image-generation, mcp, prompt-template, quality, content"
 ---
 
@@ -29,7 +29,7 @@ metadata:
 
 ## 전제 (사전 점검)
 
-1. **hyve MCP 가동 + `image.generate` 등록** — 개발=stdio(`hyve mcp`) / 배포=streamable HTTP(`/mcp` + Bearer). MCP 도구 `image_generate` 가 보여야 한다.
+1. **hyve MCP 가동 + `image.generate` 등록** — hyve 설정 > MCP 탭에서 **문서(office) 프리셋** 등록(유저향 정본; stdio `hyve mcp` 는 개발·검증 전용). MCP 도구 `image_generate` 가 보여야 한다.
 2. **codex CLI BYO** — 설치 + `codex login`(ChatGPT OAuth). 미설치/미로그인이면 MCP가 `CODEX_NOT_INSTALLED`/`CODEX_NOT_LOGGED_IN` 을 구조화 반환하므로, 그 안내(설치 URL / `codex login`)를 사용자에게 전달한다.
 
 ## 작업 순서 (반드시 이 순서로)

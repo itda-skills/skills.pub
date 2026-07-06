@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 argument-hint: "<콘텐츠.md> [데이터.json] [DESIGN.md 경로 또는 URL] [출력.pptx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.7.1"
+  version: "0.7.2"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-08"
-  updated_at: "2026-06-26"
+  updated_at: "2026-07-06"
   tags: "pptx, presentation, design-md, deck, slides"
 ---
 
@@ -129,7 +129,7 @@ matplotlib 래스터 차트의 환경취약(한글 tofu)·편집불가를 피해
 2. hyve MCP verb **`openxml.powerpoint.apply_deck_ir`** 를 `{ "ir": <IR dict>, "out_path": "<.pptx 절대경로>" }` 로 호출 → 덱 생성(크로스플랫폼, Office 불필요). 차트는 네이티브 편집 객체 + 팔레트, 커스텀 시각화(슬라이더 등)는 `slider()` custom_visual 로.
 3. 검증·미리보기(관문4)는 동일 — Windows 는 hyve COM render, 그 외는 LibreOffice.
 
-> **사전 준비**: hyve 가동(개발 stdio `hyve mcp` / 배포 streamable HTTP `/mcp`) + `.mcp.json` 등록. `apply_deck_ir` 은 OpenXML 백엔드라 Windows/macOS/Linux 공통.
+> **사전 준비**: hyve 가동(`hyve serve`) + **설정 > MCP 탭에서 문서(office) 프리셋 등록**(stdio `hyve mcp` 는 개발·검증 전용). `apply_deck_ir` 은 OpenXML 백엔드라 Windows/macOS/Linux 공통.
 >
 > **★한글 가드 정책(REQ-008)**: `set_run_font` 한글 가드(안전 고딕 강제·음수 자간 클램프)의 가치는 **LibreOffice 렌더 한정**입니다 — 한글 명조/세리프 폴백은 LibreOffice 고유 현상이고, **PowerPoint 렌더(COM, 또는 `apply_deck_ir` 산출물을 PowerPoint 로 열 때)에선 세 백엔드 모두 한글이 정상**입니다. OpenXML 백엔드는 `font_ea` 한글축 지정으로 충분합니다.
 

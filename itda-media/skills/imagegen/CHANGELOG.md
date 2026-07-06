@@ -2,6 +2,10 @@
 
 > 2026-06-16: `itda-egg/codex-image` → `itda-media/imagegen` 졸업 마이그레이션(SPEC-IMAGEGEN-002 P2). 이하 0.7.1까지는 codex-image 시절 이력.
 
+## 0.8.1 (2026-07-06)
+
+- **MCP 온보딩 정본화 (hyve#921)** — 전제의 등록 안내를 폐지된 전체 `/mcp`+Bearer 에서 **hyve 설정 > MCP 탭의 문서(office) 프리셋 등록**(image 도메인 소속 프리셋, hyve#852·#887)으로 교체. stdio `hyve mcp` 는 개발·검증 전용 명시. itda-media README 동반 갱신.
+
 ## 0.8.0 (2026-06-16)
 
 - **itda-media/imagegen 으로 졸업** — codex 직접 호출에서 **hyve `image.generate` MCP 소비**로 전환(길 X). SKILL.md 재작성, GUIDE.md MCP화(no-shell), 카드 템플릿의 codex 저장지시 라인 제거, _SCHEMA 작성지침 중립화.

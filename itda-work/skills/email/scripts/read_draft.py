@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import email
-import email.header
 import imaplib
 import json
 import sys
@@ -17,27 +16,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from email_providers import get_provider, resolve_provider_name  # noqa: E402
+from email_providers import get_provider  # noqa: E402
 from env_loader import merged_env  # noqa: E402
-from save_draft import _get_drafts_folder  # noqa: E402
-
-
-def _decode_header(raw: str) -> str:
-    """RFC 2047 인코딩된 이메일 헤더를 UTF-8 문자열로 디코딩한다."""
-    parts = []
-    for chunk, charset in email.header.decode_header(raw or ""):
-        if isinstance(chunk, bytes):
-            for enc in [charset or "utf-8", "utf-8", "euc-kr", "cp949", "latin-1"]:
-                try:
-                    parts.append(chunk.decode(enc))
-                    break
-                except (UnicodeDecodeError, LookupError):
-                    continue
-            else:
-                parts.append(chunk.decode("latin-1", errors="replace"))
-        else:
-            parts.append(chunk or "")
-    return "".join(parts)
+from _draft_imap import (  # noqa: E402
+    PROVIDER_CHOICES,
+    connect_drafts,
+    decode_header,
+    fail,
+    fail_uid_not_found,
+    fetch_message,
+    get_drafts_folder,
+    require_credentials,
+    safe_logout,
+)
 
 
 def _extract_body_and_attachments(msg: email.message.Message) -> tuple[str, str | None, list[dict]]:
@@ -99,54 +90,22 @@ def read_draft(
     """
     env = merged_env()
     provider_cfg = get_provider(provider, env, account=account)
+    require_credentials(provider_cfg, provider)
 
-    if not provider_cfg or not provider_cfg.get("email") or not provider_cfg.get("password"):
-        print(
-            json.dumps({"error": "credentials_missing"}),
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    canonical = resolve_provider_name(provider)
-    drafts_folder = _get_drafts_folder(canonical)
+    drafts_folder = get_drafts_folder(provider)
 
     imap: imaplib.IMAP4_SSL | None = None
     try:
-        imap = imaplib.IMAP4_SSL(
-            provider_cfg["imap_host"],
-            provider_cfg["imap_port"],
-        )
-        imap.login(provider_cfg["email"], provider_cfg["password"])
-        imap.select(drafts_folder, readonly=True)
+        imap = connect_drafts(provider_cfg, drafts_folder, readonly=True)
 
-        # UID FETCH 전체 메시지
-        _status, fetch_data = imap.uid("FETCH", str(uid).encode(), "(BODY[])")
-
-        if not fetch_data or fetch_data[0] is None:
-            print(
-                json.dumps({"error": "uid_not_found", "uid": uid}),
-                file=sys.stderr,
-            )
-            sys.exit(1)
-
-        # 실제 메시지 바이트 추출
-        raw_bytes: bytes | None = None
-        for item in fetch_data:
-            if isinstance(item, tuple) and len(item) >= 2:
-                raw_bytes = item[1]
-                break
-
-        if not raw_bytes:
-            print(
-                json.dumps({"error": "uid_not_found", "uid": uid}),
-                file=sys.stderr,
-            )
-            sys.exit(1)
+        raw_bytes = fetch_message(imap, uid)
+        if raw_bytes is None:
+            fail_uid_not_found(uid)
 
         msg = email.message_from_bytes(raw_bytes)
 
-        subject = _decode_header(msg.get("Subject", ""))
-        from_ = _decode_header(msg.get("From", ""))
+        subject = decode_header(msg.get("Subject", ""))
+        from_ = decode_header(msg.get("From", ""))
         to_raw = msg.get("To", "")
         to_list = [a.strip() for a in to_raw.split(",") if a.strip()]
         cc_raw = msg.get("Cc", "")
@@ -171,22 +130,16 @@ def read_draft(
         }
 
     except imaplib.IMAP4.error as e:
-        print(json.dumps({"error": "auth_failed", "detail": str(e)}), file=sys.stderr)
-        sys.exit(1)
+        fail("auth_failed", str(e))
     except (ConnectionError, TimeoutError, OSError) as e:
-        print(json.dumps({"error": "network_error", "detail": str(e)}), file=sys.stderr)
-        sys.exit(1)
+        fail("network_error", str(e))
     finally:
-        if imap is not None:
-            try:
-                imap.logout()
-            except Exception:
-                pass
+        safe_logout(imap)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="IMAP Drafts 폴더에서 초안 본문을 조회합니다.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
+    parser.add_argument("--provider", required=True, choices=PROVIDER_CHOICES)
     parser.add_argument("--uid", required=True, type=int)
     parser.add_argument("--account", default=None)
     args = parser.parse_args()

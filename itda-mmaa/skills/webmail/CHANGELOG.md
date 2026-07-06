@@ -1,5 +1,11 @@
 # Changelog — webmail
 
+## [0.2.3] — 2026-07-06
+
+### Changed
+
+- **MCP 온보딩 정본화 (hyve#921)** — §0 선결 조건의 등록 안내를 stdio 직접 등록에서 **hyve 설정 > MCP 탭의 웹(web) 프리셋 등록**(cowork-mcp-only 정본, hyve#852·#887·#893)으로 교체. `hyve mcp stdio` 는 개발·검증 전용임을 명시(references/live-smoke-guide.md 의 stdio 사용은 개발·검증 문서라 유지).
+
 ## [0.2.2] — 2026-06-13
 
 ### Changed

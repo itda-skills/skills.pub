@@ -2,6 +2,12 @@
 
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.7.2] — 2026-07-06
+
+### Changed
+
+- **MCP 온보딩 정본화 (hyve#921)** — OpenXML 백엔드 사전 준비의 배포 안내를 폐지된 전체 `/mcp` 에서 **hyve 설정 > MCP 탭의 문서(office) 프리셋 등록**(hyve#852·#887)으로 교체. stdio `hyve mcp` 는 개발·검증 전용 명시.
+
 ## [0.7.1] — 2026-06-26
 
 `verify.py`가 **렌더 도구(LibreOffice/poppler) 부재 시에도 HARD GATE를 정상 판정**하도록 견고화합니다([#621](https://github.com/itda-skills/hyve/issues/621)). 그동안 렌더 실패가 `blank_slide`(하드게이트 항목)로 기록돼, `soffice` 없는 환경에서 **깨끗한 덱조차 거짓 FAIL** 했습니다(PR #614 Windows 검증 중 표면화).

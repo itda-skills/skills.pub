@@ -1,12 +1,18 @@
 # Changelog — docx-design
 
+## 0.3.1 (2026-07-06)
+
+MCP 온보딩 정본화 (hyve#921).
+
+- 옵션 백엔드 Prerequisites 의 배포 안내를 폐지된 전체 `/mcp`+Bearer 에서 **hyve 설정 > MCP 탭의 문서(office) 프리셋 등록**(`/mcp/office`, hyve#852·#887)으로 교체. stdio `hyve mcp` 는 개발·검증 전용 명시. `references/hyve-com-option-backend.md` 표 동반 갱신.
+
 ## 0.3.0 (2026-06-29)
 
 옵션 백엔드(hyve Word COM) 실연동 — 길X 레시피 명문화 (#669, SPEC-OFFICE-DOC-GEN-DEEPEN-001 후속).
 
 - **옵션 백엔드 절 신설**(SKILL.md): 1급(python-docx) 생성 후 **코멘트·변경추적·TOC 필드**를 hyve Office MCP(`office_compute`)로 보강하는 **길X 레시피**(에이전트→MCP→raw→스킬 Python 후처리) + Prerequisites(hyve 가동·`.mcp.json`). 기존 "비목표→안내" 프레이밍을 실동작 레시피로 승격.
 - **verb 카탈로그 reference** `references/hyve-com-option-backend.md`: word.* file-based verb 인자 키(`add_comment`{path,text,author}·`set_track_changes`{enabled}·`get_revisions`·`accept/reject_revision`·`add_toc`·`add_field`·`update_fields`·`find_replace_text`{track}) 엔진(`WordComEngine.WriteReview/WriteStructure.cs`) 실측 + 도달성.
-- **실증(AC-1)**: NovaTech 1급 docx 에 변경추적 ON→추적 치환→코멘트 적용, `get_comments`(1)·`get_revisions`(delete+insert) 읽기검수 + Word COM 렌더로 말풍선·변경 바 시각 확인. 1급 디자인 비퇴행.
+- **실증(AC-6/#669)**: NovaTech 1급 docx 에 변경추적 ON→추적 치환→코멘트 적용, `get_comments`(1)·`get_revisions`(delete+insert) 읽기검수 + Word COM 렌더로 말풍선·변경 바 시각 확인. 1급 디자인 비퇴행.
 - 동반(hyve Go MCP): `office_compute` 에 generic `params`(타입 보존 JSON) 패스스루 추가 → file-based COM verb(코멘트·변경추적·TOC)가 에이전트→MCP 로 도달. 세션 기반 verb 는 후속 #670.
 
 ## 0.2.0 (2026-06-29)

@@ -57,11 +57,11 @@ scripts/
   caldav_client.py      caldav 라이브러리 래퍼 + calendar-home url 디스커버리 캐싱
   event_model.py        iCalendar VEVENT ↔ 정규화 dict (타임존·RRULE·VALARM)
   cli_common.py         공통 CLI 헬퍼 (자격증명 해석 · 에러 분류)
-  sanitize.py           프롬프트 인젝션 방어 (itda-email 재사용)
   check_env · check_connection · list_calendars · list_events
   create_event · update_event · delete_event
 
-(런타임에 공용 shared/ 모듈 env_loader.py·itda_path.py를 PYTHONPATH로 참조)
+(런타임에 공용 shared/ 모듈 env_loader.py·itda_path.py·email_security.py
+ (프롬프트 인젝션 방어)를 PYTHONPATH로 참조 — #736 에서 sanitize.py 사본을 shared 정본으로 승격)
 ```
 
 ## 성능

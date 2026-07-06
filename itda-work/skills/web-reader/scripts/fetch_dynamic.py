@@ -29,7 +29,7 @@ Exit codes:
 Non-goals (hyve MCP escalation 권장):
     - Anti-bot 우회 (Akamai/Cloudflare stealth)
     - SNS 인증 (인스타·X 로그인 토큰)
-    - 네이버 부동산 (naverplace 도메인 어댑터)
+    - 네이버 부동산 (SPA — web_browse observe{network}로 XHR 캡처)
 """
 from __future__ import annotations
 
@@ -210,8 +210,8 @@ def hyve_escalation_message(url: str, signal: str) -> str:
         f"Lightpanda는 anti-bot 우회 기능이 없습니다. 다음 경로를 시도하세요:\n\n"
         f"1. hyve MCP web_browse (Bun playwright + stealth)\n"
         f"   예: \"hyve의 web_browse로 {url} 가져와줘\"\n\n"
-        f"2. 네이버 부동산이면: naverplace 도메인 사용\n"
-        f"   예: \"naverplace로 단지 정보 받아줘\"\n\n"
+        f"2. 네이버 부동산 등 SPA(XHR 로 데이터 로드): web_browse 의 observe{{network}} 로 API 원본 캡처\n"
+        f"   예: \"web_browse로 단지 페이지 열고 observe network 로 매물 API 캡처해줘\"\n\n"
         f"3. SNS 로그인 필요 콘텐츠 (인스타·X): 별도 인증 흐름 필요 — 현재 미지원\n"
     )
 

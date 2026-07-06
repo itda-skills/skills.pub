@@ -2,6 +2,25 @@
 
 이 파일은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.4.2] — 2026-07-06
+
+### Added
+
+- **GUIDE.md 신설 (hyve#927)** — 사용자용 자연어 가이드(110줄, utility-tool 프리셋). 빠른 시작 /
+  사전 준비(웹(web) 프리셋 등록, #921 정본) / 활용 시나리오 6종(R1~R6 사용자 언어화) / 출력 옵션 /
+  팁 / 제한사항. guide-writer `--auto` 생성(플레이스홀더 0건 — 전 내용 SKILL.md 근거) 후 마스터 승인.
+
+## [0.4.1] — 2026-07-06
+
+### Changed
+
+- **MCP 온보딩 정본화 (hyve#921)** — §0 유저향 등록 안내를 stdio 직접 등록에서 **hyve 설정 > MCP
+  탭의 웹(web) 프리셋 등록**(cowork-mcp-only 정본, hyve#852·#887·#893)으로 교체.
+  `hyve mcp stdio` 는 개발·검증 전용임을 명시.
+- **§5 에 hyve 레시피와의 경계 명문화** — 레시피(process⟷replay⟷golden, SPEC-WEB-RECIPE-CONSOLE-001)는
+  hyve 자사 표면 전용(셸 콘솔·개발 CLI·drift 모니터, MCP 비노출)이고, 외부 에이전트용 web_browse
+  능력은 본 스킬 + 사이트 특화 스킬로 만든다(마스터 결정 2026-07-06).
+
 ## [0.4.0] — 2026-06-26
 
 ### Added

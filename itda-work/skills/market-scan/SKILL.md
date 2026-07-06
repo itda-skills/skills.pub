@@ -108,7 +108,7 @@ metadata:
 | 웹 검색·원문 확인 (내장 WebSearch) | 항상 가용(키 불요·단일 인덱스) | 항상 포함, 기본 ☑ |
 | **다중엔진 웹 검색** (`web-search`) | `web-search`의 `--check-env`(또는 환경·"Claude 지침"에 `TAVILY_API_KEY`·`NAVER_SEARCH_CLIENT_ID`·`NAVER_SEARCH_CLIENT_SECRET`·`SERPER_API_KEY`·`EXA_API_KEY`·`PERPLEXITY_API_KEY` 중 **1개 이상**) 존재 확인 | **키 보유 시에만 포함**(거짓 메뉴 금지). 키 0개면 보기에서 빼고 내장 WebSearch만 — "(키 감지됨: tavily,naver…)" 표기 |
 | 공공데이터 API (`itda-gov:*`) | 작업폴더 `.env`/환경변수에 관련 키(`KOSIS_API_KEY`·`DART_API_KEY`·`ECOS_API_KEY` 등) 존재 확인 | 포함(키 없어도 공식사이트 폴백 가능). "(키 감지됨)" / "(키 미설정→발급 안내)" 표기 |
-| **주제 연관 전문 스킬** | **시장 주제로 후보 판별** 후 설치/가용 확인 — 부동산→`itda-realty:*`(실거래·가격지수), 주식·ETF·섹터→`itda-stocks:surge-data`, 외식·F&B→`itda-travel:eatery-trend`, 창업 상권·로컬→`naver-place`/`place-finder` | 주제 적합 + 가용 시 포함(예: "부동산 시장"이면 itda-realty 제안). 무관/미설치면 제외 |
+| **주제 연관 전문 스킬** | **시장 주제로 후보 판별** 후 설치/가용 확인 — 부동산→`itda-realty:*`(실거래·가격지수), 주식·ETF·섹터→`itda-stocks:surge-data`, 외식·F&B→`itda-travel:eatery-trend`, 창업 상권·로컬→`naver-place`(hyve serve 연결 필요 — web_browse MCP)/`place-finder` | 주제 적합 + 가용 시 포함(예: "부동산 시장"이면 itda-realty 제안). 무관/미설치면 제외 |
 
 - 질문: "어떤 데이터 소스로 조사할까요? (여러 개 선택 가능)"
 - 기본 체크: 빠른 스캔 → [웹] + (키 있으면)[다중엔진 web-search]. 심층 스캔 → 추가로 주제 연관 전문 스킬·공공 API + (키 있으면)다중엔진 web-search를 권장 체크. 사용자가 더하거나 뺀다.

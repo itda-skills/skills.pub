@@ -14,9 +14,9 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "experimental"
-  version: "0.2.2"
+  version: "0.2.3"
   created_at: "2026-06-13"
-  updated_at: "2026-06-13"
+  updated_at: "2026-07-06"
   tags: "MMAA, KACEM, webmail, mail, attachment, web-browse, IMAP-unavailable"
 ---
 
@@ -29,7 +29,8 @@ raw 결과를 Python으로 정규화합니다. 지원 provider는 **군인공제
 ## 0. 선결 조건
 
 작업 전 현재 세션에 hyve MCP 도구(`hyve` 통합 도구의 `web_browse` 도메인)가 노출됐는지 확인합니다.
-없으면 사용자에게 hyve 트레이 앱(`hyve serve`) 또는 `hyve mcp stdio` 등록을 안내하고 중단합니다.
+없으면 사용자에게 hyve 트레이 앱(`hyve serve`) 가동 + **hyve 설정 > MCP 탭에서 웹(web)
+프리셋 등록**을 안내하고 중단합니다(`hyve mcp stdio` 는 개발·검증 전용 — 유저 온보딩 아님).
 
 ## 1. 적용 판별
 

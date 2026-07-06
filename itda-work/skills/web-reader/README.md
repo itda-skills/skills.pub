@@ -2,7 +2,7 @@
 
 웹페이지와 YouTube 자막을 가져와 깔끔한 Markdown 또는 JSON으로 변환하는 정적 페치 전용 스킬. 한국 웹사이트(EUC-KR/CP949)에 최적화.
 
-> **v3.0.0 안내** (2026-05-11): 동적 fetch(Playwright/Chromium)와 SPA 어댑터(naver-land 등)는 hyve MCP의 `web_browse.render` / `naverplace` 도메인으로 이전되었습니다. v2.x 호출 패턴은 exit code 4 + stderr에 마이그레이션 안내 메시지를 출력합니다.
+> **v3.0.0 안내** (2026-05-11): 동적 fetch(Playwright/Chromium)와 SPA 어댑터(naver-land 등)는 hyve MCP의 `web_browse.render` / `web_browse` 레시피(네이버 부동산 등 SPA는 `observe{network}`로 XHR 캡처)로 이전되었습니다. v2.x 호출 패턴은 exit code 4 + stderr에 마이그레이션 안내 메시지를 출력합니다.
 
 ## 문서
 

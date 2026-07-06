@@ -1,5 +1,16 @@
 # Changelog — itda-web-reader
 
+## [6.2.1] — 2026-07-04
+
+### Fixed
+
+- hyve MCP `naverplace` 도메인 제거(#816)에 따라, SPA 어댑터 fail-fast(`extract_content.py`)·bot challenge escalation(`fetch_dynamic.py`) 안내 문구와 마이그레이션 표(SKILL.md·README·references/migration.md)의 `naverplace` 도메인 유도를 hyve MCP `web_browse` 레시피 기준으로 정정했습니다. 네이버 부동산 등 SPA는 `web_browse`의 `observe{network}`로 XHR(API) 원본을 캡처하는 경로를 안내합니다. 실존한 적 없는 `naverplace.complex` "현행" 표기(stale 오배선)도 제거했습니다.
+- AC-3 검증 키워드(`extract_content.py`)와 물린 테스트 assert(`test_extract_content_dynamic_rejection.py`·`test_fetch_dynamic.py`)를 새 안내 문구에 맞춰 동기화했습니다(`naverplace` → `네이버 부동산`).
+
+### Notes
+
+- 문서/메시지 교정만 포함합니다 — fetch 동작·CLI 인터페이스 변경 없음. CHANGELOG·README 의 과거 버전(v3.0.0·v5.0.0·v6.0.1 등) 기록은 사실 보존을 위해 그대로 둡니다.
+
 ## [6.2.0] — 2026-06-25
 
 ### New Features

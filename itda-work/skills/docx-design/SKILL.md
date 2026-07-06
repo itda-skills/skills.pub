@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 argument-hint: "<콘텐츠.md> [데이터.json] [프리셋 또는 DESIGN.md 경로] [출력.docx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.3.0"
+  version: "0.3.1"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-29"
-  updated_at: "2026-06-29"
+  updated_at: "2026-07-06"
   tags: "docx, word, report, design-md, document"
 ---
 
@@ -39,7 +39,7 @@ metadata:
 
 1급(python-docx)으로 생성한 .docx 에 **코멘트·변경추적·TOC 필드** 등 Word 네이티브 의미 요소가 필요할 때, 에이전트가 hyve Office MCP 로 보강한다. **옵션**이다 — COM-only 요소가 없으면 이 절을 건너뛴다.
 
-**Prerequisites**: hyve 가동(개발=stdio `hyve mcp` / 배포=streamable HTTP `hyve serve` `/mcp`+Bearer) + 클라이언트 `.mcp.json` 등록. **Windows + Microsoft Office 설치** 전제(보강 중 Word 가 화면에 뜸 — `Visible=true` HARD, 정상).
+**Prerequisites**: hyve 가동(`hyve serve`) + **설정 > MCP 탭에서 문서(office) 프리셋 등록**(유저향 정본 — 전체 `/mcp` 폐지 #852·#887; stdio `hyve mcp` 는 개발·검증 전용). **Windows + Microsoft Office 설치** 전제(보강 중 Word 가 화면에 뜸 — `Visible=true` HARD, 정상).
 
 **길X 계약(automation-responsibility-split / cowork-mcp-only)**: 에이전트가 MCP verb 호출 → raw → **스킬 Python 이 후처리(읽기검수)**. **Python 은 MCP 를 직접 호출하지 않는다.**
 

@@ -10,7 +10,7 @@
 
 ## 전제
 
-- hyve 가동 + `image.generate` MCP 등록 (개발=stdio `hyve mcp` / 배포=streamable HTTP `/mcp`).
+- hyve 가동 + `image.generate` MCP 등록 — hyve 설정 > MCP 탭에서 **문서(office) 프리셋** 등록(유저향 정본; stdio `hyve mcp` 는 개발·검증 전용).
 - codex CLI BYO: 설치 + `codex login`(ChatGPT OAuth). 미설치/미로그인 시 MCP가 `CODEX_NOT_INSTALLED`/`CODEX_NOT_LOGGED_IN` 구조화 반환.
 
 ## 발행 (미정)

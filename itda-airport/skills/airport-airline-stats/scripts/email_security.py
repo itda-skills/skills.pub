@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""itda-email: email_security module — Prompt Injection defense.
+"""email_security — Prompt Injection defense (shared canonical).
 
 Provides sanitize_for_llm() and wrap_email_content() for safe LLM output.
 stdlib-only (re module). O(n × p) linear complexity.
+
+정본: skills/shared/email_security.py (#736 — email·calendar 가 byte-identical
+사본을 각자 보유하던 것을 승격). 소비 스킬은 소스트리 사본 없이 publish 주입
+(SPEC-SHARED-INJECT-001)·conftest·PYTHONPATH=shared 로 해석한다.
 """
 from __future__ import annotations
 

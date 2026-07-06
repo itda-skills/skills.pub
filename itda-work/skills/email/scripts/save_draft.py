@@ -23,14 +23,14 @@ from attachment_validator import validate_attachments  # noqa: E402
 from email_compose import build_mime_message  # noqa: E402
 from email_providers import get_provider, resolve_provider_name  # noqa: E402
 from env_loader import merged_env  # noqa: E402
-
-# provider별 Drafts 폴더 이름
-_DRAFTS_FOLDER: dict[str, str] = {
-    "naver": "Drafts",
-    "google": "[Gmail]/Drafts",
-    "daum": "Drafts",
-    "custom": "Drafts",
-}
+from _draft_imap import (  # noqa: E402
+    PROVIDER_CHOICES,
+    connect_drafts,
+    fail,
+    get_drafts_folder,
+    require_credentials,
+    safe_logout,
+)
 
 # APPENDUID 응답 파싱 패턴: [APPENDUID <validity> <uid>]
 _APPENDUID_RE = re.compile(rb"\[APPENDUID\s+\d+\s+(\d+)\]", re.IGNORECASE)
@@ -69,12 +69,6 @@ def _extract_uid_from_append(resp_data: list) -> int | None:
     return None
 
 
-def _get_drafts_folder(provider_name: str) -> str:
-    """provider 이름으로 Drafts 폴더 경로를 반환한다."""
-    canonical = resolve_provider_name(provider_name)
-    return _DRAFTS_FOLDER.get(canonical, "Drafts")
-
-
 def save_draft(
     provider: str,
     to_addr: str,
@@ -97,16 +91,7 @@ def save_draft(
     """
     env = merged_env()
     provider_cfg = get_provider(provider, env, account=account)
-
-    if not provider_cfg or not provider_cfg.get("email") or not provider_cfg.get("password"):
-        print(
-            json.dumps({
-                "error": "credentials_missing",
-                "detail": f"provider '{provider}'에 대한 인증 정보가 없습니다.",
-            }),
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    require_credentials(provider_cfg, provider)
 
     # 첨부파일 유효성 검사 (REQ-DRAFTS-007)
     if attachments:
@@ -141,18 +126,15 @@ def save_draft(
         references=references,
     )
 
-    drafts_folder = _get_drafts_folder(canonical)
+    drafts_folder = get_drafts_folder(canonical)
     flags = "(\\Draft)"
     internal_date = imaplib.Time2Internaldate(time.time())
     raw_bytes = msg.as_bytes()
 
     imap: imaplib.IMAP4_SSL | None = None
     try:
-        imap = imaplib.IMAP4_SSL(
-            provider_cfg["imap_host"],
-            provider_cfg["imap_port"],
-        )
-        imap.login(provider_cfg["email"], provider_cfg["password"])
+        # APPEND 경로는 select 불필요 — folder=None 으로 login 까지만 수행
+        imap = connect_drafts(provider_cfg)
 
         # APPEND: flags, INTERNALDATE, 메시지 바이트
         status, resp_data = imap.append(drafts_folder, flags, internal_date, raw_bytes)
@@ -189,23 +171,16 @@ def save_draft(
         }
 
     except imaplib.IMAP4.error as e:
-        error_key = _classify_error(e)
-        print(json.dumps({"error": error_key, "detail": str(e)}), file=sys.stderr)
-        sys.exit(1)
+        fail(_classify_error(e), str(e))
     except (ConnectionError, TimeoutError, OSError) as e:
-        print(json.dumps({"error": "network_error", "detail": str(e)}), file=sys.stderr)
-        sys.exit(1)
+        fail("network_error", str(e))
     finally:
-        if imap is not None:
-            try:
-                imap.logout()
-            except Exception:
-                pass
+        safe_logout(imap)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="IMAP Drafts 폴더에 초안을 저장합니다.")
-    parser.add_argument("--provider", required=True, choices=["naver", "google", "gmail", "daum", "icloud", "custom"])
+    parser.add_argument("--provider", required=True, choices=PROVIDER_CHOICES)
     parser.add_argument("--to", required=True, dest="to_addr")
     parser.add_argument("--subject", required=True)
     parser.add_argument("--body", required=True)

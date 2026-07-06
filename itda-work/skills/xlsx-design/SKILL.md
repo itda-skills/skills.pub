@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 argument-hint: "<데이터.json> [콘텐츠.md] [프리셋 또는 DESIGN.md 경로] [출력.xlsx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.3.0"
+  version: "0.3.1"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-29"
-  updated_at: "2026-06-29"
+  updated_at: "2026-07-06"
   tags: "xlsx, excel, spreadsheet, design-md, report"
 ---
 
@@ -41,7 +41,7 @@ metadata:
 
 > 핵심 격차: **openpyxl 은 수식을 계산하지 않는다.** `=SUM(...)` 를 써도 캐시값이 비어(`data_only=True`→`None`) 다른 도구가 못 읽는다. hyve **`recalc`**(Excel COM)가 실계산해 캐시를 채워야 살아있는 수식이 된다.
 
-**Prerequisites**: hyve 가동(개발=stdio `hyve mcp` / 배포=streamable HTTP `hyve serve` `/mcp`+Bearer) + `.mcp.json` 등록. **Windows + Microsoft Office 설치** 전제(`Visible=true` HARD).
+**Prerequisites**: hyve 가동(`hyve serve`) + **설정 > MCP 탭에서 문서(office) 프리셋 등록**(유저향 정본 — 전체 `/mcp` 폐지 #852·#887; stdio `hyve mcp` 는 개발·검증 전용). **Windows + Microsoft Office 설치** 전제(`Visible=true` HARD).
 
 **길X 계약**: 에이전트가 MCP verb 호출 → raw → **스킬 Python 후처리(openpyxl `data_only` 읽기)**. **Python 은 MCP 직접 호출 금지.**
 
@@ -139,6 +139,7 @@ sk.save_book(wb, OUT)
 py -3 scripts/verify.py <생성.xlsx> --tokens tokens.txt
 ```
 - **HARD GATE = (빈통합문서 + 토큰누락 + 한글_비안전폰트_셀 + 저대비) == 0**. PASS 시 exit 0.
+- **토큰은 셀 값 기준** — `tokens.txt` 에는 시트명·차트 제목이 아니라 **셀에 실제 들어간 텍스트**를 적는다(토큰 게이트는 셀 값만 대조하므로 시트명을 토큰으로 넣으면 헛 FAIL).
 - **한글 비안전 폰트 셀은 HARD** — 한글이 라틴 디스플레이 폰트로 박히면 의도와 다른 폴백.
 - **저대비(가독성)도 HARD**(#668) — 셀 글자색 ↔ 채움색 WCAG 대비 **3.0:1 미만 FAIL**. **다크 프리셋(equity-research-dark·tech-vivid-dark·kari)은 샌드위치**(브랜드 표지 밴드 + 라이트 데이터 시트)로 렌더 — 스프레드시트 가독·인쇄를 위해 전면 다크를 피합니다(`../design-core/mapping/xlsx.md`). design-core 가 토큰을 자동 보정하므로 `title_block(fill=primary)`(표지 밴드)·`kpi_block`·강조는 그대로 안전합니다.
 - advisory: 약대비(`weak_contrast` 3.0~4.5)·스타일 헤더 0개·차트 0개·빈 페이지·렌더 불가.

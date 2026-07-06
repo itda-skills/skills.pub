@@ -14,12 +14,12 @@
 - 흐름: ① 1급 생성(`gen.py`, openpyxl — 수식 포함) → ② **에이전트가 MCP 로 보강**(recalc 등) →
   ③ **스킬 Python 이 raw 를 후처리**(openpyxl `data_only=True` 로 계산값 읽기 / `verify.py`).
 
-## Prerequisites — hyve 가동 + `.mcp.json`
+## Prerequisites — hyve 가동 + MCP 등록
 
 | 상황 | transport | 기동 |
 |---|---|---|
-| **개발/검증** | stdio | `hyve mcp` (프록시) |
-| **유저 설치(배포)** | streamable HTTP | `hyve serve` → `/mcp` + Bearer token |
+| **개발/검증 (개발 전용)** | stdio | `hyve mcp stdio` |
+| **유저 설치(배포) — 정본** | streamable HTTP 프리셋 | `hyve serve` → 설정 > MCP 탭에서 **문서(office) 프리셋** 등록 (`/mcp/office` — 전체 `/mcp` 폐지, #852·#887) |
 
 - COM 보강은 **Windows + Microsoft Office 설치** 전제(`office_compute` 가 Windows-only).
 - 보강 중 Excel 이 화면에 뜬다(`Visible=true` HARD) — 정상 동작.
