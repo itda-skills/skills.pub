@@ -1,7 +1,7 @@
 ---
 name: data-prep
 description: >
-  엉망인 CSV·엑셀을 진단하고 원본은 그대로 둔 채 깔끔한 정돈본을 새 파일로 만들어주는 스킬입니다. "이 엑셀 정리해줘", "제목 행이 위에 있는데 정리해줘", "소계 행 빼고 깔끔하게"처럼 말하면 됩니다.
+  엉망인 CSV·엑셀을 진단하고 원본은 그대로 둔 채 깔끔한 정돈본을 새 파일로 만들어주는 스킬입니다. 공백·날짜·중복은 물론 대소문자 혼재(usa/USA)·깨진 인코딩(mojibake)·통화표기($1,200)까지 정제하고, 숫자에 텍스트가 섞인 열은 경고합니다. "이 엑셀 정리해줘", "제목 행이 위에 있는데 정리해줘", "소계 행 빼고 깔끔하게", "대소문자 통일해줘", "중복 제거해줘"처럼 말하면 됩니다.
   진단 → [가설] 제시 → 사용자 확인 → 정돈본 산출의 4단계로 안전하게 동작하며, cp949 한국 엑셀도 그대로 읽습니다.
 license: MIT
 compatibility: "Python 3.10+"
@@ -10,13 +10,13 @@ allowed-tools: Read, Bash, Write, Glob, Grep
 argument-hint: "[CSV 경로 또는 정돈 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.2.0"
   category: "data-tidy"
   status: "experimental"
   recommended: false
   created_at: "2026-06-25"
-  updated_at: "2026-06-25"
-  tags: "csv, tidy, cleanup, header, subtotal, stdlib, incubating"
+  updated_at: "2026-07-07"
+  tags: "csv, tidy, cleanup, header, subtotal, mojibake, casing, stdlib, incubating"
 ---
 
 # data-prep
@@ -55,7 +55,7 @@ print(report.render_confirm(diag))
 ```python
 import emit
 res = emit.emit_tidy(source_path, grid, diag)
-# → {tidy_path, transform_log, confirmation_id, tidy_row_count}. 원본 불변, 결정론 파일명.
+# → {tidy_path, transform_log, confirmation_id, tidy_row_count, cleanse_stats}. 값 정제 자동 적용, 원본 불변·결정론.
 ```
 
 ### data-ask preflight 계약 (REQ-031)
@@ -64,7 +64,7 @@ res = emit.emit_tidy(source_path, grid, diag)
 ---
 
 ## 범위 (현재) / 범위 외
-- 현재: 헤더 행 추정 · 소계/빈 행 제거 · 빈 열 제거 · 값 정제(공백·날짜 정규화·중복 제거) · 가로 전개(wide→long melt) · 다중 표 경계 감지.
+- 현재: 헤더 행 추정 · 소계/빈 행 제거 · 빈 열 제거 · 값 정제(공백·날짜·중복·mojibake 복구·대소문자 통일·통화/천단위 숫자화) · mixed-type 열 경고([가설]) · 가로 전개(wide→long melt) · 다중 표 경계 감지.
 - 모든 변환은 [가설]로 제시 후 사용자 확인을 거쳐 적용한다(단정 금지).
 - 범위 외: 통계 분석·질의 → `data-ask`. 원본 수정.
 
@@ -76,7 +76,7 @@ Python 3.10+ 표준 라이브러리만. macOS/Linux `python3`, Windows `py -3`.
 |---|---|
 | `loader.py` | cp949·utf-8 원시 그리드 로드 |
 | `diagnose.py` | 헤더·소계·빈 열 [가설] 진단 |
-| `cleanse.py` | 값 정제(공백·날짜 정규화·중복 제거) |
+| `cleanse.py` | 값 정제(공백·날짜·중복·mojibake·casing·통화숫자화) |
 | `wide.py` | 가로 전개 감지 + long melt |
 | `tables.py` | 다중 표 경계 감지 |
 | `report.py` | [가설] 카드 + 확인 요청 렌더 |

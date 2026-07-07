@@ -56,6 +56,41 @@ def detect_empty_columns(grid: list[list[str]], header_idx: int) -> list[int]:
             if all(c >= len(r) or str(r[c]).strip() == "" for r in data)]
 
 
+def _is_num_loose(s) -> bool:
+    """통화기호·천단위 콤마가 붙은 숫자도 숫자로 인정(number_as_text 정제로 해소되므로)."""
+    t = str(s)
+    for sym in "$₩€£¥":
+        t = t.replace(sym, "")
+    try:
+        float(t.replace(",", "").strip())
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def detect_mixed_type_columns(grid: list[list[str]], data_anchor: int, num_ratio: float = 0.7) -> list[dict]:
+    """대부분 숫자인데 '정제로도 안 풀리는' 텍스트가 소수 섞인 열 [가설] 감지. 경고만 한다.
+
+    통화·천단위 표기($1,200)는 number_as_text 정제로 숫자가 되므로 숫자로 본다 — 이걸 텍스트로
+    오판하면 정제하면 사라질 것을 경고하게 된다. 어느 타입으로 통일할지는 사람만 판단(값 삭제 위험).
+    """
+    data = grid[data_anchor + 1:]
+    if not data:
+        return []
+    width = max((len(r) for r in data), default=0)
+    out = []
+    for c in range(width):
+        vals = [str(r[c]).strip() for r in data if c < len(r) and str(r[c]).strip() != ""]
+        if len(vals) < 4:
+            continue
+        nums = sum(1 for v in vals if _is_num_loose(v))
+        ratio = nums / len(vals)
+        if num_ratio <= ratio < 1.0:
+            samples = [v for v in vals if not _is_num_loose(v)][:3]
+            out.append({"col": c, "num_ratio": round(ratio, 2), "text_samples": samples})
+    return out
+
+
 def detect_multirow_header(grid: list[list[str]], header_idx: int) -> int:
     """그룹 행 + 실제 컬럼 행으로 된 2행 헤더 감지(F6). 1 또는 2 반환."""
     if header_idx + 1 >= len(grid):
@@ -99,4 +134,5 @@ def diagnose(grid: list[list[str]]) -> dict:
         "header_hypothesis": header_hypothesis,
         "subtotal_rows": detect_subtotal_rows(grid, data_anchor),
         "empty_columns": detect_empty_columns(grid, data_anchor),
+        "mixed_type_columns": detect_mixed_type_columns(grid, data_anchor),
     }

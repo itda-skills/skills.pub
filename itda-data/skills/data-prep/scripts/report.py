@@ -14,6 +14,11 @@ def render_card(diagnosis: dict) -> str:
         lines.append(f"- 소계/빈 행으로 보이는 행(제거 후보): {diagnosis['subtotal_rows']}")
     if diagnosis["empty_columns"]:
         lines.append(f"- 빈 열로 보이는 열(제거 후보): {diagnosis['empty_columns']}")
+    for mc in diagnosis.get("mixed_type_columns", []):
+        lines.append(
+            f"- {mc['col']}열은 대부분 숫자(약 {int(mc['num_ratio'] * 100)}%)인데 "
+            f"텍스트가 섞여 보입니다(예: {mc['text_samples']}) — 확인이 필요합니다"
+        )
     return "\n".join(lines)
 
 
