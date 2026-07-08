@@ -1,0 +1,2 @@
+# hotel-search — 표준 라이브러리만 사용(별도 패키지 불필요).
+# 실제 네트워크 fetch 는 hyve web_browse MCP(에이전트 경유)가 담당한다.

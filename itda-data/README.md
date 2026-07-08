@@ -1,7 +1,8 @@
 # itda-data — 데이터 양심 vertical 스킬팩
 
 데이터에서 **거짓 확신을 자동 차단**하는 게이트형 스킬팩입니다. 사용자 의도축으로
-정리(`data-prep`)와 질문(`data-ask`) 두 스킬을 제공합니다. (SPEC-DATA-VERTICAL-001)
+정리(`data-prep`) · 질문(`data-ask`) · 수식감사(`data-audit`) · 수치검수(`data-verify`)
+네 스킬을 제공합니다. (SPEC-DATA-VERTICAL-001, 확장 #952·#967)
 
 ## 스킬 목록
 
@@ -9,6 +10,8 @@
 |------|------|------|
 | [`data-prep`](skills/data-prep/SKILL.md) | 엉망 CSV 구조 진단 + 원본 불변 정돈본 생성. 진단→[가설]→확인→정돈본. 헤더행·소계/빈행·빈열 + 값 정제(날짜·공백·중복)·가로전개(wide melt)·다중표 감지. | 진단 리포트 + `tidy_{해시}.csv` + 변환 로그 |
 | [`data-ask`](skills/data-ask/SKILL.md) | 한국어 질문을 **실제 계산**으로 답하는 질문 스킬. NL→typed QueryPlan→결정론 SQL→duckdb 실행(눈대중 금지). 서술 질의는 즉시 실행, 추론(회귀·상관)은 표본·다중공선성 양심 게이트 통과 후 실행+독립검증. 소셀 N 자동 경고. cp949 무손실. | 실행 SQL + 결과 + 정직 보고(소셀 경고) |
+| [`data-audit`](skills/data-audit/SKILL.md) | 엑셀 수식 오류·흔한 실수 감사. `#REF!`·하드코드(`=A1*1.05`)·범위 누락(off-by-one)·복붙 뭉갬·순환참조·깨진 링크. 보고 우선(확인 없이 셀 미변경). 파일=openpyxl 크로스플랫폼, Windows+Office=`office_audit` MCP 실시간 하이라이트+코멘트(같은 9종 규칙 공유). | 발견 테이블(Sheet·Cell·Severity·Category·Issue·Fix) + 요약 한 줄 / JSON |
+| [`data-verify`](skills/data-verify/SKILL.md) | 엑셀·CSV **수치 검수**. 부분합↔총계 내부정합·원장 외부대조·값 규칙(음수/범위/중복/합계목표)·시트 간 교차참조. 보고 전용, 허용오차 명시(눈대중 금지). 파일=openpyxl, Windows+Office=`office_audit` MCP 실시간. | 검수 보고서(종류·위치·기대값·실제값·차이·심각도) + 요약 한 줄 |
 
 ## 사용 시나리오
 
@@ -16,24 +19,30 @@
 > "지역별 환불율 알려줘" → `data-ask`가 QueryPlan→실제 계산→정직 보고(소셀 경고 동반)
 > "매출에 광고비가 영향 줘?"(추론) → `data-ask`가 표본·다중공선성 게이트 → 통과 시 회귀 실행+독립검증, 미달 시 거부
 > messy 입력으로 질문 → `data-ask`가 `data-prep` preflight 호출 → 정돈본 재로드 후 답
+> "이 시트 감사해줘"(수식 오류·하드코드·off-by-one) → `data-audit`가 위험 셀을 severity별로 보고
+> "합계 검산해줘"·"원장이랑 대조해줘" → `data-verify`가 기대값 vs 실제값 vs 차이로 불일치 지적
 
 ## 환경 변수 / 의존성
 
 - **환경 변수**: 없음. 외부 API 키·인증 불필요.
 - **Python 의존성**:
   - `data-prep`: stdlib only (Python 3.10+).
-  - `data-ask`: `duckdb>=1.3`(서술 SQL 실행, 항상). 추론 p-value·VIF는 `statsmodels` **lazy**(있을 때만, descriptive 경로 미로드). 없으면 다중공선성은 stdlib pairwise 상관으로 폴백.
-  - 설치: `uv pip install --system -r itda-data/skills/data-ask/requirements.txt`
+  - `data-ask`: `duckdb>=1.3`(서술 SQL 실행, 항상). 추론 p-value·VIF는 `statsmodels` **lazy**(있을 때만, descriptive 경로 미로드). 없으면 다중공선성은 stdlib pairwise 상관으로 폴백. cp949 파일은 duckdb `encodings` 확장 최초 1회 온라인 설치(이후 오프라인).
+  - `data-audit` · `data-verify`: `openpyxl>=3.1`(파일 감사·검수, 크로스플랫폼).
+  - 설치: 각 스킬의 `scripts/requirements.txt` 참조.
+- **선택(Windows + Office)**: `data-audit`·`data-verify`의 "열어둔 엑셀 실시간 지적"은 hyve `office_audit` MCP(office 프리셋)를 쓴다. openpyxl 파일 경로만 필요하면 불필요.
 
 ## 보안
 
 `data-ask` 실행기는 코드 강제: `enable_external_access=false`(네트워크·디스크쓰기·확장설치 차단) · SELECT-only · 강제 LIMIT · plan 리터럴 파라미터 바인딩(인젝션 차단) · 원본 인메모리 적재(원본 경로 미전달).
 
+`data-audit`·`data-verify`는 **보고 전용** — 확인 없이 셀·값을 바꾸지 않고, 사용자가 특정 발견의 수정을 요청할 때만 해당 셀만 고치며 원본 백업을 남긴다.
+
 ## 로컬 테스트
 
 ```bash
 claude --plugin-dir itda-data
-# 스킬별 테스트(배포 방식): python3 -m pytest itda-data/skills/data-ask/scripts/tests/
+# 스킬별 테스트(배포 방식): python3 -m pytest itda-data/skills/<skill>/scripts/tests/   # <skill>: data-prep · data-ask · data-audit · data-verify
 ```
 
 ## 설치
@@ -45,7 +54,7 @@ claude plugin install itda-skills/skills.pub itda-data
 ## 구현 기준
 
 - 현재 동작 기준: 각 스킬의 `SKILL.md`, `scripts/`, `scripts/tests/`, `requirements.txt`
-- 정본 thesis: SPEC-DATA-VERTICAL-001 (구 ADVISOR/TIDY/RUNNER SPEC은 Superseded 히스토리)
+- 정본 thesis: SPEC-DATA-VERTICAL-001 (구 ADVISOR/TIDY/RUNNER SPEC은 Superseded 히스토리). `data-audit`(#952, Claude for Excel `audit-xls` 이식)·`data-verify`(#967)는 vertical 확장.
 
 ## 라이선스
 
