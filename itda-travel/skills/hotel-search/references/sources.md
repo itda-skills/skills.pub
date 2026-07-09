@@ -1,93 +1,67 @@
-# 예약 사이트 엔드포인트·파라미터 메모
+# 데이터 소스 — Xotelo API (트립어드바이저 메타서치)
 
-각 사이트 파서(`scripts/<site>.py`)의 근거 자료. **응답 파싱 키 경로는 라이브 실측으로 확정**한다
-(browser-automation-explore-first — 추측 파서 금지, spa-api-first-collection — XHR 원본 우선).
+가격 소스는 **Xotelo**(https://xotelo.com/) 무료 API 하나다. 순수 `urllib` 로 직접 호출한다
+(브라우저·hyve·API 키 불필요). 아래 사실은 **라이브 실측으로 확정**했다(#1013, 2026-07-09 —
+browser-automation-explore-first: 추측 금지·실측 우선, data-accuracy: plausible ≠ correct).
 
-## Booking.com (MVP — 라이브 실측 확정 2026-07-07, #982)
+## 엔드포인트 (무료 `data.xotelo.com` — 실측)
 
-전체 실측 로그: [`booking-live-probe.md`](booking-live-probe.md).
+| endpoint | 파라미터 | 무료 | 반환 |
+|---|---|:---:|---|
+| `/rates` | `hotel_key,chk_in,chk_out,currency[,adults,rooms]` | ✅ | OTA별 `{code,name,rate,tax}` |
+| `/heatmap` | `hotel_key,chk_out` | ✅ | 싼날/평균/비싼날 달력 |
+| `/list` | `location_key[,offset,limit,sort]` | ❌ | 유효 geo(g60763)로도 400 — 무료 티어 폐기, 미사용 |
+| `/search` | `query` | ❌ | 401 "RapidAPI 전용"(유료 키) — 미사용 |
 
-### 검색 URL
+- **인증 없음** — `/rates`·`/heatmap` 은 키 없이 200. 순수 Python `urllib` 로 호출됨(coupang 처럼
+  Akamai 에 막히지 않음) → 이 스킬이 web_browse 의존을 벗은 근거.
+- **`rate` = 1박 평균가** — 실측: 1박 \$308 / 2박 \$261 / 3박 \$243 (박수↑ 시 1박 단가↓). 각 OTA에서
+  **예약 가능한 최저 객실**의 1박가 대표값. 총액 = `rate × nights`. **객실 타입 구분·객실별 가격 없음**.
+- **`tax` 대부분 null** — 세금 분해 미제공.
+- **OTA 노출 개수 편차** — 호텔·날짜별 1~4개. 실측: 노보텔 서울(4개: Klook·Trip.com·Agoda·Booking) vs
+  써미트 서울 특정일(Trip.com 1개).
 
-```
-GET https://www.booking.com/searchresults.ko.html
-  ss={질의}                 호텔명(자동완성으로 dest_id/latlong 해소가 정본)
-  checkin/checkout={YYYY-MM-DD}
-  group_adults / no_rooms / group_children
-  selected_currency={ISO}   KRW / USD / ...   lang={locale}   ko / ...
-```
+### 요금 응답 예 (`/rates`)
 
-⚠️ **cold(비워밍업) 세션은 파라미터가 스트립**돼 빈 검색폼으로 되돌아온다(anti-bot). 워밍업(attach)
-세션의 실동작 URL 은 `ss=` + `dest_id=<GooglePlaces>` + `dest_type=latlong` + `latitude/longitude`
-+ `checkin/checkout` 을 전부 `&` 로 유지한다(자동완성 선택으로 dest 해소됨).
-
-### 응답 데이터 소스 (실측 결과)
-
-- 검색결과는 **SSR DOM** — 리스팅 graphql XHR **없음**(부수 호출 3종: signedGoogleMapsUrlBff·wishlist·genius).
-  `spa-api-first` 비적용. **정본 raw = web_browse `extract`**(item_selector=property-card) 구조화 JSON.
-- **anti-bot(AWS WAF)** — 비워밍업 세션은 가격 원천 withhold(카드 "날짜 선택", 가격 요소 0).
-  **`mode=attach`**(사용자가 직접 검색·워밍업한 Chrome)만 priced 결과를 준다.
-- 확정 selector → 공통 offer 스키마 매핑:
-  | offer 필드 | 소스 selector | 파싱 |
-  |---|---|---|
-  | `hotel_name` | `[data-testid='title']` | 그대로 |
-  | `price`(체류 총액) | `[data-testid='price-and-discounted-price']` | `₩726,000`→726000 |
-  | `per_night` | (동상) | `round(price/nights)` |
-  | `rating`(+`rating_scale`=10)·`review_count` | `[data-testid='review-score']` | `9.2 9.2 최고 764개 이용 후기`→(9.2, 764) |
-  | `room_type`·`free_cancellation` | `[data-testid='recommended-units']` | 선두 구절 / `"무료 취소"` 포함 여부 |
-  | `url` | `a[data-testid='title-link']` href | extract 미지원 → `snapshot mode=html` 보조 파싱(`parse_name_url_map`, 이름 기준 매칭, affiliate 쿼리 제거). HTML 미제공 시 None |
-  | `breakfast` | — | unit 에 정보 없음 → None |
-- 실측 응답 박제: `tests/fixtures/booking_search.json`(6 카드), 단위테스트 `tests/test_booking_parse.py`.
-
-### 차단
-
-- 비워밍업 세션 = 가격 미표시(카드 "날짜 선택"). 사용자에게 그 Chrome 창에서 직접 검색해 가격을 띄우게 안내 후 재추출.
-- 403/CAPTCHA(`extract_booking._BLOCK`) = BlockedError(exit 4) → 재워밍업.
-
-## TripAdvisor (가격 소스 비대상 — 라이브 실측 2026-07-07, #982)
-
-**결론: 가격 비교 소스로 미채택**(마스터 결정). 실측 근거:
-
-- 검색결과(`Hotels-g<geo>-…-Hotels.html`) 카드의 **가격 위젯이 대부분 제거**됨 —
-  `[data-automation='hotels_nexus_commerce_removed']` 가 "예약 가능 여부 확인" 버튼만 노출.
-  실측 8/8 카드 전부 가격 없음, HTML 전체 "시작 ₩" 은 37 카드 중 3건(상단 스폰서 캐러셀)뿐.
-- 유효 데이터는 **평점(5점 척도)·리뷰수**뿐(가격 아님):
-  name `[data-automation='hotel-card-title']` · rating `[data-automation='bubbleRatingValue']`(5점) ·
-  review `[data-automation='bubbleReviewCount']`.
-- 카드 컨테이너도 안정 selector 없이 **난독화 클래스(`li.stFPg`)뿐** → 파서 취약.
-- #982 리스크 #1("TripAdvisor 가격 = 제휴사 메타값, 불안정")의 실증. 가격 정본은 Booking·Agoda.
-
-→ 향후 평점 교차참조가 필요하면 rating-only enrichment 로 재검토(가격 컬럼 없음). 지금은 미구현.
-
-## Expedia (후속 후보)
-
-- 아직 미실측. 착수 시 attach 워밍업 + extract 로 selector 실측(Booking/Agoda 전례).
-
-## Agoda (라이브 실측 확정 2026-07-07, #982)
-
-### 검색 URL
-
-```
-GET https://www.agoda.com/search
-  textToSearch={질의}   checkIn/checkOut={YYYY-MM-DD}
-  rooms / adults / children   priceCur={ISO}   los={박수}   locale=ko-kr
+```json
+{"error": null,
+ "result": {"chk_in": "2026-08-15", "chk_out": "2026-08-17", "currency": "USD",
+            "rates": [{"code": "BookingCom", "name": "Booking.com", "rate": 290, "tax": null},
+                      {"code": "Agoda", "name": "Agoda.com", "rate": 289, "tax": null}]}}
 ```
 
-dest 는 자동완성 선택으로 city/latlong 해소가 정본(Booking 동형). cold 세션은 anti-bot 스트립 가능 → **mode=attach**.
+파서: `xotelo.parse_rates` → 공통 offer(`ota_code,ota_name,per_night,total,tax,per_night_krw,total_krw`),
+1박가 오름차순. 실측 fixture: `tests/fixtures/xotelo_rates_multi.json`·`xotelo_heatmap.json`·
+`xotelo_rates_error_currency.json`, 테스트 `tests/test_xotelo.py`.
 
-### 응답 데이터 소스 (실측 결과)
+## hotel_key / location_key (TripAdvisor 식별자)
 
-- 검색결과 SPA. 정본 raw = web_browse `extract`(item_selector=`[data-selenium='hotel-item']`) 구조화 JSON.
-- 확정 selector → 공통 offer 스키마:
-  | offer 필드 | 소스 selector | 파싱 |
-  |---|---|---|
-  | `hotel_name` | `[data-selenium='hotel-name']` | 그대로 |
-  | `per_night`(세금포함) | `[data-selenium='total-price-per-night']` | `Total per night ₩ 314,007`→314007 |
-  | `price`(체류 총액) | (동상) | `per_night × nights` |
-  | `rating`(scale=10)·`review_count` | `[data-mimir-element-data='dictator']` aria | `… 8.5 out of 10 with 27,382 reviews`→(8.5, 27382) |
-  | `free_cancellation` | `[data-badge-id='fcl']` | 존재=True |
-  | `room_type` / `url` | — | 검색카드 미표기 → None |
-- ⚠️ **가격 정본 = `total-price-per-night`(세금·수수료 포함)**. 헤드라인 `display-price` 는 세금 제외
-  할인가라 사이트 간 비교 정본 아님(data-accuracy). UI 라벨이 영어로 오기도 함(review aria 영어 고정 — 파싱 견고).
-- 미렌더(스크롤 전) 카드는 `hotel_name`/`total_per_night` null → 파서가 건너뜀. 충분히 스크롤 후 추출.
-- 실측 fixture: `tests/fixtures/agoda_search.json`(3 priced + 3 미렌더), 테스트 `tests/test_agoda_parse.py`.
+- **hotel_key** = `g<geo>-d<hotel>` (예 `g294197-d5250436`). TripAdvisor 호텔 페이지 URL
+  `Hotel_Review-g294197-d5250436-Reviews-…html` 에서 추출(`xotelo.extract_hotel_key`, URL·순수키 공용).
+- 무료 이름 검색이 없으므로 hotel_key 는 **에이전트 web_search** 또는 **사용자 URL 직접 제공**으로
+  확보한다(SKILL.md). 서울 geo = `g294197`(실측 커버리지 확인).
+
+## 통화 · 환율
+
+- Xotelo 허용 통화(실측): **USD·GBP·EUR·CAD·CHF·AUD·JPY·CNY·INR·THB·BRL·HKD·RUB·BZD** — **KRW 없음**.
+- → USD 등으로 수집 후 `open.er-api.com/v6/latest/<base>`(무료·키 없음, `.rates.KRW`)로 원화 환산 표시
+  (`fx.krw_rate`). 조회 실패는 조용히 덮지 않고 출력에 명시(no-silent-fallback).
+
+## 정확성 게이트 (P3 — 통과 2026-07-09, #1013)
+
+구 스킬(0.1.0)은 **TripAdvisor 메타 가격을 "불안정"이라며 배제**했었다(그때 소스는 Booking/Agoda DOM).
+Xotelo 는 그 메타값을 API 로 노출하므로, 채택 전 **Xotelo `/rates` 값 vs 실제 Booking.com 값을 라이브
+1회 교차검증**했다(노보텔 앰배서더 서울 동대문 `g294197-d14159727`, 2026-08-13 체크인):
+
+| 숙박 | 실제 Booking.com 1박 환산 | Xotelo Booking.com 1박 | 델타 |
+|---|---|---|---|
+| 1박 | \$212.69 | \$213 | +0.15% |
+| 2박 | \$234.02 | \$234 | −0.01% |
+| 3박 | \$260.67 | \$261 | +0.13% |
+
+→ 세 숙박일수 전부 **오차 0.2% 이내**(반올림 수준). Xotelo 가 실제 OTA 표시가를 재현함을 확인 →
+채택 확정. 레거시 자산(`booking.py`·`agoda.py`·`booking-live-probe.md`·`output.offers_to_markdown`·
+해당 파서 테스트)은 삭제 완료.
+
+> 단, n=1 호텔·1 date-cluster 검증이다. 메타값은 원칙적으로 실제 예약가와 다를 수 있으므로(data-accuracy)
+> SKILL.md 는 "실제 예약가와 다를 수 있음" 캐비엇을 상시 노출한다.
