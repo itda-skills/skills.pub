@@ -2,6 +2,26 @@
 
 본 스킬의 버전별 변경 이력. 형식: [Keep a Changelog](https://keepachangelog.com/), 날짜 YYYY-MM-DD.
 
+## [0.5.1] - 2026-07-11
+
+### Added
+- **매체 라우팅에 hyve artifact 행** (#1022) — hyve 로컬 아티팩트(MCP `artifacts.create`)를 웹/HTML 의 특수형으로 명문화: 표준 DESIGN.md 원문 직해석 + hyve 매체 계약(`artifacts.design_catalog` — 오프라인 임베드·팝업 금지(인페이지 모달)·차트는 내장 `window.hyChart`·다크는 `dark:` variant, 단일 테마 아이덴티티는 존중) 준수. 어댑터 코드 신설 없음([HARD] 직해석 정본 규칙 그대로). 근거: 동일 실적 리포트 3자 비교 실증(프리셋 조립 vs 자유 디자인 vs `catalog/samsung-sds` 직해석)에서 직해석이 hyve 아티팩트 표면에서도 성립함을 확인.
+
+## [0.5.0] - 2026-07-11
+
+### Added
+- **getdesign-first 재편** (#1021) — 표준 DESIGN.md(Google Stitch 포맷) 차용 워크플로우(①선택 ②직해석 미니 프리뷰 ③획득: npx 정본/GitHub raw 폴백 ④매체 라우팅 ⑤CJK Addendum ⑥갭 필러)를 SKILL.md 정본으로 신설. `schema/design-md-standard.md` — 9섹션 스펙·표준↔v2 비교표·획득 명령·직해석 원칙·CJK Addendum 템플릿·미니 프리뷰 관습·저작 규율.
+- **한국 확장 카탈로그 `catalog/`** — getdesign(75종 서구 브랜드, MIT)에 없는 브랜드를 같은 표준 포맷으로 저작. PoC 1종: `catalog/samsung-sds/`(9섹션 + frontmatter 완결 + Korean Typography Addendum + Known Gaps, 직해석 preview.html — `library/samsung-sds.md` v2 프리셋과 시각 동등).
+
+### Changed
+- **정체성 재정의** — "매체 독립 토큰 SSOT" → **두 레이어 허브**: 직해석 레이어(표준 DESIGN.md — LLM 소비·1회성 산출 정본) + 결정론 레이어(v2 토큰 — dockit·sheetkit 코드 소비·반복 파이프라인 drift 0). 저작 관문A 에 경로 분기(getdesign 차용/프리셋·카탈로그/신규 저작 — 유명 브랜드는 차용이 기본값), 관문 B~E 에 표준 포맷 산출 트랙 추가.
+- **[HARD] 표준 DESIGN.md 는 `design_core.load()` 비대상** — 실측(#1021): 자동 매핑이 minimax `accent #ff5530`→None·font→None, bmw-m 원본 신호 76개→유효 5색으로 원문을 깎음. 직해석이 정본.
+- `schema/design-md-v2.md` 제목을 "design-core 토큰(v2) 스키마"로 개칭 — 표준 DESIGN.md 와 별개의 코드 소비용 dialect 임을 서두에 명시.
+- 형제 스킬 연동 — pptx-design(0.7.3)·docx-design(0.3.2)·xlsx-design(0.3.2) SKILL 에 표준 DESIGN.md 원문 직행 경로 명시.
+
+### Notes
+- 비목표(기각·#1021): getdesign→v2 정규화 흡수 어댑터(원문 소실 병목), HWPX 스타일 경로(design-core 소비 표면 0 실측), 75종 vendoring(add 가 곧 캐시), preview.py 의 표준 포맷 지원(직해석 프리뷰로 대체). v2 는 폐기하지 않음(코드 소비자 실존 — 병존).
+
 ## [0.4.0] - 2026-06-29
 
 ### Added

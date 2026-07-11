@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 argument-hint: "<콘텐츠.md> [데이터.json] [프리셋 또는 DESIGN.md 경로] [출력.docx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.3.1"
+  version: "0.3.2"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-29"
-  updated_at: "2026-07-06"
+  updated_at: "2026-07-11"
   tags: "docx, word, report, design-md, document"
 ---
 
@@ -80,6 +80,7 @@ py -3 -m pip install -r requirements.txt     # + pywin32(Word COM 렌더)
 
 레퍼런스:
 - **★디자인 프리셋(ready-to-use 8종)**: `../design-core/library/` — 선택 표는 그 안의 `README.md`. 톤 키워드("컨설팅"·"에디토리얼"·"신문"·"미니멀"…)가 오면 여기서 1종을 골라 적용.
+- **★표준 DESIGN.md 차용(getdesign 75종 + 한국 확장 `../design-core/catalog/`)**: 유명 브랜드 톤이 오면 design-core getdesign-first 워크플로우(`../design-core/SKILL.md`)로 원문을 획득해 관문2 "표준 DESIGN.md 제공 시" 경로로 소비(`../design-core/schema/design-md-standard.md`).
 - **토큰 → Word 스타일 매핑**: `../design-core/mapping/docx.md`
 - **DESIGN.md → docx 3열 필터 + 재현 카탈로그**: `references/design-md-mapping.md`
 - **공개 헬퍼 API**: `scripts/dockit.py` (생성 스크립트가 import) · **검증기**: `scripts/verify.py` · **렌더기**: `scripts/render.py`
@@ -104,7 +105,8 @@ py -3 -m pip install -r requirements.txt     # + pywin32(Word COM 렌더)
 - **프리셋/DESIGN.md 미제공 + 톤 신호 있음 → 바로 진행**: `../design-core/library/README.md` 선택 표에서 주제 적합 프리셋 1종을 골라 적용합니다(연차보고서·IR·전략 → consulting-mbb, 데이터 리포트·에디토리얼 → warm-editorial, 저널·인쇄 → print-broadsheet, 프리미엄·제품 → minimal-mono 등).
 - **무신호 + 대화형 → [HARD] 톤 선택 게이트**: 주제 적합 후보 2~3종 + "주제에 맞게 알아서" 를 `AskUserQuestion` 으로 제시합니다.
 - **무신호 + 비대화형 → 자동 선택 폴백**: 주제·톤에 맞는 프리셋 1종을 스스로 골라 적용하고, 선택 근거를 한 줄 남깁니다.
-- **DESIGN.md 제공 시**: `design_core.load(<경로>)` → `docx_styles()` 로 토큰을 받습니다. 핵심 팔레트 hex 를 헤딩·표 헤더·콜아웃·규칙선에 실제로 반영합니다.
+- **프리셋/v2 DESIGN.md 제공 시**: `design_core.load(<경로>)` → `docx_styles()` 로 토큰을 받습니다. 핵심 팔레트 hex 를 헤딩·표 헤더·콜아웃·규칙선에 실제로 반영합니다.
+- **★표준 DESIGN.md(Stitch/getdesign — 9섹션 + 다단 역할 frontmatter) 제공 시**: `load()` **비대상**입니다(자동 매핑이 원문을 깎음 — `../design-core/schema/design-md-standard.md` [HARD]). **원문을 직해석**해 핵심 hex(primary·ink·surface·hairline·의미색)를 `gen.py` 에 직접 인용하고, 한글 eastAsia 분리 바인딩(dockit)은 그대로 방어합니다. **반복 파이프라인**(정기 산출)이면 v2 프리셋을 쓰거나 핵심 토큰을 v2 로 옮겨 적어(사람 확인) `load()` 경로로 태웁니다.
 - **★한글 정책(docx 재설계 — pptx 가드 verbatim 이식 ❌)**: Word 는 한글을 네이티브로 정상 렌더합니다. 핵심은 run 의 `w:rFonts` 를 **ascii/hAnsi(라틴 디스플레이) ↔ eastAsia(안전 한글 고딕)로 분리 바인딩**하는 것입니다 — dockit 의 `set_run_font` / `apply_design` 이 자동 집행합니다. 라틴 디스플레이가 세리프여도 한글은 고딕으로 분리되어 "세리프 헤드 + 한글 고딕" 이 깔끔히 공존합니다(pptx LibreOffice 경로가 못 하던 것). 음수 자간 클램프는 불필요(Word 정상 처리).
 - **재현 천장 인지**: Word 단락/표에는 모서리 반경(`radius`)이 없고(무시), 네이티브 그라디언트는 비1급(필요 시 Pillow PNG 임베드·표지 한정). 색·헤딩 위계·표 스타일·헤더/푸터·간격은 높은 재현입니다(`references/design-md-mapping.md`).
 

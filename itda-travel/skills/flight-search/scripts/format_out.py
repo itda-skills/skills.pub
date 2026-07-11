@@ -181,6 +181,51 @@ def format_search_text(payload: dict[str, Any], query: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+GATEWAY_NOTE = (
+    "관문 최저가 ≠ 여정 총비용 — 관문 도시에서 최종 목적지까지의 기차/저가항공 "
+    "비용·시간을 더해 비교하세요."
+)
+
+
+def format_destinations_text(payload: dict[str, Any], query: dict[str, Any]) -> str:
+    """다중 목적지(관문) 비교 결과를 한국어 텍스트로(#1025)."""
+    meta = payload["meta"]
+    dests = payload.get("destinations", [])
+    lines = [
+        f"✈️ {query.get('from')} → 관문 비교({query.get('to')}) / "
+        f"{query.get('label', '')} / 성인 {query.get('adults')} / {query.get('seat')}",
+        f"표본: 목적지 {meta.get('destinations')} × "
+        f"날짜 {meta.get('sampled_dates_per_destination')} = "
+        f"조회 {meta.get('total_queries')}회",
+    ]
+    priced = [d for d in dests if d.get("min_price") is not None]
+    unpriced = [d for d in dests if d.get("min_price") is None]
+    if priced:
+        lines.append("\n관문 최저가 순위")
+        for i, d in enumerate(priced, 1):
+            url = d.get("booking_search_url", "")
+            lines.append(
+                f"{i}. {d['to']} — {money_krw(d['min_price'])} "
+                f"({d.get('cheapest_date')})  {url}".rstrip()
+            )
+    if unpriced:
+        names = ", ".join(d["to"] for d in unpriced)
+        lines.append(f"\n확인 불가: {names} (조회 실패 또는 가격 없음)")
+    failures = [
+        (d["to"], r)
+        for d in dests
+        for r in d.get("rows", [])
+        if not r.get("ok")
+    ]
+    if failures:
+        lines.append(f"\n실패 {len(failures)}건:")
+        for to, r in failures[:5]:
+            lines.append(f"- {to} {r['date']}: {r.get('error')}")
+    if priced:
+        lines.append(f"\n※ {GATEWAY_NOTE}")
+    return "\n".join(lines)
+
+
 def format_compare_text(payload: dict[str, Any], query: dict[str, Any]) -> str:
     """월/범위/연도 비교 결과를 한국어 텍스트로."""
     meta = payload["meta"]
@@ -197,7 +242,10 @@ def format_compare_text(payload: dict[str, Any], query: dict[str, Any]) -> str:
         lines.append("\n싼 날짜 TOP")
         for i, r in enumerate(cheapest, 1):
             url = r.get("booking_search_url", "")
-            lines.append(f"{i}. {r['date']} — {money_krw(r.get('min_price'))}  {url}".rstrip())
+            seg = r["date"]
+            if r.get("return_date"):
+                seg += f" ~ {r['return_date']}"
+            lines.append(f"{i}. {seg} — {money_krw(r.get('min_price'))}  {url}".rstrip())
     failures = [r for r in payload.get("rows", []) if not r.get("ok")]
     if failures:
         lines.append(f"\n실패 {len(failures)}건:")

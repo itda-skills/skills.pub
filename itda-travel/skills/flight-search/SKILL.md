@@ -3,8 +3,9 @@ name: flight-search
 description: >
   Google Flights 공개 검색으로 항공권을 조회·비교하는 스킬입니다.
   "인천에서 도쿄 6월 26일 항공권 찾아줘", "ICN-NRT 다음 달 최저가 언제야?",
-  "올해랑 내년 6월 1일 가격 비교"처럼 말하면 됩니다. 예약·결제는 하지 않고
-  검색 결과·예약 검색 링크·날짜별 최저가만 제공합니다.
+  "9월에 7일 일정 왕복으로 제일 싼 출발일은?", "로마·파리·암스테르담 중 어디로
+  들어가는 게 싸?", "올해랑 내년 6월 1일 가격 비교"처럼 말하면 됩니다.
+  예약·결제는 하지 않고 검색 결과·예약 검색 링크·날짜별 최저가만 제공합니다.
 license: MIT
 compatibility: "Python 3.10+. fast-flights(Google Flights 공개 표면) 의존."
 user-invocable: true
@@ -13,10 +14,10 @@ argument-hint: "인천에서 나리타 6월 26일 / ICN-BKK 다음 달 최저가
 metadata:
   author: "Chinseok"
   category: "data-fetching"
-  version: "0.1.0"
+  version: "0.3.1"
   status: "experimental"
   created_at: "2026-06-05"
-  updated_at: "2026-06-05"
+  updated_at: "2026-07-11"
   tags: "flight, airfare, google-flights, fast-flights, travel, iata, fare-compare"
 ---
 
@@ -74,11 +75,20 @@ python3 scripts/main.py search --from ICN --to NRT --date 2026-06-26 --return-da
 # 한 달 최저가 비교(주 1회 샘플, 빠름)
 python3 scripts/main.py compare-month --from ICN --to NRT --month 2026-07 --sample weekly
 
+# 왕복 날짜 유연 비교 — 체류일 고정 슬라이딩(출발일마다 +7일 귀국 왕복가)
+python3 scripts/main.py compare-month --from ICN --to NCE --month 2026-09 --stay 7
+
 # 한 달 매일 비교(요청 누적 — 일수 cap·간격 하한 강제)
 python3 scripts/main.py compare-month --from ICN --to BKK --month 2026-07 --sample daily --sleep 2
 
 # 날짜 범위 비교
 python3 scripts/main.py compare-range --from ICN --to BKK --start-date 2026-07-01 --end-date 2026-07-20 --step-days 3
+
+# 다중 목적지(관문) 비교 — 같은 날짜의 목적지별 최저가 순위(쉼표 구분, 최대 8개)
+python3 scripts/main.py compare-destinations --from ICN --to FCO,CDG,AMS --date 2026-09-10
+
+# 관문 비교를 한 달 단위로(weekly 샘플 강제 — 목적지 × 날짜 총 조회 cap 40)
+python3 scripts/main.py compare-destinations --from ICN --to FCO,CDG,AMS --month 2026-09
 
 # 연도 비교(같은 월일)
 python3 scripts/main.py compare-years --from ICN --to NRT --years 2026,2027 --month-day 06-01
@@ -88,7 +98,9 @@ python3 scripts/main.py compare-years --from ICN --to NRT --years 2026,2027 --mo
 
 옵션(서브커맨드 **뒤**에 둡니다): `--adults N`(기본 1) ·
 `--seat economy|premium-economy|business|first` · `--limit N` · `--json` ·
-(비교) `--sleep 초`.
+(비교) `--sleep 초` · `--stay N`(왕복 체류일 — 출발일마다 `+N`일 귀국 왕복가
+비교, 미지정 시 편도. `compare-destinations` 에는 없음 — 관문×왕복 조합은
+cap 재검토 전까지 범위 밖).
 
 > 공항은 IATA 코드(ICN·NRT·BKK 등) 또는 흔한 한국어 도시명(서울·도쿄·방콕 등)으로
 > 줍니다. 모호한 도시(도쿄=NRT/HND, 뉴욕, 런던 등)는 어느 공항인지 되묻습니다.
@@ -97,7 +109,11 @@ python3 scripts/main.py compare-years --from ICN --to NRT --years 2026,2027 --mo
 `meta.price_band`(low/typical/high), `stats.min_price`·`avg_price`·`max_price`,
 `flights[].name`·`departure`·`arrival`·`duration`·`stops`·`price_text`·
 `quality`(complete|partial). 비교는 `stats.min_price`·`avg_of_daily_min`·
-`max_of_daily_min` 과 `cheapest_dates[]`.
+`max_of_daily_min` 과 `cheapest_dates[]`(왕복 `--stay` 시 각 항목에
+`return_date`, `query.trip`/`query.stay_days` 병기). 관문 비교는
+`destinations[]`(최저가 순 — `to`·`min_price`·`cheapest_date`·
+`avg_of_daily_min`·`booking_search_url`·`rows[]`) 와
+`meta.total_queries`.
 
 ## Claude 라우팅 가이드
 
@@ -126,6 +142,27 @@ daily 월 비교는 ~30회 조회가 발생합니다. 사용자가 명시하지 
 **규칙 5 — 가격은 조회 시점**
 표시 가격이 실제 결제가(로그인가·할인·마일리지)와 다를 수 있음을 덧붙입니다.
 
+**규칙 6 — 왕복 날짜 유연 요청은 `--stay` 2단 흐름**
+"출발·귀국 날짜 유연하게 제일 싼 왕복" 요청은 ① 체류일을 확인(또는 사용자
+언급에서 추론)해 `compare-month`/`compare-range` 에 `--stay N` 으로 1차 스캔 →
+② 싼 출발일 TOP 에서 `search --date --return-date` 로 상세·예약 링크를
+확인합니다. 출발×귀국 전 조합(2D 그리드) 전수 조회는 매크로 금지 계약 위반이라
+하지 않습니다. 체류일이 여러 개면(예: 5일도 7일도 가능) 실행을 나눠 각각
+스캔하고 조회량이 배가됨을 안내합니다.
+날짜가 몇 달 열려 있으면 coarse→fine 으로: `compare-month`(weekly)로 싼 달을
+좁힌 뒤, 유망 구간만 `compare-range --step-days 1 --stay N`(cap 31일 내)로
+일 단위 재스캔합니다 — 주 단위 표본은 저가일을 놓칩니다(ICN-NCE 실증: 일 단위
+재스캔이 주 단위 최저 대비 -20만원대 날짜를 발견).
+
+**규칙 7 — 목적지 유연(관문) 요청은 후보를 확인받고 `compare-destinations`**
+"유럽 아무 데나 싸게 들어가면 된다" 류 요청은 스킬이 목적지를 자동 발견하지
+않습니다(Explore 미지원). Claude 가 흔한 관문 후보(예: 유럽 FCO·CDG·AMS·MXP·
+BCN·IST)를 **제안하고 사용자 확인을 받아** 쉼표 목록으로 넘깁니다(최대 8개).
+결과 전달 시 **관문 최저가 ≠ 여정 총비용**임을 반드시 덧붙입니다 — 관문에서
+최종 목적지까지의 기차/저가항공 비용·시간을 더해 비교하도록 안내(출력의 ※
+주의 문구 유지). 목적지가 확정된 요청(예: "깐느")을 임의로 관문 비교로 바꾸지
+않습니다.
+
 ## 제약 (Exclusions)
 
 - **예약·결제·좌석지정·취소** — 영구 비목표(검색·비교 전용).
@@ -134,6 +171,11 @@ daily 월 비교는 ~30회 조회가 발생합니다. 사용자가 명시하지 
 - **Skyscanner 직접 조회** — `skyscanner.net` 은 기본 접속부터 CAPTCHA/403 이라
   provider 로 쓰지 않습니다(SPEC-FLIGHT-SEARCH-001 의 Google Flights 접근 전환 사유).
 - **매크로/반복 폴링** — 비교는 일수 cap(최대 31)·요청간격 하한(1초)을 코드로 강제.
+- **출발×귀국 2D 전수 그리드** — 왕복 날짜 비교는 체류일 고정 슬라이딩(`--stay`)
+  만 지원. 전 조합 조회(~900회)는 매크로 금지 계약 위반이라 하지 않음(#1024).
+- **Explore(목적지 자동 발견)·후보 자동 선정** — 관문 비교는 호출자가 제시한
+  후보 열거만(#1025). fast-flights 는 Explore 표면 미지원이며, 스킬이 목적지를
+  임의 선정하지 않음. 관문→최종 목적지 연결 비용(기차·LCC) 계산도 범위 밖.
 
 ## Failure modes
 

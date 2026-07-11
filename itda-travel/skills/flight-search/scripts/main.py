@@ -142,6 +142,9 @@ def cmd_search(args) -> int:
 
 
 def _run_compare(args, dates, label) -> int:
+    stay = getattr(args, "stay", None)
+    if stay:
+        label += f" / 왕복 체류 {stay}일"
     capped, dropped = compare.cap_dates(dates)
     payload = compare.scan_dates(
         adapter.search,
@@ -152,12 +155,15 @@ def _run_compare(args, dates, label) -> int:
         seat=args.seat,
         limit=args.limit,
         sleep=args.sleep,
+        stay=stay,
     )
     query = {
         "from": args._origin,
         "to": args._dest,
         "adults": args.adults,
         "seat": args.seat,
+        "trip": "round-trip" if stay else "one-way",
+        "stay_days": stay,
         "label": label,
     }
     payload["query"] = query
@@ -201,6 +207,74 @@ def cmd_compare_range(args) -> int:
         raise FlightUsageError("종료일은 시작일과 같거나 이후여야 합니다.")
     dates = compare.range_dates(start, end, args.step_days)
     return _run_compare(args, dates, f"{start}~{end} ({args.step_days}일 간격)")
+
+
+def _resolve_destinations(args) -> tuple[str, list[str]]:
+    """--to 쉼표 목록 전수 해석(#1025) — 조회 전에 모호/중복/상한을 확정한다.
+
+    1개라도 모호(AmbiguousCity)면 여기서 올라가 조회가 시작되지 않는다(AC).
+    중복은 순서 보존 dedup, 목적지 수 상한 초과는 fail-loud.
+    """
+    origin = airports.resolve_airport(args.from_airport, "출발")
+    dests: list[str] = []
+    for token in [t for t in re.split(r"[,\s]+", args.to_airports.strip()) if t]:
+        dest = airports.resolve_airport(token, "도착")
+        airports.ensure_distinct(origin, dest)
+        if dest not in dests:
+            dests.append(dest)
+    if not dests:
+        raise FlightUsageError("도착 목적지가 비어 있습니다(쉼표 구분, 예: FCO,CDG,AMS).")
+    if len(dests) > compare.MAX_DESTINATIONS:
+        raise FlightUsageError(
+            f"목적지가 {len(dests)}개입니다 — 한 번에 최대 "
+            f"{compare.MAX_DESTINATIONS}개까지 비교합니다(요청량 가드). "
+            "후보를 좁혀 다시 시도하세요."
+        )
+    return origin, dests
+
+
+def cmd_compare_destinations(args) -> int:
+    origin, dests = _resolve_destinations(args)
+    if args.date:
+        dates = [datetime.strptime(_valid_date(args.date, "조회일"), "%Y-%m-%d").date()]
+        label = args.date
+    else:
+        _valid_month(args.month)
+        dates = compare.month_dates(args.month, "weekly")  # weekly 샘플 강제(#1025)
+        label = f"{args.month} weekly"
+    payload = compare.scan_destinations(
+        adapter.search,
+        origin,
+        dests,
+        dates,
+        adults=args.adults,
+        seat=args.seat,
+        limit=args.limit,
+        sleep=args.sleep,
+    )
+    query = {
+        "from": origin,
+        "to": ",".join(dests),
+        "adults": args.adults,
+        "seat": args.seat,
+        "label": label,
+    }
+    payload["query"] = query
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        print(fmt.format_destinations_text(payload, query))
+    total = sum(d.get("sampled_dates", 0) for d in payload["destinations"])
+    succeeded = sum(d.get("successful_dates", 0) for d in payload["destinations"])
+    if total > 0 and succeeded == 0:
+        # fail-loud 대칭(_run_compare 와 동일): 전 조회 실패는 실패로 보고.
+        print(
+            "\n전 목적지 조회에 실패했습니다(의존성 미설치·전면 차단 가능). "
+            "위 실패 사유를 확인하고 잠시 후 재시도하세요.",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
 
 
 def cmd_compare_years(args) -> int:
@@ -247,6 +321,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=compare.MIN_SLEEP_SECONDS,
         help=f"조회 간 대기초(최소 {compare.MIN_SLEEP_SECONDS} 강제)",
     )
+    slow.add_argument(
+        "--stay",
+        type=positive_int,
+        default=None,
+        help="왕복 체류일 — 출발일마다 +N일 귀국 왕복가 비교(미지정 시 편도)",
+    )
 
     p = argparse.ArgumentParser(
         prog="flight-search",
@@ -280,6 +360,30 @@ def build_parser() -> argparse.ArgumentParser:
     y.add_argument("--years", required=True, help="쉼표 구분(예: 2026,2027)")
     y.add_argument("--month-day", required=True, help="MM-DD(예: 06-01)")
     y.set_defaults(func=cmd_compare_years)
+
+    # 관문 비교(#1025) — route/slow 부모 미사용: --to 는 쉼표 목록이고,
+    # --stay(왕복) 조합은 cap 재검토 전까지 범위 밖이라 노출하지 않는다.
+    dst = sub.add_parser(
+        "compare-destinations", parents=[common],
+        help="다중 목적지(관문) 최저가 비교",
+    )
+    dst.add_argument(
+        "--from", dest="from_airport", required=True, help="출발(IATA 또는 한국어 도시명)"
+    )
+    dst.add_argument(
+        "--to", dest="to_airports", required=True,
+        help=f"도착 목적지들 — 쉼표 구분, 최대 {compare.MAX_DESTINATIONS}개(예: FCO,CDG,AMS)",
+    )
+    when = dst.add_mutually_exclusive_group(required=True)
+    when.add_argument("--date", help="조회일 YYYY-MM-DD(단일 날짜)")
+    when.add_argument("--month", help="YYYY-MM(주 1회 샘플 강제)")
+    dst.add_argument(
+        "--sleep",
+        type=nonneg_float,
+        default=compare.MIN_SLEEP_SECONDS,
+        help=f"조회 간 대기초(최소 {compare.MIN_SLEEP_SECONDS} 강제)",
+    )
+    dst.set_defaults(func=cmd_compare_destinations)
 
     return p
 

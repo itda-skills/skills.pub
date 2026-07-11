@@ -1,4 +1,6 @@
-# design-core 토큰 라이브러리 — ready-to-use DESIGN.md 프리셋
+# design-core 토큰 라이브러리 — ready-to-use v2 프리셋
+
+> **유명 서구 브랜드 톤**("스포티파이 느낌"·"스트라이프처럼")은 본 라이브러리가 아니라 **getdesign 표준 DESIGN.md 차용**이 우선이다(`../SKILL.md` getdesign-first 워크플로우·`../schema/design-md-standard.md`, #1021). 본 라이브러리는 **결정론 토큰(v2)** 프리셋 — 코드 소비(dockit·sheetkit)·반복 파이프라인용이자, getdesign 에 없는 한국·문서 톤 커버리지다. 표준 포맷의 한국 확장 카탈로그는 `../catalog/`.
 
 DESIGN.md 미제공 시(또는 "컨설팅 느낌"·"다크 트레이딩 톤" 같은 톤 키워드만 있을 때) 이 디렉토리에서 주제 적합 프리셋 1종을 골라 **그대로 DESIGN.md 로 적용**한다. 각 프리셋은 **색·평면 기하·레이아웃·모티프** 등 매체 중립 토큰 서브셋(재현도 높은 축)을 담으며, 매체별 어댑터가 이를 소비한다(PPTX 재현 세부·한계: `../../pptx-design/references/design-md-mapping.md`).
 

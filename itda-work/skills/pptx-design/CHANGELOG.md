@@ -2,6 +2,11 @@
 
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.7.3] — 2026-07-11
+
+### Changed
+- **표준 DESIGN.md 차용 경로 명시** (#1021) — 유명 브랜드 톤 신호("스포티파이 느낌" 등) 시 design-core getdesign-first 워크플로우(카탈로그 75종 + 한국 확장 `../design-core/catalog/`)로 원문을 획득해 관문2 "DESIGN.md 제공 시" 경로로 소비(직해석 정본 — `design_core.load()` 비대상, 한글 덱은 CJK Addendum 증보). 레퍼런스 프리셋 수 표기 6종→8종 정합.
+
 ## [0.7.2] — 2026-07-06
 
 ### Changed

@@ -1,5 +1,11 @@
 # Changelog — docx-design
 
+## 0.3.2 (2026-07-11)
+
+표준 DESIGN.md 직해석 경로 명시 (#1021).
+
+- 관문2 에 "표준 DESIGN.md(Stitch/getdesign) 제공 시" 분기 신설 — `design_core.load()` 비대상(자동 매핑이 원문을 깎음), 원문 직해석으로 핵심 hex 를 `gen.py` 에 직접 인용, 한글 eastAsia 분리 바인딩은 dockit 이 그대로 방어. 반복 파이프라인은 v2 경로 유지. 레퍼런스에 getdesign 차용 포인터 추가.
+
 ## 0.3.1 (2026-07-06)
 
 MCP 온보딩 정본화 (hyve#921).

@@ -1,6 +1,8 @@
-# DESIGN.md v2 스키마
+# design-core 토큰(v2) 스키마
 
 매체 독립 디자인 토큰의 frontmatter 명세. v1 평면 형식(`colors`/`typography`/...)도 `design_core.normalize()` 가 v2 로 자동 승격하므로(legacy 무중단), 신규 작성은 v2 를 권장하되 v1 도 유효하다. 계층 의미는 `token-layers.md` 참조.
+
+> ⚠️ **본 v2 는 코드 소비용 dialect 다** — `design_core.load()` 를 거쳐 dockit(docx)·sheetkit(xlsx) 등 코드 렌더러가 결정론 토큰을 요구하는 **반복 파이프라인** 전용. **Google Stitch 표준 DESIGN.md**(9섹션 산문 + 확장 frontmatter — getdesign.md 카탈로그)와는 이름만 비슷한 **별개 포맷**이며, 표준 파일은 `load()` 대상이 아니다(자동 매핑이 원문을 깎는다 — 직해석이 정본, `design-md-standard.md` §비교표·#1021).
 
 ## 토큰 그룹
 

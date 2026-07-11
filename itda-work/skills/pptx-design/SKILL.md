@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 argument-hint: "<콘텐츠.md> [데이터.json] [DESIGN.md 경로 또는 URL] [출력.pptx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.7.2"
+  version: "0.7.3"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-08"
-  updated_at: "2026-07-06"
+  updated_at: "2026-07-11"
   tags: "pptx, presentation, design-md, deck, slides"
 ---
 
@@ -56,7 +56,8 @@ py -3 -m pip install -r requirements.txt
 - **OCR 검증층(C, advisory)**은 `pytesseract` + `tesseract`(kor+eng)이 있을 때만 동작하며, 없으면 자동 스킵됩니다(하드게이트엔 영향 없음).
 
 레퍼런스:
-- **★디자인 프리셋(ready-to-use DESIGN.md 6종)**: `../design-core/library/` — 선택 표는 그 안의 `README.md`. 톤 키워드("컨설팅 스타일"·"다크 트레이딩"…)가 오면 여기서 1종을 골라 DESIGN.md 로 적용.
+- **★디자인 프리셋(ready-to-use DESIGN.md 8종)**: `../design-core/library/` — 선택 표는 그 안의 `README.md`. 톤 키워드("컨설팅 스타일"·"다크 트레이딩"…)가 오면 여기서 1종을 골라 DESIGN.md 로 적용.
+- **★표준 DESIGN.md 차용(getdesign 75종 + 한국 확장 `../design-core/catalog/`)**: 유명 브랜드 톤("스포티파이 느낌"·"스트라이프처럼")이 오면 design-core 의 getdesign-first 워크플로우(`../design-core/SKILL.md`)로 획득한 **원문을 그대로** 관문2 "DESIGN.md 제공 시" 경로로 소비 — `design_core.load()` 비대상(직해석 정본·CJK Addendum 증보 포함, `../design-core/schema/design-md-standard.md`).
 - **기본 디자인 가이드(흡수·1급 경로)**: `references/anthropic-pptx-design-ideas.md` — 팔레트·타이포 페어링·레이아웃·QA 루프(DESIGN.md 없을 때 우선).
 - **레시피·함정·CJK 폰트·네이티브 차트·렌더 명령**: `references/pptx-toolkit.md`
 - **DESIGN.md → pptx 3열 필터 매핑(pptx 적용/한글 적용/필터) + 재현 카탈로그**: `references/design-md-mapping.md`
@@ -83,7 +84,7 @@ py -3 -m pip install -r requirements.txt
 ### 관문2 — 디자인 시스템 해석 (superset: 기본 가이드 토대 + DESIGN.md 필터)
 
 - **DESIGN.md 미제공 시(1급 경로) — 디자인 신호 유무로 분기**: 여기서 **신호** = `DESIGN.md` · 프리셋 이름 · 톤·스타일 키워드("MBB/컨설팅"·"트레이딩 다크"·"에디토리얼"·"신문 감각"·"미니멀"…) 중 **하나라도** 주어진 것.
-  - **신호 있음 → 바로 진행(되묻지 않음)**: `../design-core/library/README.md` 선택 표에서 **주제·톤 적합 프리셋 1종을 골라 그 파일을 DESIGN.md 로 적용**합니다(팔레트 + 슬라이드 문법 레시피 포함 — 이후 "DESIGN.md 제공 시"와 동일하게 처리). 명확한 사용자 의도는 확인차 되묻지 않습니다.
+  - **신호 있음 → 바로 진행(되묻지 않음)**: `../design-core/library/README.md` 선택 표에서 **주제·톤 적합 프리셋 1종을 골라 그 파일을 DESIGN.md 로 적용**합니다(팔레트 + 슬라이드 문법 레시피 포함 — 이후 "DESIGN.md 제공 시"와 동일하게 처리). 명확한 사용자 의도는 확인차 되묻지 않습니다. **유명 브랜드 이름이 신호면**("스포티파이 느낌"·"스트라이프처럼") design-core 의 getdesign-first 워크플로우(`../design-core/SKILL.md`)로 표준 DESIGN.md 원문을 획득해(한글 덱이면 CJK Addendum 증보 포함) 같은 경로로 적용합니다.
   - **★무신호("그냥 맡기기") + 대화형 환경 → [HARD·대화형 한정] 톤 선택 게이트**: 자동으로 고르지 말고, 콘텐츠 주제·톤을 읽어 `../design-core/library/`(프리셋 6종) + `GUIDE.md` §2.3(20 톤 변형 카탈로그)에서 **주제 적합 후보 2~3종을 엄선**하고, 마지막 보기로 **"주제에 맞게 알아서 골라줘"** 를 더해 **총 3~4개 보기**(AskUserQuestion 4보기 상한 준수)로 **`AskUserQuestion`** 에 제시합니다. 각 보기는 프리셋/톤 이름 + 한 줄 성격으로 라벨링합니다(예: "consulting-mbb — 네이비 임원 보고 톤", "warm-editorial — 크림·코랄 데이터 리포트 톤"). 큐레이션 근거는 `../design-core/library/README.md` 선택 표의 "잘 맞는 주제" 열입니다. 이 게이트는 **Claude 가 AskUserQuestion 으로 직접 수행**하며(scripts 무관), 사용자가 고른 1종을 위 "신호 있음" 경로(프리셋→DESIGN.md 적용)로 그대로 소비합니다. 도구가 자동 제공하는 "기타"로 사용자가 다른 프리셋·DESIGN.md·자사 컬러를 직접 지정할 수도 있습니다.
   - **무신호 + 비대화형(MCP/Cowork/자동화) · 또는 사용자가 "알아서"를 고름 · 또는 물을 수 없는 상황 → 자동 선택 폴백**: `references/anthropic-pptx-design-ideas.md`(기본 스킬 흡수 가이드) + `references/design-md-mapping.md` §3 내장 검증 팔레트에서 주제·톤에 맞는 팔레트 1종(지배 색 60~70% + 보조 1~2 + 액센트 1)을, 또는 주제 적합 프리셋 1종을 **스스로 선택**하고, 타이포 페어링·레이아웃 다양화·"모든 슬라이드에 시각 요소"·여백 규칙을 따릅니다.
   - **공통**: 어느 경로든 **최종 선택 근거를 한 줄로 남깁니다**(대화형이면 사용자의 선택 + 이유, 폴백이면 자동 선택 이유).

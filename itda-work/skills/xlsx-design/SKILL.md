@@ -11,12 +11,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 argument-hint: "<데이터.json> [콘텐츠.md] [프리셋 또는 DESIGN.md 경로] [출력.xlsx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.3.1"
+  version: "0.3.2"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-29"
-  updated_at: "2026-07-06"
+  updated_at: "2026-07-11"
   tags: "xlsx, excel, spreadsheet, design-md, report"
 ---
 
@@ -81,6 +81,7 @@ py -3 -m pip install -r requirements.txt     # + pywin32(Excel COM 렌더)
 
 레퍼런스:
 - **디자인 프리셋 8종**: `../design-core/library/` (선택 표 `README.md`)
+- **표준 DESIGN.md 차용(getdesign 75종 + 한국 확장 `../design-core/catalog/`)**: 유명 브랜드 톤이 오면 design-core getdesign-first 워크플로우(`../design-core/SKILL.md`)로 원문 획득 → 관문2 "표준 DESIGN.md 제공 시" 경로(`../design-core/schema/design-md-standard.md`)
 - **토큰 → Excel 스타일 매핑**: `../design-core/mapping/xlsx.md`
 - **DESIGN.md → xlsx 매핑 + 재현 카탈로그**: `references/design-md-mapping.md`
 - **공개 헬퍼 API**: `scripts/sheetkit.py` · **검증기**: `scripts/verify.py` · **렌더기**: `scripts/render.py`
@@ -99,7 +100,8 @@ py -3 -m pip install -r requirements.txt     # + pywin32(Excel COM 렌더)
 - **톤 신호 있음 → 바로 진행**: `../design-core/library/README.md` 에서 주제 적합 프리셋 1종 적용(IR·전략 → consulting-mbb, 데이터 리포트 → warm-editorial 등).
 - **무신호 + 대화형 → [HARD] 톤 선택 게이트**: 후보 2~3종 + "알아서" 를 `AskUserQuestion` 으로.
 - **무신호 + 비대화형 → 자동 폴백**: 주제 적합 프리셋 자동 선택 + 근거 한 줄.
-- **토큰 적용**: `design_core.load(<프리셋/경로>).xlsx_styles()` → 헤더 fill·zebra·차트 팔레트·조건부서식 색에 실제 hex 반영.
+- **토큰 적용(프리셋/v2)**: `design_core.load(<프리셋/경로>).xlsx_styles()` → 헤더 fill·zebra·차트 팔레트·조건부서식 색에 실제 hex 반영.
+- **★표준 DESIGN.md(Stitch/getdesign) 제공 시**: `load()` **비대상**(원문을 깎음 — `../design-core/schema/design-md-standard.md` [HARD]). 원문을 직해석해 핵심 hex 를 `gen.py` 에 직접 인용하고, 한글 셀 안전 폰트(sheetkit)는 그대로 방어. 반복 파이프라인이면 v2 프리셋/이관(사람 확인) 후 `load()` 경로.
 - **★한글 정책(xlsx 재설계)**: Excel 은 셀 단일 폰트(run/cell ascii↔eastAsia 분리 없음)라 docx 와 다르다 — **한글이 담긴 셀의 폰트를 Korean-capable(Malgun Gothic 우선)로 보장**한다. sheetkit 의 `set_cell`/`data_table` 가 셀 텍스트 언어로 자동 분기(한글=안전 고딕, 라틴/숫자=디스플레이 폰트).
 - **재현 천장**: Excel 셀에 모서리 반경·그라디언트 모티프는 약함(무시). 표 스타일·숫자서식·조건부서식·차트 팔레트·freeze·열폭은 높은 재현.
 
