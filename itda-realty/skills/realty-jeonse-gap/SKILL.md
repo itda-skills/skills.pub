@@ -145,8 +145,8 @@ python3 scripts/jeonse_gap_cli.py --format table screen \
 
 ```bash
 # macOS/Linux
-python3 -m pytest itda-realty/skills/realty-jeonse-gap/scripts/tests/ -v
+python3 -m pytest itda-realty/skills/realty-jeonse-gap/tests/ -v
 
 # Windows
-py -3 -m pytest itda-realty/skills/realty-jeonse-gap/scripts/tests/ -v
+py -3 -m pytest itda-realty/skills/realty-jeonse-gap/tests/ -v
 ```

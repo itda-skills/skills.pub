@@ -112,8 +112,8 @@ python3 scripts/supply_cli.py subscription \
 
 ```bash
 # macOS/Linux
-python3 -m pytest itda-realty/skills/realty-supply/scripts/tests/ -v
+python3 -m pytest itda-realty/skills/realty-supply/tests/ -v
 
 # Windows
-py -3 -m pytest itda-realty/skills/realty-supply/scripts/tests/ -v
+py -3 -m pytest itda-realty/skills/realty-supply/tests/ -v
 ```

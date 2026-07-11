@@ -42,7 +42,7 @@
 
 ```bash
 claude --plugin-dir itda-data
-# 스킬별 테스트(배포 방식): python3 -m pytest itda-data/skills/<skill>/scripts/tests/   # <skill>: data-prep · data-ask · data-audit · data-verify
+# 스킬별 테스트(배포 방식): python3 -m pytest itda-data/skills/<skill>/tests/   # <skill>: data-prep · data-ask · data-audit · data-verify
 ```
 
 ## 설치
@@ -53,7 +53,7 @@ claude plugin install itda-skills/skills.pub itda-data
 
 ## 구현 기준
 
-- 현재 동작 기준: 각 스킬의 `SKILL.md`, `scripts/`, `scripts/tests/`, `requirements.txt`
+- 현재 동작 기준: 각 스킬의 `SKILL.md`, `scripts/`, `tests/`, `requirements.txt`
 - 정본 thesis: SPEC-DATA-VERTICAL-001 (구 ADVISOR/TIDY/RUNNER SPEC은 Superseded 히스토리). `data-audit`(#952, Claude for Excel `audit-xls` 이식)·`data-verify`(#967)는 vertical 확장.
 
 ## 라이선스

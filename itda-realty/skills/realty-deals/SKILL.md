@@ -177,10 +177,10 @@ python3 scripts/deals_cli.py regions
 
 ```bash
 # macOS/Linux
-python3 -m pytest itda-realty/skills/realty-deals/scripts/tests/ -v
+python3 -m pytest itda-realty/skills/realty-deals/tests/ -v
 
 # Windows
-py -3 -m pytest itda-realty/skills/realty-deals/scripts/tests/ -v
+py -3 -m pytest itda-realty/skills/realty-deals/tests/ -v
 ```
 
 ## 마이그레이션 안내

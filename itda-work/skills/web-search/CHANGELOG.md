@@ -2,6 +2,12 @@
 
 이 스킬의 주요 변경 이력입니다. (Keep a Changelog 형식)
 
+## [0.1.2] — 2026-07-11
+
+### Fixed
+
+- **Windows cp949 stdio 크래시** (#1036) — 진입점에서 stdout/stderr 를 utf-8 로 reconfigure. locale(cp949) 콘솔·파이프에서 `--check-env` 의 `✓`/`✗`(U+2713/2717)·결과 렌더링의 em-dash(U+2014) 출력이 `UnicodeEncodeError` 로 죽고, cp949 로 나간 한국어 stderr 가 utf-8 부모 프로세스의 파이프 디코드를 깨뜨리던 문제 해소. deployed-style 테스트 4건이 Windows 에서 GREEN 복귀(저장소 관례 — etf-naver·docx-design 동형).
+
 ## [0.1.1] — 2026-06-10
 
 ### Added

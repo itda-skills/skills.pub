@@ -14,9 +14,9 @@ argument-hint: "[질의어] [--engine auto|tavily|serper|perplexity|naver|exa] [
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "search"
-  version: "0.1.1"
+  version: "0.1.2"
   created_at: "2026-06-09"
-  updated_at: "2026-06-10"
+  updated_at: "2026-07-11"
   tags: "search, web search, query, multi engine, tavily, serper, perplexity, naver, exa"
 ---
 

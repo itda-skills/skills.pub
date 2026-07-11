@@ -6,6 +6,15 @@ import json
 import sys
 from pathlib import Path
 
+# Windows locale(cp949) stdio 고정 해제 — JSON detail 의 한국어 안내가 cp949 로
+# 인코딩되면 utf-8 부모 프로세스의 파이프 디코드가 깨진다 (#1036).
+for _stream in (sys.stdout, sys.stderr):
+    if _stream.encoding and _stream.encoding.lower() not in ("utf-8", "utf8"):
+        try:
+            _stream.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+        except AttributeError:  # pragma: no cover - Python < 3.7
+            pass
+
 sys.path.insert(0, str(Path(__file__).parent))
 from caldav_providers import (detect_providers, get_provider,  # noqa: E402
                               is_supported_provider, supported_provider_names)

@@ -10,9 +10,9 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.2.3"
+  version: "0.2.4"
   created_at: "2026-06-01"
-  updated_at: "2026-06-29"
+  updated_at: "2026-07-11"
   tags: "calendar, caldav, icloud, apple, naver, event, schedule, recurrence, rrule, valarm, alarm, reminder, timezone, etag, ical, icalendar, multi-account, custom-caldav"
 ---
 

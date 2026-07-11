@@ -3,6 +3,11 @@
 All notable changes to the `calendar` skill are documented here.
 This skill follows the itda-skills SPEC workflow (SPEC-CALENDAR-001).
 
+## [0.2.4] - 2026-07-11
+
+### Fixed
+- **Windows cp949 stdio 파이프 디코드 실패** (#1036) — CLI 진입 공통(`cli_common.py`)과 `check_env.py` 에서 stdout/stderr 를 utf-8 로 reconfigure. locale(cp949)로 인코딩된 JSON `detail` 한국어 안내가 utf-8 부모 프로세스(subprocess 파이프)의 디코드를 깨뜨려 stdout 이 None 이 되던 문제 해소. deployed 테스트 2건(unsupported_provider bogus/google)이 Windows 에서 GREEN 복귀.
+
 ## [0.2.3] - 2026-06-29
 
 ### Changed

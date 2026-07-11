@@ -142,8 +142,8 @@ python3 scripts/price_stats_cli.py derive \
 
 ```bash
 # macOS/Linux
-python3 -m pytest itda-realty/skills/realty-price-stats/scripts/tests/ -v
+python3 -m pytest itda-realty/skills/realty-price-stats/tests/ -v
 
 # Windows
-py -3 -m pytest itda-realty/skills/realty-price-stats/scripts/tests/ -v
+py -3 -m pytest itda-realty/skills/realty-price-stats/tests/ -v
 ```

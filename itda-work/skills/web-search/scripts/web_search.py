@@ -15,6 +15,15 @@ import sys
 if sys.version_info < (3, 10):  # pragma: no cover - 런타임 가드
     sys.exit("web-search는 Python 3.10 이상이 필요합니다.")
 
+# Windows locale(cp949) stdio 고정 해제 — ✓/✗·em-dash 출력 크래시와
+# utf-8 부모 프로세스의 파이프 디코드 실패 방지 (#1036).
+for _stream in (sys.stdout, sys.stderr):
+    if _stream.encoding and _stream.encoding.lower() not in ("utf-8", "utf8"):
+        try:
+            _stream.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+        except AttributeError:  # pragma: no cover - Python < 3.7
+            pass
+
 from search_env import ENGINE_NAMES, all_guides, available_engines
 from search_format import render
 from search_http import SearchError
