@@ -1,5 +1,20 @@
 # Changelog — itda-email
 
+## [0.28.0] — 2026-07-10 (이슈 #1018)
+
+### Bug Fixes
+
+- **`read_email.py` 기본 경로 UID SEARCH/FETCH 통일 — UID-only IMAP 서버(ecount) 호환**: `--since-last-run` 없는 기본 경로가 시퀀스 번호 `imap.search()`/`imap.fetch()`를 썼는데, ecount(wmbox3.ecount.com)처럼 UID 검색만 지원하는 서버는 이를 `NO [CANNOT] Search command must send messages with UID`로 거부한다. 모든 경로를 `UID SEARCH`/`UID FETCH`로 통일했다(스킬 내 다른 스크립트와 동일 패턴, 외부 사용자 실측으로 UID SEARCH 정상 동작 확인).
+- **SEARCH/FETCH 실패 응답 오파싱 차단**: 응답 `typ`을 확인하지 않아 서버 `NO` 에러 텍스트(`b'must'`, `b'send'`, `b'UID'` …)가 메시지 ID로 파싱되고 후속 FETCH가 `Invalid parameter: U`로 깨졌다. 3곳 SEARCH + FETCH 전부 `typ='OK'` 검증(`_ensure_ok`) + SEARCH 결과 토큰 자릿수 검증을 추가해 실패를 에러 JSON으로 표면화한다(no-silent-fallback — 다른 검색으로 재시도하지 않음).
+
+### BREAKING
+
+- **`id` 필드가 sequence number → UID**: 기본 경로도 UID로 동작하므로 `id`는 `uid`와 동일한 값이 된다. sequence number는 세션 한정·휘발이라 재사용 불가였고(#692), 기존 소비자(`reply_context.py`·draft 도구 `--uid`)는 전부 UID 기반이라 실질 영향 없음.
+
+### Tests
+
+- `TestUidSearchHardening` 6종: ecount NO 응답 시나리오(에러 표면화 + FETCH 미호출), 비숫자 토큰 거부(통합·단위), 기본 경로 UID 명령 전용(`imap.search`/`imap.fetch` 미호출) + `id`==`uid`. `scripts/tests` `_FakeIMAP` 도 UID 인터페이스로 정합(시퀀스 `search()`/`seq_search` 제거 — 릴리즈 CI 에서 표면화된 후속). email 누적 610 passed(skip 0, tests/ + scripts/tests/).
+
 ## [0.27.0] — 2026-06-30 (이슈 #694)
 
 ### Performance

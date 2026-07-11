@@ -10,9 +10,9 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.27.0"
+  version: "0.28.0"
   created_at: "2026-03-18"
-  updated_at: "2026-06-29"
+  updated_at: "2026-07-10"
   tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references"
 ---
 
@@ -193,7 +193,7 @@ Output: 메시지 JSON 배열.
 | Field | Type | Description |
 |-------|------|-------------|
 | `uid` | string\|null | **IMAP UID — 안정 식별자.** `reply_context.py`/`read_draft.py`/`send_draft.py`/`delete_draft.py`의 `--uid`에 그대로 넘긴다. 회신·초안 조작은 항상 이 값을 쓴다 |
-| `id` | string | IMAP **sequence number**(세션 한정·휘발). 표시·디버그용. **`--uid`에 넣지 말 것** — UID와 다르다(이슈 #692) |
+| `id` | string | `uid`와 **동일한 UID 값**(이슈 #1018에서 sequence number 폐기 — 모든 SEARCH/FETCH가 UID 명령). 하위 호환용 잔존 필드, 신규 소비는 `uid` 권장 |
 | `from` / `subject` / `date` | string | sanitize 처리됨 |
 | `message_id` / `in_reply_to` / `references` | string\|null | 스레딩 헤더(RFC 5322). `reply_context.py`가 스레드 재구성에 사용 |
 | `to` / `cc` / `bcc` | array | `[{"name":"…","addr":"…"}]` dict list. 빈 헤더는 `[]`. RFC 2047 디코딩됨 |
@@ -234,7 +234,7 @@ Output: 메시지 JSON 배열.
 
 ### Reply Context — 회신 컨텍스트 수집
 
-회신을 쓰기 전, 코드가 결정론적으로 **관련 이메일을 수집**해 토큰 효율적인 컨텍스트 묶음을 만든다. 대상 메일 1건의 **UID**만 주면 된다 — 이 UID는 `read_email.py` 출력의 `uid` 필드다(`id`(sequence number) **아님**, 이슈 #692).
+회신을 쓰기 전, 코드가 결정론적으로 **관련 이메일을 수집**해 토큰 효율적인 컨텍스트 묶음을 만든다. 대상 메일 1건의 **UID**만 주면 된다 — 이 UID는 `read_email.py` 출력의 `uid` 필드다(#1018부터 `id`도 동일한 UID 값이지만 `uid`를 정본으로 쓴다).
 
 ```bash
 python3 scripts/reply_context.py --provider icloud --uid 33027
@@ -435,13 +435,13 @@ Custom provider도 동일 패턴 (`SMTP_HOST_COMPANY` 등 + `--account company`)
 `read_email.py` 메타조회(기본):
 
 ```json
-[{"id": "42", "uid": "33027", "from": "sender@example.com", "subject": "Hello",
+[{"id": "33027", "uid": "33027", "from": "sender@example.com", "subject": "Hello",
   "date": "Mon, 01 Jan 2026 12:00:00 +0000",
   "spf": "pass", "dkim": "pass", "dmarc": "pass",
   "auth_label": "SPF:pass | DKIM:pass | DMARC:pass",
   "reply_to": null, "reply_to_differs": false, "warnings": []}]
 ```
 
-회신·초안 조작은 `uid`(여기선 `"33027"`)를 쓴다. `id`(`"42"`, sequence number)는 표시용이며 `--uid`와 호환되지 않는다.
+회신·초안 조작은 `uid`(여기선 `"33027"`)를 쓴다. `id`는 #1018부터 동일한 UID 값이 들어가는 하위 호환 필드다(과거 sequence number 폐기).
 
 `--body` 지정 시 위 객체에 `body`(`===EMAIL_CONTENT_START===\n...\n===EMAIL_CONTENT_END===`), `total_chars`, `truncated` 키가 추가된다. `list_folders.py`는 [List Folders](#list-folders) 섹션 스키마 참조.

@@ -42,9 +42,9 @@ _HEADER_FIELDS = (
     " MESSAGE-ID IN-REPLY-TO REFERENCES"
 )
 # UID prefix in every FETCH (issue #692): the reply workflow (reply_context.py
-# --uid) and the draft tools all key off the *stable* UID. Plain imap.search()
-# yields a per-session sequence number, so without asking for UID here the JSON
-# output could only expose that sequence number — which is NOT a valid --uid.
+# --uid) and the draft tools all key off the *stable* UID. All SEARCH/FETCH here
+# are UID commands (issue #1018) — sequence numbers are per-session and some
+# servers (ecount) reject sequence-number SEARCH outright.
 _HEADERS_ONLY_FETCH_SPEC = f"(UID BODY.PEEK[HEADER.FIELDS ({_HEADER_FIELDS})])"
 # Full message fetch via PEEK (does NOT mark \Seen flag, unlike RFC822).
 _FULL_FETCH_SPEC = "(UID BODY.PEEK[])"
@@ -314,16 +314,45 @@ def _fetch_uidvalidity(imap: imaplib.IMAP4, folder_enc: str) -> int:
     return 0
 
 
+def _ensure_ok(typ: str, data: list, command: str) -> None:
+    """Surface a failed IMAP command instead of parsing its error text.
+
+    Servers like ecount (wmbox3.ecount.com) reject sequence-number SEARCH with
+    ``NO [CANNOT] Search command must send messages with UID``. imaplib hands
+    that tagged error text back as the response *data*, so skipping this check
+    would let ``.split()`` turn the error words into bogus message ids
+    (issue #1018).
+    """
+    if typ == "OK":
+        return
+    detail = ""
+    if data and data[0] is not None:
+        first = data[0]
+        detail = first.decode(errors="replace") if isinstance(first, bytes) else str(first)
+    raise imaplib.IMAP4.error(f"{command} failed: {typ} {detail}".strip())
+
+
 def _parse_uid_search_result(data: list) -> list[bytes]:
-    """Normalize an imap.uid('SEARCH', ...) response into a list of UID bytes."""
+    """Normalize an imap.uid('SEARCH', ...) response into a list of UID bytes.
+
+    Every token must be numeric — a non-digit token means the response is not
+    a UID list (e.g. server error text), which must surface as an error rather
+    than flow into FETCH as a message id (issue #1018).
+    """
     if not data or data[0] is None:
         return []
     first = data[0]
-    if isinstance(first, bytes):
-        return first.split()
     if isinstance(first, str):
-        return first.encode().split()
-    return []
+        first = first.encode()
+    if not isinstance(first, bytes):
+        return []
+    tokens = first.split()
+    for token in tokens:
+        if not token.isdigit():
+            raise imaplib.IMAP4.error(
+                f"SEARCH returned a non-numeric token: {token.decode(errors='replace')!r}"
+            )
+    return tokens
 
 
 def _extract_uid_from_fetch(fetch_data: list) -> str | None:
@@ -504,23 +533,21 @@ def main() -> None:
         incremental_fetch = (
             args.since_last_run and prev_uid is not None and not uidvalidity_changed
         )
-        # When since-last-run is active we operate exclusively on UIDs so the
-        # cursor we persist is stable across sessions.
-        uid_mode = args.since_last_run
-
+        # Every path operates on UIDs: the since-last-run cursor needs a value
+        # that is stable across sessions, and some servers (ecount) reject
+        # sequence-number SEARCH outright — UID SEARCH is the only portable
+        # form (issue #1018).
         if incremental_fetch:
-            _, uid_data = imap.uid("SEARCH", None, f"UID {prev_uid + 1}:*")
+            typ, uid_data = imap.uid("SEARCH", None, f"UID {prev_uid + 1}:*")
+            _ensure_ok(typ, uid_data, "UID SEARCH")
             all_ids = _parse_uid_search_result(uid_data)
             # ``UID n:*`` always returns the highest UID even when none qualify,
             # so filter defensively to UIDs strictly greater than the cursor.
             all_ids = [uid for uid in all_ids if int(uid) > prev_uid]
-        elif uid_mode:
-            # First run in since-last-run mode: seed the cursor via UID SEARCH.
-            _, uid_data = imap.uid("SEARCH", None, search_criteria)
-            all_ids = _parse_uid_search_result(uid_data)
         else:
-            _, msg_ids = imap.search(None, search_criteria)
-            all_ids = msg_ids[0].split() if msg_ids[0] else []
+            typ, uid_data = imap.uid("SEARCH", None, search_criteria)
+            _ensure_ok(typ, uid_data, "UID SEARCH")
+            all_ids = _parse_uid_search_result(uid_data)
 
         fetch_ids = all_ids[-args.count :] if len(all_ids) > args.count else all_ids
 
@@ -530,25 +557,22 @@ def main() -> None:
         # HEADER.FIELDS variant only transfers required headers — major token saver.
         fetch_spec = _FULL_FETCH_SPEC if want_body else _HEADERS_ONLY_FETCH_SPEC
         for mid in reversed(fetch_ids):
-            if uid_mode:
-                _, data = imap.uid("FETCH", mid, fetch_spec)
-            else:
-                _, data = imap.fetch(mid, fetch_spec)
+            typ, data = imap.uid("FETCH", mid, fetch_spec)
+            _ensure_ok(typ, data, "UID FETCH")
             if not data or data[0] is None:
                 continue
             raw = data[0][1]
             msg = email.message_from_bytes(raw)
-            # Stable UID (issue #692). Parsed from the FETCH envelope; in uid_mode
-            # ``mid`` already IS the UID, so it is the fallback when a server omits
+            # Stable UID (issue #692). Parsed from the FETCH envelope; ``mid``
+            # already IS the UID, so it is the fallback when a server omits
             # UID from the response.
             uid_val = _extract_uid_from_fetch(data)
-            if uid_val is None and uid_mode:
+            if uid_val is None:
                 uid_val = mid.decode() if isinstance(mid, (bytes, bytearray)) else str(mid)
-            if uid_mode:
-                try:
-                    fetched_uids.append(int(mid))
-                except (TypeError, ValueError):
-                    pass
+            try:
+                fetched_uids.append(int(mid))
+            except (TypeError, ValueError):
+                pass
             raw_from = _decode_header(msg.get("From", ""))
             raw_subject = _decode_header(msg.get("Subject", ""))
             if want_body:
