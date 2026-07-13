@@ -11,7 +11,7 @@ user-invocable: true
 argument-hint: '<topic> [--depth simple|full] [--save <path>] [--type bug|perf|arch|verify|interpret]'
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.10.3"
+  version: "0.11.0"
   category: "investigation"
   created_at: "2026-04-03"
   updated_at: "2026-05-22"
@@ -79,6 +79,8 @@ investigate <topic> [--depth simple|full] [--save <path>] [--type bug|perf|arch|
 - 재현 없음, 간헐적, 환경 의존적
 - 복잡한 도메인, 미문서화
 - 사용자가 "깊게", "철저히" 언급
+
+**서브에이전트 팬아웃 (선택)** — 완전 모드에서 독립 가설·증거 축이 여러 개면, 환경에 `itda-work:deep-researcher` 서브에이전트가 있을 때 축별로 병렬 위임할 수 있다(가설 + 검증할 증거 + 반증 요구를 프롬프트로). 격리 컨텍스트가 로그·페이지 원문을 흡수하고 구조화 요약만 반환하므로 본 조사 컨텍스트가 오염되지 않는다. 반환된 증거도 아래 방법론의 반증·신뢰도 보정을 동일하게 거친다. 서브에이전트가 없으면 본 컨텍스트에서 순차 진행한다.
 
 ---
 

@@ -5,11 +5,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- **플러그인 서브에이전트 파일럿 2종** (#1121): `agents/deep-researcher.md`(investigate·market-scan 의 조사 팬아웃 — 소스 축 병렬 위임 + 수집 원문 격리, 구조화 요약만 반환)와 `agents/inbox-triager.md`(email 받은편지함 트리아지 전용 — 발송·초안·삭제 금지 계약, 분류 표만 반환) 신설. Cowork 플러그인 `agents/` 로딩 실증(2026-07-13)에 따른 스킬-에이전트 시너지 파일럿. **investigate v0.11.0 · market-scan v0.2.0 · email v0.29.0**: 각 SKILL.md 에 서브에이전트 연동 절 추가(에이전트 부재 환경은 본 컨텍스트 순차 진행으로 graceful). publish.py WHITELIST 에 `agents` 추가로 skills.pub 배송 경로 개통.
+
 ### Fixed
 
 - **hwpx-report v0.3.1** (#374): 실측 결함 6+1 수정. 표 셀의 escaped pipe(`\|`)와 코드스팬 내 `|`를 데이터로 보존하고, XML 1.0 비허용 제어문자를 매퍼 입력·XML escape 관문에서 제거해 깨진 HWPX/validator ParseError를 차단했다. Pillow는 이미지 사용 시점에만 lazy import 하도록 바꿔 텍스트 보고서 생성은 Pillow 없이 동작하며, 이미지 사용 시 누락 안내를 명확히 반환한다. 참조형 링크·autolink·링크 정의 누출, GUIDE 번호목록 설명, Python 3.10+ 런타임 가드도 함께 교정했다.
 - **hwp-report v0.2.2** (#341, #339 후속 Codex 리뷰): 강조 분해 잔여 엣지케이스 차단. (1) `***볼드이탤릭***`/`___..___` 삼중 강조를 strong+italic 토큰으로 추가 — 이전엔 `***긴급***` 이 `*긴급*` 으로 별표를 남기고 표 셀 `rich_rows` 런까지 깨지던 결함을 제거(언더스코어 삼중과의 비대칭 해소). (2) 코드 스팬을 강조 파싱 *전에* placeholder 로 마스킹 — 강조 `*` 가 코드스팬 경계를 가로질러 닫히던 `` *`a*` `` → `*a*` 교정 + 코드 내용 literal 보존, 강조가 코드스팬을 *감싸는* 정상 케이스(`` *a `c` b* ``)는 유지. (3) 내용이 구분자뿐인 degenerate 강조(`****`·`___`)는 평문 보존(별표 삭제 금지). 본문·표 셀 양쪽 적용. 신규 회귀 7종(단위 57→64 GREEN).
 - **hwp-report v0.2.1** (#339): inline 마커 strip 데이터 손상 + 무성 손실 경고 정합. (P1) `_`/`*` 강조 분해에 CommonMark flanking 근사를 적용 — 여는/닫는 구분자 옆 공백·intraword 언더스코어를 강조에서 배제해 `report_2026_final.hwpx`·`snake_case`·`가로 * 세로` 같은 **실제 데이터가 본문·표 셀에서 삭제되던 무성 손상**을 제거(`strip_inline`↔`_parse_emphasis` 단일 flanking 소스로 통합). (P2-a) clamp 경고를 들여쓰기 '폭(>4칸)'이 아니라 '리스트 단계 수'(스택)로 판정 — 2칸 단위 3단계도 정확히 경고(이전엔 무성 clamp). (P2-b) front-matter/인자 제목과 **다른** `# H1` 이 본문에서 사라지던 무성 손실을 경고로 표면화(같으면 dedup 유지). (P3) GUIDE 의 근거 없는 PDF 미리보기 약속 제거(엔진·형제 hwpx 모두 PDF 미지원) + SKILL 의 죽은 "추적: GitHub issue" 포인터를 정직한 비목표 문구로 교체. 신규 회귀 12종(단위 45→57 GREEN) + 예제 6종 무손실 스모크 가드.
+
+## [3.10.0] — 2026-07-12
+
+### Added
+
+- **task-brief 를 itda-work published 스킬로 재배치 (#1051)** — hyve `.claude/skills/`(프로젝트 운영)가 아니라 skills/ 모노레포의 itda-work published 스킬(skills.pub 배포)로 관리(마스터 지시). itda 규약 정합: SKILL.md frontmatter 풀셋(license·compatibility·metadata)·한국어 인용 트리거 4개·tags EN 한정, `scripts/check_task_brief.py`(구조 게이트 C1~C5, 검증 자기보고 금지 축) + 회귀 13건 + GUIDE.md·CHANGELOG.md. 구 `.claude/skills/task-brief/` 는 제거(중복 청산).
 
 ## [3.9.0] — 2026-06-20
 

@@ -1,5 +1,31 @@
 # Changelog — itda-data
 
+## [0.17.0] — 2026-07-07 (data-verify 신설, #967)
+
+### New Features
+- **data-verify v0.1.0** (신규 스킬): 데이터 **수치 검수** — data-audit(수식 구조·오류)와 구분되는 "값이 실제로 맞나" 검수 4종: 내부정합(소계/총계↔구성요소 합)·규칙위반(음수/범위/중복키/sum_to)·외부대조(원장 정답셋)·교차참조(시트 간 짝).
+  정확성(data-accuracy): 허용오차 비교(눈대중·정확 `==` 금지)·통화/천단위/% 파싱·합계행을 규칙 검수에서 제외(sum_to 이중계산 방지). loader 가 Grid 만 공급하고 verifiers 는 순수함수인 백엔드 독립 설계(#968 COM/OpenXML 백엔드 재사용 대비). 9 tests GREEN(4종 unit + deployed-style + 오탐/이중계산 가드).
+
+## [0.16.0] — 2026-07-07 (data-prep clean-data-xls 흡수, #951)
+
+### New Features
+- **data-prep**: Claude for Excel 의 clean-data-xls 고유 정제 흡수 — mojibake 복구(Ã©→é)·casing 통일(usa/USA→최빈 원형)·통화/천단위 숫자화($1,200→1200, 선행 0·% 보존으로 보수적). diagnose 에 mixed-type 열 경고 추가([가설], 변환 아님) — 통화표기는 number_as_text 정제로 해소되므로 숫자로 인정해 "정제하면 사라질 것" 오판을 차단.
+
+### Improvements
+- **data-prep emit**: cleanse 파이프라인 미배선 발견·배선 — trim·mojibake·숫자화·casing·날짜·중복 정제가 정돈본에 실제 반영. transform_log 에 정제 통계(`cleanse_stats`) 반환. 기존 4관문·cp949·원본 불변·결정론 모델 불변(기능 추가만). 29 tests GREEN.
+
+## [0.15.0] — 2026-07-07 (data-audit 신설 — audit-xls 이식, #952)
+
+### New Features
+- **data-audit v0.1.0** (신규 스킬): Claude for Excel 의 audit-xls 를 itda-data 로 이식한 엑셀 **수식·데이터 감사**. openpyxl 양면 로드(수식면 `data_only=False` · 값면 `data_only=True`)로 수식오류(#REF! 등)·수식 내 하드코드(=A1*1.05)·이웃과 다른 수식·off-by-one 범위·복붙된 값·순환참조·깨진 시트 링크·단위/스케일 급변·숨긴 행/시트를 감사.
+  수식 문자열 기반 감지라 openpyxl 재계산 한계와 무관. 보수적 판정(오탐 회귀 가드: #REF!→시트링크 오인 차단·사소한 상수 제외·다수 패턴 60%↑일 때만 불일치 판정). 재무모델 무결성(BS balance·cash tie-out·DCF/LBO 등)은 범위 외(#952 스코프). 19 tests GREEN(unit + deployed-style subprocess 격리).
+
+## [0.14.0] — 2026-06-25 (데이터 vertical 졸업, #567)
+
+### Breaking Changes
+- **advisor/tidy 폐기 → data-ask/data-prep 승격**: itda-egg 인큐베이션의 `data-ask`(질문)·`data-prep`(정리)를 itda-data 로 졸업시키고, 기존 `data-analysis-advisor`·`data-tidy-advisor` 는 폐기(SPEC-DATA-VERTICAL-001 이 구 thesis SPEC ADVISOR-001·TIDY-001 을 대체). itda-data 를 데이터 양심 vertical 로 재정의.
+  - 영향: 구 advisor/tidy 스킬 사용자는 data-ask/data-prep 으로 전환해야 함. README·lessons·market-scan 크로스레퍼런스 data-ask 로 정정, release-skills.yml OS_NEUTRAL_DIRS·requirements·marketplace 갱신. 새 위치 테스트 55 GREEN(38+17).
+
 ## [0.13.0] — 2026-05-31 (CS 스킬 분리 → itda-cs 신설, #28·#29)
 
 ### Breaking Changes

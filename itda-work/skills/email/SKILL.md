@@ -10,7 +10,7 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.28.0"
+  version: "0.29.0"
   created_at: "2026-03-18"
   updated_at: "2026-07-10"
   tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references"
@@ -352,6 +352,14 @@ python3 scripts/read_email.py --provider naver --account work   # work 선택
 Custom provider도 동일 패턴 (`SMTP_HOST_COMPANY` 등 + `--account company`).
 
 > `GMAIL_*` 환경변수는 deprecated — `GOOGLE_EMAIL`/`GOOGLE_APP_PASSWORD` 사용. `--provider gmail`은 alias로 유지. 전환 절차는 GUIDE.md 참조.
+
+---
+
+## 대량 트리아지 — inbox-triager 서브에이전트 위임
+
+"받은편지함 정리·요약·중요 메일 추리기"처럼 **다수 메일을 훑는 읽기 작업**은, 환경에 `itda-work:inbox-triager` 서브에이전트가 있으면 그쪽에 위임한다. 격리 컨텍스트에서 `read_email.py` 메타조회 중심으로 분류(긴급/회신 필요/정보/구독·홍보/피싱 의심)하고 분류 표 + 권장 액션만 반환하므로, 메일 원문이 본 대화를 오염시키지 않는다. 위임 프롬프트에는 계정(provider/account)·폴더·범위(`--unread-only` 등)를 명시한다.
+
+inbox-triager 는 **트리아지 전용**(발송·초안·삭제·서버 상태 변경 금지)이다. 회신·발송은 반드시 본 대화에서 이 스킬의 발송 절차(사용자 확인 포함)로 진행한다. 서브에이전트가 없는 환경에서는 본 컨텍스트에서 동일 절차로 진행하되 본문 페치를 최소화한다.
 
 ---
 

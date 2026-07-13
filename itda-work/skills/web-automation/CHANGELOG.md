@@ -2,6 +2,46 @@
 
 이 파일은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.4.5] — 2026-07-13
+
+### Changed
+
+- **§0.1 `profiles`/`profile.delete` 부활 계약 현행화 (hyve#1120)** — #1119 로 잠시 제거됐던 두
+  액션이 **WebKit/WebView2 격리 스토어 실체**로 부활(마스터 결정 #1120). SKILL.md §0.1 의
+  "#1119 로 제거 — 관측/GC 대상 없음" 서술을 부활 계약으로 교체하고 프로필 관리 블록 신설.
+  - **`profiles`** — named 프로필 목록: Go 레지스트리(`<hyve appdir>/web-profiles.json`, `profile_id`
+    기록)와 OS 격리 스토어 열거를 대조. 활성 세션 사용 프로필은 **in-use** 표시, 레지스트리에
+    없는 스토어는 **orphan** 으로 `store_id`(UUID) 노출. macOS 14+ 전용(미만 명시 `unsupported`).
+  - **`profile.delete`** — 프로필 **실데이터(쿠키·로그인) 삭제**(macOS `removeDataStoreForIdentifier:`
+    / Windows WebView2 프로필 삭제, 불가역 — 재사용 시 빈 스토어 재생성). 거부 계약: 활성 세션
+    사용 중=`profile_in_use`, 삭제 진행 중 `session.new`=`profile_deleting`(#1118 동형 가드 부활),
+    `""`·`default`·ephemeral=삭제 불가(명시 거부). orphan 은 `store_id`(UUID) 직접 지정 삭제.
+  - **CLI parity 복원** — `hyve web profiles`/`profile delete` 개발·검증용 복원(cross-process 한계
+    유지, 유저향 정본은 web_browse 액션 — cowork-mcp-only).
+  - **GUIDE.md** — "저장된 로그인·쿠키 정리" 시나리오 신설(자연어·불가역 고지·`default` 삭제 불가·
+    macOS 14+ 안내) + 다계정 병행 제한사항에 삭제 정리 연결.
+
+## [0.4.4] — 2026-07-13
+
+### Changed
+
+- **§0.05·§0.1 프로필 정책 stale 현행화 (hyve#1118 R3)** — Chrome 백엔드(#1106) 잔재와 미배선
+  전제를 실측 기준으로 교체.
+  - **격리 배선 완료(#1113)** — "web_browse 어댑터는 단일 기본 데이터스토어를 쓰며 profile_id
+    격리 미배선(#1102 갭)" 서술 삭제. profile_id 별 격리는 배선 완료 — 저장소는 Chrome
+    `chrome-data`/`--user-data-dir`/`--profile-directory`/`browser-profiles/<id>` 복사가 아니라
+    **WebKit/WebView2 앱 컨테이너 격리 데이터스토어**(macOS default=`WKWebsiteDataStore.default()` /
+    named=`WKWebsiteDataStore(forIdentifier:)` macOS 14+, Windows=WebView2 `ProfileName`).
+  - **profile lock 제거(#1118)** — "같은 profile_id 동시 사용은 root lock 으로 `profile_locked`
+    직렬화" 서술을 **동시 공존·새 세션 생성** 의미로 교체: 상이 profile_id 세션은 격리된 채 동시
+    공존, 같은 profile_id 재호출은 새 세션(새 창) 생성. `profile.delete` 는 활성 세션이 그
+    profile 을 사용 중이면 `profile_in_use` 로 거부(구 `profile_locked` 교체, #1118).
+  - **CLI 표면 정정** — 존재하지 않는 "CLI `web --profile`" 통합 lock 서술 삭제(#1106 에서 Chrome
+    1회성 렌더 CLI 제거, `--profile` 은 `hyve web read` 거부 플래그). 프로필 정책은 MCP web_browse
+    기준으로 서술(cowork-mcp-only).
+  - 함정표 "프로필 분리" 행을 다계정 격리 병행(#1113) 정합으로 조정, GUIDE.md 의 "내 Chrome 에
+    붙는 방식(attach)"·"동시 작업 한 번에 하나씩 직렬화" stale 문구를 헤디드 워밍업·다계정 병행으로 교체.
+
 ## [0.4.2] — 2026-07-06
 
 ### Added

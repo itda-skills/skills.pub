@@ -12,7 +12,7 @@
 '사실 명제인가·경계가 본질적인가·완료가 완결인가' 같은 **의미** 판정은 이 스크립트가
 아니라 SKILL.md 지시에 따라 에이전트(강한 모델)가 채점한다 — 스크립트 PASS ≠ 좋은 브리프.
 
-입력 형식(작업 브리프, 아래 섹션):
+입력 형식(작업 브리프, 아래 섹션 — 최상단 '## 의도 (선택)' 는 맥락 산문으로 검사 제외):
 
     ## 작업
     <한 줄 사실 목표>
@@ -61,7 +61,10 @@ for _stream in (sys.stdout, sys.stderr):
 BRIEF_SOFT_LIMIT = 2000
 
 # 섹션 키워드 → 정규 섹션 id
+# INTENT(의도)는 선택 섹션 — hard 검사(C1~C5) 대상이 아니지만, 파서가 인식해야
+# 그 내용이 인접 hard 섹션으로 새어(bleed) 들어가 오탐을 만들지 않는다(#1080).
 SECTION_KEYWORDS = {
+    "INTENT": ["의도", "배경", "intent", "background", "context", "why"],
     "TASK": ["작업", "목표", "task", "goal"],
     "SCOPE": ["범위", "스코프", "scope", "sandbox", "샌드박스"],
     "VERIFY": ["검증방법", "검증 방법", "검증", "verify", "verification", "검사"],
@@ -215,18 +218,24 @@ def evaluate(raw: str):
         f"포함={has_in}, 제외={has_out} (제외 없으면 무한 sandbox — 에이전트가 인접 파일까지 헤맴)")
 
     # C3 검증 = 재현 명령·파일·수치 (자기보고 금지)
+    # 섹션 부재/공백이면 "검사 대상 0"의 공허한 통과(vacuous pass)가 되므로
+    # OK 가 아니라 판정 불가 FAIL 로 표시한다(#1083 — 축별 보강 질문의 근거 보존).
     verify_lines = sections.get("VERIFY", [])
-    verify_text = "\n".join(verify_lines)
-    unverifiable = [ln for ln in verify_lines if not _is_verifiable(ln)]
-    self_report = _self_report_hits(verify_text)
-    c3_ok = not unverifiable and not self_report
-    detail_parts = []
-    if unverifiable:
-        detail_parts.append("검증불가 줄(명령·파일·수치 없음):\n    " + "\n    ".join(unverifiable))
-    if self_report:
-        detail_parts.append("자기보고 어휘(재현 명령으로 치환): " + ", ".join(sorted(set(self_report))))
-    add("C3", "검증 방법이 재현 명령·파일·수치 (자기보고 금지)", c3_ok,
-        "\n".join(detail_parts) if detail_parts else "OK")
+    if not verify_lines:
+        add("C3", "검증 방법이 재현 명령·파일·수치 (자기보고 금지)", False,
+            "판정 불가 — 검증방법 섹션 부재/공백 (재현 명령·파일·수치로 채워야 함)")
+    else:
+        verify_text = "\n".join(verify_lines)
+        unverifiable = [ln for ln in verify_lines if not _is_verifiable(ln)]
+        self_report = _self_report_hits(verify_text)
+        c3_ok = not unverifiable and not self_report
+        detail_parts = []
+        if unverifiable:
+            detail_parts.append("검증불가 줄(명령·파일·수치 없음):\n    " + "\n    ".join(unverifiable))
+        if self_report:
+            detail_parts.append("자기보고 어휘(재현 명령으로 치환): " + ", ".join(sorted(set(self_report))))
+        add("C3", "검증 방법이 재현 명령·파일·수치 (자기보고 금지)", c3_ok,
+            "\n".join(detail_parts) if detail_parts else "OK")
 
     # C4 완료 정의 = 관측 가능 상태(동사형 종료 배제)
     done_text = "\n".join(sections.get("DONE", []))
@@ -235,12 +244,23 @@ def evaluate(raw: str):
         "상태 토큰(됨/clean/exists/pass/0건/커밋됨 등) 필요" if not has_state else "OK")
 
     # C5 형용사·부사 금지 (작업·범위·검증·완료)
-    hard_text = "\n".join(
-        "\n".join(sections.get(s, [])) for s in ("TASK", "SCOPE", "VERIFY", "DONE")
-    )
-    vh = _vague_hits(hard_text)
-    add("C5", "형용사·부사(모호어) 0 (작업·범위·검증·완료)", not vh,
-        "모호어: " + ", ".join(sorted(set(vh))) if vh else "OK")
+    # 4개 hard 섹션이 전부 비면(헤딩 없는 생짜 초안) 섹션 스캔이 공허해지므로
+    # 원문 전체를 스캔해 실제 모호어를 지목하고 판정 불가 FAIL 로 표시한다(#1083).
+    # 섹션이 하나라도 있으면 기존 동작 유지 — 인사말 등 미배정 서두의 오탐을 막는다.
+    hard_all_empty = all(not sections.get(s) for s in ("TASK", "SCOPE", "VERIFY", "DONE"))
+    if hard_all_empty:
+        vh = _vague_hits(raw)
+        detail = "판정 불가 — 섹션 미구성(원문 전체 스캔)"
+        if vh:
+            detail += ", 모호어: " + ", ".join(sorted(set(vh)))
+        add("C5", "형용사·부사(모호어) 0 (작업·범위·검증·완료)", False, detail)
+    else:
+        hard_text = "\n".join(
+            "\n".join(sections.get(s, [])) for s in ("TASK", "SCOPE", "VERIFY", "DONE")
+        )
+        vh = _vague_hits(hard_text)
+        add("C5", "형용사·부사(모호어) 0 (작업·범위·검증·완료)", not vh,
+            "모호어: " + ", ".join(sorted(set(vh))) if vh else "OK")
 
     # W1 예산 섹션 권장(경고만)
     if "BUDGET" not in sections or not sections.get("BUDGET"):

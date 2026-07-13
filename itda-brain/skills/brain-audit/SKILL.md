@@ -1,0 +1,81 @@
+---
+name: brain-audit
+description: >
+  이미 만들어진 업무DB(뇌)를 독립적으로 재검수하는 스킬입니다. 정기잡·수시 점검용 진입점으로, 검수 전담 에이전트(brain-auditor)를 격리 컨텍스트에서 디스패치해 검수 4각도(전수성·수치 재대조·근거 추적·교차 모순)를 다시 돌리고, 여기에 제5각 신선도 점검을 더합니다 — 소스 폴더를 재스캔해 빌드 시점 수정시각과 대조, 신규/변경/삭제 파일을 표면화해 "뇌가 낡았는지"를 감지합니다. "이 업무DB 검수해줘", "뇌 아직 최신이야?", "공유폴더 바뀐 거 반영됐나 확인", "업무DB 재검수", "신선도 점검"처럼 말하면 됩니다.
+  원본 불가침 — 원본은 읽기만 합니다. 산출은 검수리포트.md 갱신입니다.
+license: MIT
+compatibility: "Python 3.10+ (신선도 스캔 stdlib only)"
+user-invocable: true
+allowed-tools: Read, Write, Bash, Glob, Grep, Task
+argument-hint: "[업무DB 폴더 경로] (소스 폴더는 CLAUDE.md 머리말에서 읽음)"
+metadata:
+  author: "Chinseok"
+  version: "0.1.0"
+  category: "knowledge-base"
+  status: "experimental"
+  recommended: false
+  created_at: "2026-07-14"
+  updated_at: "2026-07-14"
+  tags: "knowledge-base, audit, freshness, reconciliation, provenance, staleness, incubating"
+---
+
+# brain-audit
+
+`brain-build`가 만든 업무DB(뇌)를 **독립적으로 재검수**하는 진입점이다. 빌드 때 한 번 검수했더라도,
+원본이 바뀌면 뇌가 낡는다. brain-audit 는 ① 검수 4각도를 격리 컨텍스트에서 **다시** 돌리고,
+② **신선도 점검**(제5각)으로 소스 폴더가 빌드 이후 얼마나 달라졌는지를 온디맨드로 감지한다.
+
+itda-brain 비정형 문서 vertical 의 재검수·신선도 담당. 향후 hyve fsnotify 상주 감시(SPEC EXC-1)의 플러그인 선행형이다. (SPEC-BRAIN-VERTICAL-001, #1122)
+
+---
+
+## Claude 오케스트레이션 지시서
+
+> [HARD] **원본 불가침.** 소스 폴더 원본을 읽기 전용으로만 접근한다. 산출은 `검수리포트.md` 갱신뿐이다. (SPEC INV-1)
+> [HARD] **격리 검수.** 재검수도 빌드/이전 검수 기억에 의존하지 않는다 — `brain-auditor`를 새 컨텍스트로 디스패치해 원본을 다시 열게 한다.
+
+### 입력
+
+- **업무DB 폴더 경로** (필수). 소스 폴더 경로는 업무DB `CLAUDE.md` 머리말 `sources:` 에서 읽는다(자기서술 메타 — REQ-030).
+
+### 관문1 — 신선도 점검 (제5각, 결정론)
+
+소스 폴더를 재스캔해 **빌드 시점 기준선(manifest)**과 대조한다. 이 단계는 **결정론 Python 헬퍼**가 담당한다(에이전트 눈대중 금지). 스킬 스크립트는 cwd 에 의존하지 않도록 **절대경로**로 실행한다 — 이 `SKILL.md`가 있는 스킬 디렉토리를 기준으로 `scripts/freshness.py`의 절대경로를 먼저 확정한다:
+
+```bash
+# macOS/Linux — baseline = 빌드 시점 manifest (정본)
+python3 <스킬디렉토리>/scripts/freshness.py diff "<소스폴더>" --baseline "<업무DB>/.brain-manifest.json"
+# Windows
+py -3 <스킬디렉토리>\scripts\freshness.py diff "<소스폴더>" --baseline "<업무DB>\.brain-manifest.json"
+```
+
+출력(JSON)의 `new`·`changed`·`deleted`·`unchanged`·`stale` 를 읽어 **신규/변경/삭제 파일**을 파악한다.
+
+- **기준선의 정본은 빌드 시점 manifest**(`.brain-manifest.json` — 정수 mtime, 타임존 무관). brain-build 가 빌드 끝에 저장하고, brain-ingest 가 적재 성공 시에만 갱신한다. **brain-audit 은 기준선을 갱신하지 않는다**(현재 스캔값으로 덮으면 미적재 변경이 다음 검사에서 사라져 항상 "최신"으로 위장된다 — 거짓 안심).
+- **기준선 부재**(`stale: null`, `baseline: "absent"` — 구 빌드): 신선도를 **판정 불가(unknown)**로 보고하고 **재빌드를 권고**한다. 현재 스캔값으로 커버리지 표를 backfill 해 diff 하지 않는다(자기비교 금지).
+- manifest 가 없고 검수리포트 커버리지 표에 수정시각 열만 있을 때는 fallback 으로 `--report "<업무DB>/검수리포트.md"` 를 쓸 수 있으나, 이는 정밀도가 낮다(정본은 manifest).
+- `stale: false` 면 "뇌 최신"으로 보고하고, 4각도 전면 재검수는 사용자 요청 시에만 수행한다.
+
+### 관문2 — 4각도 재검수 디스패치 (변경이 있거나 사용자가 전면 재검수를 요청할 때)
+
+`Task` 도구로 **`brain-auditor`를 디스패치**한다. 프롬프트에 업무DB·소스 폴더 경로 + 관문1 신선도 결과(신규/변경 파일 목록)를 넘기고, 변경분에 초점을 둔 검수를 요청한다. 신규 파일이 위키에 반영되지 않았으면 그 자체가 전수성(각도 1) 결함이다.
+
+### 관문3 — 검수리포트 신선도 절 갱신
+
+`검수리포트.md`의 **신선도 절**을 관문1 결과로 갱신한다:
+
+- 재검수일 · `stale` 여부 · 신규/변경/삭제 파일 목록(경로 + 빌드 시점 vs 현재 수정시각).
+- 변경분에 대한 brain-auditor 재검수 요약(신규 모순·해소된 모순).
+- 조치 권고: 신규/변경 파일이 있으면 `brain-ingest`(증분 적재, v1.1)로 위키에 반영할 것을 안내(원본 불가침 — 위키만 갱신).
+
+### 완료 보고
+
+사용자에게 요약한다: 뇌 이름 · 신선도(최신/낡음 + 신규 N·변경 M·삭제 K) · 재검수 모순 변화 · 조치 권고.
+
+---
+
+## 원칙
+
+- **신선도는 결정론**(`freshness.py`) — 파일 존재·수정시각은 계산이지 판단이 아니다. 모순 판정만 에이전트(brain-auditor)가 한다.
+- **최신성은 파일명이 아니라 내부 날짜** — 신선도 점검은 파일 mtime 으로 "무엇이 바뀌었나"를 감지하고, 문서 최신성 판단(어느 버전이 진짜 최신인가)은 여전히 문서 내부 날짜로 한다.
+- **길 X thin skill** — hyve 무의존. freshness 는 stdlib only.

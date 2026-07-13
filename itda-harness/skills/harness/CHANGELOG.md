@@ -1,5 +1,16 @@
 # Changelog — itda-harness/harness
 
+## [1.3.0] — 2026-07-12
+
+### Changed
+- **팀 API 현행화 (#946)** — 구 팀 API(TeamCreate/TeamDelete) 서술을 현행 Claude Code 팀 모델로 전면 재작성 (SKILL.md + references/orchestrator-template·agent-design-patterns·team-examples 약 20곳). upstream(revfactory/harness) 동기 상태에서의 의도적 로컬 분기:
+  - 팀 구성: `TeamCreate(members)` → **`Agent(name)` 병렬 스폰 + 세션 단일 암묵 팀** (팀 생성·해체 절차 소멸). Agent 도구의 `team_name` 파라미터는 "Deprecated; ignored".
+  - Phase 간 팀 재구성: `TeamDelete` 후 재생성 → **완료 확인 후 새 팀원 스폰**. 완료된 팀원 이름은 계속 유효 — `SendMessage` 전송 시 transcript 에서 컨텍스트 유지 재개(실측: SendMessage 스키마).
+  - `SendMessage({to: "all"})` 브로드캐스트 제거 — 현행 스키마는 개별 수신자만 지원(실측).
+  - "세션당 1팀 활성" 제약·"유휴 알림" 서술 폐기 → 백그라운드 팀원 **완료 알림** 모델로 교체.
+- **모델 정책 상속 전환** — "모든 에이전트 `model: opus` 필수" → **세션 모델 상속 기본, 필요 시에만 명시 상향** (#945 하네스 자산 방침과 정합).
+- **Workflow 도구 반영** — 모드 선택 가이드에 결정론적 오케스트레이션(Workflow 스크립트 — 대량 fan-out·resume·budget) 안내 추가. 사용자 명시 옵트인 전제·미지원 환경(Cowork) 제외 명시.
+
 ## [1.2.0] — 2026-06-02
 
 ### Synced

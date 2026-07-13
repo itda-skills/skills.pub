@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.28.0",
+    "version": "8.29.0",
     "language": "ko"
   },
   "plugins": [
@@ -79,6 +79,11 @@
       "name": "itda-coach",
       "source": "./itda-coach",
       "description": "강의·온보딩 facilitation 스킬팩 — 막연한 불편을 1시간 조각으로 자르고 반복 업무를 미니스킬로 굳힌다"
+    },
+    {
+      "name": "itda-brain",
+      "source": "./itda-brain",
+      "description": "비정형 문서 무더기(워드·엑셀·PPT·PDF)를 근거 추적 업무DB(뇌)로 만드는 vertical — 빌드·독립 검수·증분 적재·규약 준수 생성"
     }
   ]
 }
