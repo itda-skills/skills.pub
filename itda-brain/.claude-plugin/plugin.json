@@ -1,7 +1,7 @@
 {
   "name": "itda-brain",
   "description": "비정형 문서 무더기(워드·엑셀·PPT·PDF)를 근거 추적 가능한 업무DB(뇌)로 만드는 vertical — 폴더→주제별 위키+CLAUDE.md 스키마 빌드(brain-build), 안 물어본 모순까지 선제 적발하는 독립 검수(brain-auditor·brain-audit), 증분 적재(brain-ingest)·규약 준수 문서 생성(brain-scribe). \"읽어주는 뇌\"가 아니라 \"일하는 뇌\".",
-  "version": "8.31.0",
+  "version": "8.32.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

@@ -1,7 +1,7 @@
 {
   "name": "itda-data",
   "description": "엉망 CSV 정돈(data-prep) + 한국어 질문을 실제 계산으로 답하는 질문(data-ask) + 엑셀 수식·데이터 감사(data-audit) + 엑셀 수치 검수(data-verify) — 데이터 양심 vertical(눈대중·거짓확신 차단)",
-  "version": "8.31.0",
+  "version": "8.32.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
