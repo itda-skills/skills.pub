@@ -1,5 +1,10 @@
 # Changelog — aspect-sentiment
 
+## 0.1.3 (2026-07-14) — validator 실효성 강화 + 대량 배치 연동 (#1140 Codex R2)
+- **`validate_output.py` 가 output-schema 의 `additionalProperties:false` 를 실제 강제** — 기존 파서는 top-level·`aspects[]` 항목의 허용 밖 필드를 조용히 통과시켜(Codex 실증) extra 필드 누출(예: 원문 유출)을 못 잡았다. top-level·`aspects[]`·`process_signals` 허용 필드 집합 검사 + `flags`/`process_signals`/`escalated` 타입 검사 + `domain`·`customer_final_sentiment` enum + `confidence` 타입·범위(과거 문자열 confidence 는 TypeError 크래시) + 비-dict doc 가드 추가.
+- **대량 배치(팬아웃/팬인) 연동 절 추가** — 30건+ 는 Lead 가 청크(JSONL) 분할 → `itda-cs:cs-batch-extractor` 병렬 디스패치 → `validate_output.py <jsonl> [taxonomy.yaml]` 로 검증·병합. **커스텀 taxonomy 를 워커에 주면 검증에도 같은 경로 전달**(안 하면 커스텀 라벨 거짓 거부). 단건 절차·스키마·taxonomy 불변.
+- 회귀 테스트 신설(`tests/test_validate_output.py`): extra field FAIL·nested 타입·커스텀 taxonomy 관철·파일-레벨 exit code.
+
 ## 0.1.2 (2026-06-01) — itda-cs 분리 후속 (IAA 게이트 링크)
 - 운영 졸업 "IAA 측정" 게이트를 같은 플러그인의 `iaa-builder` 스킬로 구체 링크(벽장 안전망 → 실행 가능 게이트).
 - IAA 측정 단위 명시: doc당 `aspects[]`(중첩)는 iaa-builder 평면 라벨 컬럼에 직접 못 넣으므로 doc 단위(`overall_sentiment`) 또는 (doc, aspect) 쌍 평탄화 후 측정(itda-refine cross-skill-integrator 권고).

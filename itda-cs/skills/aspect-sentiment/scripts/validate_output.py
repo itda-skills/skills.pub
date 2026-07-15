@@ -22,6 +22,19 @@ POLARITY = {"positive", "neutral", "negative"}
 OVERALL = {"positive", "neutral", "negative", "mixed"}
 RESOLUTION = {"resolved", "unresolved", "partial", "unknown"}
 SPEAKER = {"customer", "agent", "system", None}
+DOMAIN = {"cs", "review"}
+
+# output-schema.json 의 additionalProperties:false 를 실제로 강제하는 허용 필드 집합.
+# (스키마는 계약이지만 파서가 검사하지 않으면 extra 필드가 조용히 통과한다 — #1140 Codex.)
+ALLOWED_TOP = {
+    "doc_id", "language", "taxonomy_version", "domain", "overall_sentiment",
+    "customer_final_sentiment", "aspects", "process_signals",
+    "mentioned_aspects", "flags",
+}
+ALLOWED_ASPECT = {
+    "aspect", "polarity", "sub_aspect", "evidence", "turn_id", "speaker", "confidence",
+}
+ALLOWED_PS = {"resolution", "escalated"}
 
 
 def load_aspect_labels(yaml_path):
@@ -36,11 +49,28 @@ def load_aspect_labels(yaml_path):
     return set(re.findall(r"^  ([^\s#:][^:]*):", block, re.M))
 
 
+def _in_unit_range(c):
+    return isinstance(c, (int, float)) and not isinstance(c, bool) and 0 <= c <= 1
+
+
 def validate_doc(doc, allowed):
     errs = []
+    if not isinstance(doc, dict):
+        return ["doc 는 JSON 객체여야 함"]
+
     for f in ("doc_id", "language", "aspects", "mentioned_aspects", "flags"):
         if f not in doc:
             errs.append(f"필수 필드 누락: {f}")
+
+    # top-level additionalProperties:false — 허용 밖 필드 차단
+    extra = set(doc) - ALLOWED_TOP
+    if extra:
+        errs.append(f"허용되지 않은 top-level 필드: {sorted(extra)} (output-schema additionalProperties:false)")
+
+    if "language" in doc and not isinstance(doc["language"], str):
+        errs.append("language 는 문자열이어야 함")
+    if "domain" in doc and doc["domain"] not in DOMAIN:
+        errs.append(f"domain 잘못: {doc.get('domain')} (허용: cs, review)")
 
     asp = doc.get("aspects", [])
     if not isinstance(asp, list):
@@ -48,6 +78,12 @@ def validate_doc(doc, allowed):
         asp = []
 
     for i, a in enumerate(asp):
+        if not isinstance(a, dict):
+            errs.append(f"aspects[{i}] 는 객체여야 함")
+            continue
+        ax = set(a) - ALLOWED_ASPECT
+        if ax:
+            errs.append(f"aspects[{i}] 허용되지 않은 필드: {sorted(ax)} (additionalProperties:false)")
         label = a.get("aspect")
         if label and allowed is not None and label not in allowed:
             errs.append(f"aspects[{i}].aspect '{label}' taxonomy 외 (→ '기타' 강등 필요)")
@@ -58,12 +94,23 @@ def validate_doc(doc, allowed):
         if a.get("speaker") not in SPEAKER:
             errs.append(f"aspects[{i}].speaker 잘못: {a.get('speaker')}")
         c = a.get("confidence")
-        if c is not None and not (0 <= c <= 1):
-            errs.append(f"aspects[{i}].confidence 범위 밖: {c}")
+        if c is not None and not _in_unit_range(c):
+            errs.append(f"aspects[{i}].confidence 범위 밖/타입 오류: {c!r}")
 
     ov = doc.get("overall_sentiment")
     if ov is not None and ov not in OVERALL:
         errs.append(f"overall_sentiment 잘못: {ov}")
+    cfs = doc.get("customer_final_sentiment")
+    if cfs is not None and cfs not in OVERALL:
+        errs.append(f"customer_final_sentiment 잘못: {cfs}")
+
+    ma = doc.get("mentioned_aspects")
+    if ma is not None and not isinstance(ma, list):
+        errs.append("mentioned_aspects 는 배열이어야 함")
+
+    fl = doc.get("flags")
+    if fl is not None and not isinstance(fl, dict):
+        errs.append("flags 는 JSON 객체여야 함")
 
     # 미언급 ≠ 중립 / 필드 모순
     if not asp and doc.get("mentioned_aspects"):
@@ -71,10 +118,18 @@ def validate_doc(doc, allowed):
 
     ps = doc.get("process_signals")
     if isinstance(ps, dict):
+        # reopen_count 는 아래 전용 메시지로 안내하므로 일반 extra 검사에서 제외
+        px = set(ps) - ALLOWED_PS - {"reopen_count"}
+        if px:
+            errs.append(f"process_signals 허용되지 않은 필드: {sorted(px)} (additionalProperties:false)")
         if ps.get("resolution") is not None and ps.get("resolution") not in RESOLUTION:
             errs.append(f"process_signals.resolution 잘못: {ps.get('resolution')}")
+        if "escalated" in ps and not isinstance(ps["escalated"], bool):
+            errs.append("process_signals.escalated 는 boolean 이어야 함")
         if "reopen_count" in ps:
             errs.append("reopen_count 는 단건 출력에서 제거됨 — cross-doc 집계량이라 무상태 단건 라벨러가 채울 수 없음(집계 레이어 ml-absa 책임). 단건 스키마에서 빼라")
+    elif ps is not None:
+        errs.append("process_signals 는 JSON 객체여야 함")
 
     return errs
 

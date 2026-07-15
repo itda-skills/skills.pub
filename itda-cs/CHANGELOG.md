@@ -1,5 +1,21 @@
 # Changelog — itda-cs
 
+## [Unreleased] (cs-batch-extractor 서브에이전트 신설 — ABSA·인텐트 대량 병렬 추출, #1140)
+
+### New Agent — 대량 배치 팬아웃/팬인 부품
+- **cs-batch-extractor** (`agents/cs-batch-extractor.md`): `aspect-sentiment`·`cs-intent` 의 대량 배치에서 Lead 가 청크 단위로 명시 디스패치하는 무상태 워커. 격리 컨텍스트에서 청크의 각 항목을 독립 라벨링해 두 스킬의 고정 JSON 스키마 호환 JSONL 을 `outputs/` 에 쓰고, 텍스트로는 경로·건수만 반환(본 대화 원문 오염 0).
+  - 목적은 **처리량(청크 병렬)+격리**뿐 — 통계 주장 없음(κ·IAA·독립 어노테이터 무관). 기각된 labeler(이중 라벨 κ 측정)와 다르다.
+  - 두 스킬의 화자분리(고객 발화만)·closed-set·무상태 단건·고정 출력 계약을 그대로 승계. closed-set 이탈 라벨은 taxonomy catch-all `기타` 로(literal `미분류` 금지 — 집계 스크립트 out-of-taxonomy 회피). 스키마 불일치 항목은 skips 사이드카에 기록 후 스킵.
+  - frontmatter 는 name·description 만(tools 생략 = 전체 상속, Cowork tools 이름 함정 회피). 근거 독트린: `.claude/rules/itda/skills/cowork-agent-orchestration.md`.
+
+### Changed
+- **aspect-sentiment SKILL.md**: '대량 배치 (팬아웃/팬인)' 절 추가 — 30건+ 는 Lead 가 청크(JSONL) 분할 → `cs-batch-extractor` 병렬 디스패치 → `validate_output.py` 로 검증·병합(팬인=Lead+스크립트 소유). 부재 환경 순차 단건 폴백. 단건 절차·스키마·taxonomy 불변.
+- **cs-intent SKILL.md**: 동일 '대량 배치 (팬아웃/팬인)' 절 추가(task=cs-intent).
+
+### Hardened (Codex R2 적대 리뷰 보완 — #1140)
+- **aspect-sentiment 0.1.2→0.1.3 · cs-intent 0.1.1→0.1.2**: 두 `validate_output.py` 가 output-schema 의 top-level(및 aspect-sentiment `aspects[]`) `additionalProperties:false` 를 **실제 강제** — 기존 파서가 extra 필드를 조용히 통과시켜 스키마 계약이 실효 없던 것을 교정(Codex 실증). 허용 필드 집합 + `flags`/`confidence`/`domain` 타입·enum 검사 + 회귀 테스트(`tests/`) 신설. 스킬 CHANGELOG 참조.
+- **cs-batch-extractor.md**: (7) 화자 제한을 `task=aspect-sentiment` 측면·극성 전용으로 정정(cs-intent 는 전체 멀티턴 문맥 허용, evidence 만 문의 목적 근거로 제한). (8) 커스텀 taxonomy 관철 — 입력 계약에 커스텀 경로(선택) + 자기 게이트·Lead 팬인을 `validate_output.py <jsonl> [taxonomy]` 로. (10) 참조 파일 폴백 탐색을 task 별 경로(`*itda-cs/skills/{aspect-sentiment,cs-intent}/*`)로 분리 + 필요 파일 3종 존재 확인.
+
 ## [0.2.0] — 2026-06-01 (PII 비식별화 게이트 신설, epic #28 로드맵 1순위, #33)
 
 ### New Skill — 두 번째 동반 인프라 (#33)

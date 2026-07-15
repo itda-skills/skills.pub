@@ -1,9 +1,10 @@
 ---
 name: kosis
 description: >
-  통계청 KOSIS 국가통계포털 API로 공식 통계를 조회하는 스킬입니다.
-  "인구 통계 알려줘", "산업 시장규모 조회해줘", "KOSIS 통계표 검색해줘"처럼 말하면 됩니다.
-  인구·산업·시장규모·경제 데이터셋을 검색·수집합니다.
+  통계청 KOSIS 국가통계포털 API로 공식 통계를 검색·탐색·조회하는 스킬입니다.
+  "인구 통계 알려줘", "KOSIS 통계표 검색해줘", "이 통계표 분류·항목 코드 찾아줘",
+  "국제통계 목록 탐색해줘", "산업 시장규모 조회해줘"처럼 말하면 됩니다.
+  통계표 목록·구조(objL·itmId 코드)·데이터·통계설명·주요지표를 다룹니다.
 license: Apache-2.0
 compatibility: "Designed for Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write
@@ -14,9 +15,9 @@ metadata:
   category: "domain"
   status: "active"
   recommended: true
-  version: "0.10.4"
+  version: "0.11.0"
   created_at: "2026-03-29"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-15"
   tags: "KOSIS, statistics, population, market"
 ---
 
@@ -61,6 +62,15 @@ KOSIS_API_KEY=발급받은_키
 3. **시간 후 재시도**: 신규 발급 직후 일시적 미반영 가능 — 수 분 대기 후 재시도
 4. **권한 오류 (HTTP 403)**: 게이트웨이 단계 거부 → 마이페이지에서 활용 상태 확인
 
+## 워크플로우 (탐색이 필요할 때)
+
+**코드를 이미 아는 반복 조회**는 `data` 로 바로 간다. **무엇을 조회할지부터 찾아야 하면** 아래 순서:
+
+1. `search`(통합검색) 또는 `list`(트리 탐색) 로 통계표 후보 → `org-id`·`tbl-id` 확보
+2. `info --type ITM`(신규) 로 그 통계표의 **분류(objL)·항목(itmId) 코드 발견**
+3. `data` 로 발견한 코드를 넣어 조회 (3~4중 분류는 `--obj3`/`--obj4`)
+4. 필요 시 `meta`(작성목적·법적근거)·`indicator`(지표 개념) 로 맥락 보강
+
 ## 사용법
 
 ### 통계표 검색 (search)
@@ -74,6 +84,15 @@ python3 scripts/collect_stats.py search --keyword "제조업" --count 20 --forma
 py -3 scripts/collect_stats.py search --keyword "인구"
 ```
 
+### 통계표 구조·코드 발견 (info) — objL·itmId 를 모를 때 선행
+
+```bash
+# 분류(OBJ)·항목(ITM) 코드 목록 (기본 type=ITM)
+python3 scripts/collect_stats.py info --org-id 101 --tbl-id DT_1DA7104S --format table
+# 통계표명·수록주기·단위·출처 등 다른 메타
+python3 scripts/collect_stats.py info --org-id 101 --tbl-id DT_1DA7104S --type PRD
+```
+
 ### 통계 데이터 조회 (data)
 
 ```bash
@@ -84,8 +103,35 @@ python3 scripts/collect_stats.py data --org-id 101 --tbl-id DT_1B04005N --recent
 # 기간 지정 조회
 python3 scripts/collect_stats.py data --org-id 101 --tbl-id DT_1B04005N --start 2020 --end 2024
 
-# 분기별 조회
-python3 scripts/collect_stats.py data --org-id 301 --tbl-id DT_200Y003 --period quarter --recent 4
+# 3~4중 분류 통계표 (info 로 찾은 코드 사용)
+python3 scripts/collect_stats.py data --org-id 101 --tbl-id DT_1DA7104S \
+  --item T20 --obj1 00 --obj2 A --obj3 H1 --recent 3
+```
+
+### 통계목록 트리 탐색 (list) — 국제·지자체 진입로
+
+```bash
+# 주제별 최상위 (기본 vwCd=MT_ZTITLE)
+python3 scripts/collect_stats.py list --format table
+# 국제·OECD·세계 통계 (통합검색에 잘 안 잡힘)
+python3 scripts/collect_stats.py list --vw-cd MT_RTITLE
+# 하위 드릴다운
+python3 scripts/collect_stats.py list --parent-id A_7
+```
+
+### 통계설명·주요지표 (meta / indicator)
+
+```bash
+# 작성목적·법적근거·조사주기
+python3 scripts/collect_stats.py meta --org-id 101 --tbl-id DT_1DA7104S
+# 지표 개념·선정방법·출처
+python3 scripts/collect_stats.py indicator --jipyo-id 5000
+```
+
+### 자연어 지역명 → 분류 코드 (region)
+
+```bash
+python3 scripts/collect_stats.py region --org-id 101 --tbl-id DT_1YL20631 --region "인천 서구"
 ```
 
 ## CLI 옵션
@@ -109,7 +155,31 @@ python3 scripts/collect_stats.py data --org-id 301 --tbl-id DT_200Y003 --period 
 | `--start` | 시작 기간 (예: 2020) | — |
 | `--end` | 종료 기간 (예: 2024) | — |
 | `--item` | 항목 코드 | `ALL` |
+| `--obj1`~`--obj4` | 1~4차 분류값 (3~4중 분류표 지원) | `ALL`/생략 |
 | `--format` | `json` / `table` | `json` |
+
+### info 서브커맨드 (통계표 구조·코드 발견)
+
+| 옵션 | 설명 | 기본값 |
+|------|------|--------|
+| `--org-id` `--tbl-id` | 기관·통계표 ID (필수) | — |
+| `--type` | `ITM`(분류항목)·`TBL`·`ORG`·`PRD`·`CMMT`·`UNIT`·`SOURCE`·`WGT`·`NCD` | `ITM` |
+| `--obj-id` `--item` | 특정 분류/자료코드 필터 | — |
+
+### list 서브커맨드 (통계목록 트리)
+
+| 옵션 | 설명 | 기본값 |
+|------|------|--------|
+| `--vw-cd` | 서비스뷰 (`MT_ZTITLE`·`MT_OTITLE`·`MT_RTITLE`(국제)·`MT_ATITLE01`(지역) 등) | `MT_ZTITLE` |
+| `--parent-id` | 시작 목록 ID (생략 시 최상위) | — |
+
+### meta / indicator / region 서브커맨드
+
+| 서브커맨드 | 옵션 | 설명 |
+|------|------|------|
+| `meta` | `--stat-id` 또는 `--org-id`+`--tbl-id`, `--meta-item` | 통계설명(작성목적·법적근거·조사주기) |
+| `indicator` | `--jipyo-id`(필수), `--page`, `--count` | 통계주요지표 개념·선정방법·출처 |
+| `region` | `--org-id`+`--tbl-id`+`--region`(필수) | 자연어 지역명 → objL 분류 코드 매핑 |
 
 ## 종료 코드
 
@@ -131,17 +201,19 @@ statistics, population, market size, national statistics
 kosis/
   SKILL.md
   scripts/
-    kosis_api.py        # KOSIS API 모듈
-    collect_stats.py    # 통계 수집 CLI
-    env_loader.py       # API 키 관리
-    itda_path.py        # 데이터 경로 유틸리티
-    tests/
-      test_kosis_api.py
-      test_collect_stats.py
-      test_env_loader.py
+    kosis_api.py        # KOSIS API 모듈 (search/data/getMeta/list/expl/indicator)
+    collect_stats.py    # 통계 수집 CLI (search·data·info·list·meta·indicator·region)
+  tests/
+    test_kosis_api.py
+    test_collect_stats.py
+    test_collect_stats_arg_position.py
+    test_parity_expansion.py   # info·list·meta·indicator·region·obj3/4 (#1145)
   references/
-    kosis.md            # KOSIS API 상세 가이드
+    kosis.md            # KOSIS API 요약
+    kosis-매뉴얼/        # 공식 매뉴얼 v1.0 정본 PDF + 11개 분류 발췌
 ```
+
+> API 키 관리(`env_loader`)는 플러그인 공용 모듈(`skills/shared/`)에서 제공되며, 배포 시 `PYTHONPATH` 로 주입됩니다.
 
 ## 오류 처리
 

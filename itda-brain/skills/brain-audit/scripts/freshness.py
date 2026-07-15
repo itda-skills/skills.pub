@@ -183,6 +183,23 @@ def parse_report_baseline(report_text: str) -> dict[str, float]:
     return baseline
 
 
+def _read_manifest_json(path: str):
+    """manifest JSON 파일을 읽는다. 손상(비JSON·빈 파일)은 **명시 에러**로 표면화한다.
+
+    부재(unknown 처리)와 달리 손상은 "기준선이 있었는데 못 믿게 된" 상태다 — 빈 값으로
+    대체하면 미적재 변경이 전부 신규로 위장되거나 기준선이 조용히 소실된다(조용한 폴백 금지).
+    """
+    with open(path, encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"manifest 손상(JSON 파싱 실패): {path} — {e}. "
+                "brain-build 재빌드(또는 백업 복원)로 기준선을 재생성하세요. "
+                "손상 기준선을 빈 값으로 대체하지 않습니다."
+            ) from e
+
+
 def update_baseline(
     manifest_path: str, source: str, paths: list[str]
 ) -> dict[str, dict]:
@@ -190,13 +207,18 @@ def update_baseline(
 
     나머지 경로는 손대지 않으므로, 함께 존재하던 **미적재 변경은 기준선에 흡수되지 않고 계속 stale** 로 남는다.
     적재한 경로가 삭제됐으면 manifest 에서도 제거한다. 반환 = 갱신된 manifest(정렬).
+
+    manifest 부재는 **명시 에러**다 — 경로 오타 시 빈 기준선을 조용히 새로 만들면 정본
+    manifest 가 1~2 엔트리 기준선으로 대체돼 신선도가 통째로 무너진다(조용한 폴백 금지).
     """
+    if not os.path.exists(manifest_path):
+        raise FileNotFoundError(
+            f"manifest 없음: {manifest_path} — update-baseline 은 기존 기준선에만 병합합니다. "
+            "경로 오타면 정정하고, 기준선이 정말 없으면 brain-build 재빌드로 생성하세요"
+            "(빈 기준선을 자동 생성하지 않습니다)."
+        )
     current = scan(source)
-    try:
-        with open(manifest_path, encoding="utf-8") as f:
-            base = json.load(f)
-    except FileNotFoundError:
-        base = {}
+    base = _read_manifest_json(manifest_path)
     for p in paths:
         rel = _norm_rel(p)
         if rel in current:
@@ -248,9 +270,8 @@ def diff(
 
 
 def load_manifest(path: str) -> dict[str, float]:
-    """manifest JSON({rel:{mtime,...}} 또는 {rel: epoch|iso}) → {rel: mtime epoch}."""
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+    """manifest JSON({rel:{mtime,...}} 또는 {rel: epoch|iso}) → {rel: mtime epoch}. 손상은 ValueError."""
+    data = _read_manifest_json(path)
     out: dict[str, float] = {}
     for rel, v in data.items():
         if isinstance(v, dict):
@@ -309,6 +330,15 @@ def main(argv: list[str] | None = None) -> int:
 
     args = ap.parse_args(argv)
 
+    try:
+        return _run(args)
+    except (NotADirectoryError, FileNotFoundError, ValueError) as e:
+        # 예상외 실패는 traceback 이 아니라 명시 에러로 표면화한다(조용한 폴백·원시 스택 금지).
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+
+def _run(args) -> int:
     if args.mode == "scan":
         print(json.dumps(scan(args.source), ensure_ascii=False, indent=2))
         return 0

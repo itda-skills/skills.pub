@@ -18,6 +18,15 @@ import os
 if sys.version_info < (3, 10):
     sys.exit("Python 3.10+ 가 필요합니다.")
 
+DOMAIN = {"cs"}
+
+# output-schema.json 의 additionalProperties:false 를 실제로 강제하는 허용 필드 집합.
+# (스키마는 계약이지만 파서가 검사하지 않으면 extra 필드가 조용히 통과한다 — #1140 Codex.)
+ALLOWED_TOP = {
+    "doc_id", "language", "taxonomy_version", "domain", "primary_intent",
+    "secondary_intents", "evidence", "confidence", "flags",
+}
+
 
 def load_intent_labels(yaml_path):
     """intent-taxonomy.ko.yaml 의 intents: 블록에서 라벨 키만 추출(정규식, stdlib)."""
@@ -32,9 +41,22 @@ def load_intent_labels(yaml_path):
 
 def validate_doc(doc, allowed):
     errs = []
+    if not isinstance(doc, dict):
+        return ["doc 는 JSON 객체여야 함"]
+
     for f in ("doc_id", "language", "primary_intent", "evidence", "flags"):
         if f not in doc:
             errs.append(f"필수 필드 누락: {f}")
+
+    # top-level additionalProperties:false — 허용 밖 필드 차단
+    extra = set(doc) - ALLOWED_TOP
+    if extra:
+        errs.append(f"허용되지 않은 top-level 필드: {sorted(extra)} (output-schema additionalProperties:false)")
+
+    if "language" in doc and not isinstance(doc["language"], str):
+        errs.append("language 는 문자열이어야 함")
+    if "domain" in doc and doc["domain"] not in DOMAIN:
+        errs.append(f"domain 잘못: {doc.get('domain')} (허용: cs)")
 
     pi = doc.get("primary_intent")
     if pi and allowed is not None and pi not in allowed:
@@ -51,11 +73,17 @@ def validate_doc(doc, allowed):
             errs.append(f"secondary_intents '{s}' 인텐트 체계 외")
 
     c = doc.get("confidence")
-    if c is not None and not (0 <= c <= 1):
-        errs.append(f"confidence 범위 밖: {c}")
+    if c is not None and not (isinstance(c, (int, float)) and not isinstance(c, bool) and 0 <= c <= 1):
+        errs.append(f"confidence 범위 밖/타입 오류: {c!r}")
+
+    fl = doc.get("flags")
+    if fl is not None and not isinstance(fl, dict):
+        errs.append("flags 는 JSON 객체여야 함")
+        fl = {}
+    elif fl is None:
+        fl = {}
 
     # multi_intent 정합성
-    fl = doc.get("flags") or {}
     if fl.get("multi_intent") and not (sec or []):
         errs.append("모순: flags.multi_intent=true 인데 secondary_intents 가 비어있음")
     return errs

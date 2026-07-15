@@ -24,6 +24,12 @@ _TIMEOUT = 15
 _SEARCH_URL = "https://kosis.kr/openapi/statisticsSearch.do"
 _DATA_URL = "https://kosis.kr/openapi/Param/statisticsParameterData.do"
 _LIST_URL = "https://kosis.kr/openapi/statisticsList.do"
+# 메타자료(통계표 구조) — 통계자료와 동일 endpoint, method=getMeta (매뉴얼 §2.5)
+_META_URL = "https://kosis.kr/openapi/statisticsData.do"
+# 통계설명(작성목적·법적근거 등) — statisticsExplData.do, method=getList (매뉴얼 §2.4)
+_EXPL_URL = "https://kosis.kr/openapi/statisticsExplData.do"
+# 통계주요지표 설명자료 — pkNumberService.do, service=1 (매뉴얼 §2.7.2.1)
+_INDICATOR_URL = "https://kosis.kr/openapi/pkNumberService.do"
 
 # 활용신청 페이지 — 인증키 관련 오류 시 사용자에게 자동 부착
 _KOSIS_APPLY_URL = "https://kosis.kr/openapi/"
@@ -288,6 +294,8 @@ def get_statistics_data(
     itm_id: str = "ALL",
     obj_l1: str = "ALL",
     obj_l2: str = "",
+    obj_l3: str = "",
+    obj_l4: str = "",
     prd_se: str = "Y",
     start_prd_de: str = "",
     end_prd_de: str = "",
@@ -302,6 +310,8 @@ def get_statistics_data(
         itm_id: 항목 ID ("ALL" 또는 "T2+T3" 등).
         obj_l1: 1차 분류값 ("ALL" 또는 특정 코드).
         obj_l2: 2차 분류값.
+        obj_l3: 3차 분류값 (3중 이상 분류 통계표).
+        obj_l4: 4차 분류값 (4중 분류 통계표).
         prd_se: 수록주기 ("Y"=연, "M"=월, "Q"=분기).
         start_prd_de: 시작 시점 (예: "2020").
         end_prd_de: 종료 시점 (예: "2024").
@@ -323,9 +333,13 @@ def get_statistics_data(
         "jsonVD": "Y",
     }
 
-    # objL2~L8: 값이 있을 때만 포함 (빈 문자열 전송 시 KOSIS가 거부)
+    # objL2~L4: 값이 있을 때만 포함 (빈 문자열 전송 시 KOSIS가 거부)
     if obj_l2:
         params["objL2"] = obj_l2
+    if obj_l3:
+        params["objL3"] = obj_l3
+    if obj_l4:
+        params["objL4"] = obj_l4
 
     if new_est_prd_cnt is not None:
         params["newEstPrdCnt"] = str(new_est_prd_cnt)
@@ -395,3 +409,226 @@ def summarize_data(
         })
 
     return results
+
+
+def _as_list(data: list[dict[str, Any]] | dict[str, Any]) -> list[dict[str, Any]]:
+    """KOSIS 응답을 항상 리스트로 정규화.
+
+    getMeta type=TBL/ORG 등은 단일 dict, type=ITM/PRD 등은 list 를 반환한다.
+    """
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return [data]
+    return []
+
+
+# 메타자료 조회유형 — 코드 발견(ITM)이 핵심 진입점
+META_TYPES = ("TBL", "ORG", "PRD", "ITM", "CMMT", "UNIT", "SOURCE", "WGT", "NCD")
+
+
+def get_table_meta(
+    api_key: str,
+    org_id: str,
+    tbl_id: str,
+    meta_type: str = "ITM",
+    obj_id: str = "",
+    itm_id: str = "",
+) -> list[dict[str, Any]]:
+    """통계표 메타(구조) 조회 — objL·itmId 코드 발견의 정본.
+
+    get_statistics_data 에 넘길 objL/itmId 값을 모를 때, type=ITM 으로
+    분류(OBJ_ID/OBJ_NM)와 항목(ITM_ID/ITM_NM) 코드를 확보한다.
+    통계자료와 동일 endpoint(statisticsData.do)에 method=getMeta 만 붙인다.
+
+    Args:
+        api_key: KOSIS 인증키.
+        org_id: 기관 코드.
+        tbl_id: 통계표 ID.
+        meta_type: 조회유형 (META_TYPES 중 하나, 기본 ITM=분류항목).
+        obj_id: 특정 분류 ID 로 필터 (ITM 유형, 선택).
+        itm_id: 특정 자료코드 ID 로 필터 (ITM 유형, 선택).
+
+    Returns:
+        메타 레코드 목록. type=ITM 예:
+        [{OBJ_ID, OBJ_NM, ITM_ID, ITM_NM, UNIT_NM, UP_ITM_ID, OBJ_ID_SN}, ...]
+    """
+    params: dict[str, str] = {
+        "method": "getMeta",
+        "apiKey": api_key,
+        "orgId": org_id,
+        "tblId": tbl_id,
+        "type": meta_type,
+        "format": "json",
+    }
+    if obj_id:
+        params["objId"] = obj_id
+    if itm_id:
+        params["itmId"] = itm_id
+
+    return _as_list(_request(_META_URL, params))
+
+
+def list_statistics(
+    api_key: str,
+    vw_cd: str = "MT_ZTITLE",
+    parent_list_id: str = "",
+) -> list[dict[str, Any]]:
+    """통계목록 트리 탐색 — 주제별/기관별/국제/지역 통계표를 드릴다운.
+
+    통합검색으로 안 잡히는 국제·OECD 통계(vwCd=MT_RTITLE)나
+    지자체 통계(MT_ATITLE01/MT_GTITLE01)의 진입로.
+
+    Args:
+        api_key: KOSIS 인증키.
+        vw_cd: 서비스뷰 코드 (MT_ZTITLE=주제별, MT_OTITLE=기관별,
+            MT_RTITLE=국제통계연감, MT_ATITLE01=지역통계 주제별,
+            MT_GTITLE01=e-지방지표 주제별, MT_BUKHAN=북한통계 등).
+        parent_list_id: 시작 목록 ID (생략 시 최상위 레벨).
+
+    Returns:
+        목록 노드 목록. 각 항목:
+        {VW_CD, LIST_ID, LIST_NM, ORG_ID, TBL_ID, TBL_NM, STAT_ID, SEND_DE}
+        TBL_ID 가 있으면 잎(통계표), 없으면 하위 드릴다운 대상.
+    """
+    params: dict[str, str] = {
+        "method": "getList",
+        "apiKey": api_key,
+        "vwCd": vw_cd,
+        "format": "json",
+        "jsonVD": "Y",
+    }
+    if parent_list_id:
+        params["parentListId"] = parent_list_id
+
+    return _as_list(_request(_LIST_URL, params))
+
+
+def get_stat_explanation(
+    api_key: str,
+    stat_id: str = "",
+    org_id: str = "",
+    tbl_id: str = "",
+    meta_itm: str = "ALL",
+) -> list[dict[str, Any]]:
+    """통계설명자료 조회 — 작성목적·법적근거·조사주기 등.
+
+    Args:
+        api_key: KOSIS 인증키.
+        stat_id: 통계조사 ID (orgId+tblId 대신 단독 사용 가능).
+        org_id: 기관 코드 (stat_id 없을 때).
+        tbl_id: 통계표 ID (stat_id 없을 때).
+        meta_itm: 요청 항목 (ALL=전체, statsNm=조사명, writingPurps=조사목적,
+            basisLaw=법적근거 등 28종, 매뉴얼 §2.4).
+
+    Returns:
+        설명 레코드 (통상 1건):
+        [{statsNm, statsKind, basisLaw, writingPurps, statsPeriod, ...}]
+    """
+    params: dict[str, str] = {
+        "method": "getList",
+        "apiKey": api_key,
+        "metaItm": meta_itm,
+        "format": "json",
+        "jsonVD": "Y",
+    }
+    if stat_id:
+        params["statId"] = stat_id
+    else:
+        params["orgId"] = org_id
+        params["tblId"] = tbl_id
+
+    return _as_list(_request(_EXPL_URL, params))
+
+
+def get_indicator(
+    api_key: str,
+    jipyo_id: str,
+    page_no: int = 1,
+    num_of_rows: int = 10,
+) -> list[dict[str, Any]]:
+    """통계주요지표 설명자료 조회 — 지표 개념·선정방법·출처.
+
+    지표 고유번호별 설명자료조회(매뉴얼 §2.7.2.1, pkNumberService.do).
+
+    Args:
+        api_key: KOSIS 인증키.
+        jipyo_id: 지표 ID.
+        page_no: 페이지 번호.
+        num_of_rows: 페이지당 건수.
+
+    Returns:
+        지표 설명 목록:
+        [{statJipyoId, statJipyoNm, jipyoExplan, jipyoExplan1}, ...]
+    """
+    params: dict[str, str] = {
+        "method": "getList",
+        "service": "1",
+        "serviceDetail": "pkAll",
+        "apiKey": api_key,
+        "jipyoId": jipyo_id,
+        "pageNo": str(page_no),
+        "numOfRows": str(num_of_rows),
+        "format": "json",
+    }
+    return _as_list(_request(_INDICATOR_URL, params))
+
+
+def find_region_code(
+    api_key: str,
+    org_id: str,
+    tbl_id: str,
+    region: str,
+) -> list[dict[str, Any]]:
+    """자연어 지역명을 통계표별 분류(objL) 코드로 매핑.
+
+    통계표의 지역 분류(getMeta type=ITM 의 OBJ 값들)를 받아
+    지역명과 부분일치하는 후보를 반환한다. 코드↔이름 대조는
+    KOSIS 응답 원본에서만 하고 추측하지 않는다(data-accuracy).
+
+    Args:
+        api_key: KOSIS 인증키.
+        org_id: 기관 코드.
+        tbl_id: 통계표 ID.
+        region: 지역명 (예: "인천 서구", "강남구").
+
+    Returns:
+        매칭 후보 목록 (일치도 높은 순):
+        [{code, name, axis_id, axis_name}, ...]
+        code=분류값 코드(ITM_ID — objL 인자로 사용), name=지역 국문명(ITM_NM),
+        axis_name=분류축 이름(OBJ_NM, 예: "시도별") — 어느 objL 축인지 식별용.
+
+    Note:
+        getMeta type=ITM 실측 구조(#1145): 각 행은 분류값 1건.
+        OBJ_ID/OBJ_NM=분류축(항목/성별/시도별 등), ITM_ID/ITM_NM=값 코드/이름.
+        지역명은 ITM_NM 에, 코드는 ITM_ID 에 있다(항목축 OBJ_ID="ITEM"은 제외).
+    """
+    meta = get_table_meta(api_key, org_id, tbl_id, meta_type="ITM")
+
+    tokens = [t for t in region.replace(",", " ").split() if t]
+    scored: list[tuple[int, dict[str, Any]]] = []
+    seen: set[tuple[str, str]] = set()
+
+    for row in meta:
+        axis_id = row.get("OBJ_ID", "")
+        axis_name = row.get("OBJ_NM", "")
+        # 항목축(측정 지표)은 지역 후보가 아니므로 제외
+        if axis_id == "ITEM" or axis_name == "항목":
+            continue
+        name = row.get("ITM_NM", "")
+        code = row.get("ITM_ID", "")
+        key = (code, name)
+        if not name or key in seen:
+            continue
+        seen.add(key)
+        score = sum(1 for t in tokens if t in name)
+        if score:
+            scored.append((score, {
+                "code": code,
+                "name": name,
+                "axis_id": axis_id,
+                "axis_name": axis_name,
+            }))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [item for _score, item in scored]

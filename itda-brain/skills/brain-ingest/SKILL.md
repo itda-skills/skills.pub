@@ -10,7 +10,7 @@ allowed-tools: Read, Write, Bash, Glob, Grep, Task, Skill
 argument-hint: "[업무DB 폴더 경로] [새 문서 경로 또는 외부 산출물]"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.1.1"
   category: "knowledge-base"
   status: "experimental"
   recommended: false
@@ -55,7 +55,7 @@ metadata:
 > # Windows: py -3 <스킬디렉토리>\..\brain-audit\scripts\freshness.py update-baseline ... (동일)
 > ```
 >
-> brain-audit 은 기준선을 갱신하지 않으므로(자기비교 방지), "적재하지 않은 채 기준선만 최신화"되는 일이 없다.
+> brain-audit 은 기준선을 갱신하지 않으므로(자기비교 방지), "적재하지 않은 채 기준선만 최신화"되는 일이 없다. manifest 경로가 틀리거나 파일이 손상돼 있으면 freshness.py 가 **명시 에러로 중단**한다(exit 2 — 빈 기준선 자동 생성·대체 없음). 에러 메시지대로 경로를 정정하거나 재빌드로 기준선을 재생성한다.
 
 ### 관문4 — 신선도·검수 연계
 

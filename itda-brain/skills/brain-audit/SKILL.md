@@ -10,7 +10,7 @@ allowed-tools: Read, Write, Bash, Glob, Grep, Task
 argument-hint: "[업무DB 폴더 경로] (소스 폴더는 CLAUDE.md 머리말에서 읽음)"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.2.0"
   category: "knowledge-base"
   status: "experimental"
   recommended: false
@@ -36,7 +36,7 @@ itda-brain 비정형 문서 vertical 의 재검수·신선도 담당. 향후 hyv
 
 ### 입력
 
-- **업무DB 폴더 경로** (필수). 소스 폴더 경로는 업무DB `CLAUDE.md` 머리말 `sources:` 에서 읽는다(자기서술 메타 — REQ-030).
+- **업무DB 폴더 경로** (필수). 소스 폴더 경로는 업무DB `CLAUDE.md` 머리말 `sources:` 에서 읽는다(자기서술 메타 — REQ-030, **절대경로 1개** — v1 단일 소스). 값이 상대경로거나 폴더가 실재하지 않으면 추측으로 보정하지 말고 사용자에게 소스 폴더 절대경로를 확인한다.
 
 ### 관문1 — 신선도 점검 (제5각, 결정론)
 
@@ -53,12 +53,13 @@ py -3 <스킬디렉토리>\scripts\freshness.py diff "<소스폴더>" --baseline
 
 - **기준선의 정본은 빌드 시점 manifest**(`.brain-manifest.json` — 정수 mtime, 타임존 무관). brain-build 가 빌드 끝에 저장하고, brain-ingest 가 적재 성공 시에만 갱신한다. **brain-audit 은 기준선을 갱신하지 않는다**(현재 스캔값으로 덮으면 미적재 변경이 다음 검사에서 사라져 항상 "최신"으로 위장된다 — 거짓 안심).
 - **기준선 부재**(`stale: null`, `baseline: "absent"` — 구 빌드): 신선도를 **판정 불가(unknown)**로 보고하고 **재빌드를 권고**한다. 현재 스캔값으로 커버리지 표를 backfill 해 diff 하지 않는다(자기비교 금지).
+- **기준선 손상**(비JSON·빈 파일): freshness.py 가 `Error: manifest 손상 …` 으로 명시 중단한다(exit 2 — 빈 값 대체 없음). 재빌드(또는 백업 복원)로 기준선을 재생성하도록 안내한다.
 - manifest 가 없고 검수리포트 커버리지 표에 수정시각 열만 있을 때는 fallback 으로 `--report "<업무DB>/검수리포트.md"` 를 쓸 수 있으나, 이는 정밀도가 낮다(정본은 manifest).
 - `stale: false` 면 "뇌 최신"으로 보고하고, 4각도 전면 재검수는 사용자 요청 시에만 수행한다.
 
 ### 관문2 — 4각도 재검수 디스패치 (변경이 있거나 사용자가 전면 재검수를 요청할 때)
 
-`Task` 도구로 **`brain-auditor`를 디스패치**한다. 프롬프트에 업무DB·소스 폴더 경로 + 관문1 신선도 결과(신규/변경 파일 목록)를 넘기고, 변경분에 초점을 둔 검수를 요청한다. 신규 파일이 위키에 반영되지 않았으면 그 자체가 전수성(각도 1) 결함이다.
+`Task` 도구로 **`brain-auditor`를 디스패치**한다. 프롬프트에 업무DB·소스 폴더 경로 + 관문1 신선도 결과(신규/변경 파일 목록)를 넘기고, 변경분에 초점을 둔 검수를 요청한다. 신규 파일이 위키에 반영되지 않았으면 그 자체가 전수성(각도 1) 결함이다. 에이전트 타입이 없는 환경이면 brain-build 관문7의 **2차 경로**(general-purpose 서브에이전트에 `<스킬디렉토리>/../../agents/brain-auditor.md` 지시서 주입 — 격리 동등 성립)와 동일하게 디스패치한다.
 
 ### 관문3 — 검수리포트 신선도 절 갱신
 

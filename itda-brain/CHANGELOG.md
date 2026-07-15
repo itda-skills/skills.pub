@@ -1,5 +1,22 @@
 # Changelog — itda-brain
 
+## [0.2.0] — 2026-07-14 (실사용 리뷰 하드닝, #1122)
+
+### Fixed
+- **brain-auditor Cowork tools 함정 교정** (#1130 후속): Cowork 워커의 셸은 표준명 `Bash` 가 아닌 `mcp__workspace__bash` 로 존재하고 frontmatter `tools:` 는 미매칭 이름을 조용히 소실시키는 필터라(스모크 13종 실측, `skills/docs/cowork-capability-map.md`), 기존 정의로는 Cowork 에서 셸 없이 구동되어 수치 재대조 검수가 무력화(또는 실행 서술·환각)될 수 있었다. `mcp__workspace__bash` 를 병기해 양 플랫폼에서 셸을 보존하고, 원본 불가침 계약 문구를 셸 도구 중립으로 정합.
+- **freshness.py 조용한 폴백 2종 제거** (실사용 엣지 실측): ① `update-baseline` 이 manifest 부재 시 빈 기준선을 조용히 생성하던 것 → `manifest 없음` 명시 에러(exit 2 — 오타 시 정본 기준선이 1엔트리로 대체되는 사고 차단). ② 손상(비JSON·빈) manifest 가 원시 traceback 을 뱉던 것 → `manifest 손상` 한국어 명시 에러(exit 2, 부재=unknown 과 구분). scan 소스 폴더 부재도 traceback 대신 명시 에러. 회귀 테스트 5건 추가(21→26).
+- **brain-build 관문 6↔7 순서 교체**: manifest 저장을 검수 디스패치보다 먼저 — 검수관이 참조하는 기계 기준선이 검수 시점에 항상 부재하던 순서 결함(실사용 검수관 피드백 실측). manifest 저장은 `.tmp && mv` 패턴으로 통일(scan 실패 시 깨진 기준선 잔존 차단). 관문 번호 참조 오기 3곳 정정.
+- **경로 계약 명문화**: `CLAUDE.md` 머리말 `sources:` 는 **절대경로**(brain-audit 가 이 값만으로 소스를 찾음 — 상대경로는 실행 위치 의존), CLAUDE-template 경로는 플러그인 루트 `references/` 기준임을 명시.
+
+### Changed
+- **v1 단일 소스 명문화** (마스터 결정 2026-07-14, A안): 뇌 하나 = 소스 폴더 하나. brain-build 가 2개 이상 요청을 명시 거부하고 분리 빌드를 제안 — manifest·근거 상대경로가 단일 루트 전제라 다중 소스는 신선도 레이어가 조용히 틀린 답을 냄. 다중 소스는 실수요 시 manifest 포맷 확장으로 후속.
+- **brain-auditor 지시서 보강** (실사용 검수관 피드백 5건): 커버리지 분모 정본 = freshness scan 출력(OS 잡음 제외 명문화) · 심각도 4단계 경계 정의 · 조건부 모순(세금/단위 기준이 한쪽만 명시된 금액 대조 = 시나리오 병기 + 심각도 하향) · 경미 결함 기재 위치 규칙(각도 절=근거, 조치 권고=실행 항목만) · 소규모(≤약 20개) 시 무작위→전수 대조 승격.
+- **brain-build 관문7 검수 2차 경로**: `itda-brain:brain-auditor` 타입 부재 환경(소스 저장소 등)에서 general-purpose 서브에이전트에 `agents/brain-auditor.md` 지시서를 주입해 디스패치 — 격리 검수 동등 성립(실측 검증). fail-visible 배너는 서브에이전트 디스패치 자체가 불가할 때로 한정.
+
+### New
+- **`evals/` 골든 시나리오** (skill-creator 외부 검증 권고): 함정 6종(단가 모순·거래방향 미끼·파일명 함정·잠금 임시파일·빈 문서·시계열 미끼) fixture + assertions A1~A10. 실사용 E2E 에서 판별력 실증(심은 모순 검출·오탐 0·우발 결함까지 검출)된 시나리오를 검수관 검출력 회귀 가드로 승격.
+- **brain-build 관문3 위키 페이지 실물 예시** 추가(머리말+인라인 근거+모순 병존 — 형식 해석 편차 제거).
+
 ## [0.1.0] — 2026-07-14 (신규 vertical 플러그인, #1122)
 
 ### New Features

@@ -11,11 +11,11 @@ allowed-tools: Read, Bash, Write, Glob, Grep
 argument-hint: "[CS 텍스트/JSONL 또는 분류 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.1.1"
+  version: "0.1.2"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-05-30"
-  updated_at: "2026-06-01"
+  updated_at: "2026-07-14"
   tags: "intent, cs, classification, korean, stdlib"
 ---
 
@@ -74,6 +74,16 @@ python3 scripts/validate_output.py <출력.jsonl>
 # Windows
 py -3 scripts/validate_output.py <출력.jsonl>
 ```
+
+## 대량 배치 (팬아웃/팬인)
+
+입력이 대량(예: 30건 이상)이면 본 대화가 원문으로 오염되고 처리도 느리다. 서브에이전트를 쓸 수 있는 환경(Cowork 등)에서는 **청크 팬아웃**으로 처리한다:
+
+1. **분할** — Lead 가 입력 doc 을 청크 파일(예: 10~20건/청크, **JSONL** — 한 줄 = 단건 입력 shape)로 나눠 세션 폴더에 저장한다. raw 로그는 `pii-redact` 로 **선행 비식별화**한다.
+2. **팬아웃** — `itda-cs:cs-batch-extractor` 를 청크별로 **병렬 명시 디스패치**한다(디스패치 프롬프트에 `task=cs-intent` + 이 파일의 closed-set 인텐트 체계·무상태 단건·고정 JSON 원칙 + 청크 파일 경로 + `outputs/` 출력 경로). 워커는 각 항목을 무상태로 분류해 스키마 호환 JSONL 을 `outputs/` 에 쓰고 경로·건수만 반환한다.
+3. **팬인(집계는 Lead 소유)** — Lead 가 반환된 JSONL 들을 `python3 scripts/validate_output.py <출력.jsonl> [intent-taxonomy.yaml]` 로 검증하고 병합한다. **커스텀 인텐트 체계를 워커에 줬으면 검증에도 같은 경로를 두 번째 인자로 넘긴다** — 안 넘기면 커스텀 인텐트가 내장 체계 기준으로 거짓 거부·`기타` 오강등된다. 집계는 스킬 스크립트가, 분류는 무상태 워커가 맡는다(워커는 집계하지 않는다).
+
+서브에이전트 부재 환경은 위 절차 대신 **기존 본 컨텍스트 순차 단건 처리로 폴백**한다(핵심 원칙의 doc별 무상태 반복). **단건 절차·출력 스키마·인텐트 체계는 불변** — 배치는 같은 계약을 병렬화·격리할 뿐이다. 오케스트레이션 세부는 `.claude/rules/itda/skills/cowork-agent-orchestration.md`.
 
 ## 운영 졸업 게이트 (PoC 탈출 전제)
 
