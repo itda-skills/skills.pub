@@ -1,7 +1,7 @@
 {
   "name": "itda-audit",
   "description": "감사 신뢰성 검수 스킬팩 — 회의·문서·데이터에서 확인/확인필요/예외를 근거와 함께 가른다",
-  "version": "8.34.0",
+  "version": "8.35.1",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

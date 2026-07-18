@@ -21,10 +21,16 @@
   - **쓰기 (pick_cache_location / resolve_data_dir)**: 열거 **선순위**부터
     첫 쓰기 가능 후보가 승리한다. 앞 후보(마운트·호스트 영속 경로)일수록
     캐시 거주지로 우선한다.
-  - **읽기 (find_env_files 병합)**: 열거 **후순위**(더 로컬한 후보)의 .env 가
-    승리한다(later-wins, AC-006.10a). 단 ITDA_DATA_ROOT/.env 는 **명시
-    오버라이드**라 예외적으로 병합 최강(리스트 맨 뒤)으로 재배치된다(#1205).
-    settings.json·os.environ·CLI 인자는 여전히 모든 .env 위(env_loader 참조).
+  - **읽기 (find_env_files 병합)**: 열거 **후순위**(더 로컬한 후보)의 환경변수
+    파일이 승리한다(later-wins, AC-006.10a). 같은 루트 안에서는 파일명 별칭
+    우선순위(.env > .env.txt > env.txt > 환경변수.txt, #1210)가 적용된다. 단
+    ITDA_DATA_ROOT 루트의 파일은 **명시 오버라이드**라 예외적으로 병합 최강
+    (리스트 맨 뒤)으로 블록 재배치된다(#1205). settings.json·os.environ·CLI 인자는
+    여전히 모든 환경변수 파일 위(env_loader 참조).
+
+환경변수 파일명 별칭 (#1210): 각 후보 루트에서 `.env` · `.env.txt` · `env.txt` ·
+  `환경변수.txt` 를 탐색한다(비개발자가 점 파일을 만들기 어려운 문제 대응).
+  한글 파일명은 NFC·NFD 두 형태 모두 매칭한다(macOS↔Linux 정규화 함정).
 
 읽기(find_env_files)와 쓰기(pick_cache_location)의 후보 집합이 다르다:
   - 쓰기(기본): outputs/uploads 제외 — 사용자 결과 폴더에 캐시를 쓰지 않는다.
@@ -50,9 +56,20 @@ from __future__ import annotations
 
 import os
 import sys
+import unicodedata
 from pathlib import Path
 
 _ITDA_DIR = ".itda-skills"
+
+# 환경변수 파일명 별칭 (#1210) — 비개발자가 점(.) 파일을 만들기 어려워 .txt 형태를
+# 허용한다. 같은 루트 내 우선순위: .env > .env.txt > env.txt > 환경변수.txt (정본
+# 우선). 병합이 later-wins 라 find_env_files 는 루트 내에서 약→강(이 튜플의 역순)
+# 으로 append 한다. 이 상수는 env_doctor 등과 공유되는 단일 정의다.
+_ENV_FILENAMES = (".env", ".env.txt", "env.txt", "환경변수.txt")
+
+# 한글 파일명은 NFC/NFD 두 정규화 형태 모두 탐색한다 (#1210) — macOS 호스트가 만든
+# NFD 파일명이 Cowork Linux 마운트의 NFC 문자열 조회에 안 잡히는 함정 대응.
+_NFC_NFD_FILENAMES = ("환경변수.txt",)
 
 # $HOME/mnt/ 에서 제외할 시스템 디렉토리 이름
 _MNT_EXCLUDE_NAMES = {"outputs", "uploads"}
@@ -75,6 +92,60 @@ def _resolved_key(p: Path) -> str | None:
         return str(p.resolve())
     except (OSError, RuntimeError):
         return None
+
+
+def _dedup_key(p: Path) -> str | None:
+    """중복 제거용 **버킷** 키 — resolve 키를 NFC 로 정규화한다 (#1210).
+
+    macOS 는 파일명 정규화 무관 조회라 NFC·NFD 두 질의가 같은 파일을 잡지만
+    resolve() 는 질의 바이트를 보존해 두 경로 문자열이 달라진다(실측 확정).
+    NFC 정규화로 두 형태를 같은 버킷에 모은다. 단 **접기 여부는 버킷 키만으로
+    판정하지 않는다** — Linux 에선 NFC·NFD 가 서로 다른 두 파일일 수 있어(같은
+    버킷이라도) 내용이 통째로 소거되면 안 된다. 실제 접기는 _same_file 로
+    동일 파일임을 확인한 경우에만 한다(find_env_files 참조).
+    """
+    key = _resolved_key(p)
+    return None if key is None else unicodedata.normalize("NFC", key)
+
+
+def _same_file(a: Path, b: Path) -> bool:
+    """두 경로가 같은 실제 파일인지 판정한다 (inode/device 비교, #1210).
+
+    os.path.samefile 실패(파일 부재·권한·플랫폼 예외) 시 보수적으로 **별개**로
+    본다 — 서로 다른 파일을 잘못 접어 내용을 소거하는 것보다 중복을 남기는 편이
+    안전하다.
+    """
+    try:
+        return os.path.samefile(a, b)
+    except OSError:
+        return False
+
+
+def _env_file_variants(root: Path, filename: str) -> list[Path]:
+    """루트에서 주어진 별칭 파일명의 존재하는 경로를 반환한다 (#1210).
+
+    한글 파일명(_NFC_NFD_FILENAMES)은 NFC·NFD 두 정규화 형태 모두 exists() 확인
+    (macOS NFD 파일 ↔ Linux NFC 조회 함정 대응). 동일 파일이 두 형태로 잡히면
+    find_env_files 의 _dedup_key(NFC) 중복 제거가 하나로 접는다.
+    """
+    if filename in _NFC_NFD_FILENAMES:
+        names: list[str] = []
+        for form in ("NFC", "NFD"):
+            norm = unicodedata.normalize(form, filename)
+            if norm not in names:
+                names.append(norm)
+    else:
+        names = [filename]
+
+    out: list[Path] = []
+    for name in names:
+        cand = root / name
+        try:
+            if cand.exists():
+                out.append(cand)
+        except OSError:
+            continue
+    return out
 
 
 def _list_rw_mounts() -> list[Path]:
@@ -338,44 +409,73 @@ def pick_cache_location(rel: str) -> Path:
 
 
 def find_env_files() -> list[Path]:
-    """모든 후보 경로에서 .env 파일을 탐색한다 (병합 순서 = 약 → 강).
+    """모든 후보 경로에서 환경변수 파일을 탐색한다 (병합 순서 = 약 → 강).
 
-    각 후보 경로의 <root>/.env 를 검사하여 존재하는 파일만 후보 열거 순서대로
-    리스트로 반환한다. 이 리스트는 **읽기 병합용 순서**다 — 소비자
-    (env_loader.merged_env·resolve_api_key)는 **뒤에 오는 파일일수록 우선**
+    각 후보 루트에서 별칭 4종(`.env` · `.env.txt` · `env.txt` · `환경변수.txt`,
+    #1210)을 탐색해 존재하는 파일만 반환한다. 이 리스트는 **읽기 병합용 순서**다
+    — 소비자(env_loader.merged_env·resolve_api_key)는 **뒤에 오는 파일일수록 우선**
     적재한다(후순위=더 로컬 후보 승리, AC-006.10a).
 
-    캐시 쓰기와 달리 .env 읽기는 outputs/uploads도 후보에 포함한다
-    (include_output_dirs=True). Cowork는 영속 .env가 마운트된 작업 폴더
+    두 축의 우선순위:
+      - **루트 간(상위 축)**: 후보 열거 순서. 더 로컬한(뒤) 루트가 앞 루트를
+        이긴다 — 루트 locality 가 파일명보다 우선한다.
+      - **같은 루트 내(하위 축)**: `.env` > `.env.txt` > `env.txt` > `환경변수.txt`
+        (정본 우선). later-wins 라 루트 내에서는 약→강(`환경변수.txt` … `.env`)
+        순으로 append 해 `.env` 가 그 루트의 최강이 되게 한다.
+
+    한글 파일명(`환경변수.txt`)은 NFC·NFD 두 형태 모두 탐색한다(macOS↔Linux 정규화
+    함정, #1210). 두 형태가 **같은 파일**이면(macOS 실측) _same_file 로 확인해 하나로
+    접고, **다른 파일**이면(Linux 가능) 둘 다 유지한다 — 이 경우 append 순서상
+    뒤(NFD)가 병합 승자다. 무조건 접으면 NFD 파일 내용이 소거되는 Codex R1 지적 대응.
+
+    캐시 쓰기와 달리 읽기는 outputs/uploads도 후보에 포함한다
+    (include_output_dirs=True). Cowork는 영속 파일이 마운트된 작업 폴더
     (outputs)에만 살 수 있기 때문이다(실측 확정).
 
-    **ITDA_DATA_ROOT 예외 (명시 오버라이드, #1205)**: ITDA_DATA_ROOT 가
-    설정되어 있고 `<ITDA_DATA_ROOT>/.env` 가 존재하면 그 파일을 반환 리스트의
+    **ITDA_DATA_ROOT 예외 (명시 오버라이드, #1205)**: ITDA_DATA_ROOT 루트에서
+    발견된 별칭 파일 **전부를 블록으로**(내부 약→강 순서 유지) 반환 리스트의
     **맨 뒤(=병합 최강)** 로 재배치한다. ITDA_DATA_ROOT 는 후보 열거상 첫 번째
-    (병합 최약)라, 명시적으로 지정한 데이터 루트의 .env 가 오히려 로컬 .env 에
-    가려지는 결함을 교정한다. 일반 후보 간 later-wins 는 그대로 유지된다.
-    (settings.json·os.environ·CLI 인자는 여전히 모든 .env 위 — env_loader 참조.)
+    (병합 최약)라, 명시적으로 지정한 데이터 루트가 오히려 로컬 파일에 가려지는
+    결함을 교정한다. 일반 후보 간 later-wins 는 그대로 유지된다.
+    (settings.json·os.environ·CLI 인자는 여전히 모든 파일 위 — env_loader 참조.)
 
     Returns:
-        존재하는 .env 파일 Path 리스트 (병합 순서 — 뒤일수록 우선).
+        존재하는 환경변수 파일 Path 리스트 (병합 순서 — 뒤일수록 우선).
     """
-    result: list[Path] = []
-    for root in _candidate_roots(include_output_dirs=True):
-        env_file = root / ".env"
-        if env_file.exists():
-            result.append(env_file)
-
-    # ITDA_DATA_ROOT/.env 는 명시 오버라이드 — 병합 최강이 되도록 리스트 끝으로 재배치.
     env_root = os.environ.get("ITDA_DATA_ROOT")
-    if env_root:
-        override_key = _resolved_key(Path(env_root) / ".env")
-        if override_key is not None:
-            matched = [p for p in result if _resolved_key(p) == override_key]
-            if matched:
-                # 동일 파일(중복 제거 유지)을 제거 후 맨 뒤에 하나만 재삽입
-                result = [p for p in result if _resolved_key(p) != override_key]
-                result.append(matched[0])
-    return result
+    override_root_key = _dedup_key(Path(env_root)) if env_root else None
+
+    general: list[Path] = []
+    override_block: list[Path] = []
+    for root in _candidate_roots(include_output_dirs=True):
+        # 같은 루트 내: 약→강(환경변수.txt … .env) 순으로 append → .env 가 최강.
+        root_files: list[Path] = []
+        for filename in reversed(_ENV_FILENAMES):
+            root_files.extend(_env_file_variants(root, filename))
+
+        if override_root_key is not None and _dedup_key(root) == override_root_key:
+            # ITDA_DATA_ROOT 루트의 별칭 전부를 블록으로(내부 순서 유지) 끝에 재배치.
+            override_block.extend(root_files)
+        else:
+            general.extend(root_files)
+
+    # 병합 순서 = 일반 후보(약→강) + ITDA_DATA_ROOT 블록(최강).
+    # 중복 제거: NFC 버킷으로 후보를 모으되, 실제 접기는 _same_file 로 **동일
+    # 파일**임을 확인한 경우에만(NFC·NFD 가 Linux 에선 별개 파일일 수 있어 무조건
+    # 접으면 NFD 파일 내용이 통째로 소거된다). 별개 파일이면 둘 다 유지하고,
+    # append 순서상 뒤(NFD)가 병합 승자가 된다(SPEC-DATAPATH-002 §1.1).
+    kept_by_bucket: dict[str, list[Path]] = {}
+    unique: list[Path] = []
+    for path in general + override_block:
+        key = _dedup_key(path)
+        if key is None:
+            continue
+        prior = kept_by_bucket.get(key)
+        if prior is not None and any(_same_file(path, kept) for kept in prior):
+            continue  # 동일 파일 — 접는다
+        unique.append(path)
+        kept_by_bucket.setdefault(key, []).append(path)
+    return unique
 
 
 def resolve_data_dir(skill_name: str, subdir: str = "") -> Path:

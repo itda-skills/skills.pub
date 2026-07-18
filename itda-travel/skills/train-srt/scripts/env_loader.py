@@ -22,7 +22,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import urllib.parse
+from collections.abc import Iterable
 from pathlib import Path
 
 from itda_path import find_env_files
@@ -112,6 +114,12 @@ def load_env(env_path: str | Path | None = None) -> dict[str, str]:
                     continue
                 key, _, value = line.partition("=")
                 key = key.strip()
+                # export 접두사 관용 (#1210, python-dotenv 동형): "export KEY=V" →
+                # "KEY". 단 "export=1" 처럼 export 자체가 키면(뒤에 공백/탭 없음) 유지.
+                if key.startswith("export"):
+                    rest = key[len("export"):]
+                    if rest[:1] in (" ", "\t"):
+                        key = rest.lstrip(" \t")
                 value = value.strip()
                 if len(value) >= 2 and (
                     (value.startswith('"') and value.endswith('"'))
@@ -216,7 +224,7 @@ def merged_env(env_path: str | Path | None = None) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 def _augment_missing_message(base_msg: str) -> str:
-    """MissingAPIKeyError 메시지 끝에 발견된 .env 파일 요약 1~2줄을 첨부한다.
+    """MissingAPIKeyError 메시지 끝에 발견된 환경변수 파일(.env 등) 요약을 첨부한다.
 
     env_doctor 를 **함수 내부 지역 import** 로 사용한다 — publish.py 의
     _shared_closure 가 import 를 ast.walk 전순회로 수집하므로(모듈 최상위가
@@ -232,11 +240,11 @@ def _augment_missing_message(base_msg: str) -> str:
 
         env_files = env_doctor.collect_diagnosis().get("env_files", [])
         if not env_files:
-            return f"{base_msg}\n\n발견된 .env 파일: 없음"
+            return f"{base_msg}\n\n발견된 환경변수 파일(.env 등): 없음"
         # 경로의 제어문자(개행·ANSI escape)를 무해화 — 에러 메시지 오염 차단.
         shown = [env_doctor._sanitize_control(p) for p in env_files[:5]]
         suffix = "" if len(env_files) <= 5 else f" (외 {len(env_files) - 5}개)"
-        return f"{base_msg}\n\n발견된 .env 파일: " + ", ".join(shown) + suffix
+        return f"{base_msg}\n\n발견된 환경변수 파일(.env 등): " + ", ".join(shown) + suffix
     except Exception:
         # 진단 실패는 부가 정보만 생략 — 기본 메시지는 온전히 유지(폴백 아님).
         return base_msg
@@ -263,6 +271,37 @@ def normalize_service_key(key: str) -> str:
     if "%" in key:
         return urllib.parse.unquote(key)
     return key
+
+
+# 프로세스당 (키, 출처) 1회만 provenance 를 표시하기 위한 모듈 레벨 억제 집합 (#1212).
+_PROVENANCE_SEEN: set[tuple[str, str]] = set()
+
+
+def _emit_provenance(var_name: str, source: str) -> None:
+    """자격증명 해석 성공 시 출처를 stderr 에 1줄 표시한다 (#1212, 마스터 결정 A안).
+
+    형식: ``[자격증명] {VAR} ← {출처}``. 출처는 해석 경로 그대로
+    (CLI 인자 / os.environ / ~/.claude/settings.json / 실제 파일 경로).
+
+    규칙:
+      - **값·값 길이는 절대 비노출** — 키 이름과 출처만.
+      - 키·경로는 _sanitize_control 로 제어문자(개행·ESC) 정제.
+      - **프로세스당 (키, 출처) 1회**(_PROVENANCE_SEEN) — 반복 호출 소음 억제.
+      - **stderr 전용** — stdout(JSON 산출) 을 오염시키지 않는다.
+      - 예외 시 provenance 만 생략(기능 무영향) — env_doctor 미가용 등.
+    """
+    try:
+        import env_doctor  # _sanitize_control 재사용 (지역 import — publish 주입 대상)
+
+        seen_key = (var_name, source)
+        if seen_key in _PROVENANCE_SEEN:
+            return
+        _PROVENANCE_SEEN.add(seen_key)
+        safe_var = env_doctor._sanitize_control(var_name)
+        safe_source = env_doctor._sanitize_control(source)
+        print(f"[자격증명] {safe_var} ← {safe_source}", file=sys.stderr)
+    except Exception:
+        return
 
 
 # @MX:ANCHOR: [AUTO] API key resolution entry point used by all skill scripts.
@@ -294,24 +333,34 @@ def resolve_api_key(
 
     Raises:
         MissingAPIKeyError: 어디서도 키를 찾지 못한 경우.
+
+    Side effect (#1212):
+        해석 성공 시 stderr 에 ``[자격증명] {VAR} ← {출처}`` 1줄을 표시한다
+        (프로세스당 (키,출처) 1회, 값 비노출, stdout 불침범). _emit_provenance 참조.
     """
     if cli_arg:
         resolved = cli_arg
+        _emit_provenance(var_name, "CLI 인자")
     elif env_val := os.environ.get(var_name):
         resolved = env_val
+        _emit_provenance(var_name, "os.environ")
     elif settings_val := _load_claude_settings_env().get(var_name):
         # ~/.claude/settings.json env 키 (Cowork 환경에서 subprocess inject 누락 보조)
         resolved = settings_val
+        _emit_provenance(var_name, "~/.claude/settings.json")
     else:
-        # find_env_files()로 다중 경로 탐색
+        # find_env_files()로 다중 경로 탐색 — 이긴 파일 경로를 추적해 provenance 로 표시
         dotenv_val = None
+        dotenv_source: Path | None = None
         for env_file in find_env_files():
             val = load_env(env_file).get(var_name)
             if val:
                 dotenv_val = val
+                dotenv_source = env_file
                 # 마지막 발견이 이기므로 계속 탐색
         if dotenv_val:
             resolved = dotenv_val
+            _emit_provenance(var_name, str(dotenv_source))
         else:
             base_msg = guide_msg or f"{var_name}가 설정되지 않았습니다."
             raise MissingAPIKeyError(_augment_missing_message(base_msg))
@@ -319,6 +368,41 @@ def resolve_api_key(
     if normalize:
         return normalize_service_key(resolved)
     return resolved
+
+
+def report_credential_sources(var_names: Iterable[str]) -> None:
+    """주어진 키들의 출처를 stderr 에 표시한다 (#1212, merged_env 소비자용 헬퍼).
+
+    resolve_api_key 를 거치지 않고 merged_env 등으로 값을 쓰는 소비자가, 어떤 키가
+    어디서 왔는지 동일 형식(``[자격증명] {VAR} ← {출처}``)으로 표시하고 싶을 때
+    호출한다. env_doctor 의 승자 판정 로직을 재사용해 각 키의 승자 출처를 구한다.
+
+    ⚠️ env_doctor.collect_diagnosis() 는 파일·settings 에 **등장한 키**만 수집하므로
+    (전체 environ 덤프 방지 설계), os.environ 에만 존재하는 키는 그 결과에 안 잡힌다.
+    resolve_api_key 는 os.environ 을 최강으로 해석하므로, 출처 형식 일관성을 위해
+    **명시 전달된 var_names 에 한해 os.environ 존재를 직접 확인**해 os.environ 출처를
+    표시한다(전체 environ 열거가 아니라 지목된 키만 — 덤프 금지 불변, #1212 후속).
+
+    _emit_provenance 를 그대로 쓰므로 규칙(값 비노출·제어문자 정제·(키,출처) 1회·
+    stderr 전용)이 동일하게 적용된다. 예외 시 전체 생략(기능 무영향).
+    """
+    try:
+        import env_doctor
+
+        keys = env_doctor.collect_diagnosis().get("keys", {})
+        for var in var_names:
+            # os.environ 이 최강 — 지목된 키에 한해 직접 확인(전체 environ 덤프 아님).
+            if var in os.environ:
+                _emit_provenance(var, "os.environ")
+                continue
+            info = keys.get(var)
+            if not info:
+                continue
+            source = info.get("winner_source")
+            if source:
+                _emit_provenance(var, source)
+    except Exception:
+        return
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
-"""env doctor — .env 발견·API 키 출처 진단 (값 비노출).
+"""env doctor — 환경변수 파일 발견·API 키 출처 진단 (값 비노출).
 
-find_env_files() 로 발견된 .env 파일들, ~/.claude/settings.json env, os.environ
+find_env_files() 로 발견된 환경변수 파일들(.env·.env.txt·env.txt·환경변수.txt,
+별칭 4종 #1210), ~/.claude/settings.json env, os.environ
 을 대조해 **각 키가 어디서 정의됐고 어느 출처가 승자인지**를 리포트한다.
 env_loader 의 resolve_api_key 조회 우선순위(cli > os.environ > settings.json >
 .env(뒤일수록 강함, ITDA_DATA_ROOT/.env 는 명시 오버라이드 최강))와 동일한
@@ -109,16 +110,18 @@ def format_diagnosis(diag: dict) -> str:
 
     env_files = diag.get("env_files", [])
     if env_files:
-        lines.append(f"발견된 .env 파일 ({len(env_files)}개, 병합 순서 — 뒤일수록 우선):")
+        lines.append(
+            f"발견된 환경변수 파일(.env 등) ({len(env_files)}개, 병합 순서 — 뒤일수록 우선):"
+        )
         for i, path in enumerate(env_files, 1):
             lines.append(f"  {i}. {_sanitize_control(path)}")
     else:
-        lines.append("발견된 .env 파일: 없음")
+        lines.append("발견된 환경변수 파일(.env 등): 없음")
     lines.append("")
 
     keys = diag.get("keys", {})
     if keys:
-        lines.append(f"키 출처 ({len(keys)}개, .env·settings.json 등장 키 기준):")
+        lines.append(f"키 출처 ({len(keys)}개, 환경변수 파일(.env 등)·settings.json 등장 키 기준):")
         for key in sorted(keys):
             info = keys[key]
             raw_winner = info.get("winner_source", "?")
@@ -131,7 +134,7 @@ def format_diagnosis(diag: dict) -> str:
                 line += f"  (가려짐: {', '.join(shadowed)})"
             lines.append(line)
     else:
-        lines.append("키 출처: 없음 (.env·settings.json 에서 발견된 키 없음)")
+        lines.append("키 출처: 없음 (환경변수 파일(.env 등)·settings.json 에서 발견된 키 없음)")
 
     return "\n".join(lines)
 
@@ -139,7 +142,7 @@ def format_diagnosis(diag: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     """CLI 진입점 — 사람용 리포트(기본) 또는 --json."""
     parser = argparse.ArgumentParser(
-        description="itda-skills env doctor — .env 발견·키 출처 진단 (값 비노출)",
+        description="itda-skills env doctor — 환경변수 파일(.env 등) 발견·키 출처 진단 (값 비노출)",
     )
     parser.add_argument("--json", action="store_true", help="JSON 형식으로 출력")
     args = parser.parse_args(argv)

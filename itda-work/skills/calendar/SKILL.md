@@ -39,7 +39,7 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 
 ## Credentials
 
-자격증명의 **권장 저장 위치는 작업 폴더 루트의 `.env` 파일**이다 — Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env`를 두면 스킬이 자동 탐색한다. 보조로 Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`에 선언하면 Claude가 읽어 실행 시 환경변수로 주입하나, 대화 컨텍스트에 값이 노출되므로 `.env`를 권장한다. (저장 위치 권장과 별개로 **런타임 조회 우선순위**는 환경변수가 `.env`보다 앞선다 — 개발자는 셸 환경변수로 오버라이드할 수 있다.)
+자격증명의 **권장 저장 위치는 작업 폴더 루트의 `.env` 파일**이다 — Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env`를 두면 스킬이 자동 탐색한다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 보조로 Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`에 선언하면 Claude가 읽어 실행 시 환경변수로 주입하나, 대화 컨텍스트에 값이 노출되므로 `.env`를 권장한다. (저장 위치 권장과 별개로 **런타임 조회 우선순위**는 환경변수가 `.env`보다 앞선다 — 개발자는 셸 환경변수로 오버라이드할 수 있다.)
 
 | Provider | 환경변수 | 비고 |
 |----------|----------|------|
@@ -50,6 +50,8 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 멀티 계정: 변수명에 `_{SUFFIX}` 부착 (예: `ICLOUD_EMAIL_WORK`). suffix 없는 계정은 `account_id=default`.
 
 > **키 주입 (Claude 실행 규칙):** 자격증명이 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 위 변수가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `ICLOUD_EMAIL=<값> ICLOUD_APP_PASSWORD=<값> python3 scripts/list_events.py ...`. 지침에도 없으면 GUIDE의 "처음 설정하기"를 안내한다.
+
+> **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 ICLOUD_APP_PASSWORD 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
 **런타임 규칙 — 자격증명 누락 시**: 스크립트가 `{"status":"error","error":"credentials_missing"}` (exit 1) 또는 다계정 모호 시 `account_required` (exit 2)를 반환한다. 이때 Claude는 **해당 provider의 환경변수 이름을 사용자에게 알리고, 발급 절차는 `GUIDE.md`를 참조하도록 안내**한다(권장 저장 위치는 작업 폴더 루트 `.env`, 보조로 "Claude 지침"·`CLAUDE.md`, 개발자는 셸 환경변수도 가능).
 

@@ -23,6 +23,12 @@
   cap(31)·요청간격 하한(1초) 매크로 금지 계약 불변. 출력·JSON 에 출발~귀국
   구간과 `trip`/`stay_days` 반영. 출발×귀국 2D 전수 그리드는 비목표(계약 위반).
 
+## [0.6.3] — 2026-07-18 (이슈 #1210·#1212)
+
+### Changed
+- 환경변수 파일명 별칭 안내 (#1210) — eatery-trend·train-ktx·train-srt GUIDE/SKILL에 `환경변수.txt` 등 별칭 지원 안내 추가.
+- 자격증명 출처 표시 규칙 (#1212) — eatery-trend·train-ktx·train-srt SKILL에 출처 표시 규칙 추가.
+
 ## [0.6.2] — 2026-07-18 (이슈 #1205)
 
 ### Changed

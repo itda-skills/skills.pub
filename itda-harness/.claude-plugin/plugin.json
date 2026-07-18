@@ -1,7 +1,7 @@
 {
   "name": "itda-harness",
   "description": "Agent Team & Skill Architect — 도메인/프로젝트에 맞는 하네스를 구성하고, 전문 에이전트를 정의하며, 에이전트가 사용할 스킬을 생성하는 메타 스킬.",
-  "version": "8.34.0",
+  "version": "8.35.1",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
