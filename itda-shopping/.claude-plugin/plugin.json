@@ -1,7 +1,7 @@
 {
   "name": "itda-shopping",
   "description": "한국 리테일 쇼핑 정보 스킬팩 — 다이소(상품·가격·매장·재고·진열)와 마켓컬리(상품 검색·가격·상세) 조회. 공개 엔드포인트 기반, 로그인 불필요. 결과는 한국어 JSON.",
-  "version": "8.32.0",
+  "version": "8.33.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

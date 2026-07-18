@@ -1,7 +1,7 @@
 {
   "name": "itda-coach",
   "description": "강의·온보딩용 facilitation 스킬팩 — 막연한 업무 불편을 1시간 안에 만들 한 조각으로 잘라 규명하고, 반복 업무를 재사용 미니스킬로 굳힌다",
-  "version": "8.32.0",
+  "version": "8.33.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

@@ -14,6 +14,7 @@ NotebookLM 류 "읽어주는 뇌"와 달리 ① 로컬 오피스 문서가 1급 
 |------|------|------|
 | [`brain-build`](skills/brain-build/SKILL.md) | 폴더 무더기 → 3-Layer 업무DB 빌드. 원본 전수 열람(원본 불가침) → 주제별 위키 + `INDEX.md`(적재이력) + `CLAUDE.md`(Layer 3 스키마·뇌 메타 자기서술) + `문제파일.md`. 규약 역공학(`규약/폴더-지도·명명-규칙·양식/*`). 끝에 `brain-auditor` 1회 자동 호출. | `업무DB/` 폴더(위키·INDEX·CLAUDE.md·규약·문제파일·검수리포트) |
 | [`brain-audit`](skills/brain-audit/SKILL.md) | 독립 재검수 진입점(정기잡·수시 점검용). `brain-auditor` 디스패치 + **신선도 점검**(제5각) — 소스 폴더 재스캔 → 커버리지 표의 빌드 시점 수정시각과 대조 → 신규/변경/삭제 파일 표면화("뇌가 낡았다" 온디맨드 감지). | `검수리포트.md`(4각도 + 신선도 절 갱신) |
+| [`brain-fixture`](skills/brain-fixture/SKILL.md) | brain-build 검증·데모·강의용 **함정 데이터셋 포지**. 원장(ledger) SSoT 에서 가상 회사 문서 무더기(docx·xlsx·pptx·pdf·txt·csv + 손상/잠금 파일)를 결정론 렌더하고, 생성 직후 원장 ↔ 생성물을 5축(수치·연계·mtime·함정실재·합성강제) 재대조해 정합을 구조로 보장한 뒤 강사용 정답지까지 자동 생성. 원장 3축(함정·미끼·**인사이트**) + 함정 8종 카탈로그 + 개인형 프리셋 3종. 인사이트는 "여러 문서를 종합해야만 보이는 것"을 스포일러 금지로 기계 보장. | 데이터셋 폴더 + `ledger.json` + 정답지 `.md` |
 | [`brain-ingest`](skills/brain-ingest/SKILL.md) *(v1.1)* | 증분 적재. 신규 사내 문서 + 외부 스킬 산출물 어댑터(web-search·dart·kosis·exchange-rate → `외부/`에 `출처:`·`수집일:` 강제). 신규 문서 유형은 양식 역공학해 `규약/양식/`에 등록. 적재이력 갱신. | 위키 증분 반영 + `INDEX.md` 적재이력 |
 | [`brain-scribe`](skills/brain-scribe/SKILL.md) *(v1.5)* | 규약 준수 문서 생성. 형식은 `규약/`(모범 원본 서식 복제), 숫자는 위키 근거. 초안은 `초안/` 폴더 + 승인 게이트(원본 폴더 직접 생성 금지). 근거 없는 필수 칸은 `{파일}.근거.md` 사이드카에 "추정" 명시. | `초안/…` + `.근거.md` 사이드카 |
 
