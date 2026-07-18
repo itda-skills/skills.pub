@@ -89,6 +89,8 @@ python3 scripts/webmail.py auth-challenge --provider kacem --input /tmp/webmail_
 병합하며 환경변수가 최우선입니다. 권장 설정은 작업 폴더 루트의 `.env` 입니다(대화 컨텍스트에
 값이 노출되지 않고 자동 로드). 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
 
+> **사전 점검 금지 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**하고, 누락으로 실패할 때만 설정을 안내한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락).
+
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 KACEM_WEBMAIL_USERNAME 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
 nate에서는 저장 자격증명을 자동 제출하지 않으며 `auth-status --provider nate`는 항상
