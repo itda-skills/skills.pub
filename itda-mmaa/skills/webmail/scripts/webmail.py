@@ -10,11 +10,12 @@ import argparse
 import hashlib
 import html
 import json
-import os
 import re
 import sys
 from pathlib import Path
 from typing import Any
+
+from env_loader import merged_env
 
 
 DEFAULT_PROVIDER = "kacem"
@@ -201,7 +202,10 @@ def build_send_gate(
 def auth_status(env: dict[str, str] | None = None, provider: str | None = None) -> dict[str, Any]:
     """무인 로그인 계약 충족 여부를 비밀값 없이 보고한다."""
     provider = normalize_provider(provider)
-    env = env if env is not None else os.environ
+    # env 파라미터 주입은 테스트용으로 유지하고, 미주입 시 공통 로더로 해석한다.
+    # merged_env()는 os.environ을 최우선으로 병합하므로 기존 동작을 보존하면서
+    # 작업 폴더·프로젝트 루트의 .env(및 ~/.claude/settings.json env)까지 지원한다.
+    env = env if env is not None else merged_env()
     profile_id = env.get("HYVE_WEB_BROWSE_PROFILE_ID", DEFAULT_PROFILE_ID).strip() or DEFAULT_PROFILE_ID
     if provider == "nate":
         return {

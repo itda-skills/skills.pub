@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+## [0.10.3] — 2026-07-18 (이슈 #1205)
+
+### Changed
+- 자격증명 안내 반전 (#1205) — realty-deals·jeonse-gap·price-stats·supply GUIDE/SKILL + realty-meta SKILL 9개 문서의 키 설정 1순위를 Claude 지침에서 **작업 폴더 루트 `.env`**(자동 탐색)로 반전. 지침 방식은 보조.
+
 ## [0.10.2] — 2026-06-10
 
 ### Changed

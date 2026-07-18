@@ -29,7 +29,7 @@ KOSIS(국가통계포털)와 청약홈 공공데이터를 기반으로 **주택 
 | `KOSIS_API_KEY` | KOSIS 국가통계포털 Open API ([kosis.kr](https://kosis.kr/openapi/)) | KOSIS 회원가입 후 Open API 활용신청.<br>https://kosis.kr/openapi/index/index.jsp |
 | `KO_DATA_API_KEY` (선택) | 공공데이터포털 ([data.go.kr](https://www.data.go.kr)) — 청약 서브커맨드 필요 | subscription 서브커맨드 사용 시 필요.<br>청약정보 활용신청: https://www.data.go.kr/data/15056640/openapi.do |
 
-**권장 (비개발자 포함 모든 사용자) — Claude Desktop 지침에 키 등록:** Claude Desktop → **설정 → 일반 → "Claude 지침"** 에 `KOSIS_API_KEY=발급받은_키` (청약 통계까지 쓰면 `KO_DATA_API_KEY=발급받은_키`도) 한 줄씩 추가하면 이후 모든 대화에서 자동 사용됩니다(파일 작성 불필요).
+**권장 (비개발자 포함 모든 사용자) — 작업 폴더 `.env`에 키 등록:** Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 `KOSIS_API_KEY=발급받은_키` (청약 통계까지 쓰면 `KO_DATA_API_KEY=발급받은_키`도) 한 줄씩 넣어 두면 스킬이 자동으로 찾아 읽습니다.
 
 > **키 주입 (Claude 실행 규칙):** API 키가 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 `KOSIS_API_KEY`(또는 `KO_DATA_API_KEY`)가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `KOSIS_API_KEY=<키> python3 scripts/supply_cli.py ...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다.
 
@@ -104,8 +104,8 @@ python3 scripts/supply_cli.py subscription \
 
 | 상황 | status | error | 조치 |
 |------|--------|-------|------|
-| KOSIS API 키 미설정 | error | config | "Claude 지침"에 `KOSIS_API_KEY=키` 추가(권장). 개발자는 `.env`·셸 환경변수도 가능 |
-| data.go.kr 키 미설정 (subscription) | error | config | "Claude 지침"에 `KO_DATA_API_KEY=키` 추가(권장). 개발자는 `.env`·셸 환경변수도 가능 |
+| KOSIS API 키 미설정 | error | config | `.env`(작업 폴더 루트)에 `KOSIS_API_KEY=키` 넣기(권장) — 스킬이 자동 탐색. "Claude 지침"도 동작하나 컨텍스트에 노출. 개발자는 셸 환경변수도 가능 |
+| data.go.kr 키 미설정 (subscription) | error | config | `.env`(작업 폴더 루트)에 `KO_DATA_API_KEY=키` 넣기(권장) — 스킬이 자동 탐색. "Claude 지침"도 동작하나 컨텍스트에 노출. 개발자는 셸 환경변수도 가능 |
 | API 서비스 오류 | error | api | 활용신청 승인 상태 점검 |
 
 ## 테스트 실행

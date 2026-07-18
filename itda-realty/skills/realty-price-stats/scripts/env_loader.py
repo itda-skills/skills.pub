@@ -1,7 +1,11 @@
 """API 키 및 OC 인증 정보 resolver — 한국 공공데이터 API 공통 모듈.
 
-조회 우선순위:
-    CLI 인자 > 환경변수 > ~/.claude/settings.json env > .env 파일 (find_env_files())
+조회 우선순위 (높음 → 낮음):
+    CLI 인자 > os.environ > ~/.claude/settings.json env > .env 파일들
+
+.env 파일들 사이의 우선순위는 itda_path.find_env_files() 가 정한 병합 순서를
+따른다 — **뒤에 오는(더 로컬한) .env 가 우선**하며(later-wins),
+**ITDA_DATA_ROOT/.env 는 명시 오버라이드라 .env 중 최강**이다(#1205).
 
 단일 경로 탐색 헬퍼를 제거하고 itda_path.find_env_files()를 사용하여
 모든 후보 경로의 .env를 병합한다 (SPEC-DATAPATH-002).
@@ -116,7 +120,9 @@ def load_env(env_path: str | Path | None = None) -> dict[str, str]:
                     value = value[1:-1]
                 if key:
                     result[key] = value
-    except OSError:
+    except (OSError, UnicodeDecodeError):
+        # 비UTF8(cp949 등) .env 는 graceful 하게 {} 반환 — UnicodeDecodeError 를
+        # 흡수하지 않으면 doctor CLI 가 traceback 으로 문제 바이트·위치를 노출한다.
         return {}
 
     return result
@@ -154,7 +160,9 @@ def _load_claude_settings_env(settings_path: str | Path | None = None) -> dict[s
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        # 비UTF8 settings.json 의 UnicodeDecodeError(json.load 내부 디코드 중
+        # 발생, JSONDecodeError 아님)까지 흡수 — graceful {} 계약 유지.
         return {}
 
     env_section = data.get("env") if isinstance(data, dict) else None
@@ -170,8 +178,9 @@ def merged_env(env_path: str | Path | None = None) -> dict[str, str]:
     병합 우선순위 (높음 → 낮음):
         1. os.environ (항상 최우선)
         2. ~/.claude/settings.json의 env 키
-        3. 후순위 .env 파일 (나중에 발견된 파일이 선순위를 덮어씀)
-        4. 선순위 .env 파일
+        3. .env 파일들 — find_env_files() 의 병합 순서를 따른다:
+           - 후순위(더 로컬한) .env 가 선순위를 덮어씀 (later-wins)
+           - ITDA_DATA_ROOT/.env 는 명시 오버라이드라 .env 중 최강 (#1205)
 
     env_path가 명시되면 그 파일만 사용한다 (기존 호환성 유지).
     None이면 find_env_files()로 다중 경로를 탐색하여 모두 병합한다.
@@ -205,6 +214,33 @@ def merged_env(env_path: str | Path | None = None) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 # API 계열 (DART / KOSIS / ECOS / 부동산 / 복지급여 / 나라장터)
 # ---------------------------------------------------------------------------
+
+def _augment_missing_message(base_msg: str) -> str:
+    """MissingAPIKeyError 메시지 끝에 발견된 .env 파일 요약 1~2줄을 첨부한다.
+
+    env_doctor 를 **함수 내부 지역 import** 로 사용한다 — publish.py 의
+    _shared_closure 가 import 를 ast.walk 전순회로 수집하므로(모듈 최상위가
+    아닌) 지역 import 도 shared 주입 대상에 포함된다. 즉 이 지역 import 덕에
+    배포본 스킬에 env_doctor.py 가 함께 실려 에러 메시지 강화가 동작한다.
+
+    진단 생성 중 어떤 예외가 나도 기본 에러 메시지는 해치지 않도록 부가 정보만
+    생략한다 — 이는 기능 폴백(no-silent-fallback 대상)이 아니라 "에러 메시지
+    강화의 실패"일 뿐이며, 원래의 MissingAPIKeyError 는 그대로 전파된다.
+    """
+    try:
+        import env_doctor  # 지역 import (publish ast.walk 주입 대상 — 위 주석 참조)
+
+        env_files = env_doctor.collect_diagnosis().get("env_files", [])
+        if not env_files:
+            return f"{base_msg}\n\n발견된 .env 파일: 없음"
+        # 경로의 제어문자(개행·ANSI escape)를 무해화 — 에러 메시지 오염 차단.
+        shown = [env_doctor._sanitize_control(p) for p in env_files[:5]]
+        suffix = "" if len(env_files) <= 5 else f" (외 {len(env_files) - 5}개)"
+        return f"{base_msg}\n\n발견된 .env 파일: " + ", ".join(shown) + suffix
+    except Exception:
+        # 진단 실패는 부가 정보만 생략 — 기본 메시지는 온전히 유지(폴백 아님).
+        return base_msg
+
 
 def normalize_service_key(key: str) -> str:
     """공공데이터포털 인증키의 URL 인코딩 상태를 감지하여 정규화.
@@ -243,7 +279,8 @@ def resolve_api_key(
         1. CLI 인자
         2. os.environ
         3. ~/.claude/settings.json의 env 키 (SPEC-DART-FEEDBACK-001 REQ-002)
-        4. .env 파일 (find_env_files() 사용)
+        4. .env 파일 (find_env_files() — 뒤에 오는 파일이 우선, 즉 마지막
+           발견이 승리. ITDA_DATA_ROOT/.env 는 명시 오버라이드라 최강, #1205)
 
     Args:
         var_name: 환경변수 이름.
@@ -276,7 +313,8 @@ def resolve_api_key(
         if dotenv_val:
             resolved = dotenv_val
         else:
-            raise MissingAPIKeyError(guide_msg or f"{var_name}가 설정되지 않았습니다.")
+            base_msg = guide_msg or f"{var_name}가 설정되지 않았습니다."
+            raise MissingAPIKeyError(_augment_missing_message(base_msg))
 
     if normalize:
         return normalize_service_key(resolved)
@@ -292,10 +330,12 @@ def resolve_api_key(
 def resolve_oc(cli_arg: str | None = None) -> str:
     """법제처 API용 OC (사용자 ID) 를 결정.
 
-    Lookup priority:
+    조회 우선순위 (resolve_api_key 위임 — 그 계약과 동일):
         1. cli_arg (--oc flag)
-        2. LAW_API_OC environment variable
-        3. LAW_API_OC in .env file (find_env_files() 사용)
+        2. os.environ 의 LAW_API_OC
+        3. ~/.claude/settings.json env 의 LAW_API_OC (SPEC-DART-FEEDBACK-001 REQ-002)
+        4. .env 파일의 LAW_API_OC (find_env_files() — 뒤에 오는 파일이 우선,
+           ITDA_DATA_ROOT/.env 는 명시 오버라이드로 최강, #1205)
 
     내부적으로 resolve_api_key()를 호출하되, MissingAPIKeyError를
     MissingOCError로 변환하여 기존 law-korean 코드 호환성을 유지.

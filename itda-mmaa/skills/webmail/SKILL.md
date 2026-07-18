@@ -84,6 +84,11 @@ python3 scripts/webmail.py auth-challenge --provider kacem --input /tmp/webmail_
 - `KACEM_WEBMAIL_PASSWORD`
 - `HYVE_WEB_BROWSE_PROFILE_ID` (선택, 기본 `default`, 모든 web_browse 기반 스킬 공통)
 
+`auth-status`는 이 값들을 공통 로더(`env_loader.merged_env`)로 읽습니다 — **환경변수 >
+`~/.claude/settings.json` env > `.env` 파일**(작업 폴더·프로젝트 루트 다중 경로 병합) 순으로
+병합하며 환경변수가 최우선입니다. 권장 설정은 작업 폴더 루트의 `.env` 입니다(대화 컨텍스트에
+값이 노출되지 않고 자동 로드).
+
 nate에서는 저장 자격증명을 자동 제출하지 않으며 `auth-status --provider nate`는 항상
 `manual_profile_required`를 반환합니다.
 

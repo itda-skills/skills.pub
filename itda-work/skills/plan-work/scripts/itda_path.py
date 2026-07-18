@@ -7,14 +7,24 @@
 환경 분기 로직을 완전히 제거하고
 단일 _candidate_roots() 함수로 통합했다 (SPEC-DATAPATH-002).
 
-경로 우선순위:
-  1. ITDA_DATA_ROOT 환경변수 (테스트·CI 오버라이드)
+후보 열거 순서 (_candidate_roots() 가 이 순서로 후보를 나열한다 — 이 순서
+자체는 우선순위가 아니다. 실제 우선순위는 아래 "소비 규칙"이 정한다):
+  1. ITDA_DATA_ROOT 환경변수 (명시 오버라이드)
   2. /proc/mounts에서 추출한 rw 마운트 포인트 (Linux 한정)
   3. $HOME/mnt/ 하위 비시스템 디렉토리 (Cowork 호스트 마운트)
   4. CLAUDE_PROJECT_DIR 및 그 상위 (Cowork $HOME 비의존 후보)
   5. 현재 세션 /sessions/<slug>/mnt/* (Cowork 절대 마운트, 현재 세션 한정)
-  6. $HOME (semi-persistent fallback)
-  7. Path.cwd() (macOS/Windows 로컬 fallback)
+  6. $HOME (semi-persistent)
+  7. Path.cwd() (macOS/Windows 로컬)
+
+소비 규칙 (열거 순서를 방향이 다른 두 규칙으로 소비한다):
+  - **쓰기 (pick_cache_location / resolve_data_dir)**: 열거 **선순위**부터
+    첫 쓰기 가능 후보가 승리한다. 앞 후보(마운트·호스트 영속 경로)일수록
+    캐시 거주지로 우선한다.
+  - **읽기 (find_env_files 병합)**: 열거 **후순위**(더 로컬한 후보)의 .env 가
+    승리한다(later-wins, AC-006.10a). 단 ITDA_DATA_ROOT/.env 는 **명시
+    오버라이드**라 예외적으로 병합 최강(리스트 맨 뒤)으로 재배치된다(#1205).
+    settings.json·os.environ·CLI 인자는 여전히 모든 .env 위(env_loader 참조).
 
 읽기(find_env_files)와 쓰기(pick_cache_location)의 후보 집합이 다르다:
   - 쓰기(기본): outputs/uploads 제외 — 사용자 결과 폴더에 캐시를 쓰지 않는다.
@@ -53,6 +63,18 @@ _SYSTEM_PREFIXES = (
 )
 # 정확히 일치 제외
 _EXACT_EXCLUDE = {"/", "/sessions"}
+
+
+def _resolved_key(p: Path) -> str | None:
+    """경로를 resolve() 한 정규화 문자열 키를 반환(비교·중복 제거용).
+
+    심볼릭 링크 깨짐(OSError)·심링크 루프(RuntimeError) 등으로 resolve 가
+    실패하면 None 을 반환한다 — 자격증명 해석 전체가 중단되지 않도록 흡수한다.
+    """
+    try:
+        return str(p.resolve())
+    except (OSError, RuntimeError):
+        return None
 
 
 def _list_rw_mounts() -> list[Path]:
@@ -162,9 +184,10 @@ def _current_session_roots() -> list[Path]:
 
 
 def _candidate_roots(include_output_dirs: bool = False) -> list[Path]:
-    """데이터 루트 후보 경로 목록을 우선순위 순으로 반환한다.
+    """데이터 루트 후보 경로 목록을 열거 순서대로 반환한다.
 
-    후보 우선순위 (높음 → 낮음):
+    후보 열거 순서 (우선순위가 아니다 — 소비 방향은 소비자가 정한다. 모듈
+    docstring "소비 규칙" 참조: 쓰기=선순위 승리 / 읽기 병합=후순위 승리):
         1. ITDA_DATA_ROOT 환경변수
         2. /proc/mounts rw 마운트 포인트 (Linux 한정)
         3. $HOME/mnt/ 하위 비시스템 디렉토리
@@ -251,8 +274,8 @@ def _candidate_roots(include_output_dirs: bool = False) -> list[Path]:
     for cand in candidates:
         try:
             resolved = cand.resolve()
-        except OSError:
-            # 심볼릭 링크 깨짐 등 resolve 실패 시 스킵
+        except (OSError, RuntimeError):
+            # 심볼릭 링크 깨짐(OSError)·심링크 루프(RuntimeError) 시 해당 후보만 스킵
             continue
         key = str(resolved)
         if key not in seen:
@@ -315,23 +338,43 @@ def pick_cache_location(rel: str) -> Path:
 
 
 def find_env_files() -> list[Path]:
-    """모든 후보 경로에서 .env 파일을 탐색한다.
+    """모든 후보 경로에서 .env 파일을 탐색한다 (병합 순서 = 약 → 강).
 
-    각 후보 경로의 <root>/.env 를 검사하여 존재하는 파일만
-    후보 우선순위 순으로 리스트로 반환한다.
+    각 후보 경로의 <root>/.env 를 검사하여 존재하는 파일만 후보 열거 순서대로
+    리스트로 반환한다. 이 리스트는 **읽기 병합용 순서**다 — 소비자
+    (env_loader.merged_env·resolve_api_key)는 **뒤에 오는 파일일수록 우선**
+    적재한다(후순위=더 로컬 후보 승리, AC-006.10a).
 
     캐시 쓰기와 달리 .env 읽기는 outputs/uploads도 후보에 포함한다
     (include_output_dirs=True). Cowork는 영속 .env가 마운트된 작업 폴더
     (outputs)에만 살 수 있기 때문이다(실측 확정).
 
+    **ITDA_DATA_ROOT 예외 (명시 오버라이드, #1205)**: ITDA_DATA_ROOT 가
+    설정되어 있고 `<ITDA_DATA_ROOT>/.env` 가 존재하면 그 파일을 반환 리스트의
+    **맨 뒤(=병합 최강)** 로 재배치한다. ITDA_DATA_ROOT 는 후보 열거상 첫 번째
+    (병합 최약)라, 명시적으로 지정한 데이터 루트의 .env 가 오히려 로컬 .env 에
+    가려지는 결함을 교정한다. 일반 후보 간 later-wins 는 그대로 유지된다.
+    (settings.json·os.environ·CLI 인자는 여전히 모든 .env 위 — env_loader 참조.)
+
     Returns:
-        존재하는 .env 파일 Path 리스트 (우선순위 순).
+        존재하는 .env 파일 Path 리스트 (병합 순서 — 뒤일수록 우선).
     """
     result: list[Path] = []
     for root in _candidate_roots(include_output_dirs=True):
         env_file = root / ".env"
         if env_file.exists():
             result.append(env_file)
+
+    # ITDA_DATA_ROOT/.env 는 명시 오버라이드 — 병합 최강이 되도록 리스트 끝으로 재배치.
+    env_root = os.environ.get("ITDA_DATA_ROOT")
+    if env_root:
+        override_key = _resolved_key(Path(env_root) / ".env")
+        if override_key is not None:
+            matched = [p for p in result if _resolved_key(p) == override_key]
+            if matched:
+                # 동일 파일(중복 제거 유지)을 제거 후 맨 뒤에 하나만 재삽입
+                result = [p for p in result if _resolved_key(p) != override_key]
+                result.append(matched[0])
     return result
 
 

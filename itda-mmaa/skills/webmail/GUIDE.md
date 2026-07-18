@@ -23,3 +23,25 @@ CAPTCHA, 가상 키패드, 보안키는 자동으로 풀지 않고 사용자가 
 nate는 테스트 provider입니다. 저장 자격증명 자동 제출은 하지 않고, 사용자가 직접 로그인한
 프로필로 목록/본문/첨부 루프만 확인합니다. 군인공제회 웹메일의 동작을 확정하려면 관리자 허가
 범위, 테스트 계정, 실제 화면 또는 네트워크 응답 확인이 필요합니다.
+
+## 무인 로그인 자격증명 (선택)
+
+대부분은 위처럼 브라우저에서 직접 로그인하면 되고 별도 설정이 필요 없습니다. 관리자 허가를
+받은 좁은 범위에서만 군인공제회 웹메일의 무인 로그인을 쓸 수 있는데, 이때 필요한 값들을 아래처럼
+설정합니다.
+
+- **`.env` 파일 (권장)** — Cowork에 연결한 작업 폴더(어느 폴더든) 루트에 `.env` 파일을 만들어
+  두면 스킬이 자동으로 찾아 읽습니다. 보조로 Claude 지침에 적는 방식도 동작하지만 대화
+  컨텍스트에 값이 노출되므로 `.env`를 권장합니다.
+
+```dotenv
+KACEM_WEBMAIL_UNATTENDED=1
+KACEM_WEBMAIL_ADMIN_APPROVED=1
+KACEM_WEBMAIL_BASE_URL=https://<군인공제회-웹메일>/
+KACEM_WEBMAIL_AUTH_FLOW=simple_form
+KACEM_WEBMAIL_USERNAME=your-username
+KACEM_WEBMAIL_PASSWORD=your-password
+```
+
+값은 화면에 그대로 출력되지 않고, 설정이 갖춰졌는지 여부만 확인합니다. CAPTCHA·가상 키패드·보안키
+같은 추가 인증이 뜨면 무인 로그인 대신 사용자가 직접 인증해야 합니다.

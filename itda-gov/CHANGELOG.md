@@ -1,5 +1,10 @@
 # Changelog — itda-gov
 
+## [5.0.1] — 2026-07-18 (이슈 #1205)
+
+### Changed
+- 자격증명 안내 반전 (#1205) — dart·ecos·funding·g2b·kosis·realestate GUIDE/SKILL 12개 문서의 키 설정 1순위를 Claude 지침에서 **작업 폴더 루트 `.env`**(자동 탐색)로 반전. 지침 방식은 보조로 강등(대화 컨텍스트 노출 사유 명시).
+
 ## [5.0.0] — 2026-06-20 (이슈 #515)
 
 ### Removed — 공공 주식 스킬 묶음 제거 (BREAKING)

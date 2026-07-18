@@ -2,6 +2,13 @@
 
 군인공제회(MMAA) 업무 자동화 스킬팩 — KACEM 게시판 모니터링 + ZIP 첨부 자동 압축해제 + 사업개요·사업비 추출 + 웹메일 조회.
 
+## [0.12.0] — 2026-07-18 (이슈 #1205)
+
+### Added
+- webmail 자격증명 `.env` 자동 탐색 지원 (#1205) — os.environ 단독에서 env_loader.merged_env() 병합(작업 폴더 루트 .env·settings.json env 포함)으로 전환. 파라미터 주입 경로는 유지, 테스트 2케이스 신설.
+### Changed
+- webmail SKILL/GUIDE에 `.env` 우선 자격증명 안내 신설 (#1205).
+
 ## [0.11.0] — 2026-06-13
 
 ### Changed

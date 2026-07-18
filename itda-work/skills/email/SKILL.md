@@ -36,7 +36,7 @@ Send and read emails via Naver, Google (Gmail), Daum/Kakao, or custom SMTP/IMAP.
 
 ## Credentials
 
-자격증명 1순위는 **사용자 지침**이다 — Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`. 거기에 선언된 값을 Claude가 읽어 실행 시 환경변수로 주입한다. 개발자는 환경변수·`.env` fallback도 쓸 수 있다(환경변수 우선).
+자격증명의 **권장 저장 위치는 작업 폴더 루트의 `.env` 파일**이다 — Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env`를 두면 스킬이 자동 탐색한다. 보조로 Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`에 선언하면 Claude가 읽어 실행 시 환경변수로 주입하나, 대화 컨텍스트에 값이 노출되므로 `.env`를 권장한다. (저장 위치 권장과 별개로 **런타임 조회 우선순위**는 환경변수가 `.env`보다 앞선다 — 개발자는 셸 환경변수로 오버라이드할 수 있다.)
 
 | Provider | 환경변수 | 비고 |
 |----------|----------|------|
@@ -50,7 +50,7 @@ Send and read emails via Naver, Google (Gmail), Daum/Kakao, or custom SMTP/IMAP.
 
 > **키 주입 (Claude 실행 규칙):** 자격증명이 환경(`os.environ`·`.env`)에 없고 사용자 지침("Claude 지침"·`CLAUDE.md`)에 위 변수가 있으면, 그 값을 읽어 스크립트 실행 시 환경변수로 전달한다 — 예: `NAVER_EMAIL=<값> NAVER_APP_PASSWORD=<값> python3 scripts/send_email.py ...`. 지침에도 없으면 GUIDE의 "처음 설정하기"를 안내한다.
 
-**런타임 규칙 — 자격증명 누락 시**: 스크립트가 `{"status":"error","error":"credentials_missing"}` (exit 1) 또는 다계정 모호 시 `account_required` (exit 2)를 반환한다. 이때 Claude는 **해당 provider의 환경변수 이름을 사용자에게 알리고, 설정 절차는 `GUIDE.md`의 "처음 설정하기"를 참조하도록 안내**한다(1순위는 "Claude 지침"·`CLAUDE.md`, 개발자는 `.env`·셸 환경변수도 가능). 앱 비밀번호 발급 단계 절차를 이 문서에 두지 않는다.
+**런타임 규칙 — 자격증명 누락 시**: 스크립트가 `{"status":"error","error":"credentials_missing"}` (exit 1) 또는 다계정 모호 시 `account_required` (exit 2)를 반환한다. 이때 Claude는 **해당 provider의 환경변수 이름을 사용자에게 알리고, 설정 절차는 `GUIDE.md`의 "처음 설정하기"를 참조하도록 안내**한다(권장 저장 위치는 작업 폴더 루트 `.env`, 보조로 "Claude 지침"·`CLAUDE.md`, 개발자는 셸 환경변수도 가능). 앱 비밀번호 발급 단계 절차를 이 문서에 두지 않는다.
 
 ---
 
