@@ -32,8 +32,26 @@ def get_stage1_choices() -> list[str]:
 # find-work 메모 파싱
 # ---------------------------------------------------------------------------
 
+def _extract_memo_section(memo_text: str, header_pattern: str) -> str | None:
+    """메모에서 '## <헤더>' 섹션 본문을 다음 헤더 전까지 잘라 반환한다."""
+    m = re.search(
+        rf"^##\s*{header_pattern}\s*$\n(.*?)(?=^##\s|\Z)",
+        memo_text,
+        re.MULTILINE | re.DOTALL,
+    )
+    if not m:
+        return None
+    body = m.group(1).strip()
+    return body or None
+
+
 def extract_from_findwork_memo(memo_text: str) -> dict[str, str | None]:
     """find-work 메모에서 핵심 정보를 추출한다.
+
+    가치 추정(§6)·AI 출력 검증(§5)도 함께 추출한다 — 실행 계획 메모의
+    "요구사항"(기대 가치)·"실패 시 대처"(검증 방법)로 이월하기 위함.
+    이월하지 않으면 계획의 준비 비용을 정당화할 ROI 근거가 파이프라인에서
+    유실된다 (#1225).
 
     Args:
         memo_text: find-work 스킬이 저장한 마크다운 메모 전문.
@@ -43,12 +61,16 @@ def extract_from_findwork_memo(memo_text: str) -> dict[str, str | None]:
             "track": "A" | "B" | "혼합" | None,
             "problem": "문제정의 한 줄" | None,
             "data_tools": "다루는 자료·도구" | None,
+            "value": "가치 추정 섹션 본문" | None,
+            "verification": "AI 출력 검증 섹션 본문" | None,
         }
     """
     result: dict[str, str | None] = {
         "track": None,
         "problem": None,
         "data_tools": None,
+        "value": None,
+        "verification": None,
     }
 
     # 트랙 파싱: "트랙: A 반복" / "트랙: B 미지" / "트랙: 혼합"
@@ -78,6 +100,14 @@ def extract_from_findwork_memo(memo_text: str) -> dict[str, str | None]:
         if ds_m:
             result["data_tools"] = ds_m.group(1).strip()
 
+    # 가치 추정 (find-work 메모 "## 6. 가치 추정")
+    result["value"] = _extract_memo_section(memo_text, r"(?:\d+\.\s*)?가치 추정")
+
+    # AI 출력 검증 (find-work 메모 "## 5. AI 출력 검증")
+    result["verification"] = _extract_memo_section(
+        memo_text, r"(?:\d+\.\s*)?AI 출력 검증"
+    )
+
     return result
 
 
@@ -101,6 +131,10 @@ def merge_inputs(memo_text: str | None, free_text: str | None) -> str:
             summary.append(f"핵심 문제: {extracted['problem']}")
         if extracted["data_tools"]:
             summary.append(f"관련 자료·도구: {extracted['data_tools']}")
+        if extracted["value"]:
+            summary.append(f"기대 가치: {extracted['value']}")
+        if extracted["verification"]:
+            summary.append(f"AI 출력 검증: {extracted['verification']}")
         if summary:
             parts.append("\n".join(summary))
     if free_text:

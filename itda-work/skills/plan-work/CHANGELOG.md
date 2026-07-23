@@ -1,5 +1,49 @@
 # Changelog — itda-work plan-work
 
+## [0.12.0] — 2026-07-22
+
+### New Features / Improvements (#1225 — ax-proposal 설계 역수입·파이프라인 마찰 축소)
+
+- **3중 컨펌 해소 — 축약 mirror-back**: find-work 메모 첨부(또는 같은 세션 이어받기) 입력은
+  이미 인터뷰로 합의된 산출물이므로 전체 4항목 재확인 대신 "요지 2~3줄 + 달라진 점 1문"으로
+  축약(생략 아님 — [HARD] 생략 금지 불변, 변경점은 일반 mirror-back으로). find-work 컨펌 →
+  mirror-back 컨펌 → Stage 4 컨펌의 3중 게이트 이중 노동 제거. mirror-back-patterns.md 패턴 추가.
+- **Stage 1 첫 턴 4지선다 조건화**: 호출 인자·첫 메시지에 요구사항이 이미 오면 입력 방식을 묻지
+  않고 유형 판별 후 바로 진행. 빈손일 때만 4지선다. 같은 세션 find-work 이어받기는 첨부 불요.
+- **가치·검증 이월 손실 수리**: `extract_from_findwork_memo`가 find-work 메모 §6 가치 추정·
+  §5 AI 출력 검증을 추가 추출(value/verification 키), `merge_inputs` 요약에 포함. 산출 메모
+  "요구사항"(기대 가치 한 줄)·"실패 시 대처"(검증 방법·주기)로 이월 — 계획의 준비 비용을
+  정당화할 ROI 근거가 파이프라인에서 유실되던 문제 수리. 회귀 테스트 4건 추가.
+- **저장 전 셀프 리뷰** (Stage 4, 컨펌 게이트 직전): ground-check(기계 검증)와 별개의 정성
+  1패스 — 실행 가능성·발화 동작성("다음 세션에서 시작하기" 발화가 실제 트리거되는가)·준비물
+  완결성 3축에서 약점을 찾아 반영 (ax-proposal 관문4 방식).
+
+### Why
+
+ax-proposal(itda-ceragem)과의 비교 검토(#1225)에서 도출. ground-check·컨펌 게이트 등 기존
+자산은 불변, 마찰(중복 컨펌·불필요 첫 질문)과 이월 손실만 수리.
+
+## [0.11.0] — 2026-07-18
+
+### Bug Fixes / Improvements (#1216 — 카탈로그 stale 현행화 + 생성기 전환)
+
+- **skill-catalog.md 를 수기 큐레이션에서 자동 생성물로 전환**: 2026-05-21 자 23종에서 멈춰
+  실제 스킬(91종)과 드리프트 — Stage 3 [HARD] ground-check 가 이 파일에 바인딩되어 실재 스킬이
+  "⚠️ 확인 필요"로 강등되던 동작 결함. `skills/scripts/gen_skill_catalog.py` 신설(SKILL.md
+  frontmatter·본문에서 결정론 생성, `--check` drift 검사)로 91종/20팩 전수 현행화.
+  표기 드리프트 교정 동반: `hwpx`→`hwpx-reader`(#368 rename 미반영), dart 의 키 오기
+  (KO_DATA_API_KEY→DART_API_KEY).
+- **ground_check 경로 매핑 단일 소스화**: 하드코딩 `_SKILL_DIR_MAP`(23종, 카탈로그와 이중
+  소스) 폐기 → 카탈로그 md "경로 매핑" 블록 파싱으로 교체. 동명 스킬(web-automation ×2)
+  복수 경로 허용.
+- **env 허용목록 카탈로그 파생**: `check_env_var` 허용목록 = 기본 세트 ∪ 카탈로그 "필요한 키"
+  열 파생(`_catalog_env_vars`). 스킬 추가 시 카탈로그 재생성만으로 키가 따라온다.
+  ground-check-rules.md §2 를 파생 구조로 갱신(+stale 행 교정: GEMINI→emoticon,
+  RONE→realty-price-stats, KO_DATA 사용 스킬에서 dart 제거).
+- **drift 재발 가드**: `scripts/tests/test_gen_skill_catalog.py` 신설 — 카탈로그↔SKILL.md
+  전수 정합·경로 실존·셀 비공백을 release-skills CI(`pytest scripts/tests/`)에서 강제.
+  plan-work 인수 테스트에 회귀 2클래스 추가(신세대 스킬 인식·카탈로그 파생 키 통과).
+
 ## [0.10.3] — 2026-05-22
 
 ### Improvements

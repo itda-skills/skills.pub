@@ -49,10 +49,22 @@ _KNOWN_ENV_VARS: frozenset[str] = frozenset({
     "ITDA_DATA_ROOT",
 })
 
+# 카탈로그 '필요한 키' 열에서 파생하는 환경변수 토큰 (#1216 — 허용 목록의 단일 소스를
+# 생성 카탈로그로 이동. 위 _KNOWN_ENV_VARS 는 발급 문서를 가진 기본 세트로 유지).
+_ENV_TOKEN_RE = re.compile(r"\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b")
+
+
+def _catalog_env_vars() -> frozenset[str]:
+    """skill-catalog.md '필요한 키' 열에서 환경변수 이름을 파생한다."""
+    names: set[str] = set()
+    for entry in load_skill_catalog():
+        names.update(_ENV_TOKEN_RE.findall(entry["env_vars"]))
+    return frozenset(names)
+
 
 def get_known_env_vars() -> list[str]:
-    """알려진 환경변수 이름 목록을 반환한다 (AC-7 테스트용)."""
-    return sorted(_KNOWN_ENV_VARS)
+    """알려진 환경변수 이름 목록을 반환한다 (기본 세트 ∪ 카탈로그 파생, AC-7 테스트용)."""
+    return sorted(_KNOWN_ENV_VARS | _catalog_env_vars())
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +164,7 @@ def check_env_var(var_name: str) -> GroundCheckResult:
     Returns:
         GroundCheckResult (실패 시 warning_marker 포함).
     """
-    if var_name in _KNOWN_ENV_VARS:
+    if var_name in _KNOWN_ENV_VARS or var_name in _catalog_env_vars():
         return GroundCheckResult(is_valid=True, name=var_name)
 
     marker = f"⚠️ 확인 필요: '{var_name}' 환경변수가 알려진 목록에 없습니다."
@@ -162,32 +174,26 @@ def check_env_var(var_name: str) -> GroundCheckResult:
 # ---------------------------------------------------------------------------
 # DP-1 Sanity check: 카탈로그 스킬 디렉토리 존재 확인
 # ---------------------------------------------------------------------------
+# 경로 매핑의 단일 소스는 skill-catalog.md 의 "스킬 디렉토리 경로 매핑" 블록이다.
+# (#1216 — 구 하드코딩 _SKILL_DIR_MAP 은 카탈로그와 이중 소스라 드리프트를 만들어 폐기.
+#  카탈로그는 skills/scripts/gen_skill_catalog.py 가 SKILL.md 전수에서 생성한다.)
 
-_SKILL_DIR_MAP: dict[str, str] = {
-    "find-work": "itda-work/skills/find-work",
-    "plan-work": "itda-work/skills/plan-work",
-    "email": "itda-work/skills/email",
-    "blog-reader": "itda-work/skills/blog-reader",
-    "weather-here": "itda-work/skills/weather-here",
-    "web-reader": "itda-work/skills/web-reader",
-    "exchange-rate": "itda-work/skills/exchange-rate",
-    "hwpx-reader": "itda-work/skills/hwpx-reader",
-    "human-tone": "itda-work/skills/human-tone",
-    "pdf-context-refinery": "itda-work/skills/pdf-context-refinery",
-    "investigate": "itda-work/skills/investigate",
-    "ground-check": "itda-work/skills/ground-check",
-    "etf-naver": "itda-stocks/skills/etf-naver",
-    "stock-us": "itda-stocks/skills/stock-us",
-    "draft-post": "itda-work/skills/draft-post",
-    "blog-seo": "itda-work/skills/blog-seo",
-    "imagekit": "itda-work/skills/imagekit",
-    "dart": "itda-gov/skills/dart",
-    "kosis": "itda-gov/skills/kosis",
-    "ecos": "itda-gov/skills/ecos",
-    "g2b": "itda-gov/skills/g2b",
-    "funding": "itda-gov/skills/funding",
-    "realestate": "itda-gov/skills/realestate",
-}
+_DIR_MAP_LINE_RE = re.compile(r"^(\S+)\s*→\s*(\S+?)/?\s*$")
+
+
+def _load_skill_dir_map() -> dict[str, list[str]]:
+    """카탈로그의 경로 매핑 블록을 파싱한다.
+
+    동명 스킬(예: web-automation — itda-work·itda-taxhero)은 복수 경로를 허용한다.
+    """
+    if not _CATALOG_MD.exists():
+        return {}
+    mapping: dict[str, list[str]] = {}
+    for raw in _CATALOG_MD.read_text(encoding="utf-8").splitlines():
+        m = _DIR_MAP_LINE_RE.match(raw.strip())
+        if m and "/skills/" in m.group(2):
+            mapping.setdefault(m.group(1), []).append(m.group(2))
+    return mapping
 
 
 def skill_dir_exists(skill_name: str) -> bool:
@@ -197,10 +203,9 @@ def skill_dir_exists(skill_name: str) -> bool:
         skill_name: 스킬 이름.
 
     Returns:
-        디렉토리가 존재하면 True.
+        매핑된 경로 중 하나라도 실존하면 True.
     """
-    rel_path = _SKILL_DIR_MAP.get(skill_name)
-    if rel_path is None:
-        return False
-    full_path = _REPO_ROOT / rel_path
-    return full_path.is_dir()
+    for rel_path in _load_skill_dir_map().get(skill_name, []):
+        if (_REPO_ROOT / rel_path).is_dir():
+            return True
+    return False
