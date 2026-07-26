@@ -152,7 +152,7 @@ def encrypt_token(token: str, *, iv: bytes | None = None) -> str:
     if not _HAS_CRYPTO:
         raise AuthError(
             "매장별 재고/진열위치는 cryptography가 필요합니다. "
-            "uv pip install --system cryptography"
+            "python3 -m pip install cryptography"
         )
     if iv is None:
         iv = os.urandom(16)
@@ -195,7 +195,7 @@ def build_auth_headers(
     if not _HAS_CRYPTO:
         raise AuthError(
             "매장별 재고/진열위치는 cryptography가 필요합니다. "
-            "uv pip install --system cryptography"
+            "python3 -m pip install cryptography"
         )
 
     token, dm_uid = request_token(

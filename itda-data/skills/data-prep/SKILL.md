@@ -6,16 +6,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[CSV 경로 또는 정돈 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.2.0"
+  version: "0.2.2"
   category: "data-tidy"
   status: "experimental"
   recommended: false
   created_at: "2026-06-25"
-  updated_at: "2026-07-07"
+  updated_at: "2026-07-26"
   tags: "csv, tidy, cleanup, header, subtotal, mojibake, casing, stdlib, incubating"
 ---
 
@@ -33,6 +33,7 @@ itda-data 데이터 양심 vertical(정리 `data-prep` · 질문 `data-ask`)의 
 
 > [HARD] 진단→확인→산출 순서를 지킨다. "무조건"·"빠르게"로 사용자 확인을 건너뛰지 않는다.
 > [HARD] 원본 파일은 절대 수정하지 않는다. 정돈본은 항상 새 파일.
+> 아래 모듈 임포트 전에 Prerequisites 의 `SKILL_DIR` 확정 블록을 실행하고 `cd "$SKILL_DIR/scripts"` 한다.
 
 ### 관문1 — 진단
 ```python
@@ -69,7 +70,19 @@ res = emit.emit_tidy(source_path, grid, diag)
 - 범위 외: 통계 분석·질의 → `data-ask`. 원본 수정.
 
 ## Prerequisites
-Python 3.10+ 표준 라이브러리만. macOS/Linux `python3`, Windows `py -3`.
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/data-prep}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/data-prep' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\data-prep"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+Python 3.10+ 표준 라이브러리만(설치 불요). 위 모듈들은 CLI 엔트리 없이 임포트하므로 **모듈 실행 전 `cd "$SKILL_DIR/scripts"`** 한다(Windows: `cd "$env:SKILL_DIR\scripts"`). macOS/Linux `python3`, Windows `py -3`.
 
 ## 스크립트 모듈
 | 모듈 | 역할 |

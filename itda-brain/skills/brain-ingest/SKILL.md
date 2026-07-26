@@ -6,16 +6,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+ (오케스트레이션 스킬)"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Task, Skill
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent, Skill, mcp__workspace__bash
 argument-hint: "[업무DB 폴더 경로] [새 문서 경로 또는 외부 산출물]"
 metadata:
   author: "Chinseok"
-  version: "0.2.0"
+  version: "0.2.3"
   category: "knowledge-base"
   status: "experimental"
   recommended: false
   created_at: "2026-07-14"
-  updated_at: "2026-07-19"
+  updated_at: "2026-07-26"
   tags: "knowledge-base, incremental, ingest, adapter, external-source, provenance, claim, verification, incubating, scaffold"
 ---
 
@@ -31,6 +31,21 @@ metadata:
 
 > [HARD] **원본 불가침.** 새 사내 문서도 읽기 전용. 위키(Layer 2)와 `INDEX.md`만 갱신한다. (SPEC INV-1)
 > [HARD] **근거·모순 규율 계승.** 증분 페이지도 인라인 근거 강제, 기존 값과 상충하면 모순 보존(brain-build 관문3 동일).
+
+### 관문0 — 스킬 디렉토리(SKILL_DIR) 확정
+
+헬퍼 스크립트는 cwd 에 의존하지 않도록 **절대경로**로 실행한다. 실행 절 첫머리에서 `SKILL_DIR` 을 한 번 확정한다:
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/brain-ingest}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/brain-ingest' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\brain-ingest"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
 
 ### 관문1 — 적재원 분류
 
@@ -60,10 +75,10 @@ metadata:
 >
 > ```bash
 > # macOS/Linux — 적재 완료한 경로만 기준선 전진(나머지 미적재 변경은 계속 stale 유지)
-> python3 <스킬디렉토리>/../brain-audit/scripts/freshness.py update-baseline "<소스폴더>" \
+> python3 "$SKILL_DIR/../brain-audit/scripts/freshness.py" update-baseline "<소스폴더>" \
 >   --manifest "<업무DB>/.brain-manifest.json" --paths "견적서/신규.xlsx" "계약/신규.docx" \
 >   > "<업무DB>/.brain-manifest.json.tmp" && mv "<업무DB>/.brain-manifest.json.tmp" "<업무DB>/.brain-manifest.json"
-> # Windows: py -3 <스킬디렉토리>\..\brain-audit\scripts\freshness.py update-baseline ... (동일)
+> # Windows: py -3 "$env:SKILL_DIR\..\brain-audit\scripts\freshness.py" update-baseline ... (동일)
 > ```
 >
 > brain-audit 은 기준선을 갱신하지 않으므로(자기비교 방지), "적재하지 않은 채 기준선만 최신화"되는 일이 없다. manifest 경로가 틀리거나 파일이 손상돼 있으면 freshness.py 가 **명시 에러로 중단**한다(exit 2 — 빈 기준선 자동 생성·대체 없음). 에러 메시지대로 경로를 정정하거나 재빌드로 기준선을 재생성한다.

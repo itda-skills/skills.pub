@@ -7,16 +7,16 @@ description: >
 license: Apache-2.0
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
+allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion, mcp__workspace__bash, mcp__workspace__web_fetch
 argument-hint: "<브랜드/톤 키워드 또는 DESIGN.md 경로>"
 metadata:
   author: "스킬.잇다"
-  version: "0.5.1"
+  version: "0.6.2"
   category: "design"
   status: "beta"
   recommended: true
   created_at: "2026-06-21"
-  updated_at: "2026-07-11"
+  updated_at: "2026-07-26"
   tags: "design-system, design-tokens, design-md, getdesign, palette, typography, branding"
 ---
 
@@ -80,14 +80,27 @@ metadata:
 
 ## 사용법 — 결정론 레이어 (v2 프리셋·토큰)
 
+### 0) 실행 전 — 스킬 디렉토리 확정
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/design-core}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/design-core' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\design-core"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ### 1) 토큰 조회 (프로그래밍 — v2/v1 프리셋 전용)
 
 ```bash
 # macOS/Linux
-python3 -c "import sys; sys.path.insert(0,'scripts'); import design_core as dc; \
+python3 -c "import sys; sys.path.insert(0,'$SKILL_DIR/scripts'); import design_core as dc; \
   t=dc.load('consulting-mbb'); print(t.color); print(t.pptx_palette())"
 # Windows
-py -3 -c "import sys; sys.path.insert(0,'scripts'); import design_core as dc; t=dc.load('consulting-mbb'); print(t.color)"
+py -3 -c "import sys; sys.path.insert(0,'$env:SKILL_DIR/scripts'); import design_core as dc; t=dc.load('consulting-mbb'); print(t.color)"
 ```
 
 `design_core.load(<이름|경로|frontmatter dict|v2 DESIGN.md 텍스트>)` → 정규화된 `DesignTokens`. v1 평면 형식도 자동 승격(legacy 무중단). `.docx_styles()`/`.xlsx_styles()`/`.pptx_palette()` 는 코드 렌더러 호환 평면 스타일. **표준 DESIGN.md(9섹션+다단 역할 frontmatter)는 비대상**(위 [HARD]).
@@ -96,8 +109,8 @@ py -3 -c "import sys; sys.path.insert(0,'scripts'); import design_core as dc; t=
 
 ```bash
 # macOS/Linux
-python3 scripts/validate.py --all            # library 전체
-python3 scripts/validate.py consulting-mbb    # 단건
+python3 "$SKILL_DIR/scripts/validate.py" --all            # library 전체
+python3 "$SKILL_DIR/scripts/validate.py" consulting-mbb    # 단건
 ```
 
 ERROR(A1 계층 무결성·hex 유효성) 1건이라도 있으면 종료코드 1. **표준 포맷 저작물의 검증**은 validate.py 가 아니라 `schema/design-md-standard.md` 의 9섹션 체크리스트 + 직해석 미니 프리뷰 눈검증입니다.
@@ -108,7 +121,7 @@ ERROR(A1 계층 무결성·hex 유효성) 1건이라도 있으면 종료코드 1
 
 - **관문A 입력 인터뷰** — 먼저 **경로 분기**를 확인합니다: ⓐ **getdesign 차용**(유명 브랜드·서구 톤이면 기본값 — 위 워크플로우로 이동) ⓑ **기존 프리셋/카탈로그**(`library/` 8종·`catalog/` — 한국·문서 톤·반복 파이프라인) ⓒ **신규 저작**. ⓒ일 때 `AskUserQuestion` 으로 수집: ① 매체(발표자료/웹/문서 + 반복 파이프라인 여부) ② 브랜드 색(hex 있으면 그대로, 없으면 톤·업종에서 파생) ③ 분위기·톤 ④ 의미색 관행(international/krx) ⑤ 베이스(카탈로그 항목·프리셋) 변형 여부.
 - **관문B 정보 충분성 게이트** — 산출 포맷별 최소 정보를 검토합니다. **표준 포맷(기본)**: frontmatter 핵심 색 역할(canvas/surface/ink/muted/primary/hairline 급) + 타이포 방향 + 9섹션을 채울 톤 서사. **v2 병행(반복 파이프라인 목적일 때)**: A1-identity(색 7 + 폰트 2)를 결정해 `validate.py` ERROR 0 확인. 부족하면 관문A 로 되돌아가 더 묻습니다.
-- **관문C 프리뷰** — **표준 포맷**: 직해석 미니 프리뷰 HTML 을 렌더해 제시. **v2 병행**: `scripts/preview.py` 로 web 한 장 + pptx 표지 한 장. 가능하면 `open` 으로 엽니다.
+- **관문C 프리뷰** — **표준 포맷**: 직해석 미니 프리뷰 HTML 을 렌더해 제시. **v2 병행**: `python3 "$SKILL_DIR/scripts/preview.py"` 로 web 한 장 + pptx 표지 한 장. 가능하면 `open` 으로 엽니다.
 - **관문D 컨펌** — 프리뷰(+ v2 면 validate 결과)를 제시하고 OK/수정을 받습니다. 수정이면 토큰을 조정해 **관문C 로 루프**. 컨펌 없이 관문E 로 가지 않습니다.
 - **관문E 생성** — **표준 포맷(기본)**: 9섹션 + frontmatter 완결 + **Korean Typography Addendum** + Known Gaps 정직 서술로 저장 — 재사용 카탈로그면 `catalog/<slug>/DESIGN.md`(+ 프리뷰 html), 1회성이면 사용자 작업 폴더 `DESIGN.md`. **v2 병행**: `library/<name>.md` 또는 `<name>.design.md` 를 함께 산출. 이후 발표자료는 `pptx-design`, 웹은 원문 참조로 바로 적용됨을 안내합니다.
 

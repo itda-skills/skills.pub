@@ -7,16 +7,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[products|price|stores|inventory|inventory-by-name|display-location] [options]"
 metadata:
   author: "Chinseok"
-  version: "0.2.0"
+  version: "0.2.3"
   category: "data-fetching"
   status: "beta"
   recommended: true
   created_at: "2026-06-01"
-  updated_at: "2026-06-02"
+  updated_at: "2026-07-26"
   tags: "daiso, retail, inventory, product-search, store-locator, read-only"
 ---
 
@@ -43,51 +43,64 @@ metadata:
 
 ## 빠른 시작
 
+먼저 스킬 디렉토리를 확정합니다 (이후 모든 실행 명령이 `$SKILL_DIR` 기준).
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/daiso}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/daiso' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\daiso"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 자연어 요청과 대응되는 CLI 호출 예시입니다.
 
 **"다이소에서 수납박스 검색해줘"**
 ```bash
 # macOS/Linux
-python3 scripts/daiso.py products 수납박스
+python3 "$SKILL_DIR/scripts/daiso.py" products 수납박스
 
 # Windows
-py -3 scripts/daiso.py products 수납박스
+py -3 "$env:SKILL_DIR\scripts\daiso.py" products 수납박스
 ```
 
 **"이 상품 가격 알려줘 (상품 ID로)"**
 ```bash
 # macOS/Linux
-python3 scripts/daiso.py price 1009876
+python3 "$SKILL_DIR/scripts/daiso.py" price 1009876
 
 # Windows
-py -3 scripts/daiso.py price 1009876
+py -3 "$env:SKILL_DIR\scripts\daiso.py" price 1009876
 ```
 
 **"강남 다이소 매장 찾아줘"**
 ```bash
 # macOS/Linux
-python3 scripts/daiso.py stores 강남
+python3 "$SKILL_DIR/scripts/daiso.py" stores 강남
 
 # Windows
-py -3 scripts/daiso.py stores 강남
+py -3 "$env:SKILL_DIR\scripts\daiso.py" stores 강남
 ```
 
 **"이 상품 강남역 근처 다이소에 재고 있어?"**
 ```bash
 # macOS/Linux
-python3 scripts/daiso.py inventory 1009876 --keyword 강남역
+python3 "$SKILL_DIR/scripts/daiso.py" inventory 1009876 --keyword 강남역
 
 # Windows
-py -3 scripts/daiso.py inventory 1009876 --keyword 강남역
+py -3 "$env:SKILL_DIR\scripts\daiso.py" inventory 1009876 --keyword 강남역
 ```
 
 **"이 상품 이 매장 어디에 진열돼 있어?"**
 ```bash
 # macOS/Linux
-python3 scripts/daiso.py display-location 1009876 11199
+python3 "$SKILL_DIR/scripts/daiso.py" display-location 1009876 11199
 
 # Windows
-py -3 scripts/daiso.py display-location 1009876 11199
+py -3 "$env:SKILL_DIR\scripts\daiso.py" display-location 1009876 11199
 ```
 
 ---
@@ -97,7 +110,7 @@ py -3 scripts/daiso.py display-location 1009876 11199
 ### `products` — 상품 검색
 
 ```bash
-python3 scripts/daiso.py products <검색어> [옵션]
+python3 "$SKILL_DIR/scripts/daiso.py" products <검색어> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -108,7 +121,7 @@ python3 scripts/daiso.py products <검색어> [옵션]
 
 예시:
 ```bash
-python3 scripts/daiso.py products 수납박스 --page 1 --page-size 30
+python3 "$SKILL_DIR/scripts/daiso.py" products 수납박스 --page 1 --page-size 30
 ```
 
 ---
@@ -116,9 +129,9 @@ python3 scripts/daiso.py products 수납박스 --page 1 --page-size 30
 ### `price` — 가격·상세 조회
 
 ```bash
-python3 scripts/daiso.py price <productId> [옵션]
+python3 "$SKILL_DIR/scripts/daiso.py" price <productId> [옵션]
 # 또는
-python3 scripts/daiso.py price --name <상품명> [옵션]
+python3 "$SKILL_DIR/scripts/daiso.py" price --name <상품명> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -130,8 +143,8 @@ python3 scripts/daiso.py price --name <상품명> [옵션]
 
 예시:
 ```bash
-python3 scripts/daiso.py price 1009876
-python3 scripts/daiso.py price --name "데스크 정리함"
+python3 "$SKILL_DIR/scripts/daiso.py" price 1009876
+python3 "$SKILL_DIR/scripts/daiso.py" price --name "데스크 정리함"
 ```
 
 ---
@@ -139,9 +152,9 @@ python3 scripts/daiso.py price --name "데스크 정리함"
 ### `stores` — 매장 찾기
 
 ```bash
-python3 scripts/daiso.py stores <키워드> [옵션]
+python3 "$SKILL_DIR/scripts/daiso.py" stores <키워드> [옵션]
 # 또는
-python3 scripts/daiso.py stores --sido <시도> [--gugun <구군>] [--dong <동>] [옵션]
+python3 "$SKILL_DIR/scripts/daiso.py" stores --sido <시도> [--gugun <구군>] [--dong <동>] [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -156,8 +169,8 @@ python3 scripts/daiso.py stores --sido <시도> [--gugun <구군>] [--dong <동>
 
 예시:
 ```bash
-python3 scripts/daiso.py stores 강남 --limit 10
-python3 scripts/daiso.py stores --sido 서울특별시 --gugun 강남구 --dong 역삼동
+python3 "$SKILL_DIR/scripts/daiso.py" stores 강남 --limit 10
+python3 "$SKILL_DIR/scripts/daiso.py" stores --sido 서울특별시 --gugun 강남구 --dong 역삼동
 ```
 
 ---
@@ -165,7 +178,7 @@ python3 scripts/daiso.py stores --sido 서울특별시 --gugun 강남구 --dong 
 ### `inventory` — 매장별 재고 조회
 
 ```bash
-python3 scripts/daiso.py inventory <productId> [옵션]
+python3 "$SKILL_DIR/scripts/daiso.py" inventory <productId> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -180,8 +193,8 @@ python3 scripts/daiso.py inventory <productId> [옵션]
 
 예시:
 ```bash
-python3 scripts/daiso.py inventory 1009876 --keyword 강남역
-python3 scripts/daiso.py inventory 1009876 --lat 37.4979 --lng 127.0276 --page-size 10
+python3 "$SKILL_DIR/scripts/daiso.py" inventory 1009876 --keyword 강남역
+python3 "$SKILL_DIR/scripts/daiso.py" inventory 1009876 --lat 37.4979 --lng 127.0276 --page-size 10
 ```
 
 ---
@@ -189,7 +202,7 @@ python3 scripts/daiso.py inventory 1009876 --lat 37.4979 --lng 127.0276 --page-s
 ### `display-location` — 진열 위치 조회
 
 ```bash
-python3 scripts/daiso.py display-location <productId> <storeCode>
+python3 "$SKILL_DIR/scripts/daiso.py" display-location <productId> <storeCode>
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -201,7 +214,7 @@ python3 scripts/daiso.py display-location <productId> <storeCode>
 
 예시:
 ```bash
-python3 scripts/daiso.py display-location 1009876 11199
+python3 "$SKILL_DIR/scripts/daiso.py" display-location 1009876 11199
 ```
 
 ---
@@ -212,10 +225,10 @@ python3 scripts/daiso.py display-location 1009876 11199
 
 ```bash
 # macOS/Linux
-python3 scripts/daiso.py inventory-by-name <상품명> [--keyword <위치>] [옵션]
+python3 "$SKILL_DIR/scripts/daiso.py" inventory-by-name <상품명> [--keyword <위치>] [옵션]
 
 # Windows
-py -3 scripts/daiso.py inventory-by-name <상품명> [--keyword <위치>] [옵션]
+py -3 "$env:SKILL_DIR\scripts\daiso.py" inventory-by-name <상품명> [--keyword <위치>] [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -236,10 +249,10 @@ py -3 scripts/daiso.py inventory-by-name <상품명> [--keyword <위치>] [옵�
 예시:
 ```bash
 # 정확한 상품명 → 자동 재고 조회 (강남 근처)
-python3 scripts/daiso.py inventory-by-name "에끌라깨끗한물티슈150매(캡형)" --keyword 강남
+python3 "$SKILL_DIR/scripts/daiso.py" inventory-by-name "에끌라깨끗한물티슈150매(캡형)" --keyword 강남
 
 # 범주어 → 후보 제시 (id 골라 inventory <id>로 이어서)
-python3 scripts/daiso.py inventory-by-name 물티슈 --keyword 강남
+python3 "$SKILL_DIR/scripts/daiso.py" inventory-by-name 물티슈 --keyword 강남
 ```
 
 ---
@@ -307,7 +320,7 @@ UTF-8 pretty-print JSON (들여쓰기 2칸, `ensure_ascii=false`). 서브커맨�
 
 ```bash
 # 명시한 경로로만 저장됩니다 (자동 저장 위치 없음)
-python3 scripts/daiso.py products 수납박스 --format markdown --output ./수납박스.md
+python3 "$SKILL_DIR/scripts/daiso.py" products 수납박스 --format markdown --output ./수납박스.md
 ```
 
 - `--output` 미지정: 결과를 stdout으로 출력.
@@ -325,7 +338,9 @@ python3 scripts/daiso.py products 수납박스 --format markdown --output ./수�
 
 ```bash
 # AES 인증 기능(inventory·display-location)을 쓸 때만 설치
-uv pip install --system cryptography
+python3 -m pip install cryptography
 ```
+
+> uv 사용자는 `uv pip install cryptography`(venv 권장) 도 가능합니다.
 
 자세한 엔드포인트·인증 알고리즘은 [`references/api-endpoints.md`](references/api-endpoints.md)에 정리되어 있습니다.

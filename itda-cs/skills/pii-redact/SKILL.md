@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[비식별화할 텍스트 파일 또는 붙여넣은 CS 로그]"
 metadata:
   author: "Chinseok"
-  version: "0.1.1"
+  version: "0.1.3"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-06-01"
-  updated_at: "2026-06-01"
+  updated_at: "2026-07-26"
   tags: "pii, redaction, masking, privacy, korean, cs, stdlib"
 ---
 
@@ -41,13 +41,24 @@ metadata:
 
 ## Claude 라우팅 가이드
 
+아래 모든 스크립트 실행에 앞서 `SKILL_DIR` 을 한 번 확정한다:
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/pii-redact}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/pii-redact' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\pii-redact"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ### A. CS 로그를 비식별화한다 → redact.py
 파일 또는 stdin으로 텍스트를 넣으면 비식별 텍스트 + 마스킹 리포트(JSON)가 나온다.
 ```bash
 # macOS/Linux
-python3 scripts/redact.py <로그.txt>
+python3 "$SKILL_DIR/scripts/redact.py" <로그.txt>
 # Windows
-py -3 scripts/redact.py <로그.txt>
+py -3 "$env:SKILL_DIR\scripts\redact.py" <로그.txt>
 ```
 - `--text-only`: 리포트 없이 비식별 텍스트만 출력(다음 분석 스킬에 바로 넘길 때).
 - `--mask-low`: 보류된 low confidence 항목(bare 카드번호 등)까지 마스킹(최대 재현율).
@@ -56,7 +67,7 @@ py -3 scripts/redact.py <로그.txt>
 ### B. 다른 CS 스킬의 입구 전처리로 쓴다
 `aspect-sentiment`·`cs-intent`에 raw 로그를 넣기 전 이 스킬을 **먼저** 통과시킨다.
 ```bash
-python3 scripts/redact.py raw_log.txt --text-only > redacted.txt
+python3 "$SKILL_DIR/scripts/redact.py" raw_log.txt --text-only > redacted.txt
 # 이후 redacted.txt 를 분석 스킬 입력으로 사용
 ```
 
@@ -66,8 +77,8 @@ python3 scripts/redact.py raw_log.txt --text-only > redacted.txt
 
 ### D. 결과 검증
 ```bash
-python3 scripts/redact.py <로그.txt> > report.json
-python3 scripts/validate_output.py report.json   # Windows: py -3 ...
+python3 "$SKILL_DIR/scripts/redact.py" <로그.txt> > report.json
+python3 "$SKILL_DIR/scripts/validate_output.py" report.json   # Windows: py -3 "$env:SKILL_DIR\scripts\validate_output.py" ...
 ```
 `validate_output.py`는 리포트에 **원문 PII가 새지 않았는지**(키 화이트리스트)·by_type 합·토큰 치환 반영을 점검한다.
 

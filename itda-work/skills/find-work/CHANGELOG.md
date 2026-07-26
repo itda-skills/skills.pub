@@ -1,5 +1,17 @@
 # Changelog — find-work
 
+## [0.13.0] — 2026-07-26 (이슈 #1284, #1280 이관분)
+
+### Changed
+
+- 실행 경로 4축을 플랫폼 중립으로 재서술 — "Cowork 단독/Cowork+Chrome/…" 을 "에이전트 단독(Cowork/Code) / +브라우저 자동화 / +n8n·Make / +API 직접 연동" 으로 교체(SKILL.md + references/data-sources.md). compatibility 도 `Claude Code & Cowork` 로 — 기능은 원래 플랫폼 무관(순수 인터뷰)이었고 산출물 문구만 Cowork 전제였다.
+
+## [0.12.1] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
 ## [0.12.0] — 2026-07-22
 
 ### New Features (#1225 — ax-proposal 설계 역수입)

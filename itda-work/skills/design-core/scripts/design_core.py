@@ -275,6 +275,10 @@ class DesignTokens:
         return self.raw.get("space", {})
 
     @property
+    def layout(self) -> dict:
+        return self.raw.get("layout", {})
+
+    @property
     def constraints(self) -> dict:
         return self.raw.get("constraints", {})
 
@@ -284,6 +288,9 @@ class DesignTokens:
 
     def pptx_palette(self) -> dict:
         return to_pptx_palette(self)
+
+    def pptx_layout(self) -> dict:
+        return to_pptx_layout(self)
 
     def docx_styles(self) -> dict:
         return to_docx_styles(self)
@@ -348,6 +355,46 @@ def to_pptx_palette(tokens: DesignTokens) -> dict:
         "hairline": c.get("border"),
         "up": s.get("up"),
         "down": s.get("down"),
+    }
+
+
+# ── PPTX 레이아웃 어댑터 (three_zone·grid·space → deckkit 좌표 헬퍼 입력, #701/#702 P0) ──
+DEFAULT_PPTX_LAYOUT = {
+    "three_zone": {"header": 0.14, "content": 0.76, "footer": 0.10},
+    "grid": {"columns": 12, "gutter": 0.2},
+}
+
+
+def to_pptx_layout(tokens: "DesignTokens") -> dict:
+    """v2 `layout`(three_zone·grid) + `space` → deckkit 좌표 헬퍼가 소비하는 평면 레이아웃.
+
+    `layout` 토큰은 그간 스키마에만 있고 어떤 어댑터도 읽지 않던 dormant 상태였다(#701):
+    `frontmatter-schema-vs-prose` 규칙상 "machine 이 안 읽는 값"이었다. 본 함수가
+    deckkit `zone_bounds()`/`grid_cells()` 의 입력 계약이 되어 토큰을 살린다(machine 소비 승격).
+    미지정 시 표준 보고서 기본(DEFAULT_PPTX_LAYOUT)으로 떨어져, 기존 자유 배치 gen.py 는 비파괴.
+
+    반환 키:
+      margin_in, gap_in        : 상하·요소 간 여백(인치, space 토큰; 미정의면 None)
+      three_zone {header, content, footer} : 수직 분할 비율(합 1.0 정규화)
+      grid {columns, gutter}   : 본문 균일 그리드(열 수·거터 인치)
+    """
+    lay = tokens.layout
+    sp = tokens.space
+    tz = dict(DEFAULT_PPTX_LAYOUT["three_zone"])
+    for k, v in (lay.get("three_zone") or {}).items():
+        if k in tz and isinstance(v, (int, float)) and v >= 0:
+            tz[k] = float(v)
+    total = sum(tz.values()) or 1.0
+    tz = {k: v / total for k, v in tz.items()}  # 합 1.0 정규화(비율 안정)
+    grid = dict(DEFAULT_PPTX_LAYOUT["grid"])
+    for k, v in (lay.get("grid") or {}).items():
+        if k in grid and v is not None:
+            grid[k] = v
+    return {
+        "margin_in": sp.get("margin"),
+        "gap_in": sp.get("gap"),
+        "three_zone": tz,
+        "grid": grid,
     }
 
 

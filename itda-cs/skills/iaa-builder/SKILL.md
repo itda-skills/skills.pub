@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[어노테이션 시트 CSV 또는 CS 로그 + n]"
 metadata:
   author: "Chinseok"
-  version: "0.1.1"
+  version: "0.1.3"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-05-31"
-  updated_at: "2026-06-01"
+  updated_at: "2026-07-26"
   tags: "iaa, kappa, cohen, fleiss, agreement, korean, stdlib"
 ---
 
@@ -42,10 +42,21 @@ CS 라벨링의 **어노테이터 간 일치도(Inter-Annotator Agreement)**를 
 
 ## Claude 라우팅 가이드
 
+아래 모든 스크립트 실행에 앞서 `SKILL_DIR` 을 한 번 확정한다:
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/iaa-builder}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/iaa-builder' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\iaa-builder"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ### A. 골드셋이 아직 없다 → 샘플링부터
 **본문(text)을 가진 원본 CS 로그**(JSONL/CSV)에서 어노테이션 시트(라벨 빈칸 CSV)를 만든다:
 ```bash
-python3 scripts/sample.py <원본로그.jsonl> 200 --text text --id doc_id --stratify primary_intent
+python3 "$SKILL_DIR/scripts/sample.py" <원본로그.jsonl> 200 --text text --id doc_id --stratify primary_intent
 ```
 - `--stratify`로 분류값(예: cs-intent의 `primary_intent`)별 비례 배분 → 대표성 확보.
 - 출력 `annotation_sheet.csv`를 **2명+가 독립적으로** 라벨 컬럼(`annotator_1`, `annotator_2`)에 채운다.
@@ -53,7 +64,7 @@ python3 scripts/sample.py <원본로그.jsonl> 200 --text text --id doc_id --str
 
 ### B. 라벨이 채워진 시트가 있다 → κ 측정
 ```bash
-python3 scripts/iaa.py annotation_sheet.csv 0.61
+python3 "$SKILL_DIR/scripts/iaa.py" annotation_sheet.csv 0.61
 ```
 - 2인 → Cohen's κ + 카테고리별 κ + 불일치 목록. 3인+ → Fleiss' κ.
 - 출력 JSON의 `graduation.passed`·`ambiguous_categories`·`disagreements`를 사용자에게 해석해 전달.
@@ -87,9 +98,9 @@ python3 scripts/iaa.py annotation_sheet.csv 0.61
 
 ```bash
 # macOS/Linux
-python3 scripts/validate_output.py <report.json>
+python3 "$SKILL_DIR/scripts/validate_output.py" <report.json>
 # Windows
-py -3 scripts/validate_output.py <report.json>
+py -3 "$env:SKILL_DIR\scripts\validate_output.py" <report.json>
 ```
 
 ## 한계 (정직)

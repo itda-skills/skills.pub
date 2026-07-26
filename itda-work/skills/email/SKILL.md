@@ -5,14 +5,14 @@ description: >
   "메일 보내줘", "받은편지함 확인해줘", "아이클라우드 메일 읽어줘", "이 메일에 회신하게 맥락 모아줘"처럼 말하면 됩니다.
   피싱 감지(SPF/DKIM/DMARC)와 증분 페치를 내장하고, 회신 시 스레드·관련 메일 맥락을 결정론적으로 모아 줍니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+. No external dependencies."
+compatibility: "Claude Code & Cowork. Python 3.10+. No external dependencies."
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.29.0"
+  version: "0.29.2"
   created_at: "2026-03-18"
-  updated_at: "2026-07-10"
+  updated_at: "2026-07-26"
   tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references"
 ---
 
@@ -36,7 +36,7 @@ Send and read emails via Naver, Google (Gmail), Daum/Kakao, or custom SMTP/IMAP.
 
 ## Credentials
 
-자격증명의 **권장 저장 위치는 작업 폴더 루트의 `.env` 파일**이다 — Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env`를 두면 스킬이 자동 탐색한다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 보조로 Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`에 선언하면 Claude가 읽어 실행 시 환경변수로 주입하나, 대화 컨텍스트에 값이 노출되므로 `.env`를 권장한다. (저장 위치 권장과 별개로 **런타임 조회 우선순위**는 환경변수가 `.env`보다 앞선다 — 개발자는 셸 환경변수로 오버라이드할 수 있다.)
+자격증명의 **권장 저장 위치는 작업 폴더 루트의 `.env` 파일**이다 — 작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env`를 두면 스킬이 자동 탐색한다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해 두어도 로더가 자동으로 찾아 쓴다. 보조로 Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`에 선언하면 Claude가 읽어 실행 시 환경변수로 주입하나, 대화 컨텍스트에 값이 노출되므로 `.env`를 권장한다. (저장 위치 권장과 별개로 **런타임 조회 우선순위**는 환경변수가 `.env`보다 앞선다 — 개발자는 셸 환경변수로 오버라이드할 수 있다.)
 
 | Provider | 환경변수 | 비고 |
 |----------|----------|------|
@@ -48,7 +48,7 @@ Send and read emails via Naver, Google (Gmail), Daum/Kakao, or custom SMTP/IMAP.
 
 멀티 계정: 변수명에 `_{SUFFIX}` 부착 (예: `NAVER_EMAIL_WORK`). suffix 없는 계정은 `account_id=default`.
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `NAVER_EMAIL=<값> NAVER_APP_PASSWORD=<값> python3 scripts/send_email.py ...`. 지침에도 없으면 GUIDE의 "처음 설정하기"를 안내한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `NAVER_EMAIL=<값> NAVER_APP_PASSWORD=<값> python3 "$SKILL_DIR/scripts/send_email.py" ...`. 지침에도 없으면 GUIDE의 "처음 설정하기"를 안내한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 NAVER_APP_PASSWORD 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -60,10 +60,23 @@ Send and read emails via Naver, Google (Gmail), Daum/Kakao, or custom SMTP/IMAP.
 
 모든 스크립트는 stdout에 JSON을 출력한다. macOS/Linux는 `python3`, Windows는 `py -3`.
 
+### 실행 전 — 스킬 디렉토리 확정
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/email}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/email' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\email"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ### Check Configured Providers
 
 ```bash
-python3 scripts/check_env.py        # Windows: py -3 scripts/check_env.py
+python3 "$SKILL_DIR/scripts/check_env.py"        # Windows: py -3 "$env:SKILL_DIR\scripts\check_env.py"
 ```
 
 각 provider 상태(ready / incomplete / not_configured) JSON. 항상 exit 0(정보성 보고).
@@ -71,24 +84,24 @@ python3 scripts/check_env.py        # Windows: py -3 scripts/check_env.py
 ### Send an Email
 
 ```bash
-python3 scripts/send_email.py --provider naver \
+python3 "$SKILL_DIR/scripts/send_email.py" --provider naver \
   --to recipient@example.com --subject "Hello" --body "본문"
 
 # CC/BCC/HTML/첨부
-python3 scripts/send_email.py --provider gmail \
+python3 "$SKILL_DIR/scripts/send_email.py" --provider gmail \
   --to a@example.com --subject "HTML" --body "<h1>Hi</h1>" \
   --cc cc@example.com --bcc bcc@example.com --html --attach report.pdf
 
 # 발신자 표시 이름 (From 헤더 display name)
-python3 scripts/send_email.py --provider naver \
+python3 "$SKILL_DIR/scripts/send_email.py" --provider naver \
   --to a@example.com --subject "안내" --body "본문" --from-name "현우테크 김민수"
 
 # iCloud (587 STARTTLS 직행, 465 시도 없음)
-python3 scripts/send_email.py --provider icloud \
+python3 "$SKILL_DIR/scripts/send_email.py" --provider icloud \
   --to recipient@example.com --subject "Hello" --body "본문"
 
 # Windows
-py -3 scripts/send_email.py --provider naver --to ... --subject ... --body ...
+py -3 "$env:SKILL_DIR\scripts\send_email.py" --provider naver --to ... --subject ... --body ...
 ```
 
 Arguments:
@@ -107,9 +120,9 @@ Arguments:
 **아웃박스**: 샌드박스에서 SMTP 포트 차단 시 메일을 `.itda-skills/email/outbox/`에 저장하고 응답 `{"status":"queued","outbox_path":...,"reason":"probe_blocked|send_failed_all_attempts"}` (exit 0). RFC 822 EML + JSON 메타(비밀번호 미포함).
 
 ```bash
-python3 scripts/send_outbox.py --provider naver                    # 큐 일괄 발송 (성공 시 sent/ 이동)
-python3 scripts/send_outbox.py --provider naver --dry-run           # 목록만 확인
-python3 scripts/send_outbox.py --provider naver --purge-on-success  # 전송 후 삭제
+python3 "$SKILL_DIR/scripts/send_outbox.py" --provider naver                    # 큐 일괄 발송 (성공 시 sent/ 이동)
+python3 "$SKILL_DIR/scripts/send_outbox.py" --provider naver --dry-run           # 목록만 확인
+python3 "$SKILL_DIR/scripts/send_outbox.py" --provider naver --purge-on-success  # 전송 후 삭제
 ```
 
 ### Drafts — IMAP 임시보관함
@@ -118,29 +131,29 @@ IMAP `Drafts` 폴더에 초안 저장·검토·발송. 네이버/Gmail 모바일
 
 ```bash
 # 저장 — IMAP APPEND (\Draft + 현재 INTERNALDATE)
-python3 scripts/save_draft.py --provider naver \
+python3 "$SKILL_DIR/scripts/save_draft.py" --provider naver \
   --to recipient@example.com --subject "검토용 초안" --body "검토 후 발송"
 # → {"status":"draft_saved","uid":1234,"provider":"naver","folder":"Drafts"}
 
 # 첨부·HTML
-python3 scripts/save_draft.py --provider google --to a@x.com --cc b@x.com \
+python3 "$SKILL_DIR/scripts/save_draft.py" --provider google --to a@x.com --cc b@x.com \
   --subject "보고서 초안" --body-html "<h1>안녕하세요</h1>" --attachment report.pdf
 
 # 회신 초안 — reply_context.py의 reply_headers를 넘기면 스레드로 묶인다 (이슈 #692)
-python3 scripts/save_draft.py --provider naver --to lee@daehan.co.kr \
+python3 "$SKILL_DIR/scripts/save_draft.py" --provider naver --to lee@daehan.co.kr \
   --subject "Re: A-220 단가 회신" --body "..." \
   --in-reply-to "<reply_headers.in_reply_to>" --references "<reply_headers.references>"
 
 # send_email 흐름에서 발송 대신 초안 저장
-python3 scripts/send_email.py --provider naver --to a@b.com --subject "..." --body "..." --save-as-draft
+python3 "$SKILL_DIR/scripts/send_email.py" --provider naver --to a@b.com --subject "..." --body "..." --save-as-draft
 
-python3 scripts/list_drafts.py --provider naver                    # 최신순 JSON (기본 20)
-python3 scripts/list_drafts.py --provider gmail --limit 50 --since 2026-05-01
-python3 scripts/read_draft.py  --provider naver --uid 1234          # 본문·첨부 메타
-python3 scripts/send_draft.py  --provider naver --uid 1234          # 발송 성공 시 자동 EXPUNGE
-python3 scripts/send_draft.py  --provider naver --uid 1234 --keep   # 발송 후 보존
-python3 scripts/send_draft.py  --provider naver --uid 1234 --dry-run # SMTP 없이 파싱만
-python3 scripts/delete_draft.py --provider naver --uid 1234         # EXPUNGE
+python3 "$SKILL_DIR/scripts/list_drafts.py" --provider naver                    # 최신순 JSON (기본 20)
+python3 "$SKILL_DIR/scripts/list_drafts.py" --provider gmail --limit 50 --since 2026-05-01
+python3 "$SKILL_DIR/scripts/read_draft.py"  --provider naver --uid 1234          # 본문·첨부 메타
+python3 "$SKILL_DIR/scripts/send_draft.py"  --provider naver --uid 1234          # 발송 성공 시 자동 EXPUNGE
+python3 "$SKILL_DIR/scripts/send_draft.py"  --provider naver --uid 1234 --keep   # 발송 후 보존
+python3 "$SKILL_DIR/scripts/send_draft.py"  --provider naver --uid 1234 --dry-run # SMTP 없이 파싱만
+python3 "$SKILL_DIR/scripts/delete_draft.py" --provider naver --uid 1234         # EXPUNGE
 ```
 
 **동작 규약**:
@@ -155,16 +168,16 @@ python3 scripts/delete_draft.py --provider naver --uid 1234         # EXPUNGE
 `read_email.py`는 목록(메타)과 읽기(본문)를 겸한다. **기본은 메타조회**이며 본문은 `--body`로 명시할 때만 페치한다.
 
 ```bash
-python3 scripts/read_email.py --provider naver                     # 메타만 (from/subject/date/피싱신호)
-python3 scripts/read_email.py --provider naver --body              # 본문 포함 (기본 1500자)
-python3 scripts/read_email.py --provider daum  --max-chars -1      # 전체 본문 (--body 함의)
-python3 scripts/read_email.py --provider naver --max-chars 500     # 본문 500자
-python3 scripts/read_email.py --provider naver --unread-only       # 안 읽은 것만
-python3 scripts/read_email.py --provider naver --count 5 --folder INBOX
-python3 scripts/read_email.py --provider naver --folder "보낸메일함" --count 5  # 한글 폴더 자동 인코딩
-python3 scripts/read_email.py --provider naver --since-last-run    # 지난 실행 이후만
-python3 scripts/read_email.py --provider naver --since-last-run --reset-state
-# Windows: py -3 scripts/read_email.py --provider gmail --body --count 10
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver                     # 메타만 (from/subject/date/피싱신호)
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver --body              # 본문 포함 (기본 1500자)
+python3 "$SKILL_DIR/scripts/read_email.py" --provider daum  --max-chars -1      # 전체 본문 (--body 함의)
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver --max-chars 500     # 본문 500자
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver --unread-only       # 안 읽은 것만
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver --count 5 --folder INBOX
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver --folder "보낸메일함" --count 5  # 한글 폴더 자동 인코딩
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver --since-last-run    # 지난 실행 이후만
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver --since-last-run --reset-state
+# Windows: py -3 "$env:SKILL_DIR\scripts\read_email.py" --provider gmail --body --count 10
 ```
 
 Arguments:
@@ -239,9 +252,9 @@ Output: 메시지 JSON 배열.
 회신을 쓰기 전, 코드가 결정론적으로 **관련 이메일을 수집**해 토큰 효율적인 컨텍스트 묶음을 만든다. 대상 메일 1건의 **UID**만 주면 된다 — 이 UID는 `read_email.py` 출력의 `uid` 필드다(#1018부터 `id`도 동일한 UID 값이지만 `uid`를 정본으로 쓴다).
 
 ```bash
-python3 scripts/reply_context.py --provider icloud --uid 33027
-python3 scripts/reply_context.py --provider naver --uid 1234 --max-chars-total 8000 --top-n 5
-# Windows: py -3 scripts/reply_context.py --provider naver --uid 1234
+python3 "$SKILL_DIR/scripts/reply_context.py" --provider icloud --uid 33027
+python3 "$SKILL_DIR/scripts/reply_context.py" --provider naver --uid 1234 --max-chars-total 8000 --top-n 5
+# Windows: py -3 "$env:SKILL_DIR\scripts\reply_context.py" --provider naver --uid 1234
 ```
 
 Arguments:
@@ -273,9 +286,9 @@ Arguments:
 폴더 목록을 메시지 수와 함께 조회. `read_email.py --folder`에 쓸 정확한 이름 확인용.
 
 ```bash
-python3 scripts/list_folders.py --provider naver              # 폴더 + MESSAGES/UNSEEN
-python3 scripts/list_folders.py --provider gmail --no-status  # 빠른 조회 (STATUS 생략)
-# Windows: py -3 scripts/list_folders.py --provider daum
+python3 "$SKILL_DIR/scripts/list_folders.py" --provider naver              # 폴더 + MESSAGES/UNSEEN
+python3 "$SKILL_DIR/scripts/list_folders.py" --provider gmail --no-status  # 빠른 조회 (STATUS 생략)
+# Windows: py -3 "$env:SKILL_DIR\scripts\list_folders.py" --provider daum
 ```
 
 Arguments: `--provider` / `--account` (Send와 동일), `--no-status` (MESSAGES/UNSEEN 생략 플래그).
@@ -300,7 +313,7 @@ Output: LIST 응답 순서 JSON 배열. `--no-status` 시 `messages`/`unseen` �
 ### Test Connection
 
 ```bash
-python3 scripts/check_connection.py --provider naver   # Windows: py -3 ...
+python3 "$SKILL_DIR/scripts/check_connection.py" --provider naver   # Windows: py -3 ...
 ```
 
 Arguments: `--provider` / `--account`. Output: SMTP(가능 시 IMAP) 연결 테스트 결과 JSON.
@@ -310,7 +323,7 @@ Arguments: `--provider` / `--account`. Output: SMTP(가능 시 IMAP) 연결 테�
 `send_email.py` 실패 또는 `check_connection.py`가 일반 에러만 반환할 때:
 
 ```bash
-python3 scripts/diagnose_smtp.py --provider naver
+python3 "$SKILL_DIR/scripts/diagnose_smtp.py" --provider naver
 ```
 
 DNS → TCP → SSL → SMTP banner → EHLO → AUTH를 레이어별로 분리 측정. 출력 JSON의 `diagnosis.code`로 판정 (해결 절차는 GUIDE.md "안 될 때"):
@@ -338,8 +351,8 @@ NAVER_EMAIL_WORK=work@naver.com      NAVER_APP_PASSWORD_WORK=workpw
 ```
 
 ```bash
-python3 scripts/send_email.py --provider naver                 # default(main) 선택
-python3 scripts/read_email.py --provider naver --account work   # work 선택
+python3 "$SKILL_DIR/scripts/send_email.py" --provider naver                 # default(main) 선택
+python3 "$SKILL_DIR/scripts/read_email.py" --provider naver --account work   # work 선택
 ```
 
 자동 선택 규칙:

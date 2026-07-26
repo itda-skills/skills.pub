@@ -4,6 +4,22 @@
 
 ## [Unreleased]
 
+
+
+### Fixed
+
+- **문서-코드 drift 일괄 정합 (#1284)** — 95스킬 감사 부수 발견분. 세부는 각 스킬 CHANGELOG 참조.
+### Changed
+
+- **플랫폼 문서 정비 4축 일괄 (#1280·#1281·#1282·#1283)** — ① compatibility 라벨을 실태 정합(`Claude Code & Cowork` 표준, 역방향 라벨 교정) ② 설치 지시에서 `uv pip install --system`·`curl|sh` 제거(`python3 -m pip` 정본, 스크립트 안내 문자열·README 포함) ③ `.env` 안내를 양 플랫폼 병기(SKILL.md+GUIDE.md, 셸 env·`~/.claude/settings.json` env 명시) ④ `allowed-tools` 의 표준명 `Bash`/`WebFetch` 에 Cowork 실명(`mcp__workspace__bash`/`mcp__workspace__web_fetch`) 병기(73스킬) + brain `Task`→`Agent`, MCP 소비 4스킬은 필드 삭제(전체 상속). 세부 버전은 각 스킬 CHANGELOG 참조.
+### Changed
+
+- **실행 경로 SKILL_DIR 규약 표준화 (#1279)** — SKILL.md 실행 명령을 SKILL_DIR 확정 블록(Code=`$CLAUDE_PLUGIN_ROOT/skills/<skill>` / Cowork=세션 마운트 find) 기준으로 통일. cwd 상대경로·저장소 경로·플레이스홀더 표기 제거. 대상: court-auction 0.1.2 · realty-deals 0.9.5 · realty-jeonse-gap 0.9.6 · realty-price-stats 0.9.6 · realty-supply 0.9.5.
+
+### Fixed
+
+- **배포본 ImportError 해소 (#1275)** — realty-jeonse-gap v0.9.5 · realty-price-stats v0.9.5: `deals_collector` 가 형제 스킬(realty-deals) scripts/ 에만 있어 publish 주입 pool 밖 → 배포 레이아웃에서 두 스킬 CLI 가 `--help` 조차 `ModuleNotFoundError` 로 실패하던 결함(실측, Cowork·Code 공통). `deals_collector.py` 를 `itda-realty/shared/` 로 승격(realty-deals v0.9.4 — 동작 불변)해 주입 대상에 편입. publish dry-run 배포 레이아웃에서 3 스킬 CLI exit 0 실측, 관련 conftest 의 realty-deals/scripts 경로 우회 제거.
+
 ## [0.10.5] — 2026-07-18 (이슈 #1217)
 
 ### Changed

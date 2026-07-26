@@ -1,5 +1,18 @@
 # Changelog — itda-email
 
+## [0.29.2] — 2026-07-26 (이슈 #1280·#1282)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork` 로 교체 (#1280).
+- `.env` 위치 안내를 "작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트)" 로 일반화하고 셸 환경변수·`~/.claude/settings.json` 의 `env` 경로를 명시 (#1282).
+
+## [0.29.1] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [0.28.0] — 2026-07-10 (이슈 #1018)
 
 ### Bug Fixes

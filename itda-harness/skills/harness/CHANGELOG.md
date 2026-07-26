@@ -1,5 +1,11 @@
 # Changelog — itda-harness/harness
 
+## [1.3.1] — 2026-07-26 (이슈 #1280·#1283)
+
+### Changed
+- `compatibility` 라벨 "Designed for Claude Cowork" → **"Claude Code & Cowork"**.
+- Phase 2-1 실행 모드 표 앞에 **플랫폼 분기 경고** 신설 — 팀(`SendMessage`·`TaskCreate`)·`run_in_background` 는 Claude Code 전용이며, Cowork 대상 하네스는 스타형 오케스트레이션·파일 릴레이·명시 디스패치를 기본값으로 함(cowork-agent-orchestration 독트린, #1130).
+
 ## [1.3.0] — 2026-07-12
 
 ### Changed

@@ -5,14 +5,14 @@ description: >
   "내일 3시 회의 추가해줘", "이번 주 일정 보여줘", "그 약속 취소해줘"처럼 말하면 됩니다.
   반복 일정·알림·시간대(KST)와 ETag 동시성, 삭제 확인 게이트를 지원합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+. Requires caldav, icalendar (uv pip install --system caldav icalendar)."
+compatibility: "Claude Code & Cowork. Python 3.10+. Requires caldav, icalendar (python3 -m pip install caldav icalendar)."
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.2.4"
+  version: "0.2.6"
   created_at: "2026-06-01"
-  updated_at: "2026-07-11"
+  updated_at: "2026-07-26"
   tags: "calendar, caldav, icloud, apple, naver, event, schedule, recurrence, rrule, valarm, alarm, reminder, timezone, etag, ical, icalendar, multi-account, custom-caldav"
 ---
 
@@ -39,7 +39,7 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 
 ## Credentials
 
-자격증명의 **권장 저장 위치는 작업 폴더 루트의 `.env` 파일**이다 — Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env`를 두면 스킬이 자동 탐색한다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 보조로 Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`에 선언하면 Claude가 읽어 실행 시 환경변수로 주입하나, 대화 컨텍스트에 값이 노출되므로 `.env`를 권장한다. (저장 위치 권장과 별개로 **런타임 조회 우선순위**는 환경변수가 `.env`보다 앞선다 — 개발자는 셸 환경변수로 오버라이드할 수 있다.)
+자격증명의 **권장 저장 위치는 작업 폴더 루트의 `.env` 파일**이다 — 작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env`를 두면 스킬이 자동 탐색한다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해 두어도 로더가 자동으로 찾아 쓴다. 보조로 Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`에 선언하면 Claude가 읽어 실행 시 환경변수로 주입하나, 대화 컨텍스트에 값이 노출되므로 `.env`를 권장한다. (저장 위치 권장과 별개로 **런타임 조회 우선순위**는 환경변수가 `.env`보다 앞선다 — 개발자는 셸 환경변수로 오버라이드할 수 있다.)
 
 | Provider | 환경변수 | 비고 |
 |----------|----------|------|
@@ -49,7 +49,7 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 
 멀티 계정: 변수명에 `_{SUFFIX}` 부착 (예: `ICLOUD_EMAIL_WORK`). suffix 없는 계정은 `account_id=default`.
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `ICLOUD_EMAIL=<값> ICLOUD_APP_PASSWORD=<값> python3 scripts/list_events.py ...`. 지침에도 없으면 GUIDE의 "처음 설정하기"를 안내한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `ICLOUD_EMAIL=<값> ICLOUD_APP_PASSWORD=<값> python3 "$SKILL_DIR/scripts/list_events.py" ...`. 지침에도 없으면 GUIDE의 "처음 설정하기"를 안내한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 ICLOUD_APP_PASSWORD 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -63,23 +63,36 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 
 모든 스크립트는 stdout에 JSON을 출력한다. macOS/Linux는 `python3`, Windows는 `py -3`.
 
+### 실행 전 — 스킬 디렉토리 확정
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/calendar}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/calendar' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\calendar"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 > **실행 전제**: 스크립트는 공용 `shared/` 모듈(`env_loader`·`itda_path`)을 import하므로 `shared/`가 `PYTHONPATH`에 있어야 한다. Cowork·`just test-skill`·테스트 러너는 자동 처리한다. 로컬에서 직접 실행할 때는 저장소 루트에서 `PYTHONPATH=shared`를 앞에 붙인다 — 예: `PYTHONPATH=shared python3 itda-work/skills/calendar/scripts/check_env.py`.
 
 ### Check / Connect
 
 ```bash
-python3 scripts/check_env.py                          # provider 설정 상태 (항상 exit 0)
-python3 scripts/check_connection.py --provider icloud # 라이브 연결 + 캘린더 수
-python3 scripts/list_calendars.py --provider icloud   # 캘린더 목록 (name/id/components)
+python3 "$SKILL_DIR/scripts/check_env.py"                          # provider 설정 상태 (항상 exit 0)
+python3 "$SKILL_DIR/scripts/check_connection.py" --provider icloud # 라이브 연결 + 캘린더 수
+python3 "$SKILL_DIR/scripts/list_calendars.py" --provider icloud   # 캘린더 목록 (name/id/components)
 ```
 
 ### List Events (조회, 읽기 전용)
 
 ```bash
-python3 scripts/list_events.py --provider icloud                          # 오늘부터 +7일, 모든 캘린더
-python3 scripts/list_events.py --provider icloud --calendar "강의 일정"    # 특정 캘린더
-python3 scripts/list_events.py --provider icloud --from 2026-06-01 --to 2026-06-30
-python3 scripts/list_events.py --provider icloud --expand                 # 반복 일정 전개
+python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud                          # 오늘부터 +7일, 모든 캘린더
+python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud --calendar "강의 일정"    # 특정 캘린더
+python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud --from 2026-06-01 --to 2026-06-30
+python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud --expand                 # 반복 일정 전개
 ```
 
 Arguments: `--provider`/`--account`, `--calendar`(name 또는 id, 생략 시 전체 캘린더), `--from`/`--to`(ISO date/datetime, 기본 now~+7d), `--expand`(반복 전개), `--refresh`(디스커버리 캐시 무시·재탐색), `--no-sanitize`(원문, LLM 비권장).
@@ -89,16 +102,16 @@ Arguments: `--provider`/`--account`, `--calendar`(name 또는 id, 생략 시 전
 ### Create Event
 
 ```bash
-python3 scripts/create_event.py --provider icloud --calendar "강의 일정" \
+python3 "$SKILL_DIR/scripts/create_event.py" --provider icloud --calendar "강의 일정" \
   --summary "주간 회의" --start 2026-06-15T15:00:00 --end 2026-06-15T16:00:00 \
   --location "서울" --alarm-minutes 10
 
 # 종일 일정
-python3 scripts/create_event.py --provider icloud --calendar "강의 일정" \
+python3 "$SKILL_DIR/scripts/create_event.py" --provider icloud --calendar "강의 일정" \
   --summary "휴가" --start 2026-06-15 --all-day
 
 # 반복 일정 (매주 월요일)
-python3 scripts/create_event.py --provider icloud --calendar "강의 일정" \
+python3 "$SKILL_DIR/scripts/create_event.py" --provider icloud --calendar "강의 일정" \
   --summary "스탠드업" --start 2026-06-15T09:00:00 --rrule "FREQ=WEEKLY;BYDAY=MO"
 ```
 
@@ -107,11 +120,11 @@ Arguments: `--calendar`(필수), `--summary`(필수), `--start`(필수, ISO date
 ### Update Event (ETag 낙관적 동시성)
 
 ```bash
-python3 scripts/update_event.py --provider icloud --calendar "강의 일정" \
+python3 "$SKILL_DIR/scripts/update_event.py" --provider icloud --calendar "강의 일정" \
   --uid <uid> --summary "수정된 제목" --start 2026-06-15T17:00:00
 
 # 충돌 방지: 조회 때 받은 etag를 함께 전달 (If-Match)
-python3 scripts/update_event.py --provider icloud --calendar "강의 일정" \
+python3 "$SKILL_DIR/scripts/update_event.py" --provider icloud --calendar "강의 일정" \
   --uid <uid> --summary "..." --etag '"abc123"'
 ```
 
@@ -120,8 +133,8 @@ python3 scripts/update_event.py --provider icloud --calendar "강의 일정" \
 ### Delete Event (확인 게이트)
 
 ```bash
-python3 scripts/delete_event.py --provider icloud --calendar "강의 일정" --uid <uid>        # confirm_required (미삭제)
-python3 scripts/delete_event.py --provider icloud --calendar "강의 일정" --uid <uid> --yes  # 실제 삭제
+python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강의 일정" --uid <uid>        # confirm_required (미삭제)
+python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강의 일정" --uid <uid> --yes  # 실제 삭제
 ```
 
 `--yes` 없이 호출하면 삭제 대상 요약을 반환하고 **삭제하지 않는다**(되돌리기 어려운 작업 보호). `--etag`로 충돌 감지 가능.

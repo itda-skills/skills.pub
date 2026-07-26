@@ -9,15 +9,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+. fast-flights(Google Flights 공개 표면) 의존."
 user-invocable: true
-allowed-tools: Bash, Read, AskUserQuestion
+allowed-tools: Bash, Read, AskUserQuestion, mcp__workspace__bash
 argument-hint: "인천에서 나리타 6월 26일 / ICN-BKK 다음 달 최저가"
 metadata:
   author: "Chinseok"
   category: "data-fetching"
-  version: "0.3.1"
+  version: "0.3.4"
   status: "experimental"
   created_at: "2026-06-05"
-  updated_at: "2026-07-11"
+  updated_at: "2026-07-26"
   tags: "flight, airfare, google-flights, fast-flights, travel, iata, fare-compare"
 ---
 
@@ -54,46 +54,61 @@ Google Flights 공개 검색으로 **항공권을 조회·비교**합니다(예�
 
 ```bash
 # macOS/Linux
-uv pip install --system fast-flights      # 또는: python3 -m pip install fast-flights==2.2
+python3 -m pip install fast-flights==2.2
 
 # Windows
 py -3 -m pip install fast-flights==2.2
 ```
+
+> uv 사용자는 `uv pip install fast-flights==2.2`(venv 권장) 도 가능합니다.
 
 미설치 시 스킬이 fail-loud 로 설치 방법을 안내합니다(크래시 아님). 직접
 조회(common)는 추가 브라우저 없이 동작합니다.
 
 ## 실행
 
+먼저 스킬 디렉토리를 확정합니다(이후 모든 실행이 이 기준).
+
 ```bash
-# 단일 검색(편도) — macOS/Linux (스킬 디렉토리 기준)
-python3 scripts/main.py search --from ICN --to NRT --date 2026-06-26 --limit 5
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/flight-search}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/flight-search' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\flight-search"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+```bash
+# 단일 검색(편도) — macOS/Linux
+python3 "$SKILL_DIR/scripts/main.py" search --from ICN --to NRT --date 2026-06-26 --limit 5
 
 # 왕복
-python3 scripts/main.py search --from ICN --to NRT --date 2026-06-26 --return-date 2026-07-01
+python3 "$SKILL_DIR/scripts/main.py" search --from ICN --to NRT --date 2026-06-26 --return-date 2026-07-01
 
 # 한 달 최저가 비교(주 1회 샘플, 빠름)
-python3 scripts/main.py compare-month --from ICN --to NRT --month 2026-07 --sample weekly
+python3 "$SKILL_DIR/scripts/main.py" compare-month --from ICN --to NRT --month 2026-07 --sample weekly
 
 # 왕복 날짜 유연 비교 — 체류일 고정 슬라이딩(출발일마다 +7일 귀국 왕복가)
-python3 scripts/main.py compare-month --from ICN --to NCE --month 2026-09 --stay 7
+python3 "$SKILL_DIR/scripts/main.py" compare-month --from ICN --to NCE --month 2026-09 --stay 7
 
 # 한 달 매일 비교(요청 누적 — 일수 cap·간격 하한 강제)
-python3 scripts/main.py compare-month --from ICN --to BKK --month 2026-07 --sample daily --sleep 2
+python3 "$SKILL_DIR/scripts/main.py" compare-month --from ICN --to BKK --month 2026-07 --sample daily --sleep 2
 
 # 날짜 범위 비교
-python3 scripts/main.py compare-range --from ICN --to BKK --start-date 2026-07-01 --end-date 2026-07-20 --step-days 3
+python3 "$SKILL_DIR/scripts/main.py" compare-range --from ICN --to BKK --start-date 2026-07-01 --end-date 2026-07-20 --step-days 3
 
 # 다중 목적지(관문) 비교 — 같은 날짜의 목적지별 최저가 순위(쉼표 구분, 최대 8개)
-python3 scripts/main.py compare-destinations --from ICN --to FCO,CDG,AMS --date 2026-09-10
+python3 "$SKILL_DIR/scripts/main.py" compare-destinations --from ICN --to FCO,CDG,AMS --date 2026-09-10
 
 # 관문 비교를 한 달 단위로(weekly 샘플 강제 — 목적지 × 날짜 총 조회 cap 40)
-python3 scripts/main.py compare-destinations --from ICN --to FCO,CDG,AMS --month 2026-09
+python3 "$SKILL_DIR/scripts/main.py" compare-destinations --from ICN --to FCO,CDG,AMS --month 2026-09
 
 # 연도 비교(같은 월일)
-python3 scripts/main.py compare-years --from ICN --to NRT --years 2026,2027 --month-day 06-01
+python3 "$SKILL_DIR/scripts/main.py" compare-years --from ICN --to NRT --years 2026,2027 --month-day 06-01
 
-# Windows: 위 python3 를 py -3 로 바꿉니다.
+# Windows: 위 python3 를 py -3, "$SKILL_DIR/scripts/main.py" 를 "$env:SKILL_DIR\scripts\main.py" 로 바꿉니다.
 ```
 
 옵션(서브커맨드 **뒤**에 둡니다): `--adults N`(기본 1) ·

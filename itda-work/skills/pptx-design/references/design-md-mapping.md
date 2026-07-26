@@ -8,6 +8,8 @@
 DESIGN.md 미제공 시 §3 의 내장 추천 팔레트 + `anthropic-pptx-design-ideas.md`(기본 스킬 흡수, 1급 경로) 중 주제 적합 1종을 선택한다(REQ-002).
 
 > **3열 필터 원칙(SPEC-PPTX-DESIGN-002 REQ-004)**: 각 토큰을 **① pptx 적용(라틴/일반)** · **② 한글 적용** · **③ 필터(불가·금지)** 세 축으로 분리해 읽는다. 특히 `letterSpacing(음수)`·`fontWeight(thin)`·`serif display` 는 **한글=필터**(자동 차단)다 — 웹 타이포를 한글에 문자 그대로 적용하면 LibreOffice 가 자간 벌어진 명조/붓글씨로 폴백한다. `deckkit.set_run_font` 의 한글 가드가 이 셋을 **자동으로 안전화**한다.
+>
+> **'① 적용 ✅'의 의미 (#701 정정)**: '적용 ✅'는 *재현 가능*을 뜻하지 *어댑터의 토큰 자동 소비*가 아니다. 그중 **`layout.three_zone`·`layout.grid`·`space` 만 P0 부터 `to_pptx_layout()`→deckkit `zone_bounds`/`grid_cells` 로 토큰을 자동 소비**하고, 색·타이포 등 나머지는 Claude 가 gen.py 에서 값을 읽어 손으로 적용한다. 둘을 혼동하지 말 것.
 
 ---
 
@@ -24,7 +26,7 @@ DESIGN.md 미제공 시 §3 의 내장 추천 팔레트 + `anthropic-pptx-design
 | **typography.letterSpacing (음수)** | 라틴 run 은 `spacing=음수pt` 허용(약하게 적용) ⚠️ | ▣ **음수 자간 한글 = 필터** → 가드가 **0 으로 클램프**(LibreOffice 에서 음수가 오히려 자간을 벌림) | ▣ 과대 양수도 캡(`KR_SPACING_CAP_PT`) |
 | **typography.fontFeature (tnum/ss01)** | — | — | ▣ OpenType 기능 적용 불가 |
 | **rounded / radius (px)** | `dk.rect(shape=ROUNDED_RECTANGLE, radius=비율 0~0.5)`. pill=0.5 ⚠️근사 | 동일 | ▣ 4/8/12/16px 위계 1:1 불가(비율 기반) |
-| **spacing / grid / surface** | 인치 좌표로 그리드·여백·surface 교차 충실 ✅ | 동일 ✅ | — |
+| **spacing / layout(three_zone·grid) / surface** | 인치 좌표 충실 ✅ — **P0(#701)부터 `to_pptx_layout()`→deckkit `zone_bounds`/`grid_cells` 로 어댑터가 토큰 자동 소비**(종전엔 gen.py 손 재현만) | 동일 ✅ | — |
 | **motif (반복 시각 요소)** | 도형(`dk.rect`)+Pillow PNG(`linear_gradient`/`radial_glow`/numpy) ✅ | 동일 ✅ | ▣ 벡터 아님(래스터 베이크) |
 | **gradient / glow / blur** | Pillow 고해상도 PNG 베이크(2667×1500) 풀블리드 ⚠️래스터 | 동일 | ▣ python-pptx 네이티브 그라디언트 fill 없음. 텍스트 위 그라디언트 불가 |
 | **shadow / box-shadow** | `dk.rect` 기본 중화·의도 시 `shadow=True` ⚠️ | 동일 | ▣ soft box-shadow 네이티브 불가(Pillow blur 흉내) |

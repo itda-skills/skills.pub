@@ -2,6 +2,18 @@
 
 본 스킬의 변경 이력. [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따른다.
 
+## [0.10.5] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__web_fetch) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.10.4] — 2026-07-26 (이슈 #1280)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork (Claude Code SDK 매핑은 부록 참조)` 로 교체 (#1280).
+
 ## [0.10.3] — 2026-05-28
 
 ### Improvements

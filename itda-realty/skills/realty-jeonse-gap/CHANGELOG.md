@@ -1,5 +1,30 @@
 # Changelog — itda-realty/realty-jeonse-gap
 
+## [0.9.8] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.9.7] — 2026-07-26 (이슈 #1282)
+
+### Changed
+
+- `.env` 안내를 "Cowork에 연결한 작업 폴더" → "작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트)" 로 교체.
+- 셸 환경변수·`~/.claude/settings.json` 의 `env` 로도 설정 가능함을 같은 문단에 명시.
+
+## [0.9.6] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
+## [0.9.5] — 2026-07-26 (이슈 #1275)
+
+### Fixed
+
+- 배포본 ImportError 해소 (#1275) — `deals_collector` 가 형제 스킬 scripts/ 에만 있어 publish 주입 pool 밖이었고 배포 레이아웃에서 `--help` 조차 `ModuleNotFoundError` 로 실패(실측). `itda-realty/shared/` 승격으로 주입 대상 편입, 배포 레이아웃 실측 exit 0 확인.
+
 ## [0.9.4] — 2026-05-22
 
 ### Improvements

@@ -5,15 +5,15 @@ description: >
   "팩트체크해서 보고서 써줘", "출처 확인해서 정리해줘", "1차 소스만 써서 정리해줘"처럼 말하면 됩니다.
   비교표·보고서·리서치 작성 시 공개 웹 출처만 사용합니다.
 license: MIT
-compatibility: Designed for Claude Cowork (Claude Code SDK 매핑은 부록 참조)
-allowed-tools: WebSearch, WebFetch, Skill, Read, Write
+compatibility: Claude Code & Cowork (Claude Code SDK 매핑은 부록 참조)
+allowed-tools: WebSearch, WebFetch, Skill, Read, Write, mcp__workspace__web_fetch
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "research"
-  version: "0.10.3"
+  version: "0.10.5"
   status: "active"
   created_at: "2026-05-12"
-  updated_at: "2026-05-28"
+  updated_at: "2026-07-26"
   tags: "ground-check, source-check, fact-check, primary-source, citation, verification, cowork, hedge-detection"
 ---
 

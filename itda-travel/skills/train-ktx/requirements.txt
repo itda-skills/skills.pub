@@ -5,7 +5,7 @@
 # 라이브 동작 검증(2026-06-22 check 통과)으로 korail2-ncard 로 확정합니다(OQ-1 종결).
 # 어댑터(korail_adapter.py)는 라이브러리 부재 시 설치 안내로 fail-loud 합니다.
 #
-# 설치 예: uv pip install --system korail2-ncard
+# 설치 예: python3 -m pip install korail2-ncard
 # (requests·six 는 korail2-ncard 전이의존, pycryptodome 도 전이의존이나 명시 유지)
 
 korail2-ncard>=0.1.0

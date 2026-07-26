@@ -1,5 +1,25 @@
 # Changelog — itda-web-reader
 
+## [6.2.4] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [6.2.3] — 2026-07-26 (이슈 #1280·#1281)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork` 로 교체 (#1280).
+- `curl -LsSf https://astral.sh/uv/install.sh | sh` 설치 줄 삭제 — uv 부재 시 사용자에게 설치를 요청한다(에이전트가 `curl | sh` 를 실행하지 않는다). 의존성 설치는 `python3 -m pip install` 로 교체 (#1281).
+- `ITDA_LIGHTPANDA_DIR` export 권장에 Cowork 한정 단서 추가 — Claude Code 는 기본값 `~/.itda-skills/bin` 이 이미 영속.
+
+## [6.2.2] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [6.2.1] — 2026-07-04
 
 ### Fixed

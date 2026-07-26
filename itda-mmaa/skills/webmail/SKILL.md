@@ -7,16 +7,16 @@ description: >
   hyve web_browse MCP로 웹메일을 조작하고 Python 후처리로 raw 결과를 정규화합니다.
 license: Apache-2.0
 compatibility: "Python 3.10+ / hyve web_browse MCP"
-allowed-tools: Read, Bash, Write
+allowed-tools: Read, Bash, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[list|message|attachments|draft|send|auth-status|auth-challenge|send-gate]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "experimental"
-  version: "0.2.3"
+  version: "0.2.5"
   created_at: "2026-06-13"
-  updated_at: "2026-07-06"
+  updated_at: "2026-07-26"
   tags: "MMAA, KACEM, webmail, mail, attachment, web-browse, IMAP-unavailable"
 ---
 
@@ -31,6 +31,15 @@ raw 결과를 Python으로 정규화합니다. 지원 provider는 **군인공제
 작업 전 현재 세션에 hyve MCP 도구(`hyve` 통합 도구의 `web_browse` 도메인)가 노출됐는지 확인합니다.
 없으면 사용자에게 hyve 트레이 앱(`hyve serve`) 가동 + **hyve 설정 > MCP 탭에서 웹(web)
 프리셋 등록**을 안내하고 중단합니다(`hyve mcp stdio` 는 개발·검증 전용 — 유저 온보딩 아님).
+
+## 0-1. 실행 경로 확정 (SKILL_DIR)
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/webmail}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/webmail' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
 
 ## 1. 적용 판별
 
@@ -58,7 +67,7 @@ c. 조건 미충족 또는 추가 인증 요구 시 사용자가 visible Chrome�
 무인 로그인은 `SPEC-KACEM-WEBMAIL-001`의 좁은 계약을 만족할 때만 사용합니다.
 
 ```bash
-python3 scripts/webmail.py auth-status --provider kacem
+python3 "$SKILL_DIR/scripts/webmail.py" auth-status --provider kacem
 ```
 
 `authorized_unattended:false`면 사용자 직접 인증으로 진행합니다. `authorized_unattended:true`여도
@@ -67,7 +76,7 @@ CAPTCHA/2FA/키패드/클라이언트 암호화/봇 방어가 보이면 우회�
 중단합니다.
 
 ```bash
-python3 scripts/webmail.py auth-challenge --provider kacem --input /tmp/webmail_auth_raw.json --delete-input
+python3 "$SKILL_DIR/scripts/webmail.py" auth-challenge --provider kacem --input /tmp/webmail_auth_raw.json --delete-input
 ```
 
 2FA/OTP/push/CAPTCHA/가상 키패드/보안키는 종류와 무관하게 `auth_challenge_required` 단일 에러로
@@ -104,7 +113,7 @@ nate에서는 저장 자격증명을 자동 제출하지 않으며 `auth-status 
 4. raw JSON을 임시파일에 저장하고 정규화합니다.
 
 ```bash
-python3 scripts/webmail.py render list --provider kacem --input /tmp/webmail_list_raw.json --delete-input
+python3 "$SKILL_DIR/scripts/webmail.py" render list --provider kacem --input /tmp/webmail_list_raw.json --delete-input
 ```
 
 응답 스키마:
@@ -133,7 +142,7 @@ python3 scripts/webmail.py render list --provider kacem --input /tmp/webmail_lis
 고지합니다.
 
 ```bash
-python3 scripts/webmail.py render message --provider kacem --input /tmp/webmail_message_raw.json --message-id m-1001 --delete-input
+python3 "$SKILL_DIR/scripts/webmail.py" render message --provider kacem --input /tmp/webmail_message_raw.json --message-id m-1001 --delete-input
 ```
 
 ## 5. 첨부 다운로드
@@ -142,7 +151,7 @@ python3 scripts/webmail.py render message --provider kacem --input /tmp/webmail_
 fetch 결과를 raw JSON으로 저장한 뒤 정규화합니다.
 
 ```bash
-python3 scripts/webmail.py render attachments --provider kacem --input /tmp/webmail_attachments_raw.json --message-id m-1001 --delete-input
+python3 "$SKILL_DIR/scripts/webmail.py" render attachments --provider kacem --input /tmp/webmail_attachments_raw.json --message-id m-1001 --delete-input
 ```
 
 ## 6. Draft / Send
@@ -150,20 +159,20 @@ python3 scripts/webmail.py render attachments --provider kacem --input /tmp/webm
 Draft는 저장 후 재조회 또는 저장 XHR 응답으로 검증합니다.
 
 ```bash
-python3 scripts/webmail.py render draft --provider kacem --input /tmp/webmail_draft_raw.json --draft-id d-2001 --delete-input
+python3 "$SKILL_DIR/scripts/webmail.py" render draft --provider kacem --input /tmp/webmail_draft_raw.json --draft-id d-2001 --delete-input
 ```
 
 Send는 전송 버튼을 누르기 전에 반드시 수신자·제목·본문 요지·첨부 목록을 사용자에게 확인받습니다.
 확인 payload는 아래 명령으로 만들 수 있습니다. 이 명령은 실제 발송을 하지 않습니다.
 
 ```bash
-python3 scripts/webmail.py send-gate --provider kacem --to user@example.test --subject "자료 송부" --body-summary "요청 자료 전달" --attachment "자료.pdf"
+python3 "$SKILL_DIR/scripts/webmail.py" send-gate --provider kacem --to user@example.test --subject "자료 송부" --body-summary "요청 자료 전달" --attachment "자료.pdf"
 ```
 
 사용자 확인 후 web_browse로 전송 버튼을 클릭하고, 결과 raw를 정규화합니다.
 
 ```bash
-python3 scripts/webmail.py render send --provider kacem --input /tmp/webmail_send_raw.json --delete-input
+python3 "$SKILL_DIR/scripts/webmail.py" render send --provider kacem --input /tmp/webmail_send_raw.json --delete-input
 ```
 
 ## 7. PII / 비밀 위생

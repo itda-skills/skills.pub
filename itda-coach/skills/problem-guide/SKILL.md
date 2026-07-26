@@ -7,16 +7,16 @@ description: >
   "지시를 어떻게 써야 할지 모르겠어요"처럼 *어떻게 지시할지가 막막할 때* 쓰면 됩니다.
   (데이터를 앞에 두고 바로 분석은 analysis-guide, 무엇을 할지 자체가 막막하면 find-work.)
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. 비개발자는 Track A(Cowork) 주력."
+compatibility: "Claude Code & Cowork. 비개발자는 Track A(Cowork) 주력."
 allowed-tools: Read, Write, Edit
 user-invocable: true
 argument-hint: "[막연한 문제/불편 한 줄]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "facilitation"
-  version: "0.1.0"
+  version: "0.1.1"
   created_at: "2026-06-21"
-  updated_at: "2026-06-21"
+  updated_at: "2026-07-26"
   tags: "problem framing, facilitation, reverse-question, cowork, claude-code, guide"
 ---
 

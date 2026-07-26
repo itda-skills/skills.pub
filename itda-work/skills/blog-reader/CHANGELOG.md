@@ -2,6 +2,24 @@
 
 이 스킬의 변경 이력입니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.11.7] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.11.6] — 2026-07-26 (이슈 #1281)
+
+### Changed
+
+- web-reader 의존성 설치를 `uv pip install --system -r` 에서 `python3 -m pip install -r` 로 교체하고 Windows `py -3` 병기 (#1281).
+
+## [0.11.5] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [0.11.4] — 2026-05-22
 
 ### Improvements

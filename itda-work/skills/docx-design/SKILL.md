@@ -7,16 +7,16 @@ description: >
 license: Apache-2.0
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
+allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion, mcp__workspace__bash, mcp__workspace__web_fetch
 argument-hint: "<콘텐츠.md> [데이터.json] [프리셋 또는 DESIGN.md 경로] [출력.docx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.3.2"
+  version: "0.3.4"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-29"
-  updated_at: "2026-07-11"
+  updated_at: "2026-07-26"
   tags: "docx, word, report, design-md, document"
 ---
 
@@ -68,11 +68,20 @@ metadata:
 세션 내 1회만 확인합니다.
 
 ```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/docx-design}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/docx-design' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+
 # macOS/Linux
-python3 -m pip install -r requirements.txt   # python-docx(필수)·PyMuPDF(렌더)·Pillow(선택)
+python3 -m pip install -r "$SKILL_DIR/requirements.txt"   # python-docx(필수)·PyMuPDF(렌더)·Pillow(선택)
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\docx-design"  # 미설정이면 SKILL.md 위치 절대경로 사용
 
 # Windows
-py -3 -m pip install -r requirements.txt     # + pywin32(Word COM 렌더)
+py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"       # + pywin32(Word COM 렌더)
 ```
 
 - **생성**(관문3)은 `python-docx` 만으로 충분합니다(Office·LibreOffice 불필요).
@@ -116,7 +125,9 @@ per-invocation 생성 스크립트 `gen.py` 를 작업 디렉토리에 작성·�
 
 ```python
 import sys, os
-sys.path.insert(0, os.path.join(SKILL_ROOT, "scripts"))                       # dockit
+SKILL_DIR = "<위 블록에서 확정한 이 스킬 디렉토리 절대경로>"
+DESIGN_CORE = os.path.join(SKILL_DIR, os.pardir, "design-core")
+sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))                        # dockit
 sys.path.insert(0, os.path.join(DESIGN_CORE, "scripts"))                      # design_core
 import dockit as dk
 import design_core as dc
@@ -147,8 +158,8 @@ dk.save_doc(doc, OUT)
 
 ```bash
 # 필수 토큰 파일(콘텐츠/데이터 핵심 명칭·수치를 1줄 1토큰) 작성 후:
-py -3 scripts/verify.py <생성.docx> --tokens tokens.txt        # Windows
-python3 scripts/verify.py <생성.docx> --tokens tokens.txt      # macOS/Linux
+py -3 "$env:SKILL_DIR\scripts\verify.py" <생성.docx> --tokens tokens.txt    # Windows
+python3 "$SKILL_DIR/scripts/verify.py" <생성.docx> --tokens tokens.txt        # macOS/Linux
 ```
 
 - **HARD GATE = (빈문서 + 토큰누락 + 한글_eastAsia_미바인딩 + 저대비) == 0**. PASS 시 exit 0.
@@ -163,7 +174,7 @@ python3 scripts/verify.py <생성.docx> --tokens tokens.txt      # macOS/Linux
 ### 관문5 — 산출
 
 1. **DOCX** — 최종 .docx 경로.
-2. **렌더 미리보기** — `scripts/render.py <docx>` 가 생성한 페이지 PNG 경로.
+2. **렌더 미리보기** — `python3 "$SKILL_DIR/scripts/render.py" <docx>` 가 생성한 페이지 PNG 경로.
 3. **검증 요약** — HARD GATE 결과(빈문서/토큰/한글바인딩 = 0 PASS), advisory 신호, 적용 프리셋·핵심 팔레트 hex 와 반영 위치, 재현 한계에 걸린 토큰과 대체 처리.
 
 ---
@@ -173,8 +184,8 @@ python3 scripts/verify.py <생성.docx> --tokens tokens.txt      # macOS/Linux
 | 도구 | 역할 | 호출 |
 |---|---|---|
 | `scripts/dockit.py` | 공개 헬퍼 API(생성 스크립트가 import) | `import dockit as dk` |
-| `scripts/verify.py` | 빈문서/토큰/한글바인딩/구조/렌더 검증 + HARD GATE | `py -3 scripts/verify.py <docx> [--tokens t.txt] [--out DIR] [--no-render]` |
-| `scripts/render.py` | Word COM(Win) / LibreOffice 렌더 → PDF → PNG | `py -3 scripts/render.py <docx> [out_dir] [--dpi N]` |
+| `scripts/verify.py` | 빈문서/토큰/한글바인딩/구조/렌더 검증 + HARD GATE | `python3 "$SKILL_DIR/scripts/verify.py" <docx> [--tokens t.txt] [--out DIR] [--no-render]` |
+| `scripts/render.py` | Word COM(Win) / LibreOffice 렌더 → PDF → PNG | `python3 "$SKILL_DIR/scripts/render.py" <docx> [out_dir] [--dpi N]` |
 
 `verify.py` 는 PASS 시 exit 0, FAIL 시 exit 1 을 반환하므로 자동화에서 분기 가능합니다.
 
@@ -184,7 +195,7 @@ python3 scripts/verify.py <생성.docx> --tokens tokens.txt      # macOS/Linux
 
 | 상황 | 대응 |
 |---|---|
-| `python-docx` 미설치 | `requirements.txt` 로 설치(macOS/Linux `python3 -m pip`, Windows `py -3 -m pip`) |
+| `python-docx` 미설치 | `"$SKILL_DIR/requirements.txt"` 로 설치(macOS/Linux `python3 -m pip`, Windows `py -3 -m pip`) |
 | 렌더 도구 부재(Word COM/soffice 모두 불가) | 생성은 가능함을 알리고, 검증/미리보기 렌더만 생략(advisory). 실행 가능한 검증과 공백을 분리 보고 |
 | 한글 eastAsia 미바인딩(HARD FAIL) | `gen.py` 에서 dockit 빌더 사용 확인 또는 `set_run_font(r, kr=dk.kr_font_name())` 명시 → 재생성·재검증 |
 | 코멘트/변경추적/TOC 보강 요청 | 1급 생성 후 [옵션 백엔드](#옵션-백엔드-hyve-word-com-보강-길x)(hyve `office_compute` 길X)로 보강 |

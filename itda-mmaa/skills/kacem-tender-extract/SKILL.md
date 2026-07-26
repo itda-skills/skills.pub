@@ -7,16 +7,16 @@ description: >
   결정적 텍스트 추출 후 Claude 기반 필드 식별 2단계로 동작합니다.
 license: Apache-2.0
 compatibility: "Claude Code / Claude Cowork. Python 3.10+"
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "extract <파일> | render <summary.json> --post-id N --title T --output-dir PATH"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "active"
-  version: "1.0.2"
+  version: "1.0.5"
   created_at: "2026-04-30"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "MMAA, KACEM, hwp, hwpx, pdf, extraction"
 ---
 
@@ -36,22 +36,37 @@ metadata:
 
 > **역할 분리**: 텍스트 추출은 스크립트(deterministic), AI 항목 정리는 Claude 세션, 렌더링·저장은 스크립트.
 
+## 실행 경로 확정 (SKILL_DIR)
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/kacem-tender-extract}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/kacem-tender-extract' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+Windows(PowerShell):
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\kacem-tender-extract"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ## 사용 예시
 
 ### 1단계: 텍스트 추출 (extract)
 
 ```bash
 # 단일 파일 — stdout으로 출력
-python3 scripts/main.py extract ./모집공고.hwpx
+python3 "$SKILL_DIR/scripts/main.py" extract ./모집공고.hwpx
 
 # 단일 파일 — 파일로 저장
-python3 scripts/main.py extract ./모집공고.hwpx --output ./extracted.md
+python3 "$SKILL_DIR/scripts/main.py" extract ./모집공고.hwpx --output ./extracted.md
 
 # 수집 스킬 출력 디렉토리 일괄 처리
-python3 scripts/main.py extract ./mmaa-2026-04/
+python3 "$SKILL_DIR/scripts/main.py" extract ./mmaa-2026-04/
 
 # Windows
-py -3 scripts/main.py extract ./모집공고.hwpx
+py -3 "$env:SKILL_DIR\scripts\main.py" extract ./모집공고.hwpx
 ```
 
 ### 2단계: Claude가 텍스트에서 항목 구조화
@@ -96,13 +111,13 @@ Claude는 사용자에게 AskUserQuestion으로 다음 중 선택을 받습니�
 
 ```bash
 # Claude가 생성한 summary.json 렌더링
-python3 scripts/main.py render ./summary.json \
+python3 "$SKILL_DIR/scripts/main.py" render ./summary.json \
   --post-id 12345 \
   --title "홍은동 감리자 모집" \
   --output-dir ./results/12345_홍은동
 
 # CSV 포함
-python3 scripts/main.py render ./summary.json \
+python3 "$SKILL_DIR/scripts/main.py" render ./summary.json \
   --post-id 12345 \
   --title "홍은동 감리자 모집" \
   --output-dir ./results/12345_홍은동 \
@@ -113,7 +128,7 @@ python3 scripts/main.py render ./summary.json \
 
 ```bash
 # CI/디버깅용 — exit 0 (통과) 또는 exit 1 (실패)
-python3 scripts/main.py validate ./summary.json
+python3 "$SKILL_DIR/scripts/main.py" validate ./summary.json
 ```
 
 ## 산출물 구조
@@ -141,13 +156,11 @@ brew install poppler             # macOS
 ### Python 패키지 (pdfplumber 폴백)
 
 ```bash
-# uv가 없다면 먼저 설치
-curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
-# powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
-
 # 의존성 설치
-uv pip install --system -r requirements.txt
+python3 -m pip install -r "$SKILL_DIR/requirements.txt"
 ```
+
+> uv 사용자는 `uv pip install -r "$SKILL_DIR/requirements.txt"`(venv 권장) 도 가능하다. uv 가 없으면 사용자에게 설치를 요청한다(에이전트가 `curl | sh` 를 실행하지 않는다).
 
 > pdftotext 우선 사용. 미설치 시 pdfplumber로 폴백. hwpx는 바이너리 필수.
 

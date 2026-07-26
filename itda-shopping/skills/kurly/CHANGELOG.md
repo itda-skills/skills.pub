@@ -2,6 +2,24 @@
 
 이 스킬의 주요 변경 사항을 기록합니다. 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 따릅니다.
 
+## [0.1.3] — 2026-07-26 (이슈 #1284)
+
+### Fixed
+
+- --user-agent 기본값 실값 문서화(scripts/api.py DEFAULT_USER_AGENT) + 차단 시 교체 가이드.
+
+## [0.1.2] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.1.1] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [0.1.0] - 2026-06-06
 
 ### Added

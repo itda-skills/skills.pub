@@ -73,7 +73,7 @@ _INSTALL_GUIDE = (
     "fast-flights 라이브러리를 불러올 수 없습니다.\n\n"
     "항공권 검색은 Google Flights 공개 표면을 fast-flights 로 조회합니다.\n"
     "설치 후 다시 시도하세요:\n"
-    "  uv pip install --system fast-flights\n"
+    "  python3 -m pip install fast-flights\n"
     "  (또는: python3 -m pip install fast-flights==2.2)\n"
 )
 

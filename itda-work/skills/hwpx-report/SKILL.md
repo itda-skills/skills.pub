@@ -10,15 +10,15 @@ compatibility:
   claude_desktop: false
   claude_code: true
 user-invocable: true
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 argument-hint: "<보고서_마크다운_경로>"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   tags: "hwp, hwpx, report, government, markdown, docspec"
-  version: "0.3.1"
+  version: "0.3.3"
   category: "document"
   created_at: "2026-06-08"
-  updated_at: "2026-06-14"
+  updated_at: "2026-07-26"
   status: "experimental"
   recommended: true
 ---
@@ -44,14 +44,27 @@ Claude(또는 사용자)가 **마크다운으로 쓴 보고서**를 대한민국
 `hwpx` CLI 바이너리는 필요 없습니다. 이 스킬은 포함된 Python 패키지(`hwpx_report`)로 HWPX ZIP을 직접 생성합니다.
 
 - Python 3.10+가 필요합니다.
-- 이미지를 넣는 보고서는 크기 산정을 위해 `Pillow`가 필요합니다. 누락 시 다음처럼 설치합니다.
+- 먼저 스킬 디렉토리 경로를 `SKILL_DIR` 로 확정합니다 (이하 모든 명령이 이 변수를 사용):
 
 ```bash
-python3 -m pip install -r "${CLAUDE_SKILL_DIR}/requirements.txt"
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/hwpx-report}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/hwpx-report' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 ```
 
 ```powershell
-py -3 -m pip install -r "$env:CLAUDE_SKILL_DIR\requirements.txt"
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\hwpx-report"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+- 이미지를 넣는 보고서는 크기 산정을 위해 `Pillow`가 필요합니다. 누락 시 다음처럼 설치합니다.
+
+```bash
+python3 -m pip install -r "${SKILL_DIR}/requirements.txt"
+```
+
+```powershell
+py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"
 ```
 
 ---
@@ -74,10 +87,10 @@ cp <입력보고서.md> .itda-skills/report.md
 
 ```bash
 # macOS/Linux
-python3 "${CLAUDE_SKILL_DIR}/scripts/md_to_docspec.py" .itda-skills/report.md -o .itda-skills/spec.json
+python3 "${SKILL_DIR}/scripts/md_to_docspec.py" .itda-skills/report.md -o .itda-skills/spec.json
 
 # Windows
-py -3 "$env:CLAUDE_SKILL_DIR\scripts\md_to_docspec.py" .itda-skills\report.md -o .itda-skills\spec.json
+py -3 "$env:SKILL_DIR\scripts\md_to_docspec.py" .itda-skills\report.md -o .itda-skills\spec.json
 ```
 
 - 제목/보고일/부서는 마크다운 front-matter 또는 인자로 지정합니다.
@@ -89,11 +102,11 @@ py -3 "$env:CLAUDE_SKILL_DIR\scripts\md_to_docspec.py" .itda-skills\report.md -o
 
 ```bash
 # macOS/Linux
-PYTHONPATH="${CLAUDE_SKILL_DIR}${PYTHONPATH:+:$PYTHONPATH}" \
+PYTHONPATH="${SKILL_DIR}${PYTHONPATH:+:$PYTHONPATH}" \
   python3 -m hwpx_report convert .itda-skills/spec.json -o .itda-skills/report.hwpx --template gov-report
 
 # Windows PowerShell
-$env:PYTHONPATH = "$env:CLAUDE_SKILL_DIR;$env:PYTHONPATH"
+$env:PYTHONPATH = "$env:SKILL_DIR;$env:PYTHONPATH"
 py -3 -m hwpx_report convert .itda-skills\spec.json -o .itda-skills\report.hwpx --template gov-report
 ```
 
@@ -165,8 +178,8 @@ dept: 전략기획팀
 
 | 상황 | 대응 |
 |---|---|
-| `No module named PIL` | `python3 -m pip install -r "${CLAUDE_SKILL_DIR}/requirements.txt"` 실행 안내 |
-| `No module named hwpx_report` | `PYTHONPATH="${CLAUDE_SKILL_DIR}..."` 설정 누락 여부 확인 |
+| `No module named PIL` | `python3 -m pip install -r "${SKILL_DIR}/requirements.txt"` 실행 안내 |
+| `No module named hwpx_report` | `PYTHONPATH="${SKILL_DIR}..."` 설정 누락 여부 확인 |
 | 매퍼가 제목 경고 출력 | `--title` 인자 또는 `# 제목` 추가 안내 |
 | 생성 실패(exit != 0) | stderr 전달. spec.json 의 `level` 이 1/2 인지 확인 |
 | 이미지 파일 읽기 실패 | 이미지 경로가 로컬에서 접근 가능한지 확인 |

@@ -109,7 +109,7 @@ _INSTALL_GUIDE = (
     "korail2 계열 라이브러리를 불러올 수 없습니다.\n\n"
     "KTX 예약은 코레일 비공식 모바일 API를 사용하며, 안티봇(Dynapath) 대응이\n"
     "된 korail2 계열 라이브러리가 필요합니다. 설치 후 다시 시도하세요:\n"
-    "  uv pip install --system pycryptodome <korail2 계열 패키지>\n"
+    "  python3 -m pip install pycryptodome <korail2 계열 패키지>\n"
     "(구체 패키지는 SPEC-KTX-BOOKING-001 OQ-1 에서 확정)\n"
 )
 

@@ -7,15 +7,15 @@ description: >
 license: Apache-2.0
 compatibility: Claude Cowork & Code, Python 3.10+
 user-invocable: true
-allowed-tools: Read, Write, Bash
+allowed-tools: Read, Write, Bash, mcp__workspace__bash
 argument-hint: "[요구사항 또는 메모 첨부]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.12.0"
+  version: "0.12.1"
   category: "productivity"
   status: "experimental"
   created_at: "2026-05-21"
-  updated_at: "2026-07-22"
+  updated_at: "2026-07-26"
   aliases: "계획세우기, 실행계획, 구현계획"
   tags: "Cowork, plan-work, plan work, action-plan"
 ---

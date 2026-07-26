@@ -7,16 +7,16 @@ description: >
   *무엇을 할지는 대체로 정해졌고* 오늘 크기로 자를 때 쓰며(무엇을 할지 자체가 막막하면 find-work),
   손에 있는 것만으로 끝나는 최소 조각 1개와 '이번엔 안 하는 것'을 함께 정리해 줍니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. 강의·실습 1순위."
+compatibility: "Claude Code & Cowork. 강의·실습 1순위."
 allowed-tools: Read, Write
 user-invocable: true
 argument-hint: "[구체화된 문제 또는 problem-guide 산출물]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "facilitation"
-  version: "0.1.0"
+  version: "0.1.1"
   created_at: "2026-06-21"
-  updated_at: "2026-06-21"
+  updated_at: "2026-07-26"
   tags: "scoping, time-box, slice, feasibility, lecture, cowork, MVP"
 ---
 

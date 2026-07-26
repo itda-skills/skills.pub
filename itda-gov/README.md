@@ -31,7 +31,7 @@ KO_DATA_API_KEY=...
 ```
 
 > **주의**
-> - `KO_DATA_API_KEY`는 공공데이터포털(data.go.kr) 키 하나로 `realestate`, `funding`, `g2b`에서 함께 사용합니다.
+> - `KO_DATA_API_KEY`는 공공데이터포털(data.go.kr) 키 하나로 `funding`, `g2b`에서 함께 사용합니다.
 > - `KOSIS_API_KEY`는 Base64 형태일 수 있으므로 끝 `=` 패딩이 잘리지 않도록 전체를 복사하세요.
 
 ## 포함 스킬
@@ -41,7 +41,6 @@ KO_DATA_API_KEY=...
 | [`dart`](skills/dart/SKILL.md) | DART 전자공시 | 기업개황, 재무제표, 직원현황 |
 | [`kosis`](skills/kosis/SKILL.md) | KOSIS 국가통계 | 인구, 산업, 시장 통계 |
 | [`ecos`](skills/ecos/SKILL.md) | ECOS 한국은행 | GDP, 금리, 환율, 물가 |
-| [`realestate`](skills/realestate/SKILL.md) | 국토교통부 실거래가 | 아파트·오피스텔 매매·전월세 |
 | [`funding`](skills/funding/SKILL.md) | K-Startup 지원사업 | 정부 창업·중소기업 지원사업 공고 |
 | [`g2b`](skills/g2b/SKILL.md) | 나라장터 (G2B) | 입찰공고 검색·상세 |
 
@@ -90,16 +89,7 @@ KO_DATA_API_KEY=...
 
 ### 부동산 시장 분석
 
-```
-1. 지역 결정 및 법정동코드 확인
-   → realestate: collect_realestate.py regions | grep "{지역명}"
-2. 매매 실거래가 수집
-   → realestate: collect_realestate.py trade --region "{지역}" --year-month {YYYYMM} --summary
-3. 전월세 실거래가 수집
-   → realestate: collect_realestate.py rent --region "{지역}" --year-month {YYYYMM} --summary
-4. 복수 월 데이터 수집 (추이 분석)
-5. 평균가·중위가 추이 정리 및 보고서 작성
-```
+부동산 실거래가 조회는 `itda-realty` 플러그인의 `realty-deals`(구 `realestate` 상위호환 대체, v7.0.0 이전 완료 → #1272 제거)를 사용합니다. 통계·거시 맥락이 필요하면 본 플러그인의 `kosis`(인구·주택 통계)·`ecos`(금리)와 조합하세요.
 
 ### 입찰 제안서 종합 분석 (G2B 통합)
 

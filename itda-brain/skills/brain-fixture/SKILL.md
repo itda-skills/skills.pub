@@ -11,16 +11,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+ (python-docx·openpyxl·python-pptx·reportlab·pypdf)"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob
+allowed-tools: Read, Write, Bash, Glob, mcp__workspace__bash
 argument-hint: "[업체명·설명 | 개인 프리셋(freelancer|household|club)] [출력 폴더]"
 metadata:
   author: "Chinseok"
-  version: "0.3.0"
+  version: "0.3.2"
   category: "knowledge-base"
   status: "experimental"
   recommended: false
   created_at: "2026-07-18"
-  updated_at: "2026-07-18"
+  updated_at: "2026-07-26"
   tags: "test-data, fixture, synthetic-dataset, traps, insights, synthesis, ledger, deterministic, self-verify, answer-key, docx, xlsx, pptx, pdf, incubating"
 ---
 
@@ -48,18 +48,33 @@ itda-brain 비정형 문서 vertical 의 **함정 데이터셋 포지(forge)**. 
 - **원장 `ledger.json`** — SSoT. 재생성·업종 변형의 근거로 보존한다.
 - **정답지 `.md`** — 강사용(비공개). 함정 표·정본 숫자·기대 검수 결과·오탐 경계·**인사이트(3계단 질답 모범답안)**.
 
+### 관문0 — 스킬 디렉토리(SKILL_DIR) 확정
+
+스킬 스크립트·참조 자산은 cwd 에 의존하지 않도록 **절대경로**로 쓴다. 실행 절 첫머리에서 `SKILL_DIR` 을 한 번 확정한다:
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/brain-fixture}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/brain-fixture' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\brain-fixture"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ### 관문1 — 입력 수집
 
 두 경로 중 하나로 시작한다.
 
 - **업체형(자유 저작)** — 사용자에게 받는다: ① **업체명**(가상) ② **업종·설명**(무엇을 하는 회사인가) ③ **규모**(직원 수·파일 수 대략) ④ **함정 구성**(어떤 함정을 넣을지 — 미지정 시 기본 세트: 계약단가 모순·버전지옥·규정이중화·결정미반영·손상/잠금/무제 파일·시점역행). 실존명을 요청받으면 가상명으로 치환하겠다고 알린다.
-- **개인형(프리셋)** — `presets/` 3종 중 선택: `freelancer`(프리랜서 정산)·`household`(가계 아카이브)·`club`(동호회 운영). 각 프리셋은 **동작하는 씨앗 원장**이다 — `_preset` 블록의 `recommended_traps`·`expand` 안내대로 documents/traps 를 늘려 완성한다.
+- **개인형(프리셋)** — `"$SKILL_DIR/presets/"` 3종 중 선택: `freelancer`(프리랜서 정산)·`household`(가계 아카이브)·`club`(동호회 운영). 각 프리셋은 **동작하는 씨앗 원장**이다 — `_preset` 블록의 `recommended_traps`·`expand` 안내대로 documents/traps 를 늘려 완성한다.
 
 출력 폴더 경로도 확인한다(미지정 시 작업 폴더 아래 `<업체명>_연습폴더/` 제안).
 
 ### 관문2 — 원장 저작 (창의 구간)
 
-`references/ledger-schema.md` 를 **정독**하고 그 계약대로 `ledger.json` 을 저작한다. 핵심:
+`"$SKILL_DIR/references/ledger-schema.md"` 를 **정독**하고 그 계약대로 `ledger.json` 을 저작한다. 핵심:
 
 - `profile`·`entities`·`series`·`canon` 에 세계관과 정본 수치를 세운다.
 - `documents[]` 에 렌더할 문서 전건을 유형별로 선언한다(`internal_date` 는 파일 mtime 으로 박힌다 — 버전 함정의 최신성 단서).
@@ -70,7 +85,7 @@ itda-brain 비정형 문서 vertical 의 **함정 데이터셋 포지(forge)**. 
   - **[HARD] 스포일러 금지** — 수치 결론(result.kind=numeric)의 **파생 결과값이 어느 단일 문서에도 직접 렌더되면 안 된다**(verify 제5축이 FAIL). 정수 인코딩(예 13.7→137)과 **소수 표기("13.7")** 를 모두 검사하고, **어느 한 문서에 피연산자가 전부 공존해도 FAIL**(그 문서만으로 도출 가능 = 합성 아님). 충돌하면(우연 포함) **원장 수치를 조정**해 파생값·피연산자를 서로 다른 문서로 분산한다. compare/threshold(부등호)는 스포일러 대상이 아니다.
   - **가상 명칭 재확인** — 회사·거래처·인물은 실존 상호와 겹치지 않는 **독특한 코인 명칭**을 쓴다(흔한 "웰"·"케어"+업종어 조합은 실존 충돌 위험 — 음절을 비튼 비실재풍 조합).
 
-동봉 예시 `examples/healthcare-ledger.json`(가상 헬스케어 기기 업체 38문서·함정 8종·미끼 3종·인사이트 5개)를 참조 모범으로 삼는다.
+동봉 예시 `"$SKILL_DIR/examples/healthcare-ledger.json"`(가상 헬스케어 기기 업체 38문서·함정 8종·미끼 3종·인사이트 5개)를 참조 모범으로 삼는다.
 
 ### 관문3 — 데이터셋 렌더 (기계 구간)
 
@@ -78,9 +93,9 @@ itda-brain 비정형 문서 vertical 의 **함정 데이터셋 포지(forge)**. 
 
 ```bash
 # macOS/Linux
-python3 <스킬디렉토리>/scripts/generate.py <ledger.json> --out <출력폴더>
+python3 "$SKILL_DIR/scripts/generate.py" <ledger.json> --out <출력폴더>
 # Windows
-py -3 <스킬디렉토리>\scripts\generate.py <ledger.json> --out <출력폴더>
+py -3 "$env:SKILL_DIR\scripts\generate.py" <ledger.json> --out <출력폴더>
 ```
 
 출력 폴더가 비어있지 않으면 exit 2 로 거부한다(비파괴). 원장 스키마 위반은 exit 2 + "어느 필드가 왜" 명시 에러.
@@ -91,9 +106,9 @@ py -3 <스킬디렉토리>\scripts\generate.py <ledger.json> --out <출력폴더
 
 ```bash
 # macOS/Linux
-python3 <스킬디렉토리>/scripts/verify.py <ledger.json> <출력폴더>
+python3 "$SKILL_DIR/scripts/verify.py" <ledger.json> <출력폴더>
 # Windows
-py -3 <스킬디렉토리>\scripts\verify.py <ledger.json> <출력폴더>
+py -3 "$env:SKILL_DIR\scripts\verify.py" <ledger.json> <출력폴더>
 ```
 
 5축(①수치 정합 ②연계성 ③mtime ④함정 실재 ⑤합성 강제)을 검사해 exit 0(PASS)/2(FAIL). ⑤는 insights 선언 시에만 돌고 없으면 SKIP(하위호환). **FAIL 이면 findings(한국어)를 읽고 원장을 보정한 뒤 관문3부터 재생성**한다. 보정 루프는 **최대 3회**까지 돌고, 3회 후에도 FAIL 이면 **fail-visible 보고**한다(잔여 findings 를 그대로 제시하고 "게이트 미통과"로 종결 — 성공으로 위장하지 않는다). 흔한 FAIL 원인: 합계≠월별(consistency 불일치)·함정 마커 미렌더·문서 간 값 오타·**인사이트 파생값이 문서에 직접 렌더됨(스포일러)**.
@@ -104,9 +119,9 @@ py -3 <스킬디렉토리>\scripts\verify.py <ledger.json> <출력폴더>
 
 ```bash
 # macOS/Linux
-python3 <스킬디렉토리>/scripts/answer_sheet.py <ledger.json> --out <정답지.md>
+python3 "$SKILL_DIR/scripts/answer_sheet.py" <ledger.json> --out <정답지.md>
 # Windows
-py -3 <스킬디렉토리>\scripts\answer_sheet.py <ledger.json> --out <정답지.md>
+py -3 "$env:SKILL_DIR\scripts\answer_sheet.py" <ledger.json> --out <정답지.md>
 ```
 
 원장 traps/baits/consistency 에서 세계관 요약·함정 표·정본 숫자·기대 검수 결과·오탐 경계·인사이트를 파생한다.
@@ -117,10 +132,10 @@ py -3 <스킬디렉토리>\scripts\answer_sheet.py <ledger.json> --out <정답�
 
 ```bash
 # macOS/Linux (Windows 는 py -3)
-python3 <스킬디렉토리>/scripts/qa_sheet.py <ledger.json> --out-dir <폴더>
+python3 "$SKILL_DIR/scripts/qa_sheet.py" <ledger.json> --out-dir <폴더>
 ```
 
-`qa-questions.md`(응답자용 — 번호·tier·질문만)와 `qa-key.json`(채점자용 — 기대 결론·result·evidence·도출식)을 산출한다. **질문 문구에 정답 수치(정수 인코딩+소수 표기)·근거 경로가 있으면 exit 2 로 누출을 표면화**하니(스포일러 금지의 질답판), 그때는 해당 insight 의 `surface_question` 에서 수치·경로를 빼고 다시 만든다. 채점 절차·응답자 계약·tier 합격선은 `references/qa-protocol.md` 를 따른다 — 응답자는 **업무DB 폴더만** 연 zero-context 에이전트여야 하며(원장·정답지·qa-key 접근 금지), 답마다 근거 경로를 명시한다.
+`qa-questions.md`(응답자용 — 번호·tier·질문만)와 `qa-key.json`(채점자용 — 기대 결론·result·evidence·도출식)을 산출한다. **질문 문구에 정답 수치(정수 인코딩+소수 표기)·근거 경로가 있으면 exit 2 로 누출을 표면화**하니(스포일러 금지의 질답판), 그때는 해당 insight 의 `surface_question` 에서 수치·경로를 빼고 다시 만든다. 채점 절차·응답자 계약·tier 합격선은 `"$SKILL_DIR/references/qa-protocol.md"` 를 따른다 — 응답자는 **업무DB 폴더만** 연 zero-context 에이전트여야 하며(원장·정답지·qa-key 접근 금지), 답마다 근거 경로를 명시한다.
 
 ### 완료 보고
 

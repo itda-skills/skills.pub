@@ -1,5 +1,24 @@
 # Changelog — itda-work/imagekit
 
+## [0.10.6] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.10.5] — 2026-07-26 (이슈 #1280·#1281)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork` 로 교체 (#1280).
+- 의존성 설치를 `uv pip install --system -r` 에서 `python3 -m pip install -r` 로 교체하고 Windows `py -3` 병기 (#1281).
+
+## [0.10.4] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [0.10.3] — 2026-05-22
 
 ### Improvements

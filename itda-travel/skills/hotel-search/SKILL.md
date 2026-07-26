@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, WebSearch
+allowed-tools: Read, Bash, Write, WebSearch, mcp__workspace__bash
 argument-hint: "rates|heatmap|resolve --hotel-key g#-d# | --url <TripAdvisor URL> --checkin YYYY-MM-DD --checkout YYYY-MM-DD"
 metadata:
   author: "Chinseok"
-  version: "0.3.1"
+  version: "0.3.3"
   category: "data-fetching"
   status: "experimental"
   created_at: "2026-07-07"
-  updated_at: "2026-07-09"
+  updated_at: "2026-07-26"
   tags: "hotel, price, comparison, travel, tripadvisor, xotelo, ota, booking, agoda, read-only, api"
 ---
 
@@ -54,9 +54,22 @@ Xotelo 무료 티어에는 이름 검색이 없습니다(`/search`=유료, `/lis
    ⚠️ 검색 결과가 맞는 호텔인지 이름·도시로 확인합니다(data-accuracy — 동명 호텔 주의).
 2. **사용자 URL/키 직접 제공** — 사용자가 TripAdvisor 링크나 `g294197-d5250436` 를 줄 때. 그대로 `--url`/`--hotel-key`.
 
+먼저 스킬 디렉토리를 확정합니다(이후 모든 실행이 이 기준).
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/hotel-search}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/hotel-search' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\hotel-search"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ```bash
 # macOS/Linux — URL 에서 hotel_key 추출
-python3 scripts/hotel_search.py resolve "https://www.tripadvisor.com/Hotel_Review-g294197-d5250436-Reviews-Summit_Hotel_Seoul-Seoul.html"
+python3 "$SKILL_DIR/scripts/hotel_search.py" resolve "https://www.tripadvisor.com/Hotel_Review-g294197-d5250436-Reviews-Summit_Hotel_Seoul-Seoul.html"
 # → g294197-d5250436
 ```
 
@@ -64,11 +77,11 @@ python3 scripts/hotel_search.py resolve "https://www.tripadvisor.com/Hotel_Revie
 
 ```bash
 # macOS/Linux
-python3 scripts/hotel_search.py rates --hotel-key g294197-d5250436 \
+python3 "$SKILL_DIR/scripts/hotel_search.py" rates --hotel-key g294197-d5250436 \
   --checkin 2026-08-15 --checkout 2026-08-17 --name "써미트 호텔 서울"
 
 # Windows
-py -3 scripts/hotel_search.py rates --url "<TripAdvisor URL>" \
+py -3 "$env:SKILL_DIR\scripts\hotel_search.py" rates --url "<TripAdvisor URL>" \
   --checkin 2026-08-15 --checkout 2026-08-17
 ```
 
@@ -105,7 +118,7 @@ Xotelo 가 정확한 객실 URL 을 안 주므로 Booking 외에는 "그 호텔 
 ### 가격 달력 (heatmap)
 
 ```bash
-python3 scripts/hotel_search.py heatmap --hotel-key g294197-d5250436 --checkout 2026-08-16
+python3 "$SKILL_DIR/scripts/hotel_search.py" heatmap --hotel-key g294197-d5250436 --checkout 2026-08-16
 ```
 
 체크아웃 기준 한 달치 날짜를 싼 날/평균/비싼 날로 분류해, 언제 예약하면 싼지 한눈에 봅니다.

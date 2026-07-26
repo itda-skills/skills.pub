@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.5] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [1.0.4] — 2026-07-26 (이슈 #1281)
+
+### Changed
+
+- 설치 지시에서 `curl | sh`(astral.sh) 줄 삭제 — uv 미설치 시 사용자에게 설치 요청(에이전트가 실행하지 않는다).
+- `uv pip install --system` → `python3 -m pip install` 로 교체, uv 사용자 부연 1줄 추가.
+
+## [1.0.3] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).

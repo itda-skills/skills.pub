@@ -1,5 +1,24 @@
 # Changelog — itda-exchange-rate
 
+## [0.10.7] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash, mcp__workspace__web_fetch) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.10.6] — 2026-07-26 (이슈 #1280·#1283)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork` 로 교체 (#1280).
+- `allowed-tools` 를 공백 구분에서 쉼표 구분으로 교정 (#1283) — `Read, WebFetch, Bash(python3:*), Bash(date:*)`. 공백 구분은 도구명 매칭에 실패해 Bash·WebFetch 가 조용히 소실될 수 있었다.
+
+## [0.10.5] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [0.10.4] — 2026-05-22
 
 ### Improvements

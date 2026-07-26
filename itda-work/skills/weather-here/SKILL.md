@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[지역명(선택)]"
 metadata:
   author: "Chinseok"
-  version: "0.12.3"
+  version: "0.12.5"
   category: "data-fetching"
   status: "experimental"
   created_at: "2026-05-19"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "open-meteo, weather, location, openmeteo, keyless"
 ---
 
@@ -29,10 +29,20 @@ Open-Meteo Forecast(무키), 위치 정확성은 기상청 권위 좌표표(260�
 ## 실행
 
 ```bash
-python3 scripts/weather_here.py            # 위치 자동탐지(되묻지 않음)
-python3 scripts/weather_here.py 부산        # 지역 지정
-python3 scripts/weather_here.py 부산 --detail   # 상세 수치
-# Windows: py -3 scripts/weather_here.py [지역]
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/weather-here}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/weather-here' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+
+python3 "$SKILL_DIR/scripts/weather_here.py"            # 위치 자동탐지(되묻지 않음)
+python3 "$SKILL_DIR/scripts/weather_here.py" 부산        # 지역 지정
+python3 "$SKILL_DIR/scripts/weather_here.py" 부산 --detail   # 상세 수치
+```
+
+```powershell
+# Windows
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\weather-here"  # 미설정이면 SKILL.md 위치 절대경로 사용
+py -3 "$env:SKILL_DIR\scripts\weather_here.py" [지역]
 ```
 
 출력 예: `부산광역시 · 오늘 구름 조금, 강수확률 2% — 비 올 가능성 낮아요`
@@ -45,12 +55,12 @@ Claude가 이 스킬을 실행할 때 반드시 따라야 하는 행동 규칙�
 
 **규칙 1 — 위치 되묻기 금지 (REQ-007)**
 "날씨 알려줘", "지금 날씨", "지금 여기 날씨" 처럼 위치를 명시하지 않으면
-"어느 지역인가요?" 등으로 되묻지 말고 즉시 `python3 scripts/weather_here.py`
+"어느 지역인가요?" 등으로 되묻지 말고 즉시 `python3 "$SKILL_DIR/scripts/weather_here.py"`
 를 실행하여 IP 자동탐지로 진행합니다.
 
 **규칙 2 — 지역명 우선 (REQ-003)**
 "부산 날씨", "수원 날씨 알려줘" 처럼 지역명(한국어 또는 주요 영문 별칭)이
-발화에 있으면 IP를 무시하고 `python3 scripts/weather_here.py 부산` 형태로
+발화에 있으면 IP를 무시하고 `python3 "$SKILL_DIR/scripts/weather_here.py" 부산` 형태로
 지역명을 인자로 전달합니다.
 
 **규칙 3 — IP 실패 안내 (REQ-008)**

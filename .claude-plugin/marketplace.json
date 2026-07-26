@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.36.0",
+    "version": "8.37.0",
     "language": "ko"
   },
   "plugins": [
@@ -33,7 +33,7 @@
     {
       "name": "itda-data",
       "source": "./itda-data",
-      "description": "엉망 CSV 정돈 + 한국어 질문을 실제 계산으로 답하는 데이터 양심 스킬팩(data-prep·data-ask)"
+      "description": "데이터 양심 스킬팩 — 분석 내비게이터(data-compass) + CSV 정돈(data-prep) + 실제 계산 질문(data-ask) + 수식 감사(data-audit) + 수치 검수(data-verify)"
     },
     {
       "name": "itda-cs",
@@ -84,6 +84,11 @@
       "name": "itda-brain",
       "source": "./itda-brain",
       "description": "비정형 문서 무더기(워드·엑셀·PPT·PDF)를 근거 추적 업무DB(뇌)로 만드는 vertical — 빌드·독립 검수·증분 적재·규약 준수 생성"
+    },
+    {
+      "name": "itda-workmap",
+      "source": "./itda-workmap",
+      "description": "업무 구조화 스킬팩 — 일을 태스크→행동 단위로 쪼개고 가치×AI개입 4분면으로 매핑해 AI 위임 계획과 업무 지도를 만든다"
     }
   ]
 }

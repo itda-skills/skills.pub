@@ -2,6 +2,19 @@
 
 이 파일은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.4.7] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.4.6] — 2026-07-26 (이슈 #1280)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork (hyve MCP 필요)` 로 교체 (#1280).
+- MCP 프리셋 등록 안내 대상에 Claude Code 추가 — 정본은 hyve 설정 > MCP 탭 프리셋 등록, `hyve mcp stdio` 는 개발·검증 전용 유지.
+
 ## [0.4.5] — 2026-07-13
 
 ### Changed

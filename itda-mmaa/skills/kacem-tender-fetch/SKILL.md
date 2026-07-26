@@ -6,16 +6,16 @@ description: >
   HTML 게시판 스크래핑·아카이브 해제·hwp/hwpx/pdf 격리까지 수행합니다.
 license: Apache-2.0
 compatibility: "Python 3.10+"
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[--max-pages N] [--since YYYY-MM-DD] [--output-dir PATH] [--no-confirm]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "active"
-  version: "1.0.2"
+  version: "1.0.6"
   created_at: "2026-04-30"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "MMAA, KACEM, tender, scraping, download"
 ---
 
@@ -27,11 +27,28 @@ KACEM 군인공제회 입찰 게시판(category_no=3, 공동주택감리)에서 
 ## Prerequisites
 
 ```bash
-# macOS/Linux
-uv pip install --system -r requirements.txt
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/kacem-tender-fetch}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/kacem-tender-fetch' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
 
+Windows(PowerShell):
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\kacem-tender-fetch"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+```bash
+# macOS/Linux
+python3 -m pip install -r "$SKILL_DIR/requirements.txt"
+```
+
+> uv 사용자는 `uv pip install -r "$SKILL_DIR/requirements.txt"`(venv 권장) 도 가능하다.
+
+```powershell
 # Windows
-py -3 -m pip install -r requirements.txt
+py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"
 ```
 
 ## 사용법
@@ -39,16 +56,16 @@ py -3 -m pip install -r requirements.txt
 ```bash
 # macOS/Linux
 # 최근 1페이지 (기본)
-python3 scripts/main.py --output-dir ./mmaa-2026-04
+python3 "$SKILL_DIR/scripts/main.py" --output-dir ./mmaa-2026-04
 
 # 지난 30일 모두
-python3 scripts/main.py --since 2026-03-30 --max-pages 5 --output-dir ./mmaa-archive
+python3 "$SKILL_DIR/scripts/main.py" --since 2026-03-30 --max-pages 5 --output-dir ./mmaa-archive
 
 # CI 자동 실행 (컨펌 없이)
-python3 scripts/main.py --no-confirm --max-pages 1 --output-dir ./daily
+python3 "$SKILL_DIR/scripts/main.py" --no-confirm --max-pages 1 --output-dir ./daily
 
 # Windows
-py -3 scripts/main.py --output-dir .\mmaa-2026-04
+py -3 "$env:SKILL_DIR\scripts\main.py" --output-dir .\mmaa-2026-04
 ```
 
 ## CLI 옵션
@@ -81,7 +98,7 @@ py -3 scripts/main.py --output-dir .\mmaa-2026-04
 ## 데이터 경로 정책
 
 - 최종 결과: `--output-dir` 지정 경로 (기본 CWD)
-- 캐시/중간 산출물: `resolve_cache_dir("itda-mmaa")` 경로
+- 산출물: `--output-dir`(기본 CWD) 하위에 공고별 디렉토리로 저장 — 별도 캐시 디렉토리는 사용하지 않는다
 - `.itda-skills/` 내부에는 **최종 결과를 저장하지 않습니다**
 
 ## 다음 단계

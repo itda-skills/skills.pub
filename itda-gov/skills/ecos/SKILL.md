@@ -5,8 +5,8 @@ description: >
   "GDP 추이 알려줘", "금리 환율 정리해줘", "100대 경제지표 확인해줘"처럼 말하면 됩니다.
   GDP·금리·환율·CPI·100대 핵심 지표 데이터셋을 다룹니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+"
-allowed-tools: Bash, Read, Write
+compatibility: "Claude Code & Cowork. Python 3.10+"
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[key|search|word|items|tables] [--stat 통계코드] [--start 시작연도] [--end 종료연도]"
 metadata:
@@ -14,9 +14,9 @@ metadata:
   category: "domain"
   status: "active"
   recommended: true
-  version: "0.10.4"
+  version: "0.10.7"
   created_at: "2026-03-29"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "GDP, ECOS, CPI, economics, interest rate, exchange rate, Bank of Korea"
 ---
 
@@ -41,13 +41,13 @@ GDP·금리·환율·물가·100대 경제지표 등 정책 보고서와 사업�
 
 **권장 (비개발자 포함 모든 사용자) — 작업 폴더 `.env`에 키 등록:**
 
-Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
+작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해도 되며, 로더가 자동으로 탐색합니다.
 
 ```
 ECOS_API_KEY=발급받은_키
 ```
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `ECOS_API_KEY=<키> python3 scripts/...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `ECOS_API_KEY=<키> python3 "$SKILL_DIR/scripts/..."`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 ECOS_API_KEY 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -61,48 +61,63 @@ ECOS_API_KEY=발급받은_키
 3. **시간 후 재시도**: 발급 직후 일시적 미반영 가능 — 수 분 대기 후 재시도
 4. **권한 오류 (HTTP 403)**: 게이트웨이 단계 거부 → 마이페이지에서 활용 상태 확인
 
+## Prerequisites
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/ecos}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/ecos' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+Windows(PowerShell):
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\ecos"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ## 사용법
 
 ### 100대 주요 경제지표 (key)
 
 ```bash
 # macOS/Linux
-python3 scripts/collect_econ.py key
-python3 scripts/collect_econ.py key --format table
+python3 "$SKILL_DIR/scripts/collect_econ.py" key
+python3 "$SKILL_DIR/scripts/collect_econ.py" key --format table
 
 # Windows
-py -3 scripts/collect_econ.py key
+py -3 "$env:SKILL_DIR\scripts\collect_econ.py" key
 ```
 
 ### 통계 데이터 조회 (search)
 
 ```bash
 # 소비자물가지수 2020~2024 연간
-python3 scripts/collect_econ.py search --stat 901Y009 --start 2020 --end 2024
-python3 scripts/collect_econ.py search --stat 901Y009 --start 2020 --end 2024 --format table
+python3 "$SKILL_DIR/scripts/collect_econ.py" search --stat 901Y009 --start 2020 --end 2024
+python3 "$SKILL_DIR/scripts/collect_econ.py" search --stat 901Y009 --start 2020 --end 2024 --format table
 
 # 분기별 실질 GDP (경제활동별, 원계열) — 분기 날짜는 YYYYQn 형식
-python3 scripts/collect_econ.py search --stat 200Y106 --start 2020Q1 --end 2024Q4 --period quarter
+python3 "$SKILL_DIR/scripts/collect_econ.py" search --stat 200Y106 --start 2020Q1 --end 2024Q4 --period quarter
 ```
 
 ### 경제 용어 정의 (word)
 
 ```bash
-python3 scripts/collect_econ.py word --word "GDP디플레이터"
-python3 scripts/collect_econ.py word --word "기준금리"
+python3 "$SKILL_DIR/scripts/collect_econ.py" word --word "GDP디플레이터"
+python3 "$SKILL_DIR/scripts/collect_econ.py" word --word "기준금리"
 ```
 
 ### 통계표 항목 조회 (items)
 
 ```bash
 # 항목 코드 확인 (통계 조회 전 사전 확인용) — 소비자물가지수 항목
-python3 scripts/collect_econ.py items --stat 901Y009
+python3 "$SKILL_DIR/scripts/collect_econ.py" items --stat 901Y009
 ```
 
 ### 전체 통계표 목록 (tables)
 
 ```bash
-python3 scripts/collect_econ.py tables
+python3 "$SKILL_DIR/scripts/collect_econ.py" tables
 ```
 
 ## CLI 옵션
@@ -201,7 +216,7 @@ Cowork sandbox 등 일부 환경의 bash는 `LANG`/`LC_ALL` 미설정 시 한글
 WORKSPACE=$(ls /sessions/*/mnt/ | grep -v '^lost+found$' | head -1)
 WORKSPACE_PATH=$(ls -d /sessions/*/mnt/"$WORKSPACE" 2>/dev/null | head -1)
 
-python3 collect_econ.py key > "$WORKSPACE_PATH/result.json"
+python3 "$SKILL_DIR/scripts/collect_econ.py" key > "$WORKSPACE_PATH/result.json"
 ```
 
 > 이 패턴은 스크립트 코드 결함이 아니라 sandbox bash의 locale 설정 문제입니다.

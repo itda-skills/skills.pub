@@ -5,15 +5,15 @@ description: >
   "PDF를 마크다운으로 변환해줘", "이 교재를 지식베이스로 만들어줘", "PDF OCR 정리해줘"처럼 말하면 됩니다.
   OCR 정리·표 재구성·섹션 분할·한국어 정규화를 포함합니다.
 license: Apache-2.0
-compatibility: Designed for Claude Cowork
+compatibility: Claude Code & Cowork
 user-invocable: true
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash, mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "1.2.0"
+  version: "1.2.3"
   category: "domain"
   created_at: "2026-03-21"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "pdf, markdown, ocr, knowledge-base, rag, conversion"
   triggers-keywords: "pdf to markdown, pdf to md, knowledge base, 마크다운 변환, 지식베이스, OCR cleanup, PDF 변환, PDF 정제"
   triggers-agents: "expert-backend, expert-refactoring"
@@ -29,6 +29,15 @@ PDF 원문 추출은 깨진 결과물을 만든다: 띄어쓰기 누락, 테이�
 ## Prerequisites
 
 poppler-utils (`pdftotext`, `pdfinfo`, `pdftoppm`) 필요. Claude Cowork: 기본 설치됨. Ubuntu: `apt-get install -y poppler-utils`. macOS: `brew install poppler`.
+
+Step 6 검증 스크립트가 쓸 스킬 디렉토리 경로를 `SKILL_DIR` 로 확정합니다:
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/pdf-context-refinery}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/pdf-context-refinery' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
 
 > **스캔 PDF**: `pdftoppm`으로 PNG 변환 후 Claude 비전으로 직접 읽는다.
 
@@ -153,9 +162,9 @@ OCR은 띄어쓰기를 제거하는 경우가 많다. 조사(은/는/이/가/을
 ## Step 6: Verify
 
 ```bash
-python ${CLAUDE_SKILL_DIR}/scripts/verify_quality.py <output_dir_or_file> --pages <total_pages>
+python3 ${SKILL_DIR}/scripts/verify_quality.py <output_dir_or_file> --pages <total_pages>
 # 도메인 지정 시 추가 검증 항목 활성화
-python ${CLAUDE_SKILL_DIR}/scripts/verify_quality.py <output_dir_or_file> --pages <total_pages> --domain <domain>
+python3 ${SKILL_DIR}/scripts/verify_quality.py <output_dir_or_file> --pages <total_pages> --domain <domain>
 ```
 
 도메인 옵션: `tax-accounting`, `electronics`, `legal`, `engineering`

@@ -12,7 +12,7 @@
 
 > ℹ️ **v3.0.0 변경 안내**: `itda-slide-ai`, `itda-stt`는 인큐베이팅(비공개) 스킬팩 `itda-egg`로 이전되었습니다. 안정화 검증 후 itda-work로 졸업할 수 있습니다.
 >
-> ℹ️ **2026-04-27 변경 안내**: `itda-emoticon`(Gemini 기반)·`itda-font-guide`도 `itda-egg`로 이전되었습니다. 사용하려면 [itda-egg/README](../itda-egg/README.md) 참고.
+> ℹ️ **2026-04-27 변경 안내**: `itda-emoticon`(Gemini 기반)·`itda-font-guide`도 `itda-egg`로 이전되었습니다. 사용하려면 [itda-egg/README](../itda-egg/README.md) 참고. (emoticon 은 2026-07-26 제거 — #1272)
 >
 > ℹ️ **2026-04-28 변경 안내(SPEC-INCUBATE-003, itda-work 슬림화)**: `itda-name-badge`·`itda-naver-place`·`itda-hyve-pptx`도 `itda-egg`로 이전되었습니다. 직장인 핵심 생산성에 집중도를 높이기 위한 정리이며, 사용은 [itda-egg/README](../itda-egg/README.md) 참고.
 
@@ -34,7 +34,6 @@
 | **itda-pdf-context-refinery** | PDF를 LLM 컨텍스트용 마크다운으로 정제 (OCR 정리, 테이블 복원, 한국어 띄어쓰기) | 📦 🔧 |
 | **itda-hwpx-reader** | HWP/HWPX 문서 읽기 → Markdown/HTML 변환 | 📦 |
 | **itda-hwpx-report** | 마크다운 보고서 → 정부 서식 HWPX 생성 | 📦 |
-| **itda-translate-doc** | 영어 기술 문서 → 한국어 번역 (코드·URL·식별자 보존 + 용어집 3계층 + 자체검증 7항) | 📦 |
 
 ### 투자·경제
 
@@ -111,10 +110,10 @@ NAVER_APP_PASSWORD=...
 
 ```bash
 # 이미지 처리 (itda-imagekit), HWPX 보고서 이미지 크기 산정 (itda-hwpx-report)
-uv pip install --system Pillow
+python3 -m pip install Pillow
 
 # 웹 리더 (itda-web-reader)
-uv pip install --system requests
+python3 -m pip install requests
 ```
 
 > `uv`가 없다면: `pip3 install` 사용

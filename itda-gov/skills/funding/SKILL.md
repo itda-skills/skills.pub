@@ -5,8 +5,8 @@ description: >
   "AI 스타트업 정부 지원 찾아줘", "창업 지원사업 모집 공고 알려줘", "중소기업 보조금 공고 검색해줘"처럼 말하면 됩니다.
   진행 중·과거 공고를 모두 검색할 수 있습니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+"
-allowed-tools: Bash, Read, Write
+compatibility: "Claude Code & Cowork. Python 3.10+"
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[search|overview] [--keyword 키워드] [--active] [--year 연도]"
 metadata:
@@ -14,9 +14,9 @@ metadata:
   category: "domain"
   status: "active"
   recommended: true
-  version: "0.9.7"
+  version: "0.9.11"
   created_at: "2026-03-29"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "K-Startup, government funding, startup support, subsidy"
 ---
 
@@ -46,13 +46,13 @@ K-Startup 공공데이터 API로 정부 창업·중소기업 지원사업 공고
 
 **권장 (비개발자 포함 모든 사용자) — 작업 폴더 `.env`에 키 등록:**
 
-Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
+작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해도 되며, 로더가 자동으로 탐색합니다.
 
 ```
 KO_DATA_API_KEY=발급받은_키
 ```
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `KO_DATA_API_KEY=<키> python3 scripts/...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `KO_DATA_API_KEY=<키> python3 "$SKILL_DIR/scripts/..."`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 KO_DATA_API_KEY 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -61,30 +61,45 @@ KO_DATA_API_KEY=발급받은_키
 
 > **Decoding 키 사용**: 마이페이지 > Open API > 활용신청 현황 > 해당 API 상세에서 표시된 일반 인증키(Decoding)를 복사.
 
+## Prerequisites
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/funding}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/funding' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+Windows(PowerShell):
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\funding"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ## 사용법
 
 ### 지원사업 검색 (search)
 
 ```bash
 # macOS/Linux
-python3 scripts/collect_funding.py search --keyword "AI"
-python3 scripts/collect_funding.py search --keyword "스타트업" --active
+python3 "$SKILL_DIR/scripts/collect_funding.py" search --keyword "AI"
+python3 "$SKILL_DIR/scripts/collect_funding.py" search --keyword "스타트업" --active
 
 # --format은 서브커맨드 앞/뒤 양쪽 위치 모두 동작합니다 (v0.9.4+)
-python3 scripts/collect_funding.py search --keyword "소프트웨어" --format table   # 뒤 위치 (권장)
-python3 scripts/collect_funding.py --format table search --keyword "소프트웨어"  # 앞 위치 (하위 호환)
+python3 "$SKILL_DIR/scripts/collect_funding.py" search --keyword "소프트웨어" --format table   # 뒤 위치 (권장)
+python3 "$SKILL_DIR/scripts/collect_funding.py" --format table search --keyword "소프트웨어"  # 앞 위치 (하위 호환)
 
 # Windows
-py -3 scripts/collect_funding.py search --keyword "AI"
+py -3 "$env:SKILL_DIR\scripts\collect_funding.py" search --keyword "AI"
 ```
 
 ### 통합공고 현황 (overview)
 
 ```bash
 # 2026년 청년창업 통합공고 현황
-python3 scripts/collect_funding.py overview --keyword "청년창업" --year 2026
-python3 scripts/collect_funding.py overview --keyword "청년창업" --format table   # 뒤 위치 (권장)
-python3 scripts/collect_funding.py --format table overview --keyword "청년창업"  # 앞 위치 (하위 호환)
+python3 "$SKILL_DIR/scripts/collect_funding.py" overview --keyword "청년창업" --year 2026
+python3 "$SKILL_DIR/scripts/collect_funding.py" overview --keyword "청년창업" --format table   # 뒤 위치 (권장)
+python3 "$SKILL_DIR/scripts/collect_funding.py" --format table overview --keyword "청년창업"  # 앞 위치 (하위 호환)
 ```
 
 ## CLI 옵션
@@ -128,18 +143,20 @@ government funding, startup support, subsidy, SME support
 ```
 funding/
   SKILL.md
+  GUIDE.md
+  CHANGELOG.md
   scripts/
     funding_api.py      # K-Startup API 모듈
     collect_funding.py  # 지원사업 수집 CLI
-    env_loader.py       # API 키 관리
-    itda_path.py        # 데이터 경로 유틸리티
-    tests/
-      test_funding_api.py
-      test_collect_funding.py
-      test_env_loader.py
+  tests/
+    test_funding_api.py
+    test_collect_funding.py
+    test_collect_funding_cli.py
   references/
     funding.md          # K-Startup API 상세 가이드
 ```
+
+> `env_loader.py`·`itda_path.py`(API 키·경로 유틸)는 스킬 직속이 아니라 저장소 `shared/` 에 있으며, 배포 시 `publish.py` 가 `scripts/` 에 주입한다.
 
 ## 오류 처리
 
@@ -162,7 +179,7 @@ Cowork sandbox 등 일부 환경의 bash는 `LANG`/`LC_ALL` 미설정 시 한글
 WORKSPACE=$(ls /sessions/*/mnt/ | grep -v '^lost+found$' | head -1)
 WORKSPACE_PATH=$(ls -d /sessions/*/mnt/"$WORKSPACE" 2>/dev/null | head -1)
 
-python3 collect_funding.py search --keyword "AI" > "$WORKSPACE_PATH/result.json"
+python3 "$SKILL_DIR/scripts/collect_funding.py" search --keyword "AI" > "$WORKSPACE_PATH/result.json"
 ```
 
 > 이 패턴은 스크립트 코드 결함이 아니라 sandbox bash의 locale 설정 문제입니다.

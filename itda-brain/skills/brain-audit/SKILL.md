@@ -6,16 +6,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+ (신선도 스캔 stdlib only)"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Task
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent, mcp__workspace__bash
 argument-hint: "[업무DB 폴더 경로] (소스 폴더는 CLAUDE.md 머리말에서 읽음)"
 metadata:
   author: "Chinseok"
-  version: "0.3.0"
+  version: "0.3.3"
   category: "knowledge-base"
   status: "experimental"
   recommended: false
   created_at: "2026-07-14"
-  updated_at: "2026-07-19"
+  updated_at: "2026-07-26"
   tags: "knowledge-base, audit, freshness, reconciliation, provenance, staleness, claim, incubating"
 ---
 
@@ -38,15 +38,30 @@ itda-brain 비정형 문서 vertical 의 재검수·신선도 담당. 향후 hyv
 
 - **업무DB 폴더 경로** (필수). 소스 폴더 경로는 업무DB `CLAUDE.md` 머리말 `sources:` 에서 읽는다(자기서술 메타 — REQ-030, **절대경로 1개** — v1 단일 소스). 값이 상대경로거나 폴더가 실재하지 않으면 추측으로 보정하지 말고 사용자에게 소스 폴더 절대경로를 확인한다.
 
+### 관문0 — 스킬 디렉토리(SKILL_DIR) 확정
+
+스킬 스크립트는 cwd 에 의존하지 않도록 **절대경로**로 실행한다. 실행 절 첫머리에서 `SKILL_DIR` 을 한 번 확정하고, 이후 모든 스크립트 경로를 `"$SKILL_DIR"` 기준으로 쓴다:
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/brain-audit}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/brain-audit' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\brain-audit"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ### 관문1 — 신선도 점검 (제5각, 결정론)
 
-소스 폴더를 재스캔해 **빌드 시점 기준선(manifest)**과 대조한다. 이 단계는 **결정론 Python 헬퍼**가 담당한다(에이전트 눈대중 금지). 스킬 스크립트는 cwd 에 의존하지 않도록 **절대경로**로 실행한다 — 이 `SKILL.md`가 있는 스킬 디렉토리를 기준으로 `scripts/freshness.py`의 절대경로를 먼저 확정한다:
+소스 폴더를 재스캔해 **빌드 시점 기준선(manifest)**과 대조한다. 이 단계는 **결정론 Python 헬퍼**가 담당한다(에이전트 눈대중 금지):
 
 ```bash
 # macOS/Linux — baseline = 빌드 시점 manifest (정본)
-python3 <스킬디렉토리>/scripts/freshness.py diff "<소스폴더>" --baseline "<업무DB>/.brain-manifest.json"
+python3 "$SKILL_DIR/scripts/freshness.py" diff "<소스폴더>" --baseline "<업무DB>/.brain-manifest.json"
 # Windows
-py -3 <스킬디렉토리>\scripts\freshness.py diff "<소스폴더>" --baseline "<업무DB>\.brain-manifest.json"
+py -3 "$env:SKILL_DIR\scripts\freshness.py" diff "<소스폴더>" --baseline "<업무DB>\.brain-manifest.json"
 ```
 
 출력(JSON)의 `new`·`changed`·`deleted`·`unchanged`·`stale` 를 읽어 **신규/변경/삭제 파일**을 파악한다.
@@ -66,7 +81,7 @@ py -3 <스킬디렉토리>\scripts\freshness.py diff "<소스폴더>" --baseline
 
 ### 관문2 — 4각도 재검수 디스패치 (변경이 있거나 사용자가 전면 재검수를 요청할 때)
 
-`Task` 도구로 **`brain-auditor`를 디스패치**한다. 프롬프트에 업무DB·소스 폴더 경로 + 관문1 신선도 결과(신규/변경 파일 목록)를 넘기고, 변경분에 초점을 둔 검수를 요청한다. 신규 파일이 위키에 반영되지 않았으면 그 자체가 전수성(각도 1) 결함이다. 에이전트 타입이 없는 환경이면 brain-build 관문7의 **2차 경로**(general-purpose 서브에이전트에 `<스킬디렉토리>/../../agents/brain-auditor.md` 지시서 주입 — 격리 동등 성립)와 동일하게 디스패치한다.
+`Agent` 도구로 **`brain-auditor`를 디스패치**한다. 프롬프트에 업무DB·소스 폴더 경로 + 관문1 신선도 결과(신규/변경 파일 목록)를 넘기고, 변경분에 초점을 둔 검수를 요청한다. 신규 파일이 위키에 반영되지 않았으면 그 자체가 전수성(각도 1) 결함이다. 에이전트 타입이 없는 환경이면 brain-build 관문7의 **2차 경로**(general-purpose 서브에이전트에 `"$SKILL_DIR/../../agents/brain-auditor.md"` 지시서 주입 — 격리 동등 성립)와 동일하게 디스패치한다.
 
 ### 관문3 — 검수리포트 신선도 절 갱신
 

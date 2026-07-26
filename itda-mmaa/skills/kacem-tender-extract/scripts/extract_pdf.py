@@ -67,7 +67,7 @@ def _extract_with_pdfplumber(path: Path) -> str:
     if not _PDFPLUMBER_AVAILABLE or pdfplumber is None:
         raise ImportError(
             "pdfplumber가 설치되지 않았습니다. "
-            "uv pip install --system pdfplumber 로 설치하세요."
+            "python3 -m pip install pdfplumber 로 설치하세요."
         )
 
     pages_text: list[str] = []
@@ -116,5 +116,5 @@ def extract_pdf(path: Path) -> str:
         "PDF 텍스트 추출 도구를 찾을 수 없습니다.\n"
         "다음 중 하나를 설치하세요:\n"
         "  - pdftotext (poppler-utils): apt install poppler-utils\n"
-        "  - pdfplumber: uv pip install --system pdfplumber"
+        "  - pdfplumber: python3 -m pip install pdfplumber"
     )

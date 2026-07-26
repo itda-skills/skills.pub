@@ -1,5 +1,24 @@
 # Changelog — itda-data
 
+## 2026-07-26 (이슈 #1280·#1281·#1282·#1283)
+
+### Changed
+
+- **플랫폼 문서 정비 4축 일괄 (#1280·#1281·#1282·#1283)** — ① compatibility 라벨을 실태 정합(`Claude Code & Cowork` 표준, 역방향 라벨 교정) ② 설치 지시에서 `uv pip install --system`·`curl|sh` 제거(`python3 -m pip` 정본, 스크립트 안내 문자열·README 포함) ③ `.env` 안내를 양 플랫폼 병기(SKILL.md+GUIDE.md, 셸 env·`~/.claude/settings.json` env 명시) ④ `allowed-tools` 의 표준명 `Bash`/`WebFetch` 에 Cowork 실명(`mcp__workspace__bash`/`mcp__workspace__web_fetch`) 병기(73스킬) + brain `Task`→`Agent`, MCP 소비 4스킬은 필드 삭제(전체 상속). 세부 버전은 각 스킬 CHANGELOG 참조.
+
+## 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- **실행 경로 SKILL_DIR 규약 표준화 (#1279)** — SKILL.md 실행 명령을 SKILL_DIR 확정 블록(Code=`$CLAUDE_PLUGIN_ROOT/skills/<skill>` / Cowork=세션 마운트 find) 기준으로 통일. cwd 상대경로·저장소 경로·플레이스홀더 표기 제거. 대상: data-ask 0.2.1 · data-audit 0.2.1 · data-compass 0.1.1 · data-prep 0.2.1 · data-verify 0.2.1.
+
+## [0.18.0] — 2026-07-26 (data-compass 신설, #1271)
+
+### New Features
+- **data-compass v0.1.0** (신규 스킬): 데이터 분석 **내비게이터(순수 코치)** — 유저가 Claude 를 가이드하는 대신 Claude 가 유저를 가이드한다. 초기 2문항(데이터 위치·관심사, "몰라요" 유효)만 묻고, 데이터를 프로파일해 **분석 지도**(`<이름>-분석지도.md`: 지형·갈 수 있는 길·현재 위치·여정 로그)를 생성, 매 단계 "이렇게 말해보세요" 복붙 지시문으로 안내한다. 강의(교육) 용도 — 지시하는 법(프롬프트 리터러시)을 익히는 게 목적이라 **분석을 대신 실행하지 않는다**(자동 진행 금지 [HARD]).
+  기존 4스킬의 관제탑: 품질 신호→data-prep, 집계/추이→data-ask, 합계성 컬럼→data-verify, 엑셀→data-audit 라우팅. stdlib only·cp949 대응·결정론 초기 지도(같은 데이터·관심사 → 같은 지도, 강의 재현성). id/pii 컬럼은 분석 축 추천에서 제외(data-ask 양심 계승). 라이브 실측 회귀 반영: 관심사 부스트가 있어도 정돈 경로는 맨 앞 고정, 여정 시작 추천에서 [보고] 제외. 19 tests GREEN(unit + deployed-style 재현성 바이트 대조).
+- **data-profiler 에이전트** (플러그인 첫 에이전트): data-compass 가 명시 디스패치하는 프로파일링 전용 서브에이전트 — 격리 컨텍스트에서 지도 파일 산출, 대화에는 포인터+요약만(파일 릴레이, cowork-agent-orchestration 준수: tools 생략·입출력 계약·에러 핸들링 명시).
+
 ## [0.17.0] — 2026-07-07 (data-verify 신설, #967)
 
 ### New Features

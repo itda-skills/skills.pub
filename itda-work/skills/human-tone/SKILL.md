@@ -5,16 +5,16 @@ description: >
   "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘"처럼 말하면 됩니다.
   숫자·고유명사·서명은 잠금 가드로 보존합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork"
+compatibility: "Claude Code & Cowork"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash
+allowed-tools: Read, Write, Edit, Bash, mcp__workspace__bash
 argument-hint: "<text-or-file> [--scene report|email|proposal|notice] [--register formal|semi|casual] [--strict] [--diff]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "2.0.2"
+  version: "2.0.5"
   category: "writing"
   created_at: "2026-05-11"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "ai slop, humanize, human tone, post-processing, deslop, naturalize, korean writing, translationese, post-editese"
 ---
 
@@ -67,10 +67,19 @@ ref-im-not-ai에서 차용. 직장인 도메인은 오히려 더 엄격하게 �
 
 기본은 단일 호출 fast path입니다. ≤5,000자 텍스트는 다음 5단계를 한 번의 검수로 처리합니다.
 
+### 0단계 — 스킬 디렉토리 확정
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/human-tone}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/human-tone' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
 ### 1단계 — 보존 영역 잠금 (결정적)
 
 ```bash
-python3 scripts/lock_preserved.py mask <input.txt> > _workspace/01_masked.txt
+python3 "$SKILL_DIR/scripts/lock_preserved.py" mask <input.txt> > _workspace/01_masked.txt
 ```
 
 `lock_preserved.py`가 다음을 placeholder(`⟦KEEP0001⟧` 형식)로 치환합니다:
@@ -106,17 +115,17 @@ python3 scripts/lock_preserved.py mask <input.txt> > _workspace/01_masked.txt
 
 ```bash
 # 빠른 위험도 한 줄 (stdout: low/medium/high)
-python3 scripts/metrics.py --input _workspace/03_rewrite.md --baseline scripts/baseline.json --genre <scene>
+python3 "$SKILL_DIR/scripts/metrics.py" --input _workspace/03_rewrite.md --baseline "$SKILL_DIR/scripts/baseline.json" --genre <scene>
 
 # 진단 JSON 상세 (5단계 audit·report 블록 생성용)
-python3 scripts/metrics.py --input _workspace/03_rewrite.md --baseline scripts/baseline.json --genre <scene> --output _workspace/04_metrics.json
+python3 "$SKILL_DIR/scripts/metrics.py" --input _workspace/03_rewrite.md --baseline "$SKILL_DIR/scripts/baseline.json" --genre <scene> --output _workspace/04_metrics.json
 ```
 
 `metrics.py`가 22개 지표(쉼표 분포, 종결어미 다양성, 한자어 명사화 밀도, 어휘 다양성 등)를 z-score로 측정해 risk_band(low/medium/high) + 등급(A/B/C/D)을 산출합니다. 베이스라인은 KatFish (인간 470편 / AI 1624편).
 
 `--output`을 지정하면 risk_band·risk_score·z_scores·lexicon_hits·evidence_spans 등 상세 진단을 JSON으로 기록합니다. 5단계의 의미 동등성 audit 블록은 이 JSON을 읽어 생성합니다.
 
-변경률 가드 (`scripts/lock_preserved.py audit`):
+변경률 가드 (`python3 "$SKILL_DIR/scripts/lock_preserved.py" audit`):
 - ≥50% → **강제 중단**, 마지막 안정 버전 롤백
 - 30~50% → 경고 (`over_polish_warning: true`), 등급 1단계 하향
 - 5~30% → 정상 범위
@@ -125,8 +134,8 @@ python3 scripts/metrics.py --input _workspace/03_rewrite.md --baseline scripts/b
 ### 5단계 — 보존 영역 복원 + 13항 의미 동등성 audit
 
 ```bash
-python3 scripts/lock_preserved.py restore <rewritten.txt> _workspace/preserve_map.json > _workspace/05_final.txt
-python3 scripts/lock_preserved.py audit <input.txt> _workspace/05_final.txt _workspace/preserve_map.json
+python3 "$SKILL_DIR/scripts/lock_preserved.py" restore <rewritten.txt> _workspace/preserve_map.json > _workspace/05_final.txt
+python3 "$SKILL_DIR/scripts/lock_preserved.py" audit <input.txt> _workspace/05_final.txt _workspace/preserve_map.json
 ```
 
 복원 단계에서 placeholder 1:1 복원 + 환각 감사(원본에 없는 숫자가 복원본에 새로 등장하면 fail). 그 후 다음 13항을 통과해야 최종 승인:

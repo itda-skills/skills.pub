@@ -1,5 +1,16 @@
 # Changelog — aspect-sentiment
 
+## [0.1.5] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.1.4] — 2026-07-26 (이슈 #1279)
+
+### Changed
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## 0.1.3 (2026-07-14) — validator 실효성 강화 + 대량 배치 연동 (#1140 Codex R2)
 - **`validate_output.py` 가 output-schema 의 `additionalProperties:false` 를 실제 강제** — 기존 파서는 top-level·`aspects[]` 항목의 허용 밖 필드를 조용히 통과시켜(Codex 실증) extra 필드 누출(예: 원문 유출)을 못 잡았다. top-level·`aspects[]`·`process_signals` 허용 필드 집합 검사 + `flags`/`process_signals`/`escalated` 타입 검사 + `domain`·`customer_final_sentiment` enum + `confidence` 타입·범위(과거 문자열 confidence 는 TypeError 크래시) + 비-dict doc 가드 추가.
 - **대량 배치(팬아웃/팬인) 연동 절 추가** — 30건+ 는 Lead 가 청크(JSONL) 분할 → `itda-cs:cs-batch-extractor` 병렬 디스패치 → `validate_output.py <jsonl> [taxonomy.yaml]` 로 검증·병합. **커스텀 taxonomy 를 워커에 주면 검증에도 같은 경로 전달**(안 하면 커스텀 라벨 거짓 거부). 단건 절차·스키마·taxonomy 불변.

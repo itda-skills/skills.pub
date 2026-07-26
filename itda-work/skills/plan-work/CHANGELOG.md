@@ -1,5 +1,11 @@
 # Changelog — itda-work plan-work
 
+## [0.12.1] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
 ## [0.12.0] — 2026-07-22
 
 ### New Features / Improvements (#1225 — ax-proposal 설계 역수입·파이프라인 마찰 축소)

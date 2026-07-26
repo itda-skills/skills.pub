@@ -6,16 +6,16 @@ description: >
   "T1 터미널 항공사별 운항 횟수 조회해줘"처럼 말하면 됩니다. 인천공항만 지원하며
   김포·김해·제주 등 한국공항공사 14개 지방공항은 별도 시스템입니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+"
-allowed-tools: Bash, Read, Write
+compatibility: "Claude Code & Cowork. Python 3.10+"
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "--year YYYY --month MM [--route I|D|all] [--airline-type Y|N|all] [--terminal P01|P03|all] [--schedule 0|1|all] [--airline {IATA-code}] [--format json|csv|table]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "1.0.1"
+  version: "1.0.4"
   created_at: "2026-05-27"
-  updated_at: "2026-05-28"
+  updated_at: "2026-07-26"
   tags: "airport, incheon, aviation, statistics, airline, monthly-stats, scraping"
 ---
 
@@ -53,32 +53,47 @@ metadata:
 
 WMONID 쿠키 없이 2단계 호출 시 HTTP 302 무한 리다이렉트가 발생합니다(라이브 검증 확인). 이 스킬은 두 단계를 자동 처리합니다.
 
+## Prerequisites
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/airport-airline-stats}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/airport-airline-stats' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+Windows(PowerShell):
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\airport-airline-stats"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ## 사용 예시
 
 ### macOS / Linux
 
 ```bash
 # 2025년 3월 국제선 항공사별 통계 (JSON)
-python3 scripts/collect_airline_stats.py --year 2025 --month 3 --route I
+python3 "$SKILL_DIR/scripts/collect_airline_stats.py" --year 2025 --month 3 --route I
 
 # T1 터미널, 여객기, 정기편만
-python3 scripts/collect_airline_stats.py --year 2025 --month 3 --terminal P01 --airline-type Y --schedule 0
+python3 "$SKILL_DIR/scripts/collect_airline_stats.py" --year 2025 --month 3 --terminal P01 --airline-type Y --schedule 0
 
 # 대한항공(KE)만, CSV 출력
-python3 scripts/collect_airline_stats.py --year 2025 --month 3 --airline KE --format csv
+python3 "$SKILL_DIR/scripts/collect_airline_stats.py" --year 2025 --month 3 --airline KE --format csv
 
 # 표 형식 출력
-python3 scripts/collect_airline_stats.py --year 2025 --month 3 --route I --format table
+python3 "$SKILL_DIR/scripts/collect_airline_stats.py" --year 2025 --month 3 --route I --format table
 
 # 지원 항공사 코드 목록
-python3 scripts/collect_airline_stats.py --list-airlines
+python3 "$SKILL_DIR/scripts/collect_airline_stats.py" --list-airlines
 ```
 
 ### Windows
 
 ```powershell
-py -3 scripts/collect_airline_stats.py --year 2025 --month 3 --route I
-py -3 scripts/collect_airline_stats.py --list-airlines
+py -3 "$env:SKILL_DIR\scripts\collect_airline_stats.py" --year 2025 --month 3 --route I
+py -3 "$env:SKILL_DIR\scripts\collect_airline_stats.py" --list-airlines
 ```
 
 ## 인자

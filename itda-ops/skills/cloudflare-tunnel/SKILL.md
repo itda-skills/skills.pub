@@ -7,16 +7,16 @@ description: >
   라우트별 Zero Trust Access를 기본 적용하고, 선언형 desired-state로 ingress·DNS·Access 계획을
   멱등 산출하며, Windows/macOS/Linux를 모두 지원합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+. cloudflared 필요."
-allowed-tools: Bash, Read, Write
+compatibility: "Claude Code 등 로컬 실행 환경이 정본(cloudflared 설치·서비스 등록·브라우저 인증). Cowork 는 plan/audit/config 산출까지. Python 3.10+, cloudflared 필요."
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[plan | audit | config STATE.json] · 이후 cloudflared 런북"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "ops"
-  version: "0.1.0"
+  version: "0.1.3"
   created_at: "2026-06-21"
-  updated_at: "2026-06-21"
+  updated_at: "2026-07-26"
   tags: "cloudflare, tunnel, cloudflared, zero-trust, access, rdp, ssh, remote-access, ops"
 ---
 
@@ -34,6 +34,17 @@ Cloudflare Tunnel(`cloudflared`)로 **포트포워딩·인바운드 개방 없�
 - **public = 진짜 공개.** Access 를 떼면 그 라우트는 원본 서비스 자체 인증·보안에만 의존합니다(Cloudflare Access/WAF 보호 없음).
 
 ## 사전 준비 (Prerequisites)
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/cloudflare-tunnel}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/cloudflare-tunnel' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\cloudflare-tunnel"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
 
 1. **도메인이 Cloudflare DNS** 에 있어야 합니다(zone 등록).
 2. **Zero Trust(Access)** 활성화 — 무료 플랜으로 충분(이메일 OTP 등).
@@ -72,13 +83,13 @@ desired-state 가 보안 정책을 지키는지 검사하고, cloudflared ingres
 
 ```bash
 # macOS/Linux
-python3 scripts/tunnel_policy.py plan state.json --tunnel-id <TUNNEL_UUID>
-python3 scripts/tunnel_policy.py audit state.json        # 노출 경고만
-python3 scripts/tunnel_policy.py config state.json --tunnel-id <UUID> \
+python3 "$SKILL_DIR/scripts/tunnel_policy.py" plan state.json --tunnel-id <TUNNEL_UUID>
+python3 "$SKILL_DIR/scripts/tunnel_policy.py" audit state.json        # 노출 경고만
+python3 "$SKILL_DIR/scripts/tunnel_policy.py" config state.json --tunnel-id <UUID> \
   --credentials-file <CREDS.json> > config.yml           # cloudflared config.yml 생성
 
 # Windows
-py -3 scripts/tunnel_policy.py plan state.json --tunnel-id <TUNNEL_UUID>
+py -3 "$env:SKILL_DIR\scripts\tunnel_policy.py" plan state.json --tunnel-id <TUNNEL_UUID>
 ```
 
 `--format json` 으로 기계가독 출력도 가능합니다. PUBLIC 라우트·drift 는 경고로 표면화됩니다.
@@ -98,7 +109,7 @@ cloudflared tunnel create home-win
 cloudflared tunnel list          # UUID 확인 → 위 plan 의 --tunnel-id 로 사용
 
 # (c) config.yml 생성 + 사전 검증 (정책 엔진이 desired-state 에서 직접 생성)
-python3 scripts/tunnel_policy.py config state.json --tunnel-id <UUID> --credentials-file <CREDS> > config.yml
+python3 "$SKILL_DIR/scripts/tunnel_policy.py" config state.json --tunnel-id <UUID> --credentials-file <CREDS> > config.yml
 cloudflared tunnel --config config.yml ingress validate   # → OK
 
 # (d) DNS 라우트 — 각 hostname → 터널 CNAME (plan 의 dns 항목)

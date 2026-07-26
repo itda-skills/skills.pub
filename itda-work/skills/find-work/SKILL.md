@@ -5,17 +5,17 @@ description: >
   "업무 찾기 도와줘", "자동화 아이디어가 없어요", "Cowork로 뭘 해볼까"처럼 말하면 됩니다.
   반복 업무와 미해결 문제 양쪽을 다루고, 단계별 질문 끝에 마크다운 메모 한 장을 만들어 드립니다.
 license: Apache-2.0
-compatibility: Claude Cowork only
+compatibility: "Claude Code & Cowork"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash
+allowed-tools: Read, Write, Edit, Bash, mcp__workspace__bash
 argument-hint: "[focus-area]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.12.0"
+  version: "0.13.0"
   category: "productivity"
   status: "stable"
   created_at: "2026-05-12"
-  updated_at: "2026-07-22"
+  updated_at: "2026-07-26"
   aliases: "업무찾기, 자동화발굴"
   tags: "Cowork, find work, work discovery, automation ideation, pain point interview, non-developer"
 ---
@@ -58,7 +58,7 @@ metadata:
 
 이어서 진입 질문 — **AskUserQuestion 4지선다 사용**:
 
-- 질문: "Claude Cowork와 함께 풀고 싶은 일은 어느 쪽에 가까운가요?"
+- 질문: "Claude(Cowork/Code)와 함께 풀고 싶은 일은 어느 쪽에 가까운가요?"
 - 옵션 (Recommended 표기 금지 — 트랙 자체에는 우열이 없음):
   1. 이미 하고 있는데 시간/반복이 부담인 일 (예: 매주 메일 분류, 월간 보고서)
   2. 아직 손 못 댔지만 풀어보고 싶은 일 (예: 신사업 후보 탐색, 잠재 고객 관심사 파악)
@@ -158,13 +158,13 @@ _트랙 B_: 누가 / 무엇을 알고 결정하고 싶은가 / 이번 1회 실�
 - 2단계 1·2번에서 노출된 도구·데이터 위치를 적극 활용.
 - **출처 채택 및 실행 경로 선택은 AskUserQuestion 사용**:
   - 출처 채택: 후보 2~3개를 옵션으로 제시 (각 옵션 description에 제약 명시), 첫 옵션을 Recommended로 표기.
-  - 실행 경로 채택: 4지선다 — (1) Cowork 단독 [Recommended for 트랙 B 첫 시도] / (2) Cowork+Chrome / (3) Cowork+n8n·Make / (4) Cowork+API. 각 옵션 description에 적합 상황과 진입 난이도 한 줄.
+  - 실행 경로 채택: 4지선다 — (1) 에이전트 단독(Cowork/Code) [Recommended for 트랙 B 첫 시도] / (2) +브라우저 자동화(Chrome·web_browse) / (3) +n8n·Make 자동화 / (4) +API 직접 연동. 각 옵션 description에 적합 상황과 진입 난이도 한 줄.
 
-**데이터 출처 유형 + 실행 경로 (Claude Cowork 전용)**: 카탈로그·휴리스틱은 `references/data-sources.md` 참조. 핵심만 요약:
+**데이터 출처 유형 + 실행 경로**: 카탈로그·휴리스틱은 `references/data-sources.md` 참조. 핵심만 요약:
 
 - 출처 4축: 사내 / 외부 공개 / 외부 유료·제약 / 이메일·메신저
-- 실행 경로 4축: Cowork 단독 / Cowork+Chrome / Cowork+n8n·Make / Cowork+API
-- 트랙 B 첫 시도는 보통 Cowork 단독으로 시작 → 결과 가치 확인 후 자동화 수준 결정.
+- 실행 경로 4축: 에이전트 단독(Cowork/Code) / +브라우저 자동화 / +n8n·Make / +API 직접 연동
+- 트랙 B 첫 시도는 보통 에이전트 단독으로 시작 → 결과 가치 확인 후 자동화 수준 결정.
 
 **3단계 종료 조건**: 데이터 출처와 실행 경로 1순위가 정해짐. 2순위는 떠오르면 적되, 없으면 "없음"으로 명시(메모 템플릿 4번과 정합 유지).
 
@@ -216,9 +216,9 @@ _트랙 B_: 누가 / 무엇을 알고 결정하고 싶은가 / 이번 1회 실�
 - 후보 출처와 제약:
 - 채택 후보:
 
-## 4. 실행 경로 (Claude Cowork)
+## 4. 실행 경로
 
-- 1순위: <Cowork 단독 / Cowork+Chrome / Cowork+n8n/Make / Cowork+API> — 이유:
+- 1순위: <에이전트 단독(Cowork/Code) / +브라우저 자동화 / +n8n·Make / +API 직접 연동> — 이유:
 - 2순위 (선택, 없으면 "없음"):
 
 ## 5. AI 출력 검증
@@ -254,7 +254,7 @@ _트랙 B_: 누가 / 무엇을 알고 결정하고 싶은가 / 이번 1회 실�
 4. 지금은 여기까지 — 메모만 받고 종료
 
 *트랙 B (미지의 문제)*:
-1. 1회 Cowork 단독 실행으로 가치 검증 (Recommended)
+1. 1회 에이전트 단독 실행으로 가치 검증 (Recommended)
 2. 결과 가치 확인 후 자동화 수준 결정
 3. 비슷한 후보 추가 발굴
 4. 지금은 여기까지 — 메모만 받고 종료

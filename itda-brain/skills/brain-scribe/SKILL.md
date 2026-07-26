@@ -6,16 +6,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+ (오케스트레이션 스킬)"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Skill
+allowed-tools: Read, Write, Bash, Glob, Grep, Skill, mcp__workspace__bash
 argument-hint: "[업무DB 폴더 경로] [생성할 문서 유형·요청]"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.1.1"
   category: "knowledge-base"
   status: "experimental"
   recommended: false
   created_at: "2026-07-14"
-  updated_at: "2026-07-14"
+  updated_at: "2026-07-26"
   tags: "knowledge-base, document-generation, convention, draft, provenance, sidecar, incubating, scaffold"
 ---
 

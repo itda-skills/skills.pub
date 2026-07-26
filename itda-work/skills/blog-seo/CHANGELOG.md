@@ -1,5 +1,24 @@
 # Changelog — itda-work/blog-seo
 
+## [0.10.9] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.10.8] — 2026-07-26 (이슈 #1280·#1282)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork. Python 3.10+` 로 교체 (#1280).
+- `.env` 위치 안내를 "작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트)" 로 일반화하고 셸 환경변수·`~/.claude/settings.json` 의 `env` 경로를 명시 (#1282).
+
+## [0.10.7] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [Unreleased] — SPEC-COWORK-ENV-GUIDE-001
 
 ### Changed

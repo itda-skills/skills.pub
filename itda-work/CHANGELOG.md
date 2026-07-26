@@ -5,6 +5,26 @@
 
 ## [Unreleased]
 
+
+
+### Fixed
+
+- **문서-코드 drift 일괄 정합 (#1284)** — 95스킬 감사 부수 발견분. 세부는 각 스킬 CHANGELOG 참조.
+### Changed
+
+- **플랫폼 문서 정비 4축 일괄 (#1280·#1281·#1282·#1283)** — ① compatibility 라벨을 실태 정합(`Claude Code & Cowork` 표준, 역방향 라벨 교정) ② 설치 지시에서 `uv pip install --system`·`curl|sh` 제거(`python3 -m pip` 정본, 스크립트 안내 문자열·README 포함) ③ `.env` 안내를 양 플랫폼 병기(SKILL.md+GUIDE.md, 셸 env·`~/.claude/settings.json` env 명시) ④ `allowed-tools` 의 표준명 `Bash`/`WebFetch` 에 Cowork 실명(`mcp__workspace__bash`/`mcp__workspace__web_fetch`) 병기(73스킬) + brain `Task`→`Agent`, MCP 소비 4스킬은 필드 삭제(전체 상속). 세부 버전은 각 스킬 CHANGELOG 참조.
+### Changed
+
+- **실행 경로 SKILL_DIR 규약 표준화 (#1279)** — SKILL.md 실행 명령을 SKILL_DIR 확정 블록(Code=`$CLAUDE_PLUGIN_ROOT/skills/<skill>` / Cowork=세션 마운트 find) 기준으로 통일. cwd 상대경로·저장소 경로·플레이스홀더 표기 제거. 대상: biz-redact 0.1.1 · blog-reader 0.11.5 · blog-seo 0.10.7 · calendar 0.2.5 · design-core 0.6.1 · docx-design 0.3.3 · email 0.29.1 · exchange-rate 0.10.5 · human-tone 2.0.3 · imagekit 0.10.4 · pptx-design 0.8.1 · task-brief 0.2.2 · weather-here 0.12.4 · web-reader 6.2.2 · web-search 0.1.3 · xlsx-design 0.3.3.
+
+### Removed
+
+- **translate-doc 스킬 제거 (#1272)** — 번역 본체(`_translate_chunk_llm`)가 NotImplementedError 스텁인 채 exit 0 으로 종료하는 거짓 성공 상태(실행 실측)로 공개 플러그인에 노출되어 있었음. release-skills CI 매트릭스 행 제거 동반. 번역 재구현 시 "에이전트가 번역, Python 은 DNT 치환·용어집·검증 담당" 2-스텝 계약으로 재설계 예정.
+
+### Changed
+
+- **market-scan v0.2.1 (#1272)** — 라우팅 표의 부동산 실거래 경로를 `itda-gov:realestate` → `itda-realty:realty-deals` 로 교체(realestate 제거 정합).
+
 ### Added
 
 - **biz-redact 신설 (#1171)** — 업무 문서 영업기밀 마스킹·왕복 복원 게이트. 용어집 기반 결정론 치환(⟦카테고리_n⟧)·잔존 0 검증·왕복 복원+변형 감지·감사 기록(biz-redact v0.1.0).
@@ -13,6 +33,8 @@
 
 ### Fixed
 
+- **draft-post v1.2.4 — Step 0 환경 감지 역전 교정 (#1277)** — "값이 없으면 Cowork" 판정이 Claude Code(변수 부재)를 Cowork 로 오분류. "=1 이면 Cowork / 부재·그 외는 Code" 로 정정 + 결과 표에 Claude Code 행 추가.
+- **미정의 변수 `${CLAUDE_SKILL_DIR}` 일소 (#1274)** — hwpx-reader v4.0.1 · hwpx-report v0.3.2 · pdf-context-refinery v1.2.1: 세 SKILL.md 의 설치·PYTHONPATH·검증 명령이 정의된 적 없는 `${CLAUDE_SKILL_DIR}` 에 의존해 Claude Code 에서 빈 문자열 전개로 조용히 깨지던 결함(실측). 각 스킬에 `SKILL_DIR` 확정 스니펫(Code=`$CLAUDE_PLUGIN_ROOT/skills/<skill>` / Cowork=`/sessions/*/mnt/.remote-plugins` find / 그 외=SKILL.md 위치) 신설 후 전 명령 통일. pdf-context-refinery 는 `python`→`python3` 교정 동반.
 - **서브에이전트 2종 Cowork tools 함정 교정** (#1130): Cowork 워커의 셸·웹fetch 는 표준명(`Bash`/`WebFetch`)이 아닌 MCP 실명(`mcp__workspace__bash`/`mcp__workspace__web_fetch`)으로 존재하고 frontmatter `tools:` 는 필터라 미매칭 이름이 조용히 소실됨(스모크 13종 실측). deep-researcher·inbox-triager 의 `tools:` 를 제거(전체 상속)하고 플랫폼별 도구 지침 절을 추가 — Cowork 에서 스크립트 실행·웹 조회가 실제로 성립하도록 교정. 행동 경계(발송 금지 등)는 문서 계약으로 유지.
 
 - **hwpx-report v0.3.1** (#374): 실측 결함 6+1 수정. 표 셀의 escaped pipe(`\|`)와 코드스팬 내 `|`를 데이터로 보존하고, XML 1.0 비허용 제어문자를 매퍼 입력·XML escape 관문에서 제거해 깨진 HWPX/validator ParseError를 차단했다. Pillow는 이미지 사용 시점에만 lazy import 하도록 바꿔 텍스트 보고서 생성은 Pillow 없이 동작하며, 이미지 사용 시 누락 안내를 명확히 반환한다. 참조형 링크·autolink·링크 정의 누출, GUIDE 번호목록 설명, Python 3.10+ 런타임 가드도 함께 교정했다.

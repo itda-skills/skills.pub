@@ -8,15 +8,14 @@ description: >
 license: MIT
 compatibility: "hyve image.generate MCP + codex CLI (ChatGPT 로그인) BYO"
 user-invocable: true
-allowed-tools: Read
 argument-hint: "[케이스: blog-hero|slide-visual|icon-logo|character-illust|video-illust|figurine|photoreal-portrait|product-catalog|poster] <주제> [장수]"
 metadata:
   author: "Chinseok"
-  version: "0.8.1"
+  version: "0.8.2"
   category: "media"
   status: "experimental"
   created_at: "2026-05-30"
-  updated_at: "2026-07-06"
+  updated_at: "2026-07-26"
   tags: "image-generation, mcp, prompt-template, quality, content"
 ---
 

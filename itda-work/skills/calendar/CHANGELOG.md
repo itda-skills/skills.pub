@@ -3,6 +3,20 @@
 All notable changes to the `calendar` skill are documented here.
 This skill follows the itda-skills SPEC workflow (SPEC-CALENDAR-001).
 
+## [0.2.6] — 2026-07-26 (이슈 #1280·#1281·#1282)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork` 로 교체 (#1280) — Cowork 전용 오해 제거.
+- 의존성 설치 안내를 `uv pip install --system` 에서 `python3 -m pip install` 로 교체 (#1281).
+- `.env` 위치 안내를 "작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트)" 로 일반화하고 셸 환경변수·`~/.claude/settings.json` 의 `env` 경로를 명시 (#1282).
+
+## [0.2.5] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [0.2.4] - 2026-07-11
 
 ### Fixed

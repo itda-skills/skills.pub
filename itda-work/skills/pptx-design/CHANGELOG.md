@@ -2,6 +2,30 @@
 
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.8.2] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash, mcp__workspace__web_fetch) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.8.1] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
+## [0.8.0] — 2026-07-25
+
+### Added
+- **레이아웃 좌표 헬퍼** (SPEC-DESIGN-TEMPLATE-INGEST-001 P0, #701/#702) — `deckkit.zone_bounds(h_in, three_zone, margin_in)`(헤더/본문/푸터 비율 분할)·`grid_cells(x,y,w,h,cols,rows,gutter)`(균일 그리드 셀). design-core `to_pptx_layout()` 토큰을 좌표로 산출하는 순수 함수(python-pptx 객체 비의존, 결정론). 그간 산문 규칙·gen.py 절대좌표 하드코딩으로만 있던 "수직 3존 리듬·균일 그리드"를 토큰 계약화.
+- tests — `test_layout_zones.py`(존 합·비율 지배·margin·결정론·그리드 타일링/거터 7종).
+
+### Changed
+- `references/design-md-mapping.md` — "spacing/grid" 행을 layout 토큰 실소비로 정정 + "① 적용 ✅ = 재현 가능 ≠ 토큰 자동 소비" 주석 추가(#701 착시 제거).
+
+### Notes
+- 2026-07-01 작성분(design-core 0.6.0 layout 어댑터의 동반 변경)을 2026-07-25 회수 머지(브랜치 `feat/design-template-ingest-702`). v2 토큰 결정론 레이어 강화로 #1021 직해석 정본 경로와 무관.
+
 ## [0.7.3] — 2026-07-11
 
 ### Changed

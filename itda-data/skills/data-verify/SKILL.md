@@ -6,16 +6,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Glob, Grep
+allowed-tools: Read, Bash, Glob, Grep, mcp__workspace__bash
 argument-hint: "[xlsx/csv 경로 또는 검수 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.2.0"
+  version: "0.2.2"
   category: "data-tidy"
   status: "experimental"
   recommended: false
   created_at: "2026-07-07"
-  updated_at: "2026-07-07"
+  updated_at: "2026-07-26"
   tags: "verify, reconcile, numbers, spreadsheet, openpyxl, integrity, incubating, com, live-annotation"
 ---
 
@@ -37,6 +37,7 @@ itda-data 데이터 양심 vertical(정리 `data-prep` · 질문 `data-ask` · �
 
 > [HARD] 보고 전용 — 검수 결과를 먼저 보고하고, 값 수정은 사용자가 명시적으로 요청할 때만.
 > [HARD] plausible ≠ correct — 허용오차를 명시하고 눈대중 금지(data-accuracy). 차이는 항상 수치로 제시한다.
+> 아래 모듈을 임포트해 쓸 때는 Prerequisites 의 `SKILL_DIR` 확정 블록을 실행하고 `cd "$SKILL_DIR/scripts"` 한다(CLI 로 쓰면 `python3 "$SKILL_DIR/scripts/verify.py"`).
 
 ### 관문1 — 검수 설정 구성
 자동 가능한 **내부정합** 외에는 대조 기준(원장·규칙·짝)이 필요하다. 사용자와 함께 config 를 구성한다:
@@ -106,12 +107,21 @@ openpyxl(파일) 대신 hyve MCP 도구 **`office_audit.verify`** 를 호출한�
 ## Prerequisites
 **파일 경로(크로스플랫폼)**: Python 3.10+ · openpyxl (`scripts/requirements.txt`).
 ```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/data-verify}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/data-verify' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\data-verify"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+```bash
 # macOS/Linux
-python3 -m pip install -r scripts/requirements.txt
-python3 scripts/verify.py <파일.xlsx> --config config.json
+python3 -m pip install -r "$SKILL_DIR/scripts/requirements.txt"
+python3 "$SKILL_DIR/scripts/verify.py" <파일.xlsx> --config config.json
 # Windows
-py -3 -m pip install -r scripts/requirements.txt
-py -3 scripts/verify.py <파일.xlsx> --config config.json
+py -3 -m pip install -r "$env:SKILL_DIR\scripts\requirements.txt"
+py -3 "$env:SKILL_DIR\scripts\verify.py" <파일.xlsx> --config config.json
 ```
 **실시간 지적 경로(Windows, office_audit MCP)**: hyve 가동 + 설정 > MCP 탭에서 **office 프리셋** 등록
 (`/mcp/office`). 에이전트가 `office_audit.verify` 도구를 호출한다(Windows + Microsoft Office 필요).

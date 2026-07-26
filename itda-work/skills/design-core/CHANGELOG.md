@@ -2,6 +2,29 @@
 
 본 스킬의 버전별 변경 이력. 형식: [Keep a Changelog](https://keepachangelog.com/), 날짜 YYYY-MM-DD.
 
+## [0.6.2] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash, mcp__workspace__web_fetch) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.6.1] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
+## [0.6.0] - 2026-07-25
+
+### Added
+- **layout 토큰 PPTX 어댑터** (SPEC-DESIGN-TEMPLATE-INGEST-001 P0, #701/#702) — `to_pptx_layout()` + `DesignTokens.layout` property + `pptx_layout()` 메서드. v2 `layout`(three_zone·grid)+`space` 를 deckkit `zone_bounds()`/`grid_cells()` 좌표 헬퍼의 입력 계약으로 노출. 그간 스키마에만 있고 어떤 어댑터도 읽지 않던 **dormant 토큰**(#701 — `frontmatter-schema-vs-prose` 규칙 위반)을 machine 소비로 승격. 미지정 시 표준 기본(three_zone 0.14/0.76/0.10, grid 12열·gutter 0.2)으로 비퇴행.
+- `mapping/pptx.md` 에 layout 행 추가(토큰 실소비 명시).
+- tests — `test_to_pptx_layout.py`(기본·override·합 1.0 정규화·space 패스스루·property·v1 레거시 비퇴행 6종).
+
+### Notes
+- 형제 어댑터 pptx-design(0.8.0)에 순수 좌표 헬퍼 `zone_bounds()`/`grid_cells()` 동반 추가(python-pptx 비의존). `design-md-mapping.md` 의 "① 적용 ✅" 의미(재현 가능 ≠ 토큰 자동 소비) 주석 정정으로 #701 착시 제거.
+- 본 어댑터는 #1021 두-레이어 재편의 **결정론 레이어(v2 토큰 — 코드 소비)** 강화다. 표준 DESIGN.md 직해석 레이어([HARD] `design_core.load()` 비대상)와 무관 — 2026-07-01 작성분을 2026-07-25 회수 머지(브랜치 `feat/design-template-ingest-702`)하며 버전만 0.5.0→0.6.0 재조정.
+
 ## [0.5.1] - 2026-07-11
 
 ### Added

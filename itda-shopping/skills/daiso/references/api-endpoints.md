@@ -70,7 +70,7 @@ headers = {
 
 - AES-128-CBC 구현에는 `cryptography` 패키지가 필요할 수 있습니다.
 - 미설치 시: `inventory`·`display-location` 2기능만 **graceful degrade**(exit 6 또는 안내 메시지), 나머지(`products`·`price`·`stores`)는 stdlib만으로 정상 동작.
-- 설치: `uv pip install --system cryptography`
+- 설치: `python3 -m pip install cryptography`
 
 ## 이미지 URL 헬퍼
 

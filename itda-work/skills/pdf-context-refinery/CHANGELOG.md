@@ -1,5 +1,23 @@
 # Changelog — itda-work/pdf-context-refinery
 
+## [1.2.3] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [1.2.2] — 2026-07-26 (이슈 #1280)
+
+### Changed
+
+- `compatibility` 라벨을 `Claude Code & Cowork` 로 교체 (#1280) — Cowork 전용 오해 제거.
+
+## [1.2.1] — 2026-07-26 (이슈 #1274)
+
+### Fixed
+
+- Step 6 검증 명령의 미정의 변수 `${CLAUDE_SKILL_DIR}` 제거 — Prerequisites 에 `SKILL_DIR` 확정 스니펫(Code=`$CLAUDE_PLUGIN_ROOT` / Cowork=세션 마운트 find) 신설. `python` 호출을 `python3` 로 교정(python-runtime 규칙).
+
 ## [1.2.0] — 2026-05-22 (SPEC-PDF-REFINERY-REFS-001)
 
 ### New Features

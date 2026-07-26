@@ -6,16 +6,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+ (오케스트레이션 스킬 — 문서 판독은 에이전트 경유)"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, Task, Skill
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent, Skill, mcp__workspace__bash
 argument-hint: "[소스 폴더 경로] (예: ~/회사공유폴더)"
 metadata:
   author: "Chinseok"
-  version: "0.3.0"
+  version: "0.3.3"
   category: "knowledge-base"
   status: "experimental"
   recommended: false
   created_at: "2026-07-14"
-  updated_at: "2026-07-19"
+  updated_at: "2026-07-26"
   tags: "knowledge-base, second-brain, provenance, unstructured, docx, xlsx, pptx, pdf, wiki, reverse-engineering, convention, incubating"
 ---
 
@@ -43,6 +43,21 @@ itda-brain 비정형 문서 vertical 의 빌드 담당. (SPEC-BRAIN-VERTICAL-001
 - **소스 폴더 경로** (필수, **1개 한정 — v1 단일 소스**) — 원본 문서 무더기가 있는 폴더. 하위 폴더 재귀 포함. 폴더 2개 이상을 요청받으면 **명시 거부**하고 폴더별로 뇌를 분리 빌드할 것을 제안한다 — 신선도 기준선(manifest)·근거 상대경로가 단일 루트 전제라, 다중 소스를 그대로 받으면 기준선이 한쪽 폴더만 대표하거나 상대경로가 충돌해 신선도 레이어가 조용히 틀린 답을 낸다(SPEC-BRAIN-VERTICAL-001 v1 범위).
 - **뇌 이름** (선택) — 미지정 시 소스 폴더명 또는 사용자 확인으로 정한다.
 - **업무DB 출력 경로** (선택) — 미지정 시 소스 폴더 **옆에** `<뇌 이름>_업무DB/` 로 만든다(원본 트리 밖 — 원본 불가침).
+
+### 관문0 — 스킬 디렉토리(SKILL_DIR) 확정
+
+스킬 자산(템플릿·헬퍼 스크립트·에이전트 지시서)은 cwd 에 의존하지 않도록 **절대경로**로 읽는다. 실행 절 첫머리에서 `SKILL_DIR` 을 한 번 확정하고, 이후 모든 경로를 `"$SKILL_DIR"` 기준으로 쓴다:
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/brain-build}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/brain-build' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\brain-build"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
 
 ### 관문1 — 전수 스캔 · 인벤토리
 
@@ -114,7 +129,7 @@ find "<소스폴더>" -type f | sort        # 숨김/임시 포함, .DS_Store �
 
 ### 관문5 — Layer 3 스키마 (CLAUDE.md) + 뇌 메타 자기서술
 
-`<스킬디렉토리>/../../references/CLAUDE-template.md`(정본 — **플러그인 루트**의 `references/`, 스킬 디렉토리 내부가 아님)를 업무DB 폴더의 `CLAUDE.md`로 심는다. `{{...}}` 플레이스홀더를 실제 값으로 치환:
+`"$SKILL_DIR/../../references/CLAUDE-template.md"`(정본 — **플러그인 루트**의 `references/`, 스킬 디렉토리 내부가 아님)를 업무DB 폴더의 `CLAUDE.md`로 심는다. `{{...}}` 플레이스홀더를 실제 값으로 치환:
 
 - **머리말(frontmatter) 뇌 메타** (REQ-030 자기서술): `brain`(뇌 이름) · `sources`(소스 폴더 — **절대경로**로 항목 1개, v1 단일 소스. brain-audit 가 이 값만으로 소스 폴더를 찾으므로 상대경로를 쓰면 실행 위치에 따라 해석이 갈린다) · `last_updated` · `source_files`(원본 파일 수). 파일시스템 스캔만으로 뇌를 발견·식별할 수 있게 하는 필드 — 임의로 비우지 않는다.
 - 본문의 `{{소스 폴더}}`·`{{뇌 이름}}`도 치환. 주석 블록은 생성물에서 제거.
@@ -129,9 +144,9 @@ find "<소스폴더>" -type f | sort        # 숨김/임시 포함, .DS_Store �
 
 ```bash
 # macOS/Linux
-python3 <스킬디렉토리>/../brain-audit/scripts/freshness.py scan "<소스폴더>" \
+python3 "$SKILL_DIR/../brain-audit/scripts/freshness.py" scan "<소스폴더>" \
   > "<업무DB>/.brain-manifest.json.tmp" && mv "<업무DB>/.brain-manifest.json.tmp" "<업무DB>/.brain-manifest.json"
-# Windows (py -3 <스킬디렉토리>\..\brain-audit\scripts\freshness.py scan ... — 동일하게 .tmp 후 move)
+# Windows (py -3 "$env:SKILL_DIR\..\brain-audit\scripts\freshness.py" scan ... — 동일하게 .tmp 후 move)
 ```
 
 이 manifest 가 신선도 기준선의 정본이다(정수 epoch mtime — 타임존 무관). `검수리포트.md` 커버리지 표의 수정시각 열은 사람 가독용 관측 필드(REQ-032)이고, 기계 대조는 manifest 로 한다. **brain-audit 은 이 기준선을 갱신하지 않으며**(현재값으로 덮으면 미적재 변경이 사라짐), 갱신은 brain-ingest 가 적재 성공 시에만 한다.
@@ -140,7 +155,7 @@ python3 <스킬디렉토리>/../brain-audit/scripts/freshness.py scan "<소스�
 
 > [HARD] 빌드 산출을 **믿지 말고 검수한다.** 빌드 기억과 격리된 컨텍스트에서 원본을 다시 열어야 자기검증 편향이 차단된다.
 
-`Task` 도구로 **`brain-auditor` 서브에이전트를 1회 디스패치**한다. 프롬프트에 넘길 것:
+`Agent` 도구로 **`brain-auditor` 서브에이전트를 1회 디스패치**한다. 프롬프트에 넘길 것:
 
 - 업무DB 폴더 경로 + 소스 폴더 경로.
 - 관문1 인벤토리(파일 목록 + **수정시각**) — 커버리지 표의 관측 필드(REQ-032) 기준선. 기계 기준선 manifest 는 관문6에서 이미 저장돼 있다.
@@ -148,9 +163,9 @@ python3 <스킬디렉토리>/../brain-audit/scripts/freshness.py scan "<소스�
 
 brain-auditor 가 `검수리포트.md`를 쓰면, 발견된 핵심 모순 요약을 `INDEX.md`의 "알려진 핵심 모순"에 반영한다.
 
-**2차 경로 (에이전트 타입 부재 시)** — 환경에 `itda-brain:brain-auditor` 에이전트 타입이 없으면(스킬팩 미설치·소스 저장소 등), general-purpose 서브에이전트에 `<스킬디렉토리>/../../agents/brain-auditor.md` 지시서를 먼저 읽고 그대로 따르라고 프롬프트로 명시해 디스패치한다. 새 컨텍스트의 서브에이전트가 지시서를 따르므로 **격리 검수가 동등하게 성립**한다(빌드 기억 미공유) — 이 경로는 배너 대상이 아니다.
+**2차 경로 (에이전트 타입 부재 시)** — 환경에 `itda-brain:brain-auditor` 에이전트 타입이 없으면(스킬팩 미설치·소스 저장소 등), general-purpose 서브에이전트에 `"$SKILL_DIR/../../agents/brain-auditor.md"` 지시서를 먼저 읽고 그대로 따르라고 프롬프트로 명시해 디스패치한다. 새 컨텍스트의 서브에이전트가 지시서를 따르므로 **격리 검수가 동등하게 성립**한다(빌드 기억 미공유) — 이 경로는 배너 대상이 아니다.
 
-> [HARD] **fail-visible fallback.** 서브에이전트 디스패치 자체가 불가한 환경(Task 도구 부재 등)이면 격리 독립 검수는 **성립하지 않는다**(자기검증 편향 미차단 — SPEC REQ-002 위반). 이때는 검수를 "통과"로 제시하지 말고, `검수리포트.md` 최상단에 **`⚠️ 격리 검수 미수행 — 자기검증 편향 미차단, 독립 재검수 필요`** 배너를 달고 종합 요약을 `검증 불가`로 표기한다. 본 컨텍스트에서 임시로 각도를 훑더라도 그 결과는 "미검증"이다.
+> [HARD] **fail-visible fallback.** 서브에이전트 디스패치 자체가 불가한 환경(`Agent` 도구 부재 등)이면 격리 독립 검수는 **성립하지 않는다**(자기검증 편향 미차단 — SPEC REQ-002 위반). 이때는 검수를 "통과"로 제시하지 말고, `검수리포트.md` 최상단에 **`⚠️ 격리 검수 미수행 — 자기검증 편향 미차단, 독립 재검수 필요`** 배너를 달고 종합 요약을 `검증 불가`로 표기한다. 본 컨텍스트에서 임시로 각도를 훑더라도 그 결과는 "미검증"이다.
 
 ### 완료 보고
 

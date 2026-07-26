@@ -6,16 +6,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Glob, Grep
+allowed-tools: Read, Bash, Glob, Grep, mcp__workspace__bash
 argument-hint: "[xlsx 경로 또는 감사 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.2.0"
+  version: "0.2.2"
   category: "data-tidy"
   status: "experimental"
   recommended: false
   created_at: "2026-07-07"
-  updated_at: "2026-07-08"
+  updated_at: "2026-07-26"
   tags: "xlsx, audit, formula, spreadsheet, openpyxl, qa, hardcode, incubating, com, live-annotation"
 ---
 
@@ -34,6 +34,7 @@ itda-data 데이터 양심 vertical(정리 `data-prep` · 질문 `data-ask` · �
 
 > [HARD] 보고 우선 — 발견을 먼저 보고하고, 셀 수정은 사용자가 명시적으로 요청할 때만 그 셀만 고친다.
 > [HARD] "동작함"이 아니라 "실제로 그 셀이 틀렸나"로 판정한다(데이터 정확성 원칙). 확신이 낮은 발견은 severity를 낮추고 근거를 함께 낸다.
+> 아래 모듈을 임포트해 쓸 때는 Prerequisites 의 `SKILL_DIR` 확정 블록을 실행하고 `cd "$SKILL_DIR/scripts"` 한다(CLI 로 쓰면 `python3 "$SKILL_DIR/scripts/audit.py"`).
 
 ### 관문1 — 감사 실행
 ```python
@@ -92,14 +93,23 @@ openpyxl은 수식을 **재계산하지 않는다**. `#REF!`·`#DIV/0!` 같은 *
 ## Prerequisites
 **파일 감사(크로스플랫폼)**: Python 3.10+ · openpyxl (`scripts/requirements.txt`).
 ```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/data-audit}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/data-audit' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\data-audit"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+```bash
 # macOS/Linux
-python3 -m pip install -r scripts/requirements.txt
-python3 scripts/audit.py <파일.xlsx>            # 사람용 테이블
-python3 scripts/audit.py <파일.xlsx> --json      # 기계용 JSON
+python3 -m pip install -r "$SKILL_DIR/scripts/requirements.txt"
+python3 "$SKILL_DIR/scripts/audit.py" <파일.xlsx>            # 사람용 테이블
+python3 "$SKILL_DIR/scripts/audit.py" <파일.xlsx> --json      # 기계용 JSON
 
 # Windows
-py -3 -m pip install -r scripts/requirements.txt
-py -3 scripts/audit.py <파일.xlsx>
+py -3 -m pip install -r "$env:SKILL_DIR\scripts\requirements.txt"
+py -3 "$env:SKILL_DIR\scripts\audit.py" <파일.xlsx>
 ```
 **실시간 지적 경로(Windows, office_audit MCP)**: hyve 가동 + 설정 > MCP 탭에서 **office 프리셋** 등록
 (`/mcp/office`). 에이전트가 `office_audit.audit` 도구를 호출한다(Windows + Microsoft Office 필요).

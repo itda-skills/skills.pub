@@ -8,10 +8,10 @@ license: Apache-2.0
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   tags: "hwp, hwpx, document, convert, markdown, html"
-  version: "4.0.0"
+  version: "4.0.1"
   category: "document"
   created_at: "2026-03-20"
-  updated_at: "2026-06-14"
+  updated_at: "2026-07-26"
 ---
 
 # HWP/HWPX 문서 처리
@@ -29,10 +29,19 @@ HWP5(.hwp) 및 HWPX(.hwpx) 문서를 읽고 Markdown/HTML로 변환합니다.
 
 ## 요구 사항
 
+먼저 스킬 디렉토리 경로를 `SKILL_DIR` 로 확정합니다 (이하 모든 명령이 이 변수를 사용):
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/hwpx-reader}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/hwpx-reader' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
 스킬 디렉토리에서 Python 의존성을 사용할 수 있어야 합니다.
 
 ```bash
-python3 -m pip install -r "${CLAUDE_SKILL_DIR}/requirements.txt"
+python3 -m pip install -r "${SKILL_DIR}/requirements.txt"
 ```
 
 필수 의존성:
@@ -48,7 +57,7 @@ python3 -m pip install -r "${CLAUDE_SKILL_DIR}/requirements.txt"
 mkdir -p .itda-skills
 cp <입력파일> .itda-skills/
 
-PYTHONPATH="${CLAUDE_SKILL_DIR}" \
+PYTHONPATH="${SKILL_DIR}" \
 python3 -m hwpx_native convert .itda-skills/<파일명> \
   -o .itda-skills/<파일명>.md --format md
 ```
@@ -56,7 +65,7 @@ python3 -m hwpx_native convert .itda-skills/<파일명> \
 본문만 필요하고 이미지 파일을 만들지 않으려면:
 
 ```bash
-PYTHONPATH="${CLAUDE_SKILL_DIR}" \
+PYTHONPATH="${SKILL_DIR}" \
 python3 -m hwpx_native convert .itda-skills/<파일명> \
   -o .itda-skills/<파일명>.md --format md --no-extract-images
 ```
@@ -64,7 +73,7 @@ python3 -m hwpx_native convert .itda-skills/<파일명> \
 HTML 변환:
 
 ```bash
-PYTHONPATH="${CLAUDE_SKILL_DIR}" \
+PYTHONPATH="${SKILL_DIR}" \
 python3 -m hwpx_native convert .itda-skills/<파일명> \
   -o .itda-skills/<파일명>.html --format html
 ```
@@ -195,7 +204,7 @@ HTML 변환에는 적용하지 않습니다.
 
 | 에러 상황 | 대응 |
 |----------|------|
-| Python 의존성 없음 | `python3 -m pip install -r "${CLAUDE_SKILL_DIR}/requirements.txt"` 실행 |
+| Python 의존성 없음 | `python3 -m pip install -r "${SKILL_DIR}/requirements.txt"` 실행 |
 | 변환 실패 | traceback의 마지막 오류를 사용자에게 전달하고, HWP5 Markdown 실패 시 HTML 변환을 시도 |
 | 파일을 찾을 수 없음 | 입력 파일 경로를 다시 확인 |
 | 미지원 포맷 | HWP/HWPX → Markdown/HTML만 지원한다고 안내 |

@@ -1,5 +1,23 @@
 # Changelog — itda-gov/kosis
 
+## [0.11.3] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.11.2] — 2026-07-26 (이슈 #1280·#1281·#1282)
+
+### Changed
+- compatibility 라벨을 `Claude Code & Cowork. Python 3.10+` 로 교체 (#1280).
+- `.env` 위치 안내를 Cowork 연결 폴더 / Claude Code 프로젝트 루트 양쪽 표기로 교체하고 셸 환경변수·settings.json `env` 경로를 명시 (#1282).
+
+## [0.11.1] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [0.11.0] — 2026-07-15 (#1145)
 
 ### Added — MCP 벤치마크 기반 탐색·코드발견 파리티

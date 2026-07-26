@@ -5,16 +5,16 @@ description: >
   "왜 이렇게 느리지?", "이 에러 원인이 뭐야?", "원인 분석해줘"처럼 말하면 됩니다.
   추측 대신 증거 기반 결론을 제공합니다.
 license: Apache-2.0
-compatibility: Designed for Claude Cowork
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob
+compatibility: Claude Code & Cowork
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__workspace__bash
 user-invocable: true
 argument-hint: '<topic> [--depth simple|full] [--save <path>] [--type bug|perf|arch|verify|interpret]'
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.11.0"
+  version: "0.11.2"
   category: "investigation"
   created_at: "2026-04-03"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   aliases: "debug, 분석, check, verify, 조사, 원인"
   tags: "investigate, debugging, hypothesis, falsification, scientific method, root cause analysis"
 ---

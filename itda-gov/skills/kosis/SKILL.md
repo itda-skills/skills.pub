@@ -6,8 +6,8 @@ description: >
   "국제통계 목록 탐색해줘", "산업 시장규모 조회해줘"처럼 말하면 됩니다.
   통계표 목록·구조(objL·itmId 코드)·데이터·통계설명·주요지표를 다룹니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+"
-allowed-tools: Bash, Read, Write
+compatibility: "Claude Code & Cowork. Python 3.10+"
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[search|data] [--keyword 키워드] [--org-id ID] [--tbl-id ID] [--recent N]"
 metadata:
@@ -15,9 +15,9 @@ metadata:
   category: "domain"
   status: "active"
   recommended: true
-  version: "0.11.0"
+  version: "0.11.3"
   created_at: "2026-03-29"
-  updated_at: "2026-07-15"
+  updated_at: "2026-07-26"
   tags: "KOSIS, statistics, population, market"
 ---
 
@@ -42,13 +42,13 @@ metadata:
 
 **권장 (비개발자 포함 모든 사용자) — 작업 폴더 `.env`에 키 등록:**
 
-Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
+작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해도 되며, 로더가 자동으로 탐색합니다.
 
 ```
 KOSIS_API_KEY=발급받은_키
 ```
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `KOSIS_API_KEY=<키> python3 scripts/...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `KOSIS_API_KEY=<키> python3 "$SKILL_DIR/scripts/..."`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 KOSIS_API_KEY 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -73,40 +73,55 @@ KOSIS_API_KEY=발급받은_키
 3. `data` 로 발견한 코드를 넣어 조회 (3~4중 분류는 `--obj3`/`--obj4`)
 4. 필요 시 `meta`(작성목적·법적근거)·`indicator`(지표 개념) 로 맥락 보강
 
+## Prerequisites
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/kosis}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/kosis' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+Windows(PowerShell):
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\kosis"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ## 사용법
 
 ### 통계표 검색 (search)
 
 ```bash
 # macOS/Linux
-python3 scripts/collect_stats.py search --keyword "인구"
-python3 scripts/collect_stats.py search --keyword "제조업" --count 20 --format table
+python3 "$SKILL_DIR/scripts/collect_stats.py" search --keyword "인구"
+python3 "$SKILL_DIR/scripts/collect_stats.py" search --keyword "제조업" --count 20 --format table
 
 # Windows
-py -3 scripts/collect_stats.py search --keyword "인구"
+py -3 "$env:SKILL_DIR\scripts\collect_stats.py" search --keyword "인구"
 ```
 
 ### 통계표 구조·코드 발견 (info) — objL·itmId 를 모를 때 선행
 
 ```bash
 # 분류(OBJ)·항목(ITM) 코드 목록 (기본 type=ITM)
-python3 scripts/collect_stats.py info --org-id 101 --tbl-id DT_1DA7104S --format table
+python3 "$SKILL_DIR/scripts/collect_stats.py" info --org-id 101 --tbl-id DT_1DA7104S --format table
 # 통계표명·수록주기·단위·출처 등 다른 메타
-python3 scripts/collect_stats.py info --org-id 101 --tbl-id DT_1DA7104S --type PRD
+python3 "$SKILL_DIR/scripts/collect_stats.py" info --org-id 101 --tbl-id DT_1DA7104S --type PRD
 ```
 
 ### 통계 데이터 조회 (data)
 
 ```bash
 # 최근 3년 연간 데이터
-python3 scripts/collect_stats.py data --org-id 101 --tbl-id DT_1B04005N --recent 3
-python3 scripts/collect_stats.py data --org-id 101 --tbl-id DT_1B04005N --recent 3 --format table
+python3 "$SKILL_DIR/scripts/collect_stats.py" data --org-id 101 --tbl-id DT_1B04005N --recent 3
+python3 "$SKILL_DIR/scripts/collect_stats.py" data --org-id 101 --tbl-id DT_1B04005N --recent 3 --format table
 
 # 기간 지정 조회
-python3 scripts/collect_stats.py data --org-id 101 --tbl-id DT_1B04005N --start 2020 --end 2024
+python3 "$SKILL_DIR/scripts/collect_stats.py" data --org-id 101 --tbl-id DT_1B04005N --start 2020 --end 2024
 
 # 3~4중 분류 통계표 (info 로 찾은 코드 사용)
-python3 scripts/collect_stats.py data --org-id 101 --tbl-id DT_1DA7104S \
+python3 "$SKILL_DIR/scripts/collect_stats.py" data --org-id 101 --tbl-id DT_1DA7104S \
   --item T20 --obj1 00 --obj2 A --obj3 H1 --recent 3
 ```
 
@@ -114,26 +129,26 @@ python3 scripts/collect_stats.py data --org-id 101 --tbl-id DT_1DA7104S \
 
 ```bash
 # 주제별 최상위 (기본 vwCd=MT_ZTITLE)
-python3 scripts/collect_stats.py list --format table
+python3 "$SKILL_DIR/scripts/collect_stats.py" list --format table
 # 국제·OECD·세계 통계 (통합검색에 잘 안 잡힘)
-python3 scripts/collect_stats.py list --vw-cd MT_RTITLE
+python3 "$SKILL_DIR/scripts/collect_stats.py" list --vw-cd MT_RTITLE
 # 하위 드릴다운
-python3 scripts/collect_stats.py list --parent-id A_7
+python3 "$SKILL_DIR/scripts/collect_stats.py" list --parent-id A_7
 ```
 
 ### 통계설명·주요지표 (meta / indicator)
 
 ```bash
 # 작성목적·법적근거·조사주기
-python3 scripts/collect_stats.py meta --org-id 101 --tbl-id DT_1DA7104S
+python3 "$SKILL_DIR/scripts/collect_stats.py" meta --org-id 101 --tbl-id DT_1DA7104S
 # 지표 개념·선정방법·출처
-python3 scripts/collect_stats.py indicator --jipyo-id 5000
+python3 "$SKILL_DIR/scripts/collect_stats.py" indicator --jipyo-id 5000
 ```
 
 ### 자연어 지역명 → 분류 코드 (region)
 
 ```bash
-python3 scripts/collect_stats.py region --org-id 101 --tbl-id DT_1YL20631 --region "인천 서구"
+python3 "$SKILL_DIR/scripts/collect_stats.py" region --org-id 101 --tbl-id DT_1YL20631 --region "인천 서구"
 ```
 
 ## CLI 옵션
@@ -266,7 +281,7 @@ Cowork sandbox 등 일부 환경의 bash는 `LANG`/`LC_ALL` 미설정 시 한글
 WORKSPACE=$(ls /sessions/*/mnt/ | grep -v '^lost+found$' | head -1)
 WORKSPACE_PATH=$(ls -d /sessions/*/mnt/"$WORKSPACE" 2>/dev/null | head -1)
 
-python3 collect_stats.py search --keyword "인구" > "$WORKSPACE_PATH/result.json"
+python3 "$SKILL_DIR/scripts/collect_stats.py" search --keyword "인구" > "$WORKSPACE_PATH/result.json"
 ```
 
 > 이 패턴은 스크립트 코드 결함이 아니라 sandbox bash의 locale 설정 문제입니다.

@@ -98,6 +98,53 @@ def blank_slide(prs: Presentation):
     return prs.slides.add_slide(prs.slide_layouts[6])
 
 
+def zone_bounds(h_in: float = DEFAULT_H_IN, three_zone: dict = None,
+                margin_in: float = 0.0) -> dict:
+    """슬라이드 높이를 header/content/footer 3존으로 수직 분할, 각 (y, height) 인치 반환.
+
+    design-core `to_pptx_layout()['three_zone']`(비율 dict)을 그대로 받는 토큰→좌표 계약
+    (SPEC-DESIGN-TEMPLATE-INGEST-001 P0, #701). 그간 산문 규칙·gen.py 하드코딩으로만 있던
+    "수직 3존 리듬"을 토큰 비율에서 결정론적으로 산출한다(같은 입력→같은 좌표, 난수 0).
+    `margin_in`: 상하 여백(존 분할은 여백 안쪽 usable 영역 기준). python-pptx 객체 비의존.
+
+    반환: {"header": (y, h), "content": (y, h), "footer": (y, h)} (인치)
+    """
+    z = {"header": 0.14, "content": 0.76, "footer": 0.10}
+    if three_zone:
+        for k in z:
+            v = three_zone.get(k)
+            if isinstance(v, (int, float)) and v >= 0:
+                z[k] = float(v)
+    total = (z["header"] + z["content"] + z["footer"]) or 1.0
+    usable = max(0.0, h_in - 2 * margin_in)
+    hh = usable * z["header"] / total
+    ch = usable * z["content"] / total
+    fh = usable * z["footer"] / total
+    y0 = margin_in
+    return {
+        "header": (y0, hh),
+        "content": (y0 + hh, ch),
+        "footer": (y0 + hh + ch, fh),
+    }
+
+
+def grid_cells(x: float, y: float, w: float, h: float,
+               cols: int, rows: int = 1, gutter: float = 0.0) -> list:
+    """영역 (x,y,w,h) 을 cols×rows 균일 그리드로 분할, 각 셀 (x,y,w,h) 리스트(행 우선) 반환.
+
+    동종 카드·칩·KPI 를 토큰 기반 균일 셀에 배치해 깔맞춤을 결정론으로 보장한다(인치 좌표).
+    """
+    cols = max(1, int(cols))
+    rows = max(1, int(rows))
+    cw = (w - gutter * (cols - 1)) / cols
+    ch = (h - gutter * (rows - 1)) / rows
+    cells = []
+    for r in range(rows):
+        for c in range(cols):
+            cells.append((x + c * (cw + gutter), y + r * (ch + gutter), cw, ch))
+    return cells
+
+
 def set_bg(slide, hexcolor: str):
     bg = slide.background
     bg.fill.solid()

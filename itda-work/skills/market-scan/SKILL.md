@@ -10,16 +10,16 @@ description: >
 license: Apache-2.0
 compatibility: Claude Cowork & Code
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, WebSearch, WebFetch, AskUserQuestion, Skill
+allowed-tools: Read, Write, Edit, Bash, WebSearch, WebFetch, AskUserQuestion, Skill, mcp__workspace__bash, mcp__workspace__web_fetch
 argument-hint: "[시장·주제]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.2.0"
+  version: "0.2.2"
   category: "research"
   status: "experimental"
   recommended: true
   created_at: "2026-06-08"
-  updated_at: "2026-06-10"
+  updated_at: "2026-07-26"
   aliases: "시장조사, 시장분석, 경쟁분석, market research"
   tags: "market-research, competitive-analysis, market-sizing, source-verification, interview, cowork, research"
 ---
@@ -144,7 +144,7 @@ metadata:
 | 기업 재무·직원수·사업보고서·배당·소송 | `itda-gov:dart` (전자공시 DART) |
 | 정부 지원사업·창업 공고 | `itda-gov:funding` (K-Startup) |
 | 공공 입찰 동향 | `itda-gov:g2b` (나라장터) |
-| 부동산 실거래 | `itda-gov:realestate` |
+| 부동산 실거래 | `itda-realty:realty-deals` |
 
 > **정형 데이터 단위·의미 검증 (필수)**: 공공 API가 돌려준 값은 **단위와 측정 대상을 반드시 확인**한다. 표 이름에 "매출액"이 있어도 값이 "지수(점)"이면 그건 매출이 아니라 경기 체감지수다(시장규모 아님). 보고서에 단위(억원·조원·%·점·명)와 측정 대상을 명시하고, 질문과 단위가 안 맞으면 그 표를 버리고 다른 표를 찾는다. 또 검색 키워드 하나에 표가 여러 개 나오면(예: "가정간편식"→지역·라이프스타일 표) 제목만 보고 고르지 말고 내 세그먼트·질문에 맞는 표인지 본다. *(라이브 실측: KOSIS "식품산업 부문별 매출액" 표가 실제로는 현황/전망지수 '점'을 반환 — 제목만 믿으면 오답.)*
 

@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[지역/테마] 또는 [동네 주제]"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.1.3"
   category: "data-fetching"
   status: "experimental"
   created_at: "2026-06-01"
-  updated_at: "2026-06-02"
+  updated_at: "2026-07-26"
   tags: "restaurant, food-trend, hotplace, search-volume, surge, naver-datalab, searchad, eatery-trend"
 ---
 
@@ -35,15 +35,28 @@ metadata:
 
 ## 실행
 
+먼저 스킬 디렉토리를 확정합니다(이후 모든 실행이 이 기준).
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/eatery-trend}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/eatery-trend' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\eatery-trend"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ```bash
 # macOS/Linux
-python3 scripts/main.py --mode B --seed 제주              # 핫키워드 탐지
-python3 scripts/main.py --mode B --seed 제주 --emit-candidates   # 발굴+relevance만(LLM 판정 전)
-python3 scripts/main.py --mode B --seed 제주 --judge-file verdicts.json  # LLM 판정 반영
-python3 scripts/main.py --mode A --region 성수 --topic 국밥  # 동네×주제
+python3 "$SKILL_DIR/scripts/main.py" --mode B --seed 제주              # 핫키워드 탐지
+python3 "$SKILL_DIR/scripts/main.py" --mode B --seed 제주 --emit-candidates   # 발굴+relevance만(LLM 판정 전)
+python3 "$SKILL_DIR/scripts/main.py" --mode B --seed 제주 --judge-file verdicts.json  # LLM 판정 반영
+python3 "$SKILL_DIR/scripts/main.py" --mode A --region 성수 --topic 국밥  # 동네×주제
 
 # Windows
-py -3 scripts/main.py --mode B --seed 제주
+py -3 "$env:SKILL_DIR\scripts\main.py" --mode B --seed 제주
 ```
 
 옵션: `--top-n N`(기본 10) · `--json` · `--no-cache` · `--throttle 초`.
@@ -90,9 +103,11 @@ Claude가 이 스킬을 실행할 때 반드시 따르는 행동 규칙입니다
 
 네이버 OpenAPI(데이터랩·검색)와 검색광고 API 키가 필요합니다.
 
+> **⚠️ NAVER API HUB 이관 고지 (2026-07 약관 변경)**: 네이버 OpenAPI(검색·데이터랩)는 네이버클라우드(NCP) **NAVER API HUB**로 이관된다. 2026-07-30 이후 개발자센터 신규 이용 신청 불가 — 신규 사용자는 NAVER API HUB에서 발급하도록 안내한다. 기존 키는 **2027-06-30까지** 현행대로 동작한다. 검색광고 API는 별개 서비스로 무관.
+
 **권장 (비개발자 포함 모든 사용자) — 작업 폴더 `.env`에 키 등록:**
 
-Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 다섯 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
+작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트) 루트에 `.env` 파일을 만들고 아래 다섯 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. `.env` 대신 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해 두어도 로더가 자동으로 찾습니다.
 
 ```dotenv
 NAVER_CLIENT_ID=...
@@ -102,7 +117,7 @@ NAVER_SEARCHAD_SECRET_KEY=...
 NAVER_SEARCHAD_CUSTOMER_ID=...
 ```
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `NAVER_CLIENT_ID=<...> ... python3 scripts/main.py ...`. 지침에도 없으면 해당 소스가 fail-loud로 사유를 표시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `NAVER_CLIENT_ID=<...> ... python3 "$SKILL_DIR/scripts/main.py" ...`. 지침에도 없으면 해당 소스가 fail-loud로 사유를 표시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 NAVER_CLIENT_ID 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 

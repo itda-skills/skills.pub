@@ -9,14 +9,14 @@ description: >
   다루지 않습니다.
 license: Apache-2.0
 compatibility: "Claude Cowork & Code. Python 3.10+"
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 argument-hint: "[질의어] [--engine auto|tavily|serper|perplexity|naver|exa] [--count 5] [--format markdown|json] [--naver-type web|news|blog]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "search"
-  version: "0.1.2"
+  version: "0.1.5"
   created_at: "2026-06-09"
-  updated_at: "2026-07-11"
+  updated_at: "2026-07-26"
   tags: "search, web search, query, multi engine, tavily, serper, perplexity, naver, exa"
 ---
 
@@ -42,6 +42,7 @@ metadata:
 | **Perplexity** (요약+인용) | `PERPLEXITY_API_KEY` | 무료 크레딧 없음 | sonar $1/$1 + 요청료 $5~14/1k | [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api) |
 
 - **무료로 시작**: `TAVILY_API_KEY` + `NAVER_SEARCH_CLIENT_ID`/`NAVER_SEARCH_CLIENT_SECRET`(둘 다 무료·카드 불요)이면 충분하다.
+- **⚠️ Naver 이관 고지 (2026-07 약관 변경)**: 개발자센터 검색 API는 네이버클라우드(NCP) **NAVER API HUB**로 이관된다. 2026-07-30 이후 개발자센터 신규 이용 신청 불가 — 신규 사용자는 NAVER API HUB에서 발급하도록 안내한다. 기존 키는 **2027-06-30까지** 현행대로 동작한다.
 - 요금·한도는 변동되므로 각 공식 페이지를 정본으로 본다(위 수치는 2026-06 기준).
 - **⚠️ Serper(회색지대 — 보조용)**: Serper는 Google 공식 API가 아니라 공개 SERP를 스크래핑하는 제3자다. Google이 **동종 SerpApi를 DMCA 제소(2025-12-19)** 하고 **SearchGuard(2025-01)로 스크래퍼를 기술 차단** 중이라 카테고리 전반에 **중단·품질저하 가능성**이 있다(flight-search의 Google Flights 스크래핑과 동류의 ToS 회색지대). 견고성이 필요하면 자체 인덱스(Tavily·Exa)·공식 API(Naver·Perplexity)를 우선하고, Serper는 키를 설정할 때만 보조로 쓴다(미설정 시 auto에서 자동 제외).
 - **미지원(낡은 방식, 의도적 제외)**: Google Custom Search JSON API — 공식 문서가 "closed to new customers" + 2027-01-01 종료 명시. Bing Web Search API — 2025-08-11 완전 은퇴. 활발히 유지보수되는 엔진만 지원한다.
@@ -50,7 +51,7 @@ metadata:
 
 ### 키 등록 — 작업 폴더 `.env`에 등록 (권장, 비개발자 포함 모든 사용자)
 
-Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 사용할 엔진의 키만 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
+작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 사용할 엔진의 키만 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해 두어도 로더가 자동으로 찾아 쓴다.
 
 ```dotenv
 TAVILY_API_KEY=발급받은_키
@@ -61,7 +62,7 @@ PERPLEXITY_API_KEY=발급받은_키
 EXA_API_KEY=발급받은_키
 ```
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `TAVILY_API_KEY=<키> NAVER_SEARCH_CLIENT_ID=<키> NAVER_SEARCH_CLIENT_SECRET=<키> python3 scripts/web_search.py "검색어"`. 설정된 엔진 키만 주입하면 되고, 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `TAVILY_API_KEY=<키> NAVER_SEARCH_CLIENT_ID=<키> NAVER_SEARCH_CLIENT_SECRET=<키> python3 "$SKILL_DIR/scripts/web_search.py" "검색어"`. 설정된 엔진 키만 주입하면 되고, 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 TAVILY_API_KEY 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -95,11 +96,19 @@ EXA_API_KEY=발급받은_키
 ## 사용법
 
 ```bash
-# macOS/Linux
-python3 scripts/web_search.py "검색어"
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/web-search}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/web-search' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 
+# macOS/Linux
+python3 "$SKILL_DIR/scripts/web_search.py" "검색어"
+```
+
+```powershell
 # Windows
-py -3 scripts/web_search.py "검색어"
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\web-search"  # 미설정이면 SKILL.md 위치 절대경로 사용
+py -3 "$env:SKILL_DIR\scripts\web_search.py" "검색어"
 ```
 
 > **개발자 주의 — 이 저장소 소스트리에서 직접 실행 시:** 배포본은 `publish.py`가 `shared/` 모듈(`env_loader` 등)을 스킬 `scripts/`에 번들하므로 위 명령이 그대로 동작한다. 그러나 소스트리에서 직접 실행하면 `env_loader`를 찾도록 `PYTHONPATH`에 `skills/shared`를 추가해야 한다(없으면 `ModuleNotFoundError: env_loader`). 예: `PYTHONPATH=<repo>/skills/shared python3 scripts/web_search.py "검색어"`. 일반 사용자는 신경 쓸 필요 없다(배포본 자기치유).
@@ -120,16 +129,16 @@ py -3 scripts/web_search.py "검색어"
 
 ```bash
 # 키 보유 엔진 모두 fan-out (다양한 출처 병합)
-python3 scripts/web_search.py "2026년 최저임금 인상률" --count 8
+python3 "$SKILL_DIR/scripts/web_search.py" "2026년 최저임금 인상률" --count 8
 
 # 네이버 뉴스만
-python3 scripts/web_search.py "반도체 수출 동향" --engine naver --naver-type news
+python3 "$SKILL_DIR/scripts/web_search.py" "반도체 수출 동향" --engine naver --naver-type news
 
 # 특정 엔진 서브셋 + JSON
-python3 scripts/web_search.py "python async 입문" --engines tavily,serper --format json
+python3 "$SKILL_DIR/scripts/web_search.py" "python async 입문" --engines tavily,serper --format json
 
 # 키 보유 현황 진단 (네트워크 0)
-python3 scripts/web_search.py --check-env
+python3 "$SKILL_DIR/scripts/web_search.py" --check-env
 ```
 
 ## 종료 코드

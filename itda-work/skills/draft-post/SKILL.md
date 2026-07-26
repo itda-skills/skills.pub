@@ -5,16 +5,16 @@ description: >
   "블로그 글 써줘", "보고서 초안 작성해줘", "기획서 만들어줘"처럼 말하면 됩니다.
   컨텍스트를 모은 뒤 도메인별로 톤·구조를 조정한 마크다운 초안을 출력합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork"
+compatibility: "Claude Code & Cowork"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__workspace__bash
 argument-hint: "<topic> [--style <style>] [--save <path>] [--analyze <file>] [--list-styles]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "1.2.3"
+  version: "1.2.6"
   category: "writing"
   created_at: "2026-03-28"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "blog, report, draft, writing, official, government, press-release, proposal, briefing, newsletter, meeting-minutes"
 ---
 
@@ -61,16 +61,17 @@ metadata:
 
 1. `CLAUDE_CODE_IS_COWORK` 환경변수 확인:
    - Bash 도구로 `echo $CLAUDE_CODE_IS_COWORK` 실행
-   - 값이 없으면 → **Claude Cowork** 환경
+   - 값이 `1`이면 → **Claude Cowork** 환경
+   - 값이 없거나 그 외 → **Claude Code**(또는 일반 로컬) 환경
 
-2. `CLAUDE_CODE_IS_COWORK=1`이면, `./mnt/` 디렉토리 존재 여부 확인:
+2. Cowork 환경이면, `./mnt/` 디렉토리 존재 여부 확인:
    - Bash 도구로 `[ -d "./mnt" ] && echo "MOUNTED" || echo "NOT_MOUNTED"` 실행
 
 3. 결과에 따른 `USER_STYLES_DIR` 결정:
 
    | 환경 | USER_STYLES_DIR | 영속성 |
    |------|-----------------|--------|
-   | Claude Cowork | `.itda-skills/draft-post/styles/` | 프로젝트 단위 영구 |
+   | Claude Code (로컬) | `.itda-skills/draft-post/styles/` | 프로젝트 단위 영구 |
    | Cowork + 마운트 (`./mnt/` 존재) | `./mnt/.itda-skills/draft-post/styles/` | 호스트 영구 |
    | Cowork + 마운트 없음 | `.itda-skills/draft-post/styles/` | 세션 한정 |
 

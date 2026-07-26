@@ -6,16 +6,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[CSV 경로 또는 질문]"
 metadata:
   author: "Chinseok"
-  version: "0.2.0"
+  version: "0.2.2"
   category: "data-analysis"
   status: "experimental"
   recommended: false
   created_at: "2026-06-24"
-  updated_at: "2026-06-25"
+  updated_at: "2026-07-26"
   tags: "csv, duckdb, queryplan, sql, data-analysis, read-only, incubating"
 ---
 
@@ -34,6 +34,7 @@ itda-data 데이터 양심 vertical(정리 `data-prep` · 질문 `data-ask`)의 
 ## Claude 오케스트레이션 지시서
 
 > [HARD] "무조건"·"빠르게"·force_override 로 매핑 확인·소셀 경고·추론 게이트를 건너뛰지 않는다.
+> 아래 모듈 임포트 전에 Prerequisites 의 `SKILL_DIR` 확정 블록을 실행하고 `cd "$SKILL_DIR/scripts"` 한다.
 
 ### 1단계 — 로드 + 프로파일(role) + 비계
 ```python
@@ -114,7 +115,19 @@ print(report.render(result, threshold=5))   # 실행 SQL 노출 + 소셀(N<5) �
 - 데이터 정돈 → `data-prep`. 추론 통계 실행은 게이트 통과 후에만.
 
 ## Prerequisites
-`pip install -r requirements.txt` (duckdb). cp949(한국 엑셀) 파일을 읽으려면 duckdb 코어 `encodings` 확장이 필요하다 — 최초 1회 온라인에서 `INSTALL encodings;` 한 뒤로는 오프라인에서 `LOAD encodings` 만으로 동작한다(`safe_exec` 가 cp949 일 때 자동 LOAD). 그 외 stdlib. macOS/Linux `python3`, Windows `py -3`.
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/data-ask}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/data-ask' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\data-ask"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+`pip install -r "$SKILL_DIR/requirements.txt"` (duckdb, Windows 는 `-r "$env:SKILL_DIR\requirements.txt"`). 위 모듈들은 CLI 엔트리 없이 임포트하므로 **모듈 실행 전 `cd "$SKILL_DIR/scripts"`** 한다(Windows: `cd "$env:SKILL_DIR\scripts"`). cp949(한국 엑셀) 파일을 읽으려면 duckdb 코어 `encodings` 확장이 필요하다 — 최초 1회 온라인에서 `INSTALL encodings;` 한 뒤로는 오프라인에서 `LOAD encodings` 만으로 동작한다(`safe_exec` 가 cp949 일 때 자동 LOAD). 그 외 stdlib. macOS/Linux `python3`, Windows `py -3`.
 
 ## 스크립트 모듈
 | 모듈 | 역할 |

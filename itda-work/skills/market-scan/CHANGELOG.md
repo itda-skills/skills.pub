@@ -2,6 +2,18 @@
 
 본 스킬의 변경 이력. [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따른다.
 
+## [0.2.2] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash, mcp__workspace__web_fetch) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [0.2.1] — 2026-07-26 (이슈 #1272)
+
+### Changed
+
+- 라우팅 표의 부동산 실거래 경로를 `itda-gov:realestate` → `itda-realty:realty-deals` 로 교체 (realestate 제거 동반 정합).
+
 ## [0.1.1] — 2026-06-10
 
 ### Added

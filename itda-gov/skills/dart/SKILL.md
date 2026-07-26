@@ -6,8 +6,8 @@ description: >
   "네이버 배당 현황", "셀트리온 소송 이력"처럼 말하면 됩니다.
   기업 프로필·재무·인력·사업보고서·공시 목록에 더해 배당·증자·소송·전환사채 등 주요사항도 반환합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+"
-allowed-tools: Bash, Read, Write
+compatibility: "Claude Code & Cowork. Python 3.10+"
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[search|info|finance|employees|profile|disclosure|business|compare|raw] [--name 회사명] [--corp-code 코드] [--year 연도] [--report annual|q1|q2|q3] [--prefer annual|latest] [--detail] [--unit auto|million|eok|jo] [--with-ratios] [--with-prior] [--endpoint 엔드포인트] [--param key=value] [--format json|table|csv]"
 metadata:
@@ -15,9 +15,9 @@ metadata:
   category: "domain"
   status: "active"
   recommended: true
-  version: "0.17.0"
+  version: "0.17.3"
   created_at: "2026-03-29"
-  updated_at: "2026-06-05"
+  updated_at: "2026-07-26"
   tags: "DART, CSV, company, financial, disclosure, competitor, business report, compare"
 ---
 
@@ -25,19 +25,6 @@ metadata:
 
 금융감독원 DART 전자공시시스템 API로 기업 정보를 수집합니다.
 경쟁사 분석, 입찰 제안서, 사업계획서에 필요한 기업 재무·직원 데이터를 제공합니다.
-
-## 실행 경로 안내 (Cowork 환경)
-
-Claude Cowork에서는 SKILL.md 첫줄에 표시되는 `Base directory`(예: `/var/folders/...`)와
-실제 스크립트 실행 경로(예: `/sessions/<id>/mnt/.remote-plugins/<plugin>/skills/dart`)가 다를 수 있습니다.
-
-실행 시 다음 순서로 경로를 확정하세요:
-
-1. `echo $CLAUDE_PROJECT_DIR` — 프로젝트 루트가 노출되어 있으면 그 하위의 `**/skills/dart` 검색
-2. `find /sessions -type d -name dart 2>/dev/null` — Cowork 마운트에서 직접 탐색
-3. 위 둘 다 실패 시 SKILL.md `Base directory` 그대로 사용
-
-본 SKILL.md 모든 명령 예시는 `python3 scripts/<name>.py` 상대경로 기준 — 위 단계로 확정된 디렉토리에서 실행하세요.
 
 ## 환경 변수
 
@@ -48,10 +35,23 @@ Claude Cowork에서는 SKILL.md 첫줄에 표시되는 `Base directory`(예: `/v
 ## Prerequisites
 
 ```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/dart}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/dart' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+
 # defusedxml 의존성 설치 (XML 보안 파싱)
-uv pip install --system -r requirements.txt
+python3 -m pip install -r "$SKILL_DIR/requirements.txt"
 # 또는
-uv pip install --system "defusedxml>=0.7.1"
+python3 -m pip install "defusedxml>=0.7.1"
+```
+
+> uv 사용자는 `uv pip install -r "$SKILL_DIR/requirements.txt"`(venv 권장) 도 가능합니다.
+
+Windows(PowerShell):
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\dart"  # 미설정이면 SKILL.md 위치 절대경로 사용
 ```
 
 ## API 키 설정
@@ -62,13 +62,13 @@ uv pip install --system "defusedxml>=0.7.1"
 
 **권장 (비개발자 포함 모든 사용자) — 작업 폴더 `.env`에 키 등록:**
 
-Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
+작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해도 되며, 로더가 자동으로 탐색합니다.
 
 ```
 DART_API_KEY=발급받은_키
 ```
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `DART_API_KEY=<키> python3 scripts/...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `DART_API_KEY=<키> python3 "$SKILL_DIR/scripts/..."`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 DART_API_KEY 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -88,30 +88,30 @@ DART_API_KEY=발급받은_키
 
 ```bash
 # macOS/Linux
-python3 scripts/collect_company.py search --name "삼성전자"
-python3 scripts/collect_company.py --format table search --name "카카오"
+python3 "$SKILL_DIR/scripts/collect_company.py" search --name "삼성전자"
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table search --name "카카오"
 
 # Windows
-py -3 scripts/collect_company.py search --name "삼성전자"
+py -3 "$env:SKILL_DIR\scripts\collect_company.py" search --name "삼성전자"
 ```
 
 ### 기업 개황 (info)
 
 ```bash
-python3 scripts/collect_company.py info --corp-code 00126380
-python3 scripts/collect_company.py --format table info --corp-code 00126380
+python3 "$SKILL_DIR/scripts/collect_company.py" info --corp-code 00126380
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table info --corp-code 00126380
 ```
 
 ### 재무제표 (finance)
 
 ```bash
 # 주요계정 조회 (기본)
-python3 scripts/collect_company.py finance --corp-code 00126380 --year 2024
-python3 scripts/collect_company.py --format table finance --corp-code 00126380 --year 2024
+python3 "$SKILL_DIR/scripts/collect_company.py" finance --corp-code 00126380 --year 2024
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table finance --corp-code 00126380 --year 2024
 
 # 전체 재무제표 (v0.16.0+, --detail → fnlttSinglAcntAll, 176항목류)
-python3 scripts/collect_company.py finance --corp-code 00126380 --year 2023 --detail
-python3 scripts/collect_company.py --format table finance --corp-code 00126380 --year 2023 --detail
+python3 "$SKILL_DIR/scripts/collect_company.py" finance --corp-code 00126380 --year 2023 --detail
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table finance --corp-code 00126380 --year 2023 --detail
 ```
 
 > JSON 출력에는 공시원문 링크(`source.url`)가 기본 포함됩니다 (v0.16.0+).
@@ -120,26 +120,26 @@ python3 scripts/collect_company.py --format table finance --corp-code 00126380 -
 ### 직원현황 (employees)
 
 ```bash
-python3 scripts/collect_company.py employees --corp-code 00126380 --year 2024
+python3 "$SKILL_DIR/scripts/collect_company.py" employees --corp-code 00126380 --year 2024
 ```
 
 ### 종합 프로필 (profile) — 권장
 
 ```bash
 # 회사명으로 검색 → 코드 자동 확인 → 프로필·재무·직원 일괄 조회
-python3 scripts/collect_company.py profile --name "삼성전자" --year 2024
-python3 scripts/collect_company.py --format table profile --name "카카오" --year 2023
+python3 "$SKILL_DIR/scripts/collect_company.py" profile --name "삼성전자" --year 2024
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table profile --name "카카오" --year 2023
 ```
 
 ### 공시 목록 (disclosure) — 신규
 
 ```bash
 # 특정 기간 공시 목록 조회
-python3 scripts/collect_company.py disclosure --corp-code 00126380 --bgn 20240101 --end 20241231
-python3 scripts/collect_company.py --format table disclosure --corp-code 00126380 --bgn 20240101 --end 20241231 --type A
+python3 "$SKILL_DIR/scripts/collect_company.py" disclosure --corp-code 00126380 --bgn 20240101 --end 20241231
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table disclosure --corp-code 00126380 --bgn 20240101 --end 20241231 --type A
 
 # Windows
-py -3 scripts/collect_company.py disclosure --corp-code 00126380 --bgn 20240101 --end 20241231
+py -3 "$env:SKILL_DIR\scripts\collect_company.py" disclosure --corp-code 00126380 --bgn 20240101 --end 20241231
 ```
 
 > **`--type`(pblntf_ty) 공시유형 코드:** A=정기공시, B=주요사항보고, C=발행공시, D=지분공시,
@@ -152,16 +152,16 @@ py -3 scripts/collect_company.py disclosure --corp-code 00126380 --bgn 20240101 
 
 ```bash
 # 접수번호로 사업보고서 원문 추출
-python3 scripts/collect_company.py business --rcept-no 20240401000123
+python3 "$SKILL_DIR/scripts/collect_company.py" business --rcept-no 20240401000123
 
 # 섹션 지정 (정규식 매칭)
-python3 scripts/collect_company.py business --rcept-no 20240401000123 --section "사업의 내용"
+python3 "$SKILL_DIR/scripts/collect_company.py" business --rcept-no 20240401000123 --section "사업의 내용"
 
 # 기업코드만으로 자동 폴백 (최신 사업보고서 자동 선택)
-python3 scripts/collect_company.py business --corp-code 00126380
+python3 "$SKILL_DIR/scripts/collect_company.py" business --corp-code 00126380
 
 # 출력 길이 제한
-python3 scripts/collect_company.py business --rcept-no 20240401000123 --max-chars 2000
+python3 "$SKILL_DIR/scripts/collect_company.py" business --rcept-no 20240401000123 --max-chars 2000
 ```
 
 ### 미구현 엔드포인트 직접 호출 (raw) — 신규 (v0.17.0)
@@ -171,15 +171,15 @@ python3 scripts/collect_company.py business --rcept-no 20240401000123 --max-char
 
 ```bash
 # 배당에 관한 사항 (alotMatter)
-python3 scripts/collect_company.py raw --endpoint alotMatter \
+python3 "$SKILL_DIR/scripts/collect_company.py" raw --endpoint alotMatter \
   --param corp_code=00126380 --param bsns_year=2023 --param reprt_code=11011
 
 # 소송 등의 제기 (lwstLg) — 기간 필요
-python3 scripts/collect_company.py raw --endpoint lwstLg \
+python3 "$SKILL_DIR/scripts/collect_company.py" raw --endpoint lwstLg \
   --param corp_code=00126380 --param bgn_de=20240101 --param end_de=20241231
 
 # 전환사채 발행결정 (cvbdIsDecsn)
-python3 scripts/collect_company.py raw --endpoint cvbdIsDecsn \
+python3 "$SKILL_DIR/scripts/collect_company.py" raw --endpoint cvbdIsDecsn \
   --param corp_code=00126380 --param bgn_de=20200101 --param end_de=20241231
 ```
 
@@ -191,54 +191,54 @@ python3 scripts/collect_company.py raw --endpoint cvbdIsDecsn \
 
 ```bash
 # --year 없이 corp-code만 → 최신 사업보고서 자동 선택
-python3 scripts/collect_company.py finance --corp-code 00126380
+python3 "$SKILL_DIR/scripts/collect_company.py" finance --corp-code 00126380
 
 # --prefer latest → 분기·반기 포함 가장 최신 보고서 자동 선택
-python3 scripts/collect_company.py finance --corp-code 00126380 --prefer latest
+python3 "$SKILL_DIR/scripts/collect_company.py" finance --corp-code 00126380 --prefer latest
 ```
 
 ### 다기업 재무 비교 (compare)
 
 ```bash
 # 회사명으로 비교 (쉼표 구분) — 자동 단위 변환(억/조)
-python3 scripts/collect_company.py --format table compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table compare \
   --names "삼성전자,LG전자,SK하이닉스" \
   --year 2024 \
   --accounts "매출액,영업이익,자산총계"
 
 # 기업코드로 비교 + 회사명 매핑(v0.15.0+: 둘 다 지정 가능 — 헤더에 회사명 표시)
-python3 scripts/collect_company.py --format table compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table compare \
   --corp-codes "00159023,00190321,00231363" \
   --names "SKT,KT,LGU+" \
   --year 2024 --report q1
 
 # 파생 지표 함께(v0.15.0+) — 영업이익률·순이익률 행 추가
-python3 scripts/collect_company.py --format table compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table compare \
   --names "삼성전자,LG전자" --year 2024 --with-ratios
 
 # 단위 강제(v0.15.0+) — 백만원/억/조
-python3 scripts/collect_company.py --format table compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table compare \
   --names "삼성전자" --year 2024 --unit eok
 
 # CSV로 저장 (엑셀 호환) — formatted_amount 컬럼 신설(v0.15.0+)
-python3 scripts/collect_company.py --format csv compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format csv compare \
   --names "삼성전자,LG전자" \
   --year 2024 --unit auto > compare.csv
 
 # --year 미지정 → 첫 기업 기준 최신 사업보고서 자동 선택 (stderr 안내)
-python3 scripts/collect_company.py compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" compare \
   --names "삼성전자,LG전자,SK하이닉스"
 
 # --prefer latest → 분기·반기 포함 가장 최신 보고서 자동 선택
-python3 scripts/collect_company.py compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" compare \
   --names "삼성전자,LG전자" --prefer latest
 
 # 전기 열 포함 (v0.16.0+)
-python3 scripts/collect_company.py --format table compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table compare \
   --names "삼성전자" --year 2023 --with-prior
 
 # 전기 + 증감률 동시 (v0.16.0+)
-python3 scripts/collect_company.py compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" compare \
   --names "삼성전자" --year 2023 --with-prior --with-ratios
 ```
 
@@ -257,11 +257,11 @@ python3 scripts/collect_company.py compare \
 
 ```bash
 # 단일 기업의 1분기 재무 (2026 1분기보고서)
-python3 scripts/collect_company.py finance \
+python3 "$SKILL_DIR/scripts/collect_company.py" finance \
   --corp-code 00159023 --year 2026 --report q1
 
 # 다기업의 반기(2분기) 비교 — 회사명 헤더 + 비율
-python3 scripts/collect_company.py --format table compare \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format table compare \
   --corp-codes "00159023,00190321,00231363" \
   --names "SKT,KT,LGU+" \
   --year 2026 --report q2 \
@@ -276,11 +276,11 @@ python3 scripts/collect_company.py --format table compare \
 
 ```bash
 # 재무제표 CSV (엑셀에서 바로 열기)
-python3 scripts/collect_company.py --format csv \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format csv \
   finance --corp-code 00126380 --year 2024 > finance.csv
 
 # 공시 목록 CSV
-python3 scripts/collect_company.py --format csv \
+python3 "$SKILL_DIR/scripts/collect_company.py" --format csv \
   disclosure --corp-code 00126380 --bgn 20240101 --end 20241231 > disc.csv
 ```
 
@@ -430,7 +430,7 @@ Cowork sandbox 등 일부 환경의 bash는 `LANG`/`LC_ALL` 미설정 시 한글
 WORKSPACE=$(ls /sessions/*/mnt/ | grep -v '^lost+found$' | head -1)
 WORKSPACE_PATH=$(ls -d /sessions/*/mnt/"$WORKSPACE" 2>/dev/null | head -1)
 
-python3 collect_company.py search --name "삼성전자" > "$WORKSPACE_PATH/result.json"
+python3 "$SKILL_DIR/scripts/collect_company.py" search --name "삼성전자" > "$WORKSPACE_PATH/result.json"
 ```
 
 > 이 패턴은 스크립트 코드 결함이 아니라 sandbox bash의 locale 설정 문제입니다.

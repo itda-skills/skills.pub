@@ -7,16 +7,16 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write
+allowed-tools: Read, Bash, Write, mcp__workspace__bash
 argument-hint: "[회의 녹취 파일 경로 또는 텍스트]"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.1.3"
   category: "audit"
   status: "alpha"
   recommended: false
   created_at: "2026-06-21"
-  updated_at: "2026-06-21"
+  updated_at: "2026-07-26"
   tags: "audit, reliability, meeting, transcript, verification, hallucination-guard, stdlib"
 ---
 
@@ -60,12 +60,23 @@ metadata:
 
 ## 워크플로우
 
-스킬 디렉토리: `scripts/`. 입력은 텍스트 녹취 파일(`transcript.md`). 음성→텍스트는 `itda-egg:stt`(화자분리) 상류 위임.
+입력은 텍스트 녹취 파일(`transcript.md`). 음성→텍스트는 `itda-egg:stt`(화자분리) 상류 위임.
+
+### 0) 스킬 디렉토리(SKILL_DIR) 확정
+
+스킬 스크립트는 cwd 에 의존하지 않도록 **절대경로**로 실행한다. 아래 명령을 먼저 한 번 돌려 `SKILL_DIR` 을 확정하고, 이후 모든 스크립트를 `"$SKILL_DIR/scripts/..."` 로 실행한다:
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/meeting-reliability}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/meeting-reliability' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
 
 ### 1) 발화 번호 확인 (근거 인덱스)
 
 ```bash
-python3 scripts/meeting_adapter.py transcript.md
+python3 "$SKILL_DIR/scripts/meeting_adapter.py" transcript.md
 ```
 
 `idx⇥speaker⇥text`로 번호 매긴 발화가 나온다. 각 행의 `evidence`는 이 **idx**로 적는다.
@@ -97,7 +108,7 @@ python3 scripts/meeting_adapter.py transcript.md
 ### 3) 게이트 — selfcheck (필수)
 
 ```bash
-python3 scripts/selfcheck.py result.json transcript.md
+python3 "$SKILL_DIR/scripts/selfcheck.py" result.json transcript.md
 ```
 
 `PASS`(exit 0)면 통과. `FAIL`이면 위반(담당 단정·추정 날짜·잡담·근거 누락·결정/실무 병합)을 보고하니 **그 행을 고쳐 재작성**한다. 추정으로 칸을 채우지 말 것 — 모르면 `확인 필요`. 재작성은 **최대 3회**(`MAX_REWRITES`), 초과 시 사람 검토로 넘긴다(자동 보정 금지).
@@ -105,7 +116,7 @@ python3 scripts/selfcheck.py result.json transcript.md
 ### 4) 출력 — HTML(근거 tooltip)
 
 ```bash
-python3 scripts/render_html.py result.json transcript.md meeting_reliability.html
+python3 "$SKILL_DIR/scripts/render_html.py" result.json transcript.md meeting_reliability.html
 ```
 
 각 행의 `📎 근거`에 hover하면 **원문 발화 + 앞뒤 대화 맥락(±2) + 판정 근거**가 보인다(감사 drill-to-source). 단일 자족 HTML(외부 의존 0). 산출 후 사용자에게 제시한다.
@@ -123,4 +134,4 @@ python3 scripts/render_html.py result.json transcript.md meeting_reliability.htm
 
 ## 골든 회귀
 
-`scripts/tests/` — 부록 A 골든(raw 녹취 fixture + ③ 기대출력 + ★ assertion). `python3 -m pytest scripts/tests`로 검증. 자세한 계약은 `SPEC-AUDIT-RELIABILITY-001`.
+`tests/` — 부록 A 골든(raw 녹취 fixture + ③ 기대출력 + ★ assertion). `python3 -m pytest tests`로 검증. 자세한 계약은 `SPEC-AUDIT-RELIABILITY-001`.

@@ -6,14 +6,14 @@ description: >
   새로운 도메인·프로젝트의 자동화 체계 구축부터 기존 하네스의 재구성·확장,
   "하네스 점검"·"하네스 감사"·"에이전트/스킬 동기화" 같은 운영·유지보수까지 다룹니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork"
+compatibility: "Claude Code & Cowork"
 user-invocable: true
 metadata:
   author: "robin (revfactory)"
-  version: "1.3.0"
+  version: "1.3.1"
   category: "meta"
   created_at: "2026-03-29"
-  updated_at: "2026-07-12"
+  updated_at: "2026-07-26"
   tags: "harness, agent-team, skill-architect, meta-skill, orchestration, harness-factory"
 ---
 
@@ -60,6 +60,11 @@ metadata:
 #### 2-1. 실행 모드 선택
 
 **에이전트 팀이 최우선 기본값이다.** 2개 이상의 에이전트가 협업할 때는 반드시 에이전트 팀을 먼저 검토한다. 팀원 간 직접 통신(SendMessage)과 공유 작업 목록(TaskCreate)으로 자체 조율하며, 발견 공유·상충 토론·누락 보완이 결과 품질을 높인다.
+
+> ⚠️ **플랫폼 분기.** 아래 팀 모드(`SendMessage`·`TaskCreate` 조율)와 `run_in_background` 병렬은 **Claude Code 전용** 패턴이다.
+> Cowork 대상 하네스를 설계할 때는 **스타형 오케스트레이션**(Lead 1 + 무상태 일회성 워커 — 재개·P2P 없음),
+> **파일 릴레이**(하행 = Lead 가 준비한 세션 파일, 상행 = 워커가 쓰는 `outputs/`), **명시 디스패치**(자동 위임 미발동)를 기본값으로 삼는다.
+> 근거: `cowork-agent-orchestration` 독트린(#1130 실측).
 
 | 모드 | 언제 사용 | 특성 |
 |------|----------|------|

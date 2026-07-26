@@ -91,7 +91,7 @@ def resolve_credentials(
 _INSTALL_GUIDE = (
     "SRTrain 라이브러리를 불러올 수 없습니다.\n\n"
     "SR 예약은 SRTrain(비공식 SR 클라이언트)을 사용합니다. 설치 후 다시 시도하세요:\n"
-    "  uv pip install --system SRTrain\n"
+    "  python3 -m pip install SRTrain\n"
 )
 
 

@@ -9,15 +9,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob
+allowed-tools: Read, Bash, Write, Glob, mcp__workspace__bash
 argument-hint: "<마스킹할 문서 파일 경로> [--glossary <용어집.json>]"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.1.2"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-07-16"
-  updated_at: "2026-07-16"
+  updated_at: "2026-07-26"
   tags: "redaction, masking, roundtrip, glossary, trade-secret, deterministic, stdlib, korean, audit"
 ---
 
@@ -55,9 +55,22 @@ metadata:
 
 > 명령은 macOS/Linux 기준 `python3`, Windows는 `py -3`로 바꿔 실행한다(그 외 인자 동일).
 
+### 실행 전 — 스킬 디렉토리 확정
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/biz-redact}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/biz-redact' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\biz-redact"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ### 0단계 — 용어집 확인
 
-무엇을 가릴지 담은 `glossary.json`이 있어야 한다. 없으면 `references/glossary-template.json`(합성 예시)을 복사해 사용자가 채우도록 안내하고, 형식은 `references/glossary-format.md`를 따른다. **용어집은 평문 기밀 파일이므로 에이전트가 Read 하지 않는다** — 사용자가 로컬에서 작성한다.
+무엇을 가릴지 담은 `glossary.json`이 있어야 한다. 없으면 `"$SKILL_DIR/references/glossary-template.json"`(합성 예시)을 복사해 사용자가 채우도록 안내하고, 형식은 `references/glossary-format.md`를 따른다. **용어집은 평문 기밀 파일이므로 에이전트가 Read 하지 않는다** — 사용자가 로컬에서 작성한다.
 
 ### 1단계 — 마스킹 (mask)
 
@@ -65,10 +78,10 @@ metadata:
 
 ```bash
 # macOS/Linux
-python3 scripts/biz_redact.py mask <input.txt> --glossary <glossary.json> \
+python3 "$SKILL_DIR/scripts/biz_redact.py" mask <input.txt> --glossary <glossary.json> \
     [--out-dir _workspace/biz-redact/<doc-id>] [--doc-id <id>] [--now <ISO8601>]
 # Windows
-py -3 scripts/biz_redact.py mask <input.txt> --glossary <glossary.json> ...
+py -3 "$env:SKILL_DIR\scripts\biz_redact.py" mask <input.txt> --glossary <glossary.json> ...
 #   --doc-id 기본값: 원문 콘텐츠 SHA256 앞 12 hex (파일명 비의존 — 기밀 파일명 누출 차단)
 #   --out-dir 기본값: _workspace/biz-redact/<위 doc-id>/
 #   --now: 타임스탬프 고정 주입(테스트 결정론용; 미지정 시 현재 시각)
@@ -82,7 +95,7 @@ py -3 scripts/biz_redact.py mask <input.txt> --glossary <glossary.json> ...
 `mask`가 자동 검증하지만, 마스킹본을 AI에 넘기기 전 **독립 실행**으로 재확인한다.
 
 ```bash
-python3 scripts/biz_redact.py verify <masked.txt> --glossary <glossary.json>
+python3 "$SKILL_DIR/scripts/biz_redact.py" verify <masked.txt> --glossary <glossary.json>
 ```
 
 `verified=true`(exit 0)여야 다음 단계로 간다. `false`(exit 1)면 [HARD] 2에 따라 **중단·보고**한다. 리포트는 `entry_index`·위치만 담고 평문은 없으므로, 사용자는 용어집 `entry_index`로 로컬에서 대조한다.
@@ -96,7 +109,7 @@ python3 scripts/biz_redact.py verify <masked.txt> --glossary <glossary.json>
 AI 산출물의 토큰을 `map.json` 기준 원값으로 복원하고, 변형·환각 토큰을 감지한다.
 
 ```bash
-python3 scripts/biz_redact.py restore <ai_output.txt> --map <map.json> \
+python3 "$SKILL_DIR/scripts/biz_redact.py" restore <ai_output.txt> --map <map.json> \
     [--out <restored.txt>] [--now <ISO8601>]
 #   --out 기본값: <map.json 이 위치한 디렉토리>/restored.txt — 항상 _workspace 안(gitignore 가드 내)에
 #   생성돼 평문 restored.txt 가 가드 밖으로 새지 않는다 (ai_output 위치와 무관)

@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[텍스트 파일/JSONL 또는 분석 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.1.3"
+  version: "0.1.5"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-05-30"
-  updated_at: "2026-07-14"
+  updated_at: "2026-07-26"
   tags: "absa, sentiment, aspect, korean, stdlib"
 ---
 
@@ -49,7 +49,7 @@ Claude가 직접 수행(LLM 백엔드), 외부 모델·인증키 없음. 단순 
 2. **도메인 판별** — 리뷰면 평면 `text`, CS 상담이면 `turns`(화자 태그). `domain` 게이트로 측면 풀 결정(review 입력에 CS 전용 라벨 출력 금지).
 3. **few-shot 적용** — `references/few-shot.md`(한국어 난점: 존댓말 완곡부정·체념 단답·화자귀속·턴간 지시대명사).
 4. **doc별 무상태 라벨링** — 각 doc을 독립으로 처리하고 `output-schema.json` 형식 JSON **1개**를 출력. 배치면 doc별로 반복하되 **판정을 섞지 않는다**. `sub_aspect`는 v1에서 항상 `null`.
-5. **검증** — 산출 JSON을 `scripts/validate_output.py`로 스키마·taxonomy 멤버십·필드 모순 검증.
+5. **검증** — 산출 JSON을 `"$SKILL_DIR/scripts/validate_output.py"`(아래 §검증 참조)로 스키마·taxonomy 멤버십·필드 모순 검증.
 
 > 집계·KPI 리포트(측면별 극성 분포·미해결율 등)와 골드셋 평가(F1·IAA)는 **본 스킬 범위 밖**(후속). 여기서는 **라벨링 코어**만 다룬다.
 
@@ -75,10 +75,19 @@ Claude가 직접 수행(LLM 백엔드), 외부 모델·인증키 없음. 단순 
 ## 검증
 
 ```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/aspect-sentiment}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/aspect-sentiment' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\aspect-sentiment"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+```bash
 # macOS/Linux
-python3 scripts/validate_output.py <출력.jsonl>
+python3 "$SKILL_DIR/scripts/validate_output.py" <출력.jsonl>
 # Windows
-py -3 scripts/validate_output.py <출력.jsonl>
+py -3 "$env:SKILL_DIR\scripts\validate_output.py" <출력.jsonl>
 ```
 
 ## Backend 추상화
@@ -91,7 +100,7 @@ py -3 scripts/validate_output.py <출력.jsonl>
 
 1. **분할** — Lead 가 입력 doc 을 청크 파일(예: 10~20건/청크, **JSONL** — 한 줄 = 단건 입력 shape)로 나눠 세션 폴더에 저장한다. raw 로그는 `pii-redact` 로 **선행 비식별화**한다.
 2. **팬아웃** — `itda-cs:cs-batch-extractor` 를 청크별로 **병렬 명시 디스패치**한다(디스패치 프롬프트에 `task=aspect-sentiment` + 이 파일의 closed-set taxonomy·화자분리·고정 JSON 원칙 + 청크 파일 경로 + `outputs/` 출력 경로). 워커는 각 항목을 무상태로 라벨링해 스키마 호환 JSONL 을 `outputs/` 에 쓰고 경로·건수만 반환한다.
-3. **팬인(집계는 Lead 소유)** — Lead 가 반환된 JSONL 들을 `python3 scripts/validate_output.py <출력.jsonl> [taxonomy.yaml]` 로 검증하고 병합한다. **커스텀 taxonomy 를 워커에 줬으면 검증에도 같은 경로를 두 번째 인자로 넘긴다** — 안 넘기면 커스텀 라벨이 내장 taxonomy 기준으로 거짓 거부·`기타` 오강등된다. 집계는 스킬 스크립트가, 라벨링은 무상태 워커가 맡는다(워커는 집계하지 않는다).
+3. **팬인(집계는 Lead 소유)** — Lead 가 반환된 JSONL 들을 `python3 "$SKILL_DIR/scripts/validate_output.py" <출력.jsonl> [taxonomy.yaml]` 로 검증하고 병합한다. **커스텀 taxonomy 를 워커에 줬으면 검증에도 같은 경로를 두 번째 인자로 넘긴다** — 안 넘기면 커스텀 라벨이 내장 taxonomy 기준으로 거짓 거부·`기타` 오강등된다. 집계는 스킬 스크립트가, 라벨링은 무상태 워커가 맡는다(워커는 집계하지 않는다).
 
 서브에이전트 부재 환경은 위 절차 대신 **기존 본 컨텍스트 순차 단건 처리로 폴백**한다(핵심 원칙의 doc별 무상태 반복). **단건 절차·출력 스키마·taxonomy 는 불변** — 배치는 같은 계약을 병렬화·격리할 뿐이다. 오케스트레이션 세부는 `.claude/rules/itda/skills/cowork-agent-orchestration.md`.
 

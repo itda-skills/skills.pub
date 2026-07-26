@@ -5,8 +5,8 @@ description: >
   "나라장터 입찰공고 검색해줘", "조달청 공고 확인해줘", "소프트웨어 개발 입찰 공고 찾아줘"처럼 말하면 됩니다.
   키워드·기간 필터링과 상세 공고 조회를 지원합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+"
-allowed-tools: Bash, Read, Write
+compatibility: "Claude Code & Cowork. Python 3.10+"
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[--keyword 키워드] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--max-pages N] [--rows N] [--page N] [--format json|table] [--detail]"
 metadata:
@@ -14,9 +14,9 @@ metadata:
   category: "domain"
   status: "active"
   recommended: true
-  version: "0.10.0"
+  version: "0.10.3"
   created_at: "2026-03-29"
-  updated_at: "2026-06-09"
+  updated_at: "2026-07-26"
   tags: "G2B, procurement, tender, bid announcement, narajangteo"
 ---
 
@@ -47,13 +47,13 @@ metadata:
 
 **권장 (비개발자 포함 모든 사용자) — 작업 폴더 `.env`에 키 등록:**
 
-Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
+작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 한 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해도 되며, 로더가 자동으로 탐색합니다.
 
 ```
 KO_DATA_API_KEY=발급받은_키
 ```
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `KO_DATA_API_KEY=<키> python3 scripts/...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `KO_DATA_API_KEY=<키> python3 "$SKILL_DIR/scripts/..."`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 KO_DATA_API_KEY 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -62,16 +62,31 @@ KO_DATA_API_KEY=발급받은_키
 
 > **Decoding 키 사용**: 마이페이지 > Open API > 활용신청 현황 > 해당 API 상세에서 표시된 일반 인증키(Decoding)를 복사.
 
+## Prerequisites
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/g2b}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/g2b' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+Windows(PowerShell):
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\g2b"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 ## 사용법
 
 ### 최근 7일 입찰공고 조회 (기본)
 
 ```bash
 # macOS/Linux
-python3 scripts/collect_g2b.py
+python3 "$SKILL_DIR/scripts/collect_g2b.py"
 
 # Windows
-py -3 scripts/collect_g2b.py
+py -3 "$env:SKILL_DIR\scripts\collect_g2b.py"
 ```
 
 ### 키워드 필터링
@@ -81,8 +96,8 @@ py -3 scripts/collect_g2b.py
 보면 키워드가 뒤쪽 공고에 있을 때 거짓 0건이 발생합니다. 자동 순회로 이를 방지합니다.
 
 ```bash
-python3 scripts/collect_g2b.py --keyword "소프트웨어"
-python3 scripts/collect_g2b.py --keyword "AI" --format table
+python3 "$SKILL_DIR/scripts/collect_g2b.py" --keyword "소프트웨어"
+python3 "$SKILL_DIR/scripts/collect_g2b.py" --keyword "AI" --format table
 ```
 
 > 순회는 페이지당 999건씩 최대 `--max-pages`(기본 20)페이지까지(=약 2만 건). 상한에
@@ -92,15 +107,15 @@ python3 scripts/collect_g2b.py --keyword "AI" --format table
 ### 기간 지정 조회
 
 ```bash
-python3 scripts/collect_g2b.py --from 2026-03-01 --to 2026-03-28
-python3 scripts/collect_g2b.py --keyword "소프트웨어 개발" --from 2026-03-01 --to 2026-03-28
+python3 "$SKILL_DIR/scripts/collect_g2b.py" --from 2026-03-01 --to 2026-03-28
+python3 "$SKILL_DIR/scripts/collect_g2b.py" --keyword "소프트웨어 개발" --from 2026-03-01 --to 2026-03-28
 ```
 
 ### 상세 정보 포함
 
 ```bash
-python3 scripts/collect_g2b.py --keyword "데이터" --detail
-python3 scripts/collect_g2b.py --format table --detail
+python3 "$SKILL_DIR/scripts/collect_g2b.py" --keyword "데이터" --detail
+python3 "$SKILL_DIR/scripts/collect_g2b.py" --format table --detail
 ```
 
 ### 단일 페이지 조회 (브라우즈)
@@ -110,10 +125,10 @@ python3 scripts/collect_g2b.py --format table --detail
 
 ```bash
 # 1페이지 50건만 (단일 페이지 모드)
-python3 scripts/collect_g2b.py --rows 50 --page 1
+python3 "$SKILL_DIR/scripts/collect_g2b.py" --rows 50 --page 1
 
 # 키워드 검색 순회 상한을 5페이지로 (대량 기간 조회 시)
-python3 scripts/collect_g2b.py --keyword "용역" --max-pages 5
+python3 "$SKILL_DIR/scripts/collect_g2b.py" --keyword "용역" --max-pages 5
 ```
 
 ## CLI 옵션

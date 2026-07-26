@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[products|price] [options]"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.1.3"
   category: "data-fetching"
   status: "experimental"
   created_at: "2026-06-06"
-  updated_at: "2026-06-06"
+  updated_at: "2026-07-26"
   tags: "kurly, market-kurly, retail, grocery, product-search, price, read-only"
 ---
 
@@ -40,33 +40,46 @@ metadata:
 
 ## 빠른 시작
 
+먼저 스킬 디렉토리를 확정합니다 (이후 모든 실행 명령이 `$SKILL_DIR` 기준).
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/kurly}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/kurly' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\kurly"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 자연어 요청과 대응되는 CLI 호출 예시입니다.
 
 **"마켓컬리에서 우유 검색해줘"**
 ```bash
 # macOS/Linux
-python3 scripts/kurly.py products 우유
+python3 "$SKILL_DIR/scripts/kurly.py" products 우유
 
 # Windows
-py -3 scripts/kurly.py products 우유
+py -3 "$env:SKILL_DIR\scripts\kurly.py" products 우유
 ```
 
 **"이 상품(번호) 가격·배송 알려줘"**
 ```bash
 # macOS/Linux
-python3 scripts/kurly.py price 5063110
+python3 "$SKILL_DIR/scripts/kurly.py" price 5063110
 
 # Windows
-py -3 scripts/kurly.py price 5063110
+py -3 "$env:SKILL_DIR\scripts\kurly.py" price 5063110
 ```
 
 **"컬리에서 딸기 가격 빠르게 보고 싶어 (상품명으로)"**
 ```bash
 # macOS/Linux
-python3 scripts/kurly.py price --name 딸기
+python3 "$SKILL_DIR/scripts/kurly.py" price --name 딸기
 
 # Windows
-py -3 scripts/kurly.py price --name 딸기
+py -3 "$env:SKILL_DIR\scripts\kurly.py" price --name 딸기
 ```
 
 ---
@@ -76,7 +89,7 @@ py -3 scripts/kurly.py price --name 딸기
 ### `products` — 상품 검색
 
 ```bash
-python3 scripts/kurly.py products <검색어> [옵션]
+python3 "$SKILL_DIR/scripts/kurly.py" products <검색어> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -87,7 +100,7 @@ python3 scripts/kurly.py products <검색어> [옵션]
 
 예시:
 ```bash
-python3 scripts/kurly.py products 우유 --page-size 10
+python3 "$SKILL_DIR/scripts/kurly.py" products 우유 --page-size 10
 ```
 
 > **정확 매칭 vs 추천 대체**: 검색어가 정확히 매칭되지 않으면 마켓컬리가 의미 유사 상품으로 결과를 대체합니다. 이 경우 출력의 `match_type`이 `"semantic_retry"`가 되고, markdown에는 "정확 매칭 없음 → 추천 상품" 경고가 붙습니다. 추천 상품을 정확 매칭으로 오인하지 마세요.
@@ -97,9 +110,9 @@ python3 scripts/kurly.py products 우유 --page-size 10
 ### `price` — 가격·상세 조회
 
 ```bash
-python3 scripts/kurly.py price <상품번호> [옵션]
+python3 "$SKILL_DIR/scripts/kurly.py" price <상품번호> [옵션]
 # 또는
-python3 scripts/kurly.py price --name <상품명> [옵션]
+python3 "$SKILL_DIR/scripts/kurly.py" price --name <상품명> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -112,8 +125,8 @@ python3 scripts/kurly.py price --name <상품명> [옵션]
 
 예시:
 ```bash
-python3 scripts/kurly.py price 5063110
-python3 scripts/kurly.py price --name "전용목장우유"
+python3 "$SKILL_DIR/scripts/kurly.py" price 5063110
+python3 "$SKILL_DIR/scripts/kurly.py" price --name "전용목장우유"
 ```
 
 ---
@@ -128,7 +141,7 @@ python3 scripts/kurly.py price --name "전용목장우유"
 | `--output 경로` | stdout | 결과를 저장할 파일 경로 |
 | `--timeout 초` | 30 | HTTP 타임아웃 |
 | `--throttle 초` | 0.5 | 연속 요청 사이 최소 지연 (자가차단 방지) |
-| `--user-agent UA` | 프로브 검증 UA | User-Agent 헤더 |
+| `--user-agent UA` | `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36` (프로브 검증값, `scripts/api.py` DEFAULT_USER_AGENT) | User-Agent 헤더. 403/429 가 반복되면 실제 브라우저의 최신 UA 문자열로 교체해 재시도 |
 
 > **권장 사용 패턴 (자가차단 방지)**: 같은 검색어·상품을 반복 호출하지 말고, 필요한 정보를 한 번에 조회해 로컬에 저장해 쓰세요. 대량 조회가 필요하면 `--throttle` 값을 키우세요.
 
@@ -177,7 +190,7 @@ UTF-8 pretty-print JSON (들여쓰기 2칸, `ensure_ascii=false`). 서브커맨�
 이 스킬은 결과를 자동으로 디스크에 저장하지 않습니다(캐시 없음 — 매번 신선 조회). 결과는 기본적으로 stdout으로 출력되며, 파일로 저장하려면 `--output <경로>`를 명시하세요.
 
 ```bash
-python3 scripts/kurly.py products 우유 --format markdown --output ./우유.md
+python3 "$SKILL_DIR/scripts/kurly.py" products 우유 --format markdown --output ./우유.md
 ```
 
 ---

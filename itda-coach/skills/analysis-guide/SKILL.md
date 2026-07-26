@@ -7,16 +7,16 @@ description: >
   데이터 파일이 *이미 손에 있을 때* 쓰며, 분석을 대신 끝내지 않고 매 단계 쉬운 말과 선택지로
   안내합니다. (지시 설계가 막막하면 problem-guide, 무엇을 할지 자체가 막막하면 find-work.)
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. 비개발자·입문자 1순위."
-allowed-tools: Read, Write, Bash
+compatibility: "Claude Code & Cowork. 비개발자·입문자 1순위."
+allowed-tools: Read, Write, Bash, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[데이터 파일 또는 분석하고 싶은 주제]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "facilitation"
-  version: "0.1.0"
+  version: "0.1.2"
   created_at: "2026-06-21"
-  updated_at: "2026-06-21"
+  updated_at: "2026-07-26"
   tags: "analysis, facilitation, live, non-developer, cowork, data, onboarding"
 ---
 

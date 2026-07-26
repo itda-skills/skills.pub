@@ -7,16 +7,16 @@ description: >
 license: Apache-2.0
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
+allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion, mcp__workspace__bash, mcp__workspace__web_fetch
 argument-hint: "<콘텐츠.md> [데이터.json] [DESIGN.md 경로 또는 URL] [출력.pptx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.7.3"
+  version: "0.8.2"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-08"
-  updated_at: "2026-07-11"
+  updated_at: "2026-07-26"
   tags: "pptx, presentation, design-md, deck, slides"
 ---
 
@@ -44,11 +44,19 @@ metadata:
 세션 내 1회만 확인합니다.
 
 ```bash
-# macOS/Linux
-python3 -m pip install -r requirements.txt   # python-pptx, matplotlib, Pillow, numpy (필수) · pytesseract (선택)
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/pptx-design}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/pptx-design' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 
+# macOS/Linux
+python3 -m pip install -r "$SKILL_DIR/requirements.txt"   # python-pptx, matplotlib, Pillow, numpy (필수) · pytesseract (선택)
+```
+
+```powershell
 # Windows (보조 — 생성만, 검증 렌더는 미지원 환경 多)
-py -3 -m pip install -r requirements.txt
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\pptx-design"  # 미설정이면 SKILL.md 위치 절대경로 사용
+py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"
 ```
 
 - **생성**(관문3)은 위 Python 패키지만으로 충분합니다(Office·LibreOffice 불필요).
@@ -143,11 +151,13 @@ matplotlib 래스터 차트의 환경취약(한글 tofu)·편집불가를 피해
 ```bash
 # 필수 토큰 파일 작성(콘텐츠/데이터의 핵심 명칭·수치를 1줄 1토큰) 후:
 
-# macOS/Linux
-python3 scripts/verify.py <생성.pptx> --tokens tokens.txt --ko "삼성전자,SK하이닉스"
+# macOS/Linux ($SKILL_DIR 는 사전 준비 절에서 확정)
+python3 "$SKILL_DIR/scripts/verify.py" <생성.pptx> --tokens tokens.txt --ko "삼성전자,SK하이닉스"
+```
 
+```powershell
 # Windows (검증 렌더는 LibreOffice 필요)
-py -3 scripts/verify.py <생성.pptx> --tokens tokens.txt --ko "삼성전자,SK하이닉스"
+py -3 "$env:SKILL_DIR\scripts\verify.py" <생성.pptx> --tokens tokens.txt --ko "삼성전자,SK하이닉스"
 ```
 
 - **HARD GATE = (경계이탈 + 퇴화도형 + 빈슬라이드 + 토큰누락) == 0**. PASS 시 `verify.py`가 exit 0을 반환합니다.
@@ -161,7 +171,7 @@ py -3 scripts/verify.py <생성.pptx> --tokens tokens.txt --ko "삼성전자,SK�
 ### 관문5 — 산출
 
 1. **PPTX** — 최종 .pptx 경로.
-2. **렌더 미리보기** — `python3 scripts/render.py <생성.pptx>` 로 생성한 슬라이드 JPG(또는 검증 시 생성된 렌더) 경로.
+2. **렌더 미리보기** — `python3 "$SKILL_DIR/scripts/render.py" <생성.pptx>` 로 생성한 슬라이드 JPG(또는 검증 시 생성된 렌더) 경로.
 3. **검증 요약** — HARD GATE 결과(OOB/zero/blank/missing 카운트 = 0 PASS), advisory 신호, 적용한 DESIGN.md 핵심 팔레트 hex와 그 반영 위치, 재현 한계에 걸린 토큰과 대체 처리, 남은 한계.
 
 ---
@@ -170,9 +180,9 @@ py -3 scripts/verify.py <생성.pptx> --tokens tokens.txt --ko "삼성전자,SK�
 
 | 도구 | 역할 | 호출 |
 |---|---|---|
-| `scripts/deckkit.py` | 공개 헬퍼 API(생성 스크립트가 import) | `from deckkit import ...` |
-| `scripts/verify.py` | 배치/렌더/타이포/스타일/wrap 검증 + HARD GATE | `python3 scripts/verify.py <pptx> [--tokens t.txt] [--ko "..."] [--out DIR] [--no-ocr]` |
-| `scripts/render.py` | soffice 격리 프로파일 렌더 + 썸네일 | `python3 scripts/render.py <pptx> [out_dir]` |
+| `$SKILL_DIR/scripts/deckkit.py` | 공개 헬퍼 API(생성 스크립트가 import) | `from deckkit import ...` |
+| `scripts/verify.py` | 배치/렌더/타이포/스타일/wrap 검증 + HARD GATE | `python3 "$SKILL_DIR/scripts/verify.py" <pptx> [--tokens t.txt] [--ko "..."] [--out DIR] [--no-ocr]` |
+| `scripts/render.py` | soffice 격리 프로파일 렌더 + 썸네일 | `python3 "$SKILL_DIR/scripts/render.py" <pptx> [out_dir]` |
 
 `verify.py`는 PASS 시 exit 0, FAIL 시 exit 1을 반환하므로 자동화에서 분기 가능합니다.
 

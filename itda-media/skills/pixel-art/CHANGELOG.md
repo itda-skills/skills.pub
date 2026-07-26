@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.4] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## 0.2.3 (2026-07-26) — 이슈 #1280·#1281·#1282·#1283
+
+### Changed
+
+- compatibility 라벨을 `Designed for Claude Cowork` 에서 실요건 `Claude Code & Cowork. Python 3.10+ / Pillow` 로 교체 (#1280) — Claude Code 사용자에게 미지원으로 오해되던 표기 정정.
+
+## 0.2.2 (2026-07-26) — 이슈 #1279
+
+### Changed
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## 0.2.1 (2026-07-08)
 
 - "Office 문서에 삽입" 정리 — Excel 은 **이미지 삽입(`office_edit add type=picture`)이 정식 경로**임을 명확화하고, PowerPoint(`type=image`) 예시 추가. `width`/`height` 크기 지정 안내.

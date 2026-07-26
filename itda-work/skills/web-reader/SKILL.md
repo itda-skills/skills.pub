@@ -4,14 +4,14 @@ description: >
   WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·JS 동적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다.
   "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "JS 동적 페이지 읽어줘"처럼 말하면 됩니다.
 license: Apache-2.0
-compatibility: Designed for Claude Cowork
-allowed-tools: Bash, Read, Write, Agent
+compatibility: Claude Code & Cowork
+allowed-tools: Bash, Read, Write, Agent, mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "6.2.1"
+  version: "6.2.4"
   created_at: "2026-03-18"
-  updated_at: "2026-07-04"
+  updated_at: "2026-07-26"
   tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, lightpanda, dynamic, javascript, headless, spa"
 ---
 
@@ -46,14 +46,27 @@ metadata:
 
 ## Prerequisites
 
-```bash
-# uv가 없다면 먼저 설치
-curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
-# powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
+먼저 스킬 디렉토리를 확정한다.
 
-# 필수 의존성 (Playwright/Chromium 불필요)
-uv pip install --system curl_cffi PyYAML beautifulsoup4 markdownify
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/web-reader}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/web-reader' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 ```
+
+```powershell
+# Windows
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\web-reader"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+```bash
+# 필수 의존성 (Playwright/Chromium 불필요)
+python3 -m pip install curl_cffi PyYAML beautifulsoup4 markdownify
+# Windows: py -3 -m pip install curl_cffi PyYAML beautifulsoup4 markdownify
+```
+
+> uv 사용자는 `uv pip install curl_cffi PyYAML beautifulsoup4 markdownify`(venv 권장) 도 가능하다. uv 가 없으면 사용자에게 설치를 요청한다(에이전트가 `curl | sh` 를 실행하지 않는다).
 
 ## 추천 워크플로우 (Fetch → Extract)
 
@@ -61,20 +74,20 @@ uv pip install --system curl_cffi PyYAML beautifulsoup4 markdownify
 
 ```bash
 # 1. 페이지 가져오기
-python3 scripts/fetch_html.py --url "https://example.com" --output page.html
+python3 "$SKILL_DIR/scripts/fetch_html.py" --url "https://example.com" --output page.html
 
 # 2. 콘텐츠 추출 (Markdown) — 파일 입력 시 --url 불요
-python3 scripts/extract_content.py page.html --format markdown
+python3 "$SKILL_DIR/scripts/extract_content.py" page.html --format markdown
 
 # 또는 파이프라인 (Unix)
-python3 scripts/fetch_html.py --url "URL" | \
-  python3 scripts/extract_content.py --format markdown --url "URL"
+python3 "$SKILL_DIR/scripts/fetch_html.py" --url "URL" | \
+  python3 "$SKILL_DIR/scripts/extract_content.py" --format markdown --url "URL"
 ```
 
 Windows:
 ```powershell
-py -3 scripts/fetch_html.py --url "URL" --output page.html
-py -3 scripts/extract_content.py page.html --format markdown
+py -3 "$env:SKILL_DIR\scripts\fetch_html.py" --url "URL" --output page.html
+py -3 "$env:SKILL_DIR\scripts\extract_content.py" page.html --format markdown
 ```
 
 ### 동적 fetch (JavaScript 렌더링, v5.0.0)
@@ -89,13 +102,13 @@ py -3 scripts/extract_content.py page.html --format markdown
 
 ```bash
 # (fallback) Lightpanda 백엔드로 동적 페이지 가져오기 (정제 파이프라인 통과)
-python3 scripts/extract_content.py --url "https://news.naver.com/section/100" --dynamic-only --format markdown
+python3 "$SKILL_DIR/scripts/extract_content.py" --url "https://news.naver.com/section/100" --dynamic-only --format markdown
 
 # (fallback) Lightpanda 자체 --dump markdown 출력 (정제 파이프라인 우회, 한국 미디어에 빠름)
-python3 scripts/extract_content.py --url "https://news.naver.com/" --dynamic-only --lp-markdown
+python3 "$SKILL_DIR/scripts/extract_content.py" --url "https://news.naver.com/" --dynamic-only --lp-markdown
 
 # (fallback) 세부 옵션은 fetch_dynamic.py CLI 직접 사용
-python3 scripts/fetch_dynamic.py --url "URL" --wait-selector "article.body" --terminate-ms 20000
+python3 "$SKILL_DIR/scripts/fetch_dynamic.py" --url "URL" --wait-selector "article.body" --terminate-ms 20000
 ```
 
 **미설치 시 자동 설치** (REQ-INST-007): `--dynamic-only`/`fetch_dynamic.py`는 바이너리가 없으면 `install_lightpanda.py`를 자동 호출해 최신 안정 버전을 설치한 뒤 진행한다(추가 도구 호출 0). CI/테스트는 `--no-auto-install`로 끄면 exit 3 + 설치 안내. Anti-bot 차단 페이지(coupang 등) 호출 시 exit 4 + hyve MCP escalation 안내.
@@ -107,11 +120,11 @@ python3 scripts/fetch_dynamic.py --url "URL" --wait-selector "article.body" --te
 ```bash
 # 세션 1회 — 프로젝트 tools/에 영속 설치 (이후 자동 검출·재사용)
 # 반드시 절대경로로 지정한다 — 상대경로는 cwd에 따라 검출과 어긋나 재사용이 깨진다.
-export ITDA_LIGHTPANDA_DIR="$(pwd)/tools"   # 검출·설치 위치 둘 다 이 경로 사용
-python3 scripts/install_lightpanda.py        # 최신 안정 설치 (이미 있으면 skip, 멱등)
+export ITDA_LIGHTPANDA_DIR="$(pwd)/tools"   # 검출·설치 위치 둘 다 이 경로 사용 (Cowork 한정 권장 — Claude Code 는 기본값 `~/.itda-skills/bin` 이 이미 영속이라 export 불요)
+python3 "$SKILL_DIR/scripts/install_lightpanda.py"        # 최신 안정 설치 (이미 있으면 skip, 멱등)
 
 # Windows (WSL2 내부에서)
-# py -3 scripts/install_lightpanda.py
+# py -3 "$env:SKILL_DIR\scripts\install_lightpanda.py"
 ```
 
 > CI/테스트에서 동적 fetch가 네트워크·설치를 트리거하지 않게 하려면 `extract_content.py --dynamic-only --no-auto-install` 또는 `fetch_dynamic.py --no-auto-install`을 사용한다(미설치 시 exit 3 + 안내).
@@ -119,8 +132,8 @@ python3 scripts/install_lightpanda.py        # 최신 안정 설치 (이미 있�
 | 트리거 (자연어) | 호출 |
 |---|---|
 | 미설치 + 동적 fetch 요청 | (자동 ensure — 추가 호출 없이 최신 안정 설치, 덮어쓰지 않음) |
-| "lightpanda 업데이트해줘" / "최신으로" | `python3 scripts/install_lightpanda.py --version latest --force` |
-| "lightpanda 0.3.0으로" (다운그레이드/특정 버전) | `python3 scripts/install_lightpanda.py --version 0.3.0` |
+| "lightpanda 업데이트해줘" / "최신으로" | `python3 "$SKILL_DIR/scripts/install_lightpanda.py" --version latest --force` |
+| "lightpanda 0.3.0으로" (다운그레이드/특정 버전) | `python3 "$SKILL_DIR/scripts/install_lightpanda.py" --version 0.3.0` |
 
 자동 ensure는 기존 바이너리를 **절대 덮어쓰지 않는다** — 업그레이드/다운그레이드는 위처럼 사용자 명시 요청 시 `--version`/`--force`로만(REQ-INST-008). Windows 네이티브는 미지원(WSL2 내부 Linux 바이너리). 릴리즈가 checksum을 제공하지 않아 `lightpanda version` 실행으로 무결성을 검증한다.
 
@@ -142,18 +155,18 @@ python3 scripts/install_lightpanda.py        # 최신 안정 설치 (이미 있�
 
 ```bash
 # 뉴스 기사 본문만 (nav/footer 제외)
-python3 scripts/fetch_html.py --url "https://example.com/article" --output page.html
-python3 scripts/extract_content.py page.html --selector "article.post" --format markdown
+python3 "$SKILL_DIR/scripts/fetch_html.py" --url "https://example.com/article" --output page.html
+python3 "$SKILL_DIR/scripts/extract_content.py" page.html --selector "article.post" --format markdown
 
 # 표 데이터만 JSON으로 추출
-python3 scripts/extract_content.py page.html --selector "table.price" --format json
+python3 "$SKILL_DIR/scripts/extract_content.py" page.html --selector "table.price" --format json
 
 # 매칭 0건 — exit code 1 (fallback 없음, 명시적 에러)
-# python3 scripts/extract_content.py page.html --selector "div.does-not-exist"
+# python3 "$SKILL_DIR/scripts/extract_content.py" page.html --selector "div.does-not-exist"
 # → Error: CSS selector 'div.does-not-exist' matched 0 elements in the document.
 
 # 문법 오류 — exit code 2
-# python3 scripts/extract_content.py page.html --selector "div::["
+# python3 "$SKILL_DIR/scripts/extract_content.py" page.html --selector "div::["
 # → Error: Invalid CSS selector syntax: ...
 ```
 
@@ -169,9 +182,9 @@ python3 scripts/extract_content.py page.html --selector "table.price" --format j
 
 ```bash
 # 개별 쿠키
-python3 scripts/fetch_html.py --url "URL" --cookie "session_id=abc123" --output page.html
+python3 "$SKILL_DIR/scripts/fetch_html.py" --url "URL" --cookie "session_id=abc123" --output page.html
 # Cookie 헤더 통째로
-python3 scripts/fetch_html.py --url "URL" --cookie "session_id=abc123; token=xyz" --output page.html
+python3 "$SKILL_DIR/scripts/fetch_html.py" --url "URL" --cookie "session_id=abc123; token=xyz" --output page.html
 ```
 
 쿠키는 원본 도메인에만 전송된다 (cross-domain redirect 시 자동 제거).
@@ -179,7 +192,7 @@ python3 scripts/fetch_html.py --url "URL" --cookie "session_id=abc123; token=xyz
 ## SSL 에러 (macOS)
 
 ```bash
-python3 scripts/fetch_html.py --url "URL" --output page.html --no-verify
+python3 "$SKILL_DIR/scripts/fetch_html.py" --url "URL" --output page.html --no-verify
 ```
 
 ## Script Reference
@@ -327,7 +340,7 @@ SSRF 방지 공통 모듈. 직접 CLI 실행하지 않음.
 fetch가 실패하거나 빈 응답을 반환할 때 레이어별 진단:
 
 ```bash
-python3 scripts/diagnose_url.py https://example.com
+python3 "$SKILL_DIR/scripts/diagnose_url.py" https://example.com
 ```
 
 SSRF → DNS → TCP → SSL → HTTP HEAD → robots.txt 를 분리 측정하여 어느 레이어가 문제인지 즉시 식별. 출력 JSON의 `diagnosis.code` 만 보면 됩니다.

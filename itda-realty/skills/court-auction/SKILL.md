@@ -8,15 +8,15 @@ description: >
 license: Apache-2.0
 compatibility: "Python 3.10+ (표준 라이브러리만 사용, 추가 설치 없음)"
 user-invocable: true
-allowed-tools: Bash, Read, AskUserQuestion
+allowed-tools: Bash, Read, AskUserQuestion, mcp__workspace__bash
 argument-hint: "서울중앙지법 오늘 경매 / 2024타경100001 사건 / 강남 아파트 5억 이하 경매"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.1.1"
+  version: "0.1.3"
   status: "experimental"
   created_at: "2026-06-05"
-  updated_at: "2026-06-21"
+  updated_at: "2026-07-26"
   tags: "court-auction, auction, realestate, courtauction, property, real-estate-auction, foreclosure, court"
 ---
 
@@ -57,22 +57,37 @@ JSON으로 돌려줍니다. itda-realty의 시장 데이터(실거래·전세·�
 > 표준 라이브러리만 사용하므로 추가 설치나 `PYTHONPATH` 설정이 필요 없습니다.
 > 모든 옵션은 서브커맨드 **뒤**에 둡니다. 결과는 JSON(stdout)입니다.
 
+먼저 스킬 디렉토리를 확정합니다.
+
 ```bash
-# macOS/Linux (저장소 루트 기준)
-python3 itda-realty/skills/court-auction/scripts/main.py codes courts
-python3 itda-realty/skills/court-auction/scripts/main.py notices --date 2026-04 --court-code B000210 --bid-type date
-python3 itda-realty/skills/court-auction/scripts/main.py case --court-code B000210 --case-number 2024타경100001
-python3 itda-realty/skills/court-auction/scripts/main.py search --sido 서울특별시 --usage-large 건물 --price-max 500000000 --flbd-min 1
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/court-auction}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/court-auction' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\court-auction"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+```bash
+# macOS/Linux
+python3 "$SKILL_DIR/scripts/main.py" codes courts
+python3 "$SKILL_DIR/scripts/main.py" notices --date 2026-04 --court-code B000210 --bid-type date
+python3 "$SKILL_DIR/scripts/main.py" case --court-code B000210 --case-number 2024타경100001
+python3 "$SKILL_DIR/scripts/main.py" search --sido 서울특별시 --usage-large 건물 --price-max 500000000 --flbd-min 1
 
 # Windows
-py -3 itda-realty/skills/court-auction/scripts/main.py codes courts
+py -3 "$env:SKILL_DIR\scripts\main.py" codes courts
 ```
+
+> 저장소 체크아웃에서 개발용으로 실행할 때는 `SKILL_DIR=itda-realty/skills/court-auction` 을 저장소 루트에서 지정하면 위 명령이 그대로 동작합니다.
 
 공고 펼치기(`notice-detail`)는 `notices` 응답 각 row의 `raw.cortOfcCd`·`raw.dspslDxdyYmd`·
 `raw.jdbnCd`(재판부 토큰)를 그대로 넘깁니다:
 
 ```bash
-python3 itda-realty/skills/court-auction/scripts/main.py notice-detail \
+python3 "$SKILL_DIR/scripts/main.py" notice-detail \
   --court-code B000210 --sale-date 20260427 --jdbn-cd <raw.jdbnCd>
 ```
 

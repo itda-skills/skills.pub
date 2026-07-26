@@ -7,16 +7,16 @@ description: >
 license: Apache-2.0
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
+allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion, mcp__workspace__bash, mcp__workspace__web_fetch
 argument-hint: "<데이터.json> [콘텐츠.md] [프리셋 또는 DESIGN.md 경로] [출력.xlsx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.3.2"
+  version: "0.3.4"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-29"
-  updated_at: "2026-07-11"
+  updated_at: "2026-07-26"
   tags: "xlsx, excel, spreadsheet, design-md, report"
 ---
 
@@ -69,11 +69,19 @@ assert openpyxl.load_workbook(OUT, data_only=True)["세그먼트"]["B7"].value =
 ## 사전 준비: 의존성
 
 ```bash
-# macOS/Linux
-python3 -m pip install -r requirements.txt   # openpyxl(필수)·PyMuPDF(렌더)·PyYAML
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/xlsx-design}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/xlsx-design' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 
+# macOS/Linux
+python3 -m pip install -r "$SKILL_DIR/requirements.txt"   # openpyxl(필수)·PyMuPDF(렌더)·PyYAML
+```
+
+```powershell
 # Windows
-py -3 -m pip install -r requirements.txt     # + pywin32(Excel COM 렌더)
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\xlsx-design"  # 미설정이면 SKILL.md 위치 절대경로 사용
+py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"     # + pywin32(Excel COM 렌더)
 ```
 
 - **생성**(관문3)은 `openpyxl` 만으로 충분(Office·LibreOffice 불필요).
@@ -138,7 +146,13 @@ sk.save_book(wb, OUT)
 
 ### 관문4 — ★검증 게이트 [HARD — 건너뛰기 금지]
 ```bash
-py -3 scripts/verify.py <생성.xlsx> --tokens tokens.txt
+# macOS/Linux ($SKILL_DIR 는 사전 준비 절에서 확정)
+python3 "$SKILL_DIR/scripts/verify.py" <생성.xlsx> --tokens tokens.txt
+```
+
+```powershell
+# Windows
+py -3 "$env:SKILL_DIR\scripts\verify.py" <생성.xlsx> --tokens tokens.txt
 ```
 - **HARD GATE = (빈통합문서 + 토큰누락 + 한글_비안전폰트_셀 + 저대비) == 0**. PASS 시 exit 0.
 - **토큰은 셀 값 기준** — `tokens.txt` 에는 시트명·차트 제목이 아니라 **셀에 실제 들어간 텍스트**를 적는다(토큰 게이트는 셀 값만 대조하므로 시트명을 토큰으로 넣으면 헛 FAIL).
@@ -157,9 +171,9 @@ py -3 scripts/verify.py <생성.xlsx> --tokens tokens.txt
 
 | 도구 | 역할 | 호출 |
 |---|---|---|
-| `scripts/sheetkit.py` | 공개 헬퍼 API | `import sheetkit as sk` |
-| `scripts/verify.py` | 빈문서/토큰/한글폰트/구조/렌더 + HARD GATE | `py -3 scripts/verify.py <xlsx> [--tokens t.txt] [--no-render]` |
-| `scripts/render.py` | Excel COM(Win)/LibreOffice 렌더 → PDF → PNG | `py -3 scripts/render.py <xlsx> [out_dir] [--dpi N]` |
+| `$SKILL_DIR/scripts/sheetkit.py` | 공개 헬퍼 API | `import sheetkit as sk` |
+| `scripts/verify.py` | 빈문서/토큰/한글폰트/구조/렌더 + HARD GATE | `python3 "$SKILL_DIR/scripts/verify.py" <xlsx> [--tokens t.txt] [--no-render]` (Win: `py -3 "$env:SKILL_DIR\scripts\verify.py" …`) |
+| `scripts/render.py` | Excel COM(Win)/LibreOffice 렌더 → PDF → PNG | `python3 "$SKILL_DIR/scripts/render.py" <xlsx> [out_dir] [--dpi N]` (Win: `py -3 "$env:SKILL_DIR\scripts\render.py" …`) |
 
 ## 에러 처리
 

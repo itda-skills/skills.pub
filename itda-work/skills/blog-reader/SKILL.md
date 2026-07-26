@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[list|post|comments|search|read] [options]"
 metadata:
   author: "Chinseok"
-  version: "0.11.4"
+  version: "0.11.7"
   category: "data-fetching"
   status: "stable"
   created_at: "2026-05-15"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "naver, blog, comments, search, read-only"
 ---
 
@@ -49,38 +49,51 @@ metadata:
 
 ## 빠른 시작
 
+### 실행 전 — 스킬 디렉토리 확정
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/blog-reader}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/blog-reader' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\blog-reader"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
 자연어 요청과 대응되는 CLI 호출 예시입니다.
 
 **"아스트로유지 블로그 최근 7일 포스팅 가져와줘"**
 ```bash
 # macOS/Linux
-python3 scripts/blog_reader.py list --blog-id astroyuji --days 7
+python3 "$SKILL_DIR/scripts/blog_reader.py" list --blog-id astroyuji --days 7
 
 # Windows
-py -3 scripts/blog_reader.py list --blog-id astroyuji --days 7
+py -3 "$env:SKILL_DIR\scripts\blog_reader.py" list --blog-id astroyuji --days 7
 ```
 
 **"이 블로그 포스팅 본문이랑 댓글 같이 보여줘"**
 ```bash
-python3 scripts/blog_reader.py read
+python3 "$SKILL_DIR/scripts/blog_reader.py" read
   --url https://blog.naver.com/astroyuji/224284984821
 ```
 
 **"이 포스팅의 댓글 트리만 보여줘"**
 ```bash
-python3 scripts/blog_reader.py comments
+python3 "$SKILL_DIR/scripts/blog_reader.py" comments
   --url https://m.blog.naver.com/astroyuji/224284984821
 ```
 
 **"이 블로그에서 '인공지능' 검색해줘"**
 ```bash
-python3 scripts/blog_reader.py search
+python3 "$SKILL_DIR/scripts/blog_reader.py" search
   --blog-id astroyuji --query 인공지능
 ```
 
 **"이 글에 홍길동이 단 댓글만 모아줘"**
 ```bash
-python3 scripts/blog_reader.py comments
+python3 "$SKILL_DIR/scripts/blog_reader.py" comments
   --url https://blog.naver.com/astroyuji/224284984821
   --filter-author 홍길동
 ```
@@ -92,7 +105,7 @@ python3 scripts/blog_reader.py comments
 ### `list` — 포스트 목록 조회
 
 ```bash
-python3 scripts/blog_reader.py list --blog-id <ID> [옵션]
+python3 "$SKILL_DIR/scripts/blog_reader.py" list --blog-id <ID> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -108,8 +121,8 @@ python3 scripts/blog_reader.py list --blog-id <ID> [옵션]
 
 예시:
 ```bash
-python3 scripts/blog_reader.py list --blog-id astroyuji --days 30 --limit 10
-python3 scripts/blog_reader.py list --blog-id astroyuji --category 여행 --format markdown
+python3 "$SKILL_DIR/scripts/blog_reader.py" list --blog-id astroyuji --days 30 --limit 10
+python3 "$SKILL_DIR/scripts/blog_reader.py" list --blog-id astroyuji --category 여행 --format markdown
 ```
 
 ---
@@ -117,9 +130,9 @@ python3 scripts/blog_reader.py list --blog-id astroyuji --category 여행 --form
 ### `post` — 포스트 본문 조회
 
 ```bash
-python3 scripts/blog_reader.py post --url <URL> [옵션]
+python3 "$SKILL_DIR/scripts/blog_reader.py" post --url <URL> [옵션]
 # 또는
-python3 scripts/blog_reader.py post --blog-id <ID> --log-no <번호> [옵션]
+python3 "$SKILL_DIR/scripts/blog_reader.py" post --blog-id <ID> --log-no <번호> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -132,11 +145,11 @@ python3 scripts/blog_reader.py post --blog-id <ID> --log-no <번호> [옵션]
 
 예시:
 ```bash
-python3 scripts/blog_reader.py post --url https://blog.naver.com/astroyuji/224284984821
-python3 scripts/blog_reader.py post --blog-id astroyuji --log-no 224284984821 --body-format html
+python3 "$SKILL_DIR/scripts/blog_reader.py" post --url https://blog.naver.com/astroyuji/224284984821
+python3 "$SKILL_DIR/scripts/blog_reader.py" post --blog-id astroyuji --log-no 224284984821 --body-format html
 
 # 이미지 많은 글 — URL 빼고 본문 텍스트만 (토큰 절감)
-python3 scripts/blog_reader.py post --url https://blog.naver.com/astroyuji/224284984821 --no-image-urls
+python3 "$SKILL_DIR/scripts/blog_reader.py" post --url https://blog.naver.com/astroyuji/224284984821 --no-image-urls
 ```
 
 ---
@@ -144,7 +157,7 @@ python3 scripts/blog_reader.py post --url https://blog.naver.com/astroyuji/22428
 ### `comments` — 댓글·대댓글 트리 조회
 
 ```bash
-python3 scripts/blog_reader.py comments --url <URL> [옵션]
+python3 "$SKILL_DIR/scripts/blog_reader.py" comments --url <URL> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -159,13 +172,13 @@ python3 scripts/blog_reader.py comments --url <URL> [옵션]
 예시:
 ```bash
 # 전체 댓글 트리 (기본)
-python3 scripts/blog_reader.py comments --url https://blog.naver.com/astroyuji/224284984821
+python3 "$SKILL_DIR/scripts/blog_reader.py" comments --url https://blog.naver.com/astroyuji/224284984821
 
 # 깊이 2까지, 최대 50개
-python3 scripts/blog_reader.py comments --url ... --max-depth 2 --max-comments 50
+python3 "$SKILL_DIR/scripts/blog_reader.py" comments --url ... --max-depth 2 --max-comments 50
 
 # 특정 작성자 댓글만
-python3 scripts/blog_reader.py comments --url ... --filter-author 홍길동
+python3 "$SKILL_DIR/scripts/blog_reader.py" comments --url ... --filter-author 홍길동
 ```
 
 ---
@@ -173,7 +186,7 @@ python3 scripts/blog_reader.py comments --url ... --filter-author 홍길동
 ### `search` — 블로그 내 검색
 
 ```bash
-python3 scripts/blog_reader.py search --blog-id <ID> --query <키워드> [옵션]
+python3 "$SKILL_DIR/scripts/blog_reader.py" search --blog-id <ID> --query <키워드> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -187,7 +200,7 @@ python3 scripts/blog_reader.py search --blog-id <ID> --query <키워드> [옵션
 
 예시:
 ```bash
-python3 scripts/blog_reader.py search --blog-id astroyuji --query 인공지능 --limit 5
+python3 "$SKILL_DIR/scripts/blog_reader.py" search --blog-id astroyuji --query 인공지능 --limit 5
 ```
 
 ---
@@ -197,7 +210,7 @@ python3 scripts/blog_reader.py search --blog-id astroyuji --query 인공지능 -
 URL 하나로 포스트 본문과 댓글 트리를 **동시에** 가져옵니다.
 
 ```bash
-python3 scripts/blog_reader.py read --url <URL> [옵션]
+python3 "$SKILL_DIR/scripts/blog_reader.py" read --url <URL> [옵션]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -244,11 +257,11 @@ JSON 응답 구조:
 
 예시:
 ```bash
-python3 scripts/blog_reader.py read --url https://blog.naver.com/astroyuji/224284984821
-python3 scripts/blog_reader.py read --url ... --format markdown --max-comments 20 --body-format html
+python3 "$SKILL_DIR/scripts/blog_reader.py" read --url https://blog.naver.com/astroyuji/224284984821
+python3 "$SKILL_DIR/scripts/blog_reader.py" read --url ... --format markdown --max-comments 20 --body-format html
 
 # 이미지 많은 글 — 본문/댓글은 보되 이미지 URL은 제거
-python3 scripts/blog_reader.py read --url https://blog.naver.com/astroyuji/224284984821 --no-image-urls
+python3 "$SKILL_DIR/scripts/blog_reader.py" read --url https://blog.naver.com/astroyuji/224284984821 --no-image-urls
 ```
 
 ---
@@ -385,10 +398,12 @@ itda-work/skills/web-reader   — fetch_html.py HTTP 페치 위임 (필수)
 web-reader의 `fetch_html.py`를 subprocess로 호출합니다. blog-reader 자체에는 외부 HTTP 라이브러리 의존성이 없습니다.
 
 ```bash
-# web-reader 의존성 설치 (필요 시)
-cd itda-work/skills/web-reader
-uv pip install --system -r requirements.tx
+# web-reader 의존성 설치 (필요 시) — 형제 스킬 디렉토리 기준
+python3 -m pip install -r "$SKILL_DIR/../web-reader/requirements.txt"
+# Windows: py -3 -m pip install -r "$env:SKILL_DIR\..\web-reader\requirements.txt"
 ```
+
+> uv 사용자는 `uv pip install -r "$SKILL_DIR/../web-reader/requirements.txt"`(venv 권장) 도 가능하다.
 
 ---
 

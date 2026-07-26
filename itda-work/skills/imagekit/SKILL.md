@@ -5,15 +5,15 @@ description: >
   "이미지 크기 줄여줘", "여백 크롭해줘", "PNG를 JPG로 변환해줘"처럼 말하면 됩니다.
   한국 사무환경에서 자주 묻는 사진 편집 요청을 모두 다룹니다.
 license: Apache-2.0
-compatibility: Designed for Claude Cowork
-allowed-tools: Bash, Read
+compatibility: Claude Code & Cowork
+allowed-tools: Bash, Read, mcp__workspace__bash
 user-invocable: true
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "media"
-  version: "0.10.3"
+  version: "0.10.6"
   created_at: "2026-03-18"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "image, resize, shrink, scale, crop, trim, dpi, resolution, convert, rotate, flip, imagekit"
 ---
 
@@ -25,9 +25,26 @@ metadata:
 
 Python 3.10 이상과 Pillow 라이브러리가 필요합니다.
 
+먼저 스킬 디렉토리를 확정합니다.
+
 ```bash
-uv pip install --system -r requirements.txt
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/imagekit}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/imagekit' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 ```
+
+```powershell
+# Windows
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\imagekit"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+```bash
+python3 -m pip install -r "$SKILL_DIR/requirements.txt"
+# Windows: py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"
+```
+
+> uv 사용자는 `uv pip install -r "$SKILL_DIR/requirements.txt"`(venv 권장) 도 가능하다.
 
 ## Workflow
 
@@ -81,10 +98,10 @@ JSON `data` 필드를 파싱해 사람이 읽기 쉬운 형태로 결과를 출�
 
 ```bash
 # macOS/Linux
-python3 scripts/imagekit.py info --image-path <path>
+python3 "$SKILL_DIR/scripts/imagekit.py" info --image-path <path>
 
 # Windows
-py -3 scripts/imagekit.py info --image-path <path>
+py -3 "$env:SKILL_DIR\scripts\imagekit.py" info --image-path <path>
 ```
 
 **응답 데이터 필드:**
@@ -116,7 +133,7 @@ py -3 scripts/imagekit.py info --image-path <path>
 
 ```bash
 # macOS/Linux
-python3 scripts/imagekit.py resize \
+python3 "$SKILL_DIR/scripts/imagekit.py" resize \
   --input-image-path <in> \
   --output-image-path <out> \
   [--target-width W] \
@@ -127,7 +144,7 @@ python3 scripts/imagekit.py resize \
   [--overwrite]
 
 # Windows
-py -3 scripts/imagekit.py resize \
+py -3 "$env:SKILL_DIR\scripts\imagekit.py" resize \
   --input-image-path <in> \
   --output-image-path <out> \
   [--target-width W] \
@@ -165,19 +182,19 @@ py -3 scripts/imagekit.py resize \
 
 ```bash
 # 가로 1920px로 비율 유지 리사이즈
-python3 scripts/imagekit.py resize \
+python3 "$SKILL_DIR/scripts/imagekit.py" resize \
   --input-image-path photo.jpg \
   --output-image-path photo-resized.jpg \
   --target-width 1920
 
 # 0.5배로 축소
-python3 scripts/imagekit.py resize \
+python3 "$SKILL_DIR/scripts/imagekit.py" resize \
   --input-image-path photo.jpg \
   --output-image-path photo-half.jpg \
   --multiplier 0.5
 
 # 정확히 800×600으로 (비율 무시)
-python3 scripts/imagekit.py resize \
+python3 "$SKILL_DIR/scripts/imagekit.py" resize \
   --input-image-path photo.jpg \
   --output-image-path photo-800x600.jpg \
   --target-width 800 --target-height 600 \
@@ -190,7 +207,7 @@ python3 scripts/imagekit.py resize \
 
 ```bash
 # macOS/Linux
-python3 scripts/imagekit.py crop-edges \
+python3 "$SKILL_DIR/scripts/imagekit.py" crop-edges \
   --input-image-path <in> \
   --output-image-path <out> \
   [--crop-top V] [--crop-bottom V] [--crop-left V] [--crop-right V] \
@@ -200,7 +217,7 @@ python3 scripts/imagekit.py crop-edges \
   [--overwrite]
 
 # Windows
-py -3 scripts/imagekit.py crop-edges \
+py -3 "$env:SKILL_DIR\scripts\imagekit.py" crop-edges \
   --input-image-path <in> \
   --output-image-path <out> \
   [--crop-top V] [--crop-bottom V] [--crop-left V] [--crop-right V] \
@@ -228,19 +245,19 @@ py -3 scripts/imagekit.py crop-edges \
 
 ```bash
 # 자동 감지로 흰 여백 제거
-python3 scripts/imagekit.py crop-edges \
+python3 "$SKILL_DIR/scripts/imagekit.py" crop-edges \
   --input-image-path scan.png \
   --output-image-path scan-cropped.png \
   --auto-detect
 
 # 상단/하단 각 50px 제거
-python3 scripts/imagekit.py crop-edges \
+python3 "$SKILL_DIR/scripts/imagekit.py" crop-edges \
   --input-image-path photo.jpg \
   --output-image-path photo-cropped.jpg \
   --crop-top 50 --crop-bottom 50
 
 # 좌우 각 5% 제거
-python3 scripts/imagekit.py crop-edges \
+python3 "$SKILL_DIR/scripts/imagekit.py" crop-edges \
   --input-image-path banner.jpg \
   --output-image-path banner-cropped.jpg \
   --crop-left 5% --crop-right 5%
@@ -252,7 +269,7 @@ python3 scripts/imagekit.py crop-edges \
 
 ```bash
 # macOS/Linux
-python3 scripts/imagekit.py set-dpi \
+python3 "$SKILL_DIR/scripts/imagekit.py" set-dpi \
   --input-image-path <in> \
   --output-image-path <out> \
   --target-dpi D \
@@ -260,7 +277,7 @@ python3 scripts/imagekit.py set-dpi \
   [--overwrite]
 
 # Windows
-py -3 scripts/imagekit.py set-dpi \
+py -3 "$env:SKILL_DIR\scripts\imagekit.py" set-dpi \
   --input-image-path <in> \
   --output-image-path <out> \
   --target-dpi D \
@@ -286,7 +303,7 @@ py -3 scripts/imagekit.py set-dpi \
 
 ```bash
 # 인쇄용 DPI 300으로 변경
-python3 scripts/imagekit.py set-dpi \
+python3 "$SKILL_DIR/scripts/imagekit.py" set-dpi \
   --input-image-path photo.jpg \
   --output-image-path photo-300dpi.jpg \
   --target-dpi 300
@@ -300,7 +317,7 @@ python3 scripts/imagekit.py set-dpi \
 
 ```bash
 # macOS/Linux
-python3 scripts/imagekit.py convert \
+python3 "$SKILL_DIR/scripts/imagekit.py" convert \
   --input-image-path <in> \
   --output-image-path <out> \
   [--jpeg-quality Q] \
@@ -308,7 +325,7 @@ python3 scripts/imagekit.py convert \
   [--dry-run]
 
 # Windows
-py -3 scripts/imagekit.py convert \
+py -3 "$env:SKILL_DIR\scripts\imagekit.py" convert \
   --input-image-path <in> \
   --output-image-path <out> \
   [--jpeg-quality Q] \
@@ -334,12 +351,12 @@ py -3 scripts/imagekit.py convert \
 
 ```bash
 # PNG를 JPEG로 변환
-python3 scripts/imagekit.py convert \
+python3 "$SKILL_DIR/scripts/imagekit.py" convert \
   --input-image-path logo.png \
   --output-image-path logo.jpg
 
 # JPEG를 PNG로 변환
-python3 scripts/imagekit.py convert \
+python3 "$SKILL_DIR/scripts/imagekit.py" convert \
   --input-image-path photo.jpg \
   --output-image-path photo.png
 ```
@@ -350,7 +367,7 @@ python3 scripts/imagekit.py convert \
 
 ```bash
 # macOS/Linux
-python3 scripts/imagekit.py rotate \
+python3 "$SKILL_DIR/scripts/imagekit.py" rotate \
   --input-image-path <in> \
   --output-image-path <out> \
   [--angle 90|180|270] \
@@ -360,7 +377,7 @@ python3 scripts/imagekit.py rotate \
   [--dry-run]
 
 # Windows
-py -3 scripts/imagekit.py rotate \
+py -3 "$env:SKILL_DIR\scripts\imagekit.py" rotate \
   --input-image-path <in> \
   --output-image-path <out> \
   [--angle 90|180|270] \
@@ -383,19 +400,19 @@ py -3 scripts/imagekit.py rotate \
 
 ```bash
 # 시계방향 90도 회전
-python3 scripts/imagekit.py rotate \
+python3 "$SKILL_DIR/scripts/imagekit.py" rotate \
   --input-image-path photo.jpg \
   --output-image-path photo-rotated.jpg \
   --angle 90
 
 # 수평 반전 (좌우 뒤집기)
-python3 scripts/imagekit.py rotate \
+python3 "$SKILL_DIR/scripts/imagekit.py" rotate \
   --input-image-path photo.jpg \
   --output-image-path photo-flipped.jpg \
   --flip horizontal
 
 # 90도 회전 후 수평 반전
-python3 scripts/imagekit.py rotate \
+python3 "$SKILL_DIR/scripts/imagekit.py" rotate \
   --input-image-path photo.jpg \
   --output-image-path photo-transformed.jpg \
   --angle 90 --flip horizontal
@@ -408,7 +425,7 @@ python3 scripts/imagekit.py rotate \
 모든 write 명령에 `--dry-run` 플래그를 추가하면 실제 파일을 생성하지 않고 결과를 미리 볼 수 있습니다.
 
 ```bash
-python3 scripts/imagekit.py resize \
+python3 "$SKILL_DIR/scripts/imagekit.py" resize \
   --input-image-path photo.jpg \
   --output-image-path photo-resized.jpg \
   --target-width 500 \

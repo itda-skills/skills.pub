@@ -2,6 +2,12 @@
 
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [4.0.1] — 2026-07-26 (이슈 #1274)
+
+### Fixed
+
+- 미정의 변수 `${CLAUDE_SKILL_DIR}` 제거 — Claude Code 세션에 존재하지 않아 빈 문자열로 전개(`pip install -r "/requirements.txt"` 등 조용한 실패). 요구 사항 절에 `SKILL_DIR` 확정 스니펫(Code=`$CLAUDE_PLUGIN_ROOT` / Cowork=세션 마운트 find) 신설, 전 명령 `${SKILL_DIR}` 로 통일.
+
 ## [4.0.0] — 2026-06-14
 
 ### Breaking Changes

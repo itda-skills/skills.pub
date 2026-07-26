@@ -5,16 +5,16 @@ description: >
   "블루키워드 찾아줘", "경쟁 적은 키워드 분석해줘", "블로그 키워드 포화지수 확인해줘"처럼 말하면 됩니다.
   포화지수·KEI 계산과 S~D 등급 분류를 제공합니다.
 license: Apache-2.0
-compatibility: "Designed for Claude Cowork. Python 3.10+"
-allowed-tools: Bash, Read, Write
+compatibility: "Claude Code & Cowork. Python 3.10+"
+allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
 argument-hint: "[시드 키워드] [--min-volume 500] [--min-grade B] [--trend] [--format md|json|csv]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "seo"
-  version: "0.10.6"
+  version: "0.10.9"
   created_at: "2026-03-26"
-  updated_at: "2026-05-22"
+  updated_at: "2026-07-26"
   tags: "SEO, KEI, blue keyword, keyword analysis, naver, blog seo, saturation index"
 ---
 
@@ -84,7 +84,7 @@ Python 3.10 이상만 있으면 됩니다. 추가 패키지 설치는 필요하�
 
 ### 키 등록 — 작업 폴더 `.env`에 등록 (권장, 비개발자 포함 모든 사용자)
 
-Cowork에 연결한 작업 폴더(연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 5줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다.
+작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env` 파일을 만들고 아래 5줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해 두어도 로더가 자동으로 찾아 쓴다.
 
 ```dotenv
 NAVER_SEARCHAD_ACCESS_KEY=검색광고_API키
@@ -94,7 +94,7 @@ NAVER_CLIENT_ID=네이버앱_클라이언트ID
 NAVER_CLIENT_SECRET=네이버앱_클라이언트시크릿
 ```
 
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `NAVER_SEARCHAD_ACCESS_KEY=<키> NAVER_CLIENT_ID=<키> ... python3 scripts/keyword_analysis.py ...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
+> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `NAVER_SEARCHAD_ACCESS_KEY=<키> NAVER_CLIENT_ID=<키> ... python3 "$SKILL_DIR/scripts/keyword_analysis.py" ...`. 지침에도 없으면 GUIDE의 발급 안내를 제시한다. 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
 
 > **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 NAVER_CLIENT_ID 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
 
@@ -118,12 +118,27 @@ NAVER_CLIENT_SECRET=네이버앱_클라이언트시크릿
 
 > 일반 네이버 계정으로 발급 가능합니다 (광고주 계정 불필요). 자세한 내용은 [references/naver-api.md](references/naver-api.md#2-네이버-오픈-api-키-발급)를 참고하세요.
 
+> **⚠️ NAVER API HUB 이관 고지 (2026-07 약관 변경)**: 검색·데이터랩 API는 네이버클라우드(NCP) **NAVER API HUB**로 이관된다. 2026-07-30 이후 개발자센터 신규 이용 신청 불가 — 신규 사용자가 아래 절차에서 신청이 막히면 NAVER API HUB에서 발급하도록 안내한다. 기존 키는 **2027-06-30까지** 현행대로 동작한다. 검색광고 API는 별개 서비스로 무관.
+
 1. https://developers.naver.com 접속 후 회원가입 또는 로그인
 2. 상단 메뉴 **Application** → **애플리케이션 등록** 클릭
 3. 사용 API에서 두 항목 체크: **검색** + **데이터랩(검색어트렌드)**
    - "데이터랩(쇼핑인사이트)"는 이 스킬에서 사용하지 않음
 4. **WEB 설정** → Callback URL에 `https://example.com` 입력
 5. 등록 완료 후 **Client ID** 와 **Client Secret** 복사
+
+## 실행 전 — 스킬 디렉토리 확정
+
+```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/blog-seo}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/blog-seo' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\blog-seo"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
 
 ## API 사용량 안내 (실행 전 필독)
 
@@ -153,20 +168,20 @@ NAVER_CLIENT_SECRET=네이버앱_클라이언트시크릿
 
 ```
 # 1단계: 트렌드 없이 전체 탐색 (데이터랩 0회 소모)
-python3 scripts/keyword_analysis.py --keywords "파이썬" --min-grade B
+python3 "$SKILL_DIR/scripts/keyword_analysis.py" --keywords "파이썬" --min-grade B
 
 # 2단계: 유망 키워드만 트렌드 포함 분석 (데이터랩 top-n회 소모)
-python3 scripts/keyword_analysis.py --keywords "파이썬 독학,파이썬 기초" --min-grade B --trend --top-n 10
+python3 "$SKILL_DIR/scripts/keyword_analysis.py" --keywords "파이썬 독학,파이썬 기초" --min-grade B --trend --top-n 10
 ```
 
 ## 사용법
 
 ```bash
 # macOS/Linux
-python3 scripts/keyword_analysis.py --keywords "파이썬 독학,파이썬 강의"
+python3 "$SKILL_DIR/scripts/keyword_analysis.py" --keywords "파이썬 독학,파이썬 강의"
 
 # Windows
-py -3 scripts/keyword_analysis.py --keywords "파이썬 독학,파이썬 강의"
+py -3 "$env:SKILL_DIR\scripts\keyword_analysis.py" --keywords "파이썬 독학,파이썬 강의"
 ```
 
 ### 주요 옵션
@@ -185,20 +200,20 @@ py -3 scripts/keyword_analysis.py --keywords "파이썬 독학,파이썬 강의"
 
 ```bash
 # 블루키워드만 추출 (S, A등급)
-python3 scripts/keyword_analysis.py \
+python3 "$SKILL_DIR/scripts/keyword_analysis.py" \
   --keywords "파이썬 독학,파이썬 강의" \
   --min-grade A \
   --format md
 
 # 트렌드 분석 포함, CSV 저장
-python3 scripts/keyword_analysis.py \
+python3 "$SKILL_DIR/scripts/keyword_analysis.py" \
   --keywords "파이썬" \
   --trend \
   --format csv \
   --output result.csv
 
 # 고검색량 키워드 집중 분석
-python3 scripts/keyword_analysis.py \
+python3 "$SKILL_DIR/scripts/keyword_analysis.py" \
   --keywords "파이썬,자바,자바스크립트" \
   --min-volume 1000 \
   --top-n 100

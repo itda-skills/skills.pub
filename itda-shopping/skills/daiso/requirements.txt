@@ -5,4 +5,4 @@
 # 하며, 나머지(products·price·stores)는 stdlib만으로 정상 동작함.
 #
 # 설치(해당 기능을 쓸 때만):
-#   uv pip install --system cryptography
+#   python3 -m pip install cryptography

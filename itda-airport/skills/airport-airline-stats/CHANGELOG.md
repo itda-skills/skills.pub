@@ -1,5 +1,23 @@
 # Changelog — airport-airline-stats
 
+## [1.0.4] — 2026-07-26 (이슈 #1283)
+
+### Changed
+
+- `allowed-tools` 에 Cowork 실명(mcp__workspace__bash) 병기 (#1283) — 표준명 단독 시 Cowork 필터에서 도구가 조용히 소실되는 결손(#1130) 차단.
+
+## [1.0.3] — 2026-07-26 (이슈 #1280)
+
+### Changed
+
+- compatibility 라벨 "Designed for Claude Cowork. Python 3.10+" → "Claude Code & Cowork. Python 3.10+" (Claude Code 에서도 동작하므로 배타 표기 제거).
+
+## [1.0.2] — 2026-07-26 (이슈 #1279)
+
+### Changed
+
+- 실행 경로를 SKILL_DIR 확정 블록 기준으로 표준화 (#1279) — cwd 상대경로/저장소 경로 표기 제거.
+
 ## [1.0.1] — 2026-05-28
 
 ### Improvements

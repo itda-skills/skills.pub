@@ -8,15 +8,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+ (표준 라이브러리만 사용, 추가 설치 없음)"
 user-invocable: true
-allowed-tools: Bash, Read, AskUserQuestion
+allowed-tools: Bash, Read, AskUserQuestion, mcp__workspace__bash
 argument-hint: "강남역 근처 술집 / 홍대 와이파이 카페 / 제주공항 숙소"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.1.1"
+  version: "0.1.3"
   status: "experimental"
   created_at: "2026-06-05"
-  updated_at: "2026-06-06"
+  updated_at: "2026-07-26"
   tags: "place, kakao, map, nearby, restaurant, cafe, bar, hotel, search, location, travel, place-finder"
 ---
 
@@ -53,14 +53,27 @@ metadata:
 > **실행 전제**: 표준 라이브러리만 사용하므로 추가 설치나 `PYTHONPATH` 설정이
 > 필요 없습니다.
 
+먼저 스킬 디렉토리를 확정합니다(이후 모든 실행이 이 기준).
+
 ```bash
-# macOS/Linux (저장소 루트 기준)
-python3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 강남역 --category 술집
-python3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 홍대입구역 --category 카페 --amenity wifi
-python3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 제주공항 --category 숙소 --sort rating --limit 5 --json
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/place-finder}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/place-finder' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\place-finder"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+
+```bash
+# macOS/Linux
+python3 "$SKILL_DIR/scripts/main.py" search --near 강남역 --category 술집
+python3 "$SKILL_DIR/scripts/main.py" search --near 홍대입구역 --category 카페 --amenity wifi
+python3 "$SKILL_DIR/scripts/main.py" search --near 제주공항 --category 숙소 --sort rating --limit 5 --json
 
 # Windows
-py -3 skills/itda-travel/skills/place-finder/scripts/main.py search --near 강남역 --category 술집
+py -3 "$env:SKILL_DIR\scripts\main.py" search --near 강남역 --category 술집
 ```
 
 옵션(모두 서브커맨드 `search` **뒤**에 둡니다):

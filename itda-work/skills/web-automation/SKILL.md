@@ -6,16 +6,16 @@ description: >
   "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘"처럼 말하면 됩니다.
   에이전트가 web_browse 액션 조합을 고를 때의 정본 가이드입니다.
 license: MIT
-compatibility: Designed for Claude Cowork (hyve MCP 필요)
+compatibility: Claude Code & Cowork (hyve MCP 필요)
 user-invocable: true
-allowed-tools: Read, Write, Bash
+allowed-tools: Read, Write, Bash, mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.4.5"
+  version: "0.4.7"
   status: "stable"
   created_at: "2026-06-11"
-  updated_at: "2026-07-13"
+  updated_at: "2026-07-26"
   tags: "web, automation, browser, session, login, form, scrape, harvest, extract, mcp, hyve, web-browse, recipe, webview, token-diet, webmail, mail"
 ---
 
@@ -37,7 +37,7 @@ hyve `web_browse` MCP 도구로 웹 자동화를 수행할 때의 **액션 조�
 > 이 스킬은 hyve `web_browse` MCP 가 필요합니다. hyve 를 MCP 커넥터로 등록하세요:
 >
 > - 호스트(데스크톱)에서 hyve 트레이 앱(`hyve serve`)을 켜고, **hyve 설정 > MCP 탭**에서
->   **웹(web) 프리셋**을 사용 중인 클라이언트(Claude Desktop/Cowork·Codex)에 등록합니다.
+>   **웹(web) 프리셋**을 사용 중인 클라이언트(Claude Code·Claude Desktop/Cowork·Codex)에 등록합니다.
 > - `hyve mcp stdio` 직접 등록은 **개발·검증 전용**입니다 — 유저 온보딩에 안내하지 않습니다.
 >
 > 등록 후 다시 시도하세요.

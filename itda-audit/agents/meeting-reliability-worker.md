@@ -64,7 +64,9 @@ meeting-reliability 스킬의 `scripts/`(`meeting_adapter.py`·`selfcheck.py`·`
 스크립트 디렉토리를 sys.path 에 넣어 정상 해소된다(cwd 무관).
 
 - 힌트 경로가 있으면 그 `scripts/` 를 쓴다.
-- Claude Code: 스킬 상대경로(`itda-audit/skills/meeting-reliability/scripts`).
+- Claude Code(플러그인 설치): `$CLAUDE_PLUGIN_ROOT` 가 설정돼 있으면
+  `"$CLAUDE_PLUGIN_ROOT/skills/meeting-reliability/scripts"` 를 1순위로 쓴다(#1279 SKILL_DIR 규약).
+- Claude Code(저장소 체크아웃): 스킬 상대경로(`itda-audit/skills/meeting-reliability/scripts`).
 - Cowork(플러그인 파일이 Glob 밖): 셸로 마운트 경로를 탐색한다. 파일명 단독이 아니라
   **스킬 경로 조건을 포함**해 다른 플러그인의 동명 `selfcheck.py` 오매치를 배제한다.
   ```bash

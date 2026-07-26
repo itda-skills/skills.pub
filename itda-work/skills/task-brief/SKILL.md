@@ -10,15 +10,15 @@ description: >
 license: Apache-2.0
 compatibility: Claude Cowork & Code, Python 3.10+
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__workspace__bash
 argument-hint: "[요청 초안 또는 비워서 인터뷰]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.2.1"
+  version: "0.2.3"
   category: "productivity"
   status: "experimental"
   created_at: "2026-07-12"
-  updated_at: "2026-07-12"
+  updated_at: "2026-07-26"
   aliases: "작업브리프, 요청다듬기, 브리프"
   tags: "Cowork, task brief, scope, verification, definition of done, delegation, agent handoff, request hygiene"
 ---
@@ -96,12 +96,20 @@ metadata:
 ### 채점 모드
 
 1. 초안을 임시 파일(예: `brief.md`)로 저장합니다.
-2. 구조 게이트를 실행합니다:
+2. 구조 게이트를 실행합니다(스킬 디렉토리 확정 후):
    ```bash
+   # Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+   SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/task-brief}"
+   [ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/task-brief' 2>/dev/null | head -1)
+   # 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+
    # macOS/Linux
-   python3 scripts/check_task_brief.py <brief.md>
+   python3 "$SKILL_DIR/scripts/check_task_brief.py" <brief.md>
+   ```
+   ```powershell
    # Windows
-   py -3 scripts/check_task_brief.py <brief.md>
+   $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\task-brief"  # 미설정이면 SKILL.md 위치 절대경로 사용
+   py -3 "$env:SKILL_DIR\scripts\check_task_brief.py" <brief.md>
    ```
 3. **구조 게이트(기계)** 는 C1~C5 를 강제합니다: 4섹션 존재·범위 경계(포함+제외)·검증
    재현성(명령·파일·수치 + 자기보고 어휘 0)·완료 상태 서술·모호어 0. W1(예산 권장)·

@@ -9,7 +9,7 @@
 # 브라우저가 필요 없습니다. 차단 시에만 fallback(외부 fetch 서버) 로 폴백합니다.
 # local 모드(playwright)는 사용하지 않습니다.
 #
-# 설치 예: uv pip install --system fast-flights
+# 설치 예: python3 -m pip install fast-flights
 #   (의존성: primp, protobuf, selectolax — 모두 휠 제공, 컴파일 불필요)
 
 fast-flights==2.2

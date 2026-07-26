@@ -7,15 +7,15 @@ description: >
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
-allowed-tools: Read, Bash, Write, Glob, Grep
+allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[CS 텍스트/JSONL 또는 분류 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.1.2"
+  version: "0.1.4"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-05-30"
-  updated_at: "2026-07-14"
+  updated_at: "2026-07-26"
   tags: "intent, cs, classification, korean, stdlib"
 ---
 
@@ -46,7 +46,7 @@ metadata:
 1. **인텐트 체계 로드** — `references/intent-taxonomy.ko.yaml`(내장 기본 10군). 사용자 커스텀 우선.
 2. **doc별 무상태 분류** — 각 doc을 독립으로, `output-schema.json` 형식 JSON **1개** 출력. 배치면 doc별 반복(섞지 않기).
 3. **primary 결정** — 가장 핵심 문의 의도 1개. 부수 의도가 뚜렷하면 `secondary_intents`에 추가 + `flags.multi_intent`.
-4. **검증** — `scripts/validate_output.py`로 스키마·인텐트 멤버십 검증.
+4. **검증** — `"$SKILL_DIR/scripts/validate_output.py"`(아래 §검증 참조)로 스키마·인텐트 멤버십 검증.
 
 > 측면별 감정이 필요하면 **`aspect-sentiment`를 함께** 쓰세요(직교·병행). 라우팅·SLA·팀 배정은 본 스킬 범위 밖(티켓 라우터 영역).
 
@@ -69,10 +69,19 @@ metadata:
 ## 검증
 
 ```bash
+# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/cs-intent}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/cs-intent' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+```
+```powershell
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\cs-intent"  # 미설정이면 SKILL.md 위치 절대경로 사용
+```
+```bash
 # macOS/Linux
-python3 scripts/validate_output.py <출력.jsonl>
+python3 "$SKILL_DIR/scripts/validate_output.py" <출력.jsonl>
 # Windows
-py -3 scripts/validate_output.py <출력.jsonl>
+py -3 "$env:SKILL_DIR\scripts\validate_output.py" <출력.jsonl>
 ```
 
 ## 대량 배치 (팬아웃/팬인)
@@ -81,7 +90,7 @@ py -3 scripts/validate_output.py <출력.jsonl>
 
 1. **분할** — Lead 가 입력 doc 을 청크 파일(예: 10~20건/청크, **JSONL** — 한 줄 = 단건 입력 shape)로 나눠 세션 폴더에 저장한다. raw 로그는 `pii-redact` 로 **선행 비식별화**한다.
 2. **팬아웃** — `itda-cs:cs-batch-extractor` 를 청크별로 **병렬 명시 디스패치**한다(디스패치 프롬프트에 `task=cs-intent` + 이 파일의 closed-set 인텐트 체계·무상태 단건·고정 JSON 원칙 + 청크 파일 경로 + `outputs/` 출력 경로). 워커는 각 항목을 무상태로 분류해 스키마 호환 JSONL 을 `outputs/` 에 쓰고 경로·건수만 반환한다.
-3. **팬인(집계는 Lead 소유)** — Lead 가 반환된 JSONL 들을 `python3 scripts/validate_output.py <출력.jsonl> [intent-taxonomy.yaml]` 로 검증하고 병합한다. **커스텀 인텐트 체계를 워커에 줬으면 검증에도 같은 경로를 두 번째 인자로 넘긴다** — 안 넘기면 커스텀 인텐트가 내장 체계 기준으로 거짓 거부·`기타` 오강등된다. 집계는 스킬 스크립트가, 분류는 무상태 워커가 맡는다(워커는 집계하지 않는다).
+3. **팬인(집계는 Lead 소유)** — Lead 가 반환된 JSONL 들을 `python3 "$SKILL_DIR/scripts/validate_output.py" <출력.jsonl> [intent-taxonomy.yaml]` 로 검증하고 병합한다. **커스텀 인텐트 체계를 워커에 줬으면 검증에도 같은 경로를 두 번째 인자로 넘긴다** — 안 넘기면 커스텀 인텐트가 내장 체계 기준으로 거짓 거부·`기타` 오강등된다. 집계는 스킬 스크립트가, 분류는 무상태 워커가 맡는다(워커는 집계하지 않는다).
 
 서브에이전트 부재 환경은 위 절차 대신 **기존 본 컨텍스트 순차 단건 처리로 폴백**한다(핵심 원칙의 doc별 무상태 반복). **단건 절차·출력 스키마·인텐트 체계는 불변** — 배치는 같은 계약을 병렬화·격리할 뿐이다. 오케스트레이션 세부는 `.claude/rules/itda/skills/cowork-agent-orchestration.md`.
 
