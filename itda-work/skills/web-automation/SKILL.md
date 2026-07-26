@@ -298,7 +298,7 @@ e. 같은 session_id 로 일반 액션(snapshot/extract/fetch 등) 계속.
 OS-WebView 창에서 **직접 로그인·브라우징해 쿠키를 워밍업**한 뒤 같은 세션으로 내부 API 를 fetch 합니다.
 
 ```text
-a. web_browse session.new {headless:false}   # → 헤디드 OS-WebView 창 + session_id
+a. web_browse session.new {headless:false}   # → 헤디드 OS-WebView 창(화면에 보임 — 사람 개입용) + session_id
 b. (사용자) 그 창에서 로그인 + 잠깐 브라우징 → valid 세션 쿠키 생성 (자격증명 입력은 사용자 수동)
 c. web_browse fetch {session_id, path:"/api/내부경로?q=...", response_type:"json"}  # same-origin XHR
 d. web_browse session.close {session_id}   # 로그인은 profile_id 데이터스토어에 영속 → 재사용 가능(§0.05)

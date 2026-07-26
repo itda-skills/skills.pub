@@ -13,7 +13,7 @@ allowed-tools: Read, Bash, Write, Glob, mcp__workspace__bash
 argument-hint: "<마스킹할 문서 파일 경로> [--glossary <용어집.json>]"
 metadata:
   author: "Chinseok"
-  version: "0.1.2"
+  version: "0.2.0"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-07-16"
@@ -197,3 +197,20 @@ python3 "$SKILL_DIR/scripts/biz_redact.py" restore <ai_output.txt> --map <map.js
 | 스코프 | 한국 CS 상담·문의 텍스트 | 업무 문서(견적서·원가절감안·검토자료) |
 
 구조적 이유: CS 분석에서 전화번호는 판정에 무관해 영구 마스킹으로 족했지만, 검토 업무에서 단가는 AI가 검토할 대상 그 자체라 최종 리포트에 원값이 복원돼야 한다 — 왕복 복원이 이 스킬에만 필수인 이유다. (두 스킬은 스코프가 다르며, 여기서는 역할 경계만 설명한다.)
+
+## 부록: Claude Code 확장 (선택)
+
+이 절은 Claude Code 세션에만 적용된다. Cowork 는 본문 절차 그대로 진행한다(부록 미적용이 결함이 아니다).
+
+### 규율의 하네스 강제 (P4, 선택 설정)
+
+[HARD] 철칙 1(평문 기밀 4종 Read 금지)은 지시-강제다 — 본문 스스로 "도구 권한으로 완전히 차단되지
+않는다"고 명시한다. Claude Code 사용자는 프로젝트 `.claude/settings.json` 의 PreToolUse hook 으로
+이를 실제 차단으로 승격할 수 있다(예시 — 경로는 작업 레이아웃에 맞게 조정):
+
+```json
+{"hooks": {"PreToolUse": [{"matcher": "Read", "hooks": [{"type": "command",
+  "command": "jq -e '.tool_input.file_path | test(\"(glossary\\\\.json|map\\\\.json|restored\\\\.txt)$\") | not' >/dev/null || { echo '[biz-redact] 평문 기밀 파일 Read 차단([HARD] 철칙 1)' >&2; exit 2; }"}]}]}}
+```
+
+hook 이 없어도 본문 철칙은 그대로 유효하다 — hook 은 방어선을 문서에서 코드로 승격하는 선택지다.

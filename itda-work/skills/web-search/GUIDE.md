@@ -29,15 +29,19 @@ EXA_API_KEY=발급받은_키
 
 어떤 키가 있는지 헷갈리면 **"검색 키 설정됐는지 확인해줘"** 라고 말하면 됩니다.
 
-### 무료 한도와 요금 (2026년 6월 기준, 바뀔 수 있어요)
+### 검색엔진 계정·API 키 얻기 (2026년 6월 기준, 바뀔 수 있어요)
 
-| 엔진 | 무료로 얼마나? | 요금(대략) | 어디서 발급 |
-|------|---------------|-----------|------------|
-| Tavily | 월 1,000번 무료 (카드 없이) | 초과 시 1번당 약 $0.008 | app.tavily.com |
-| 네이버 | 기본 하루 25,000번 무료 (앱 등급에 따라 다를 수 있어요) | 무료 | developers.naver.com |
-| Serper ⚠️ | 가입 시 2,500번 무료 (카드 없이) | 1,000번당 약 $0.3~1 | serper.dev |
-| Exa | 월 1,000번 무료 | 1,000번당 약 $7 | dashboard.exa.ai |
-| Perplexity | 무료 크레딧 없음 | 검색·답변마다 과금 (요약+출처 제공) | perplexity.ai 설정 |
+서비스 이름을 누르면 발급 페이지가 열립니다. 각 항목 끝의 → 뒤가 발급받은 키를 `.env`에 넣을 때 쓰는 이름입니다.
+
+:::cards
+
+- [Tavily](https://app.tavily.com) — 월 1,000번 무료 (카드 없이) · 초과 시 1번당 약 $0.008 · 이메일 가입만 하면 바로 키가 나와요 → `TAVILY_API_KEY`
+- [네이버](https://developers.naver.com) — 기본 하루 25,000번 무료 (앱 등급에 따라 다를 수 있어요) · 앱 등록 시 사용 API로 "검색" 선택 → `NAVER_SEARCH_CLIENT_ID` · `NAVER_SEARCH_CLIENT_SECRET`
+- [Serper](https://serper.dev) — ⚠️ 가입 시 2,500번 무료 (카드 없이) · 1,000번당 약 $0.3~1 · Google 차단 리스크가 있어 보조용으로만 → `SERPER_API_KEY`
+- [Exa](https://dashboard.exa.ai) — 월 1,000번 무료 · 1,000번당 약 $7 → `EXA_API_KEY`
+- [Perplexity](https://www.perplexity.ai) — 무료 크레딧 없음 · 검색·답변마다 과금 (요약+출처 제공) · 설정 화면에서 발급 → `PERPLEXITY_API_KEY`
+
+:::
 
 > 요금·한도는 바뀔 수 있으니 위 발급처에서 최신 내용을 확인하세요.
 > Google Custom Search와 Bing은 지원하지 않습니다 — Google은 신규 가입을 막고 2027년 1월 종료를 공지했고, Bing 검색은 2025년 8월에 종료됐습니다. 활발히 운영되는 검색만 지원합니다.

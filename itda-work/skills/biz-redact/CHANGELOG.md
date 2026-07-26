@@ -1,5 +1,11 @@
 # Changelog — biz-redact
 
+## [0.2.0] — 2026-07-26 (이슈 #1285)
+
+### Added
+
+- "부록: Claude Code 확장 (선택)" 절 신설 — code-extension-appendix 규약 파일럿. 본문(Cowork 기준) 불변.
+
 ## [0.1.2] — 2026-07-26 (이슈 #1283)
 
 ### Changed

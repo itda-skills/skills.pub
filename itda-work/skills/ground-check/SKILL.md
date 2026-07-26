@@ -10,7 +10,7 @@ allowed-tools: WebSearch, WebFetch, Skill, Read, Write, mcp__workspace__web_fetc
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "research"
-  version: "0.10.5"
+  version: "0.11.0"
   status: "active"
   created_at: "2026-05-12"
   updated_at: "2026-07-26"
@@ -264,3 +264,14 @@ PASS된 산출물의 **핵심 항목별로 실사용 예시 1개씩** 작성. �
 - 사용자 가이드: [GUIDE.md](GUIDE.md) — 비개발자 시나리오 5종
 - 인접 스킬: [`itda-work/skills/web-reader/`](../web-reader/) — WebFetch fallback 대상
 - 현재 동작 기준: `SKILL.md`, `GUIDE.md`, `scripts/`, `tests/`, `CHANGELOG.md`
+
+## 부록: Claude Code 확장 (선택)
+
+이 절은 Claude Code 세션에만 적용된다. Cowork 는 본문 절차 그대로 진행한다(부록 미적용이 결함이 아니다).
+
+### 병렬 처리 (P2)
+
+검증 라운드의 셀 그룹(주제·출처 축)별 검증은 서로 독립이다. Claude Code 에서는 라운드 1 을
+ground-verifier 단일 디스패치 대신 **셀 그룹별 복수 디스패치를 한 메시지에 동시 팬아웃**할 수 있다
+(그룹 3개 이상일 때 실익). 각 verifier 산출(검증표)은 `outputs/verification-round-<N>-<그룹>.md`
+파일로 회수해 본 세션이 병합한다. 2-A 지침 블록·기존 URL 재사용 금지·2-C Early Termination 은 불변.

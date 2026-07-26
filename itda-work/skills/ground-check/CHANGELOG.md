@@ -2,6 +2,12 @@
 
 본 스킬의 변경 이력. [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따른다.
 
+## [0.11.0] — 2026-07-26 (이슈 #1285)
+
+### Added
+
+- "부록: Claude Code 확장 (선택)" 절 신설 — code-extension-appendix 규약 파일럿. 본문(Cowork 기준) 불변.
+
 ## [0.10.5] — 2026-07-26 (이슈 #1283)
 
 ### Changed

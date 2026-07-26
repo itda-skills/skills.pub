@@ -7,6 +7,10 @@
 
 
 
+
+### Added
+
+- **Claude Code 확장 부록 파일럿 (#1285)** — ground-check v0.11.0(P2 병렬 팬아웃)·biz-redact v0.2.0(P4 hooks 게이트 안내, jq 식 실측 검증). 규약 정본 `.claude/rules/itda/skills/code-extension-appendix.md` 신설 — 부록 1절 격리·본문(Cowork 기준) 불변·훅 스크립트 동봉 유보.
 ### Fixed
 
 - **문서-코드 drift 일괄 정합 (#1284)** — 95스킬 감사 부수 발견분. 세부는 각 스킬 CHANGELOG 참조.
