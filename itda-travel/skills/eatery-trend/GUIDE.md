@@ -15,6 +15,15 @@
 | 네이버 검색광고 3개 (`NAVER_SEARCHAD_*`) | 월 검색량(레벨) 지표만 빠집니다. 광고주 가입이 부담스러우면 나중에 추가해도 됩니다 |
 | (키 불필요) 자동완성 | 항상 동작합니다 |
 
+서비스 이름을 누르면 발급 페이지가 열립니다. 상세 절차는 아래 1·2번을 참고하세요.
+
+:::cards
+
+- [네이버 오픈API](https://developers.naver.com) — 일반 네이버 계정으로 발급 (아래 1번 절차) → `NAVER_CLIENT_ID` · `NAVER_CLIENT_SECRET`
+- [네이버 검색광고](https://manage.searchad.naver.com) — 광고주 가입 필요, 무료 (아래 2번 절차) → `NAVER_SEARCHAD_ACCESS_KEY` · `NAVER_SEARCHAD_SECRET_KEY` · `NAVER_SEARCHAD_CUSTOMER_ID`
+
+:::
+
 ### 1. 네이버 오픈API 발급 — 일반 네이버 계정으로 가능
 
 1. [developers.naver.com](https://developers.naver.com) 로그인

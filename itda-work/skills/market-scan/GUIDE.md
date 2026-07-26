@@ -45,12 +45,16 @@
 
 ### 공공데이터 API 키 (있으면 더 정확, 없어도 동작)
 
-| 스킬 | 환경변수 | 발급처 |
-| --- | --- | --- |
-| `kosis` (통계·시장규모) | `KOSIS_API_KEY` | kosis.kr/openapi (가입→활용신청, 자동승인 즉시) |
-| `ecos` (거시지표) | `ECOS_API_KEY` | ecos.bok.or.kr/api |
-| `dart` (기업 재무·공시) | `DART_API_KEY` | opendart.fss.or.kr |
-| `funding`·`g2b`·`realestate` | `KO_DATA_API_KEY` (**3종 공유**) | data.go.kr (공공데이터포털 통합키) |
+기관 이름을 누르면 발급 페이지가 열립니다. 각 항목 끝의 → 뒤가 발급받은 키를 `.env`에 넣을 때 쓰는 이름입니다.
+
+:::cards
+
+- [KOSIS](https://kosis.kr/openapi) — 통계·시장규모 (`kosis`) · 가입 후 활용신청, 자동승인 즉시 → `KOSIS_API_KEY`
+- [ECOS](https://ecos.bok.or.kr/api) — 한국은행 거시지표 (`ecos`) → `ECOS_API_KEY`
+- [DART](https://opendart.fss.or.kr) — 기업 재무·공시 (`dart`) → `DART_API_KEY`
+- [공공데이터포털](https://www.data.go.kr) — `funding`·`g2b`·`realestate` **3종 공유** 통합키 → `KO_DATA_API_KEY`
+
+:::
 
 > 키는 작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트) 루트의 **`.env` 파일**에 `KOSIS_API_KEY=발급받은키` 한 줄씩 넣어 두면 스킬이 자동으로 찾아 읽습니다 — Claude Desktop 지침(설정 → 일반 → "Claude 지침")에 적는 방식도 동작하지만 대화 컨텍스트에 값이 노출되므로 `.env`를 권장합니다. 점(`.`)으로 시작하는 파일을 만들기 어렵다면 **`환경변수.txt`** 라는 이름으로 만들어도 똑같이 읽힙니다(메모장이 `.txt` 를 붙여 `.env.txt` 가 되어도 됩니다). 키가 없으면 해당 기관 공식 사이트를 직접 읽는 방식으로 자동 대체하니, **키 없이도 조사는 진행**됩니다(다만 정형 데이터는 키가 있을 때 더 정확·빠릅니다).
 

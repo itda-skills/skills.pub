@@ -22,6 +22,18 @@ NAVER_APP_PASSWORD=발급받은-앱-비밀번호
 
 > 개발자라면 작업 폴더 루트의 `.env`(또는 셸 환경변수)에 같은 줄을 넣어도 됩니다.
 
+쓰는 메일 서비스를 누르면 설정 페이지가 열립니다. 상세 절차는 아래 각 절을 참고하세요.
+
+:::cards
+
+- [네이버](https://nid.naver.com) — 2단계 인증 후 앱 비밀번호 발급 · IMAP 켜기 → `NAVER_EMAIL` · `NAVER_APP_PASSWORD`
+- [Gmail](https://myaccount.google.com/apppasswords) — 2단계 인증 후 앱 비밀번호(16자리) 발급 → `GOOGLE_EMAIL` · `GOOGLE_APP_PASSWORD`
+- [다음 / 카카오](https://mail.daum.net) — IMAP 켜고 전용 비밀번호 확인 → `DAUM_EMAIL` · `DAUM_APP_PASSWORD`
+- [아이클라우드](https://account.apple.com) — 앱 전용 비밀번호 생성 → `ICLOUD_EMAIL` · `ICLOUD_APP_PASSWORD`
+- 회사 메일(커스텀) — 보내기·받기 서버 정보 직접 입력 → `SMTP_HOST` · `SMTP_PORT` · `SMTP_USER` · `SMTP_PASSWORD` · `IMAP_HOST` · `IMAP_PORT`
+
+:::
+
 ### 네이버
 
 1. [네이버 로그인 보안](https://nid.naver.com)에서 2단계 인증을 켭니다.

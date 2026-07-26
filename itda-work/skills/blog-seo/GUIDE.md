@@ -24,6 +24,15 @@ Claude Desktop의 "Claude 지침"(설정 → 일반)에 같은 내용을 적는 
 
 > 개발자라면 셸 환경변수로 넣어도 됩니다.
 
+서비스 이름을 누르면 발급 페이지가 열립니다. 상세 절차는 아래 1·2번을 참고하세요.
+
+:::cards
+
+- [네이버 검색광고](https://manage.searchad.naver.com) — 광고주 계정 필요 (아래 1번 절차) → `NAVER_SEARCHAD_ACCESS_KEY` · `NAVER_SEARCHAD_SECRET_KEY` · `NAVER_SEARCHAD_CUSTOMER_ID`
+- [네이버 오픈 API](https://developers.naver.com) — 일반 네이버 계정으로 발급 (아래 2번 절차) → `NAVER_CLIENT_ID` · `NAVER_CLIENT_SECRET`
+
+:::
+
 ### 1. 네이버 검색광고 API (3개 키)
 
 > 광고주 계정이 있어야 발급됩니다.

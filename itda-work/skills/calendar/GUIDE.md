@@ -7,11 +7,13 @@
 
 ## 지원하는 캘린더
 
-| 캘린더 | 서비스 | 로그인 자격증명 |
-|--------|--------|-----------------|
-| **네이버 캘린더** | [calendar.naver.com](https://calendar.naver.com) | 네이버 ID(전체 이메일) + 앱 비밀번호 |
-| **아이클라우드 캘린더** | [icloud.com/calendar](https://www.icloud.com/calendar) | Apple 계정 + 앱 전용 비밀번호 |
-| **커스텀 CalDAV** | [Fastmail](https://www.fastmail.com) · [Nextcloud](https://nextcloud.com) · [mailbox.org](https://mailbox.org) · [Posteo](https://posteo.de) · [Zoho](https://www.zoho.com/calendar/) 등 | 서버 주소 + 앱 비밀번호 |
+:::cards
+
+- [네이버 캘린더](https://calendar.naver.com) — 네이버 ID(전체 이메일) + 앱 비밀번호
+- [아이클라우드 캘린더](https://www.icloud.com/calendar) — Apple 계정 + 앱 전용 비밀번호
+- 커스텀 CalDAV — [Fastmail](https://www.fastmail.com) · [Nextcloud](https://nextcloud.com) · [mailbox.org](https://mailbox.org) · [Posteo](https://posteo.de) · [Zoho](https://www.zoho.com/calendar/) 등 · 서버 주소 + 앱 비밀번호
+
+:::
 
 세 종류 모두 **표준 CalDAV 프로토콜**과 **앱(전용) 비밀번호**로 연결합니다. itda-email로 네이버·아이클라우드 메일을 이미 쓰고 있다면, **그때 발급한 앱 비밀번호를 그대로 재사용**할 수 있습니다(추가 발급 불필요).
 
