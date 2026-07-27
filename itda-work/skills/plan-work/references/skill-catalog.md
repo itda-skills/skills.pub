@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 93개 스킬 / 21개 팩.
+총 94개 스킬 / 21개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -51,6 +51,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | kacem-tender-extract | 군인공제회 공고 첨부(hwp·hwpx·pdf)에서 사업개요와 사업비를 추출해 표·JSON으로 정리하는 스킬입니다. | 없음 | "공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘", "공고 요약을 표로 정리해줘" | itda-mmaa |
 | kacem-tender-fetch | 군인공제회 입찰 게시판에서 공고를 수집하고 첨부 ZIP을 받아 공식 공고 파일을 식별하는 스킬입니다. | 없음 | "군인공제회 최근 공고 받아줘", "지난 한 달 입찰 공고 모아줘", "새로 올라온 공고만 다운받아줘" | itda-mmaa |
 | webmail | IMAP/SMTP를 사용할 수 없는 군인공제회 웹메일과 테스트 목적의 nate 메일에서 메일 목록·본문·첨부를 웹 경로로 조회하는 스킬입니다. | 없음 | "군인공제회 메일 확인해줘", "nate 테스트 메일 목록 확인해줘", "이 메일 첨부 받아줘" | itda-mmaa |
+| welfare-portal | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(축하금·위로금)·회원콘도·제휴복지 안내를 출처 URL·수집일과 함께 답합니다. | 없음 | "출산축하금 얼마?", "군인공제회 콘도 예약", "제휴 할인 알려줘" | itda-mmaa |
 | cloudflare-tunnel | 포트포워딩 없이 Cloudflare Tunnel로 내 서비스(원격 데스크톱·SSH·웹)를 안전하게 노출/접근하도록 셋업하는 스킬입니다. | CLOUDFLARE_API_TOKEN | "집 윈도우에 RDP 터널 깔아줘", "cloudflare tunnel로 ssh 열어줘", "터널 라우트에 access 걸어줘" | itda-ops |
 | court-auction | 대법원 법원경매정보(courtauction.go.kr)의 부동산 매각공고·사건·물건을 조회하는 스킬입니다. | 없음 | "오늘 서울중앙지법 경매 공고 보여줘", "2024타경100001 사건 진행상황 알려줘", "강남 아파트 5억 이하 유찰 1회 물건 찾아줘" | itda-realty |
 | realty-deals | 국토교통부 부동산 실거래 12개 유형을 단일 인터페이스로 수집하는 스킬입니다. | KO_DATA_API_KEY | "최근 6개월 강남구 아파트 실거래 전부 받아줘", "분당 연립다세대 매매 2025년 데이터 CSV로 줘", "강서구 오피스텔 전월세 조회해줘" | itda-realty |
@@ -150,6 +151,7 @@ pixel-art             → itda-media/skills/pixel-art/
 kacem-tender-extract  → itda-mmaa/skills/kacem-tender-extract/
 kacem-tender-fetch    → itda-mmaa/skills/kacem-tender-fetch/
 webmail               → itda-mmaa/skills/webmail/
+welfare-portal        → itda-mmaa/skills/welfare-portal/
 cloudflare-tunnel     → itda-ops/skills/cloudflare-tunnel/
 court-auction         → itda-realty/skills/court-auction/
 realty-deals          → itda-realty/skills/realty-deals/
