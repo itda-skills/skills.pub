@@ -8,11 +8,10 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 98개 스킬 / 21개 팩.
+총 97개 스킬 / 20개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
-| airport-airline-stats | 인천공항 항공사별 월별 통계(운항·여객·화물)를 LLM-친화 JSON으로 조회하는 스킬입니다. | 없음 | "2025년 3월 인천공항 항공사별 통계 알려줘", "지난달 국제선 여객기 통계 뽑아줘", "T1 터미널 항공사별 운항 횟수 조회해줘" | itda-airport |
 | artifact-packager | 정적 웹 산출물(Claude 아티팩트·HTML·dist 폴더)을 실행 가능한 단일 실행파일 또는 zip 으로 패키징해 내 PC 에서 띄우는 스킬입니다. | 없음 | "아티팩트 패키징해줘", "실행파일로 묶어줘", "이 산출물 실행파일로 만들어줘" | itda-app |
 | meeting-reliability | 회의 녹취·기록에서 "확인 / 확인 필요 / 예외"를 근거와 함께 정확히 가르는 신뢰성 검수 스킬입니다. | 없음 | "확인 / 확인 필요 / 예외", "이 녹취 결정사항 표로 정리해줘", "회의록 신뢰성 검수해줘" | itda-audit |
 | brain-audit | 업무DB(뇌)를 독립 재검수하는 스킬입니다. | 없음 | "뇌가 낡았는지", "이 업무DB 검수해줘", "뇌 아직 최신이야?" | itda-brain |
@@ -20,12 +19,12 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | brain-fixture | 함정(모순·버전지옥·규정이중화·손상파일 등)을 의도적으로 심은 가상 회사의 연습용 데이터셋 폴더(워드·엑셀·PPT·PDF·txt·csv)를 만드는 스킬입니다. | 없음 | "연습용 가상 폴더 만들어줘", "함정 심은 모의 데이터셋 생성해줘", "헬스케어 회사 연습 데이터 만들어줘" | itda-brain |
 | brain-ingest | 업무DB(뇌)에 새 문서를 증분 적재하는 스킬입니다(v1.1). | 없음 | "뇌에 새 문서 반영해줘", "이 견적서들 업무DB에 넣어줘", "업무DB 업데이트" | itda-brain |
 | brain-scribe | 업무DB(뇌)의 규약을 배워 규약 준수 문서를 생성하는 스킬입니다(v1.5). | 없음 | "추정", "이번 달 견적서 규약대로 써줘", "회의록 양식으로 초안 만들어줘" | itda-brain |
+| airport-airline-stats | 인천공항 항공사별 월별 통계(운항·여객·화물)를 LLM-친화 JSON으로 조회하는 스킬입니다. | 없음 | "2025년 3월 인천공항 항공사별 통계 알려줘", "지난달 국제선 여객기 통계 뽑아줘", "T1 터미널 항공사별 운항 횟수 조회해줘" | itda-class-igm |
 | bai-notice | 감사원 통합공지 게시판을 내부 JSON API로 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "감사원 공지 확인해줘", "감사원 통합공지 최근 10건 보여줘", "감사원에서 채용 공고 찾아줘" | itda-class-igm |
 | customs-notice | 관세청 공지사항 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "관세청 공지 확인해줘", "관세청 공지사항 최근 10건 보여줘", "관세청에서 원산지 관련 공지 찾아줘" | itda-class-igm |
 | fss-docs | 금융감독원 공통업무자료 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "금감원 업무자료 확인해줘", "금융감독원 공통업무자료 이번 주 것만 보여줘", "금감원에서 사모펀드 자료 찾아줘" | itda-class-igm |
 | kacem-tender | 군인공제회(KACEM) 입찰 공고를 수집하고 첨부(hwp·hwpx·pdf)에서 사업개요·사업비를 추출해 표·JSON으로 정리하는 스킬입니다. | 없음 | "군인공제회 최근 공고 받아줘", "공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘" | itda-class-igm |
-| mmaa-welfare | 군인공제회 복지포털의 복지 상품·서비스 카탈로그와 공지사항을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "군인공제회 공지 확인해줘", "군인공제회 복지 상품 뭐 있는지 보여줘", "공제회에서 건강검진 관련 복지 찾아줘" | itda-class-igm |
-| welfare-portal | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(축하금·위로금)·회원콘도·제휴복지 안내를 출처 URL·수집일과 함께 답합니다. | 없음 | "출산축하금 얼마?", "군인공제회 콘도 예약", "제휴 할인 알려줘" | itda-class-igm |
+| mmaa-welfare | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(축하금·위로금)·회원콘도·제휴복지 안내를 출처 URL·수집일과 함께 답합니다. | 없음 | "출산축하금 얼마?", "군인공제회 콘도 예약", "제휴 할인 알려줘" | itda-class-igm |
 | analysis-guide | 데이터를 앞에 두고 "뭐부터 해야 할지 모르겠다"는 사람을 위해, 한 걸음씩 같이 분석하며 다음엔 스스로 시작하도록 이끄는 라이브 길잡이입니다. | 없음 | "뭐부터 해야 할지 모르겠다", "이 데이터로 뭘 할 수 있어?", "분석하고 싶은데 어디서 시작하죠?" | itda-coach |
 | hour-slice | 하고 싶은 업무 개선은 큰데 "오늘 1시간 안에 뭘 만들 수 있지?"가 막막한 사람을 위해, 문제를 ~1시간 안에 눈에 보이는 결과가 나오는 한 조각으로 잘라… | 없음 | "오늘 1시간 안에 뭘 만들 수 있지?", "이거 너무 큰데 뭐부터 해볼까", "1시간 안에 만들 수 있는 걸로 줄여줘" | itda-coach |
 | miniskill-forge | 매번 같은 작업에 긴 프롬프트를 다시 쓰고 사람마다·날마다 결과가 달라지는 반복 업무를, Claude Cowork에서 한 마디로 부르는 재사용 미니스킬(SKIL… | 없음 | "이거 매번 자동으로 했으면", "내 반복 업무를 스킬로 만들어줘", "맨날 같은 프롬프트 다시 쓰기 싫어" | itda-coach |
@@ -116,7 +115,6 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 ground-check sanity check 시 아래 경로로 존재 여부를 확인합니다.
 
 ```
-airport-airline-stats → itda-airport/skills/airport-airline-stats/
 artifact-packager     → itda-app/skills/artifact-packager/
 meeting-reliability   → itda-audit/skills/meeting-reliability/
 brain-audit           → itda-brain/skills/brain-audit/
@@ -124,12 +122,12 @@ brain-build           → itda-brain/skills/brain-build/
 brain-fixture         → itda-brain/skills/brain-fixture/
 brain-ingest          → itda-brain/skills/brain-ingest/
 brain-scribe          → itda-brain/skills/brain-scribe/
+airport-airline-stats → itda-class-igm/skills/airport-airline-stats/
 bai-notice            → itda-class-igm/skills/bai-notice/
 customs-notice        → itda-class-igm/skills/customs-notice/
 fss-docs              → itda-class-igm/skills/fss-docs/
 kacem-tender          → itda-class-igm/skills/kacem-tender/
 mmaa-welfare          → itda-class-igm/skills/mmaa-welfare/
-welfare-portal        → itda-class-igm/skills/welfare-portal/
 analysis-guide        → itda-coach/skills/analysis-guide/
 hour-slice            → itda-coach/skills/hour-slice/
 miniskill-forge       → itda-coach/skills/miniskill-forge/

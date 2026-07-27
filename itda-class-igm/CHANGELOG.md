@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0] - 2026-07-27
+
+### Changed
+- 군인공제회 복지 스킬 단일화 (#1316): 구 mmaa-welfare(얕은 목록 수집) 제거, welfare-portal → mmaa-welfare 개명(스킬 7→6종) — 정체성은 복지 본문 스냅샷 + 출처 명시 Q&A.
+
+## [0.3.0] - 2026-07-27
+
+### Changed
+- itda-airport 플러그인 흡수·폐기 (#1313): `airport-airline-stats` 이동 편입(스킬 7종) — 수강생 요청 유래 스킬의 itda-class-igm 일원화.
+
 ## [0.2.0] - 2026-07-27
 
 ### Changed

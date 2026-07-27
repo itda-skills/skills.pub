@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.43.0",
+    "version": "8.45.0",
     "language": "ko"
   },
   "plugins": [
@@ -39,11 +39,6 @@
       "name": "itda-audit",
       "source": "./itda-audit",
       "description": "감사 신뢰성 검수 스킬팩 — 회의·문서·데이터에서 확인/확인필요/예외를 근거와 함께 가른다"
-    },
-    {
-      "name": "itda-airport",
-      "source": "./itda-airport",
-      "description": "인천국제공항 공개 데이터 스킬팩 — 항공사별 운항·여객·화물 월별 통계"
     },
     {
       "name": "itda-travel",
@@ -93,7 +88,7 @@
     {
       "name": "itda-class-igm",
       "source": "./itda-class-igm",
-      "description": "공공기관 게시판·포털 수집 스킬팩 — 관세청·금융감독원·감사원·군인공제회(공지·복지·KACEM 입찰)"
+      "description": "공공기관 게시판·포털 수집 스킬팩 — 관세청·금융감독원·감사원·군인공제회·인천공항"
     }
   ]
 }

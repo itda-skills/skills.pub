@@ -29,7 +29,7 @@ BASE = "https://www.mmaa.or.kr"
 ENTRY = f"{BASE}/web/contents/welfaremain.do"
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36 itda-skills-welfare-portal"
+    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36 itda-skills-mmaa-welfare"
 )
 # 제휴복지 카테고리 목록 (schBdcode 코드 → 라벨)
 CATEGORY_CODES = {

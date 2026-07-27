@@ -14,11 +14,11 @@ allowed-tools: Read, Write, Edit, Bash, AskUserQuestion, mcp__workspace__bash
 argument-hint: "[프로젝트/업무 영역 한 줄, 또는 비워서 인터뷰]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.1.2"
+  version: "0.1.3"
   category: "productivity"
   status: "experimental"
   created_at: "2026-07-24"
-  updated_at: "2026-07-26"
+  updated_at: "2026-07-27"
   aliases: "업무구조화, 업무지도, 워크리디자인, 위임계획, 업무쪼개기"
   tags: "Cowork, work redesign, work map, task decomposition, delegation vs dependence, AI human task mapping, quadrant, workslop prevention"
 ---
@@ -118,6 +118,15 @@ $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\work-redesign"  # 미설정이�
 업무 **전체**가 아니라 **프로젝트/업무 영역 1개**를 고릅니다. 사용자가 여러 개를 말하면
 "가장 시간을 많이 쓰는 것 하나"로 좁힙니다. 업무분장표·할일 목록·캘린더 내보내기 등
 실자료가 있으면 첨부를 요청해 Read로 읽고, 이후 질문의 추천 기본값을 실측 근거로 만듭니다.
+
+**워크 리디자인 시트 첨부 시** — 사용자가 skills.itda.work `/tools/work-redesign-sheet`
+폼으로 만든 시트(`# 워크 리디자인 시트 — …` 로 시작, 맥락·업무 흐름·없애거나 줄일 단계·
+내가 직접 지킬 단계·가장 답답한 지점·AI에 맡길 일 섹션)를 첨부하면, 그 내용을 선입력으로
+흡수합니다: 0단계 범위(업무 1개)와 1단계 맥락 일부(도구·결과 받는 사람)는 시트에서 채우고
+**재질문하지 않으며**, 시트의 단계 나열을 태스크 인벤토리의 출발점으로, "지킬 단계·이유"를
+4분면 좌측 후보로, "AI에 맡길 일·확인 방법"을 증강/자동화 후보로 씁니다. 단 시트는 경량
+입구라 게이트 계약(태스크 ≥2·행동 ≥2/태스크·이해관계자 실명 등)에는 미달하므로, **부족한
+축만 골라 인터뷰를 이어갑니다** — 시트에 이미 적힌 것을 다시 묻는 것은 금지.
 
 ### 1. 맥락 수집
 
