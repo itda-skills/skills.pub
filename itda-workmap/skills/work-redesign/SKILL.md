@@ -52,7 +52,7 @@ metadata:
 ## 발동하지 않는 경우 (인접 스킬 경계)
 
 - **개별 요청 1건**을 다듬어 던지려면 → `task-brief` (이 스킬은 업무 전체의 지도)
-- **무엇을 자동화할지 탐색**만 하려면 → `find-work`
+- **무엇을 자동화할지 탐색**만 하려면 → `work-find`
 - 정해진 문제를 **오늘 1시간 조각**으로 자르려면 → `hour-slice`
 - 반복 작업을 **미니스킬로 굳히려면** → `miniskill-forge`
 - 이해관계자별 **선행 전달물(제약 조건)을 심화**하려면 → `stakeholder-map` (이 스킬의 stakeholders 스텁을 이어받음)
@@ -94,7 +94,7 @@ stakeholders/<이름>.md  # 이해관계자별 — 역할·요청할 것·선행
 - <행동> — 재검토: <시점>
 
 ## 자동화할 것
-- <행동> — 다음: <find-work·miniskill-forge 또는 구체 다음 행동>
+- <행동> — 다음: <work-find·miniskill-forge 또는 구체 다음 행동>
 
 ## 다음 행동
 - <이번 주에 할 첫 조각>
@@ -176,7 +176,7 @@ py -3 "$env:SKILL_DIR\scripts\check_work_map.py" work-map.md
 
 | 분면 | 다음 행동 |
 |---|---|
-| 자동화할 것 | `find-work`로 후보 구체화 → 반복 확정 시 `miniskill-forge`로 굳히기 |
+| 자동화할 것 | `work-find`로 후보 구체화 → 반복 확정 시 `miniskill-forge`로 굳히기 |
 | AI로 증강할 것 | 개별 위임 시 `task-brief`로 브리프 작성 (검증 방법은 지도에서 복사) |
 | 첫 조각 | 오늘 시작할 크기로 자르려면 `hour-slice` |
 | 지도 재사용 | 다음 세션에서 "work-map.md 읽고 시작해줘" — 지도가 상시 컨텍스트 |

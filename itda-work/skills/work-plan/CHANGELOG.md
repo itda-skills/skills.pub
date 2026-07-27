@@ -1,4 +1,10 @@
-# Changelog — itda-work plan-work
+# Changelog — itda-work work-plan
+
+## [rename] — 2026-07-27 (이슈 #1310)
+
+### Changed
+
+- 스킬명 `plan-work` → `work-plan` — itda-work 업무 파이프라인 `work-*` 접두 패밀리 통일. 참조 전수 갱신(CI 매트릭스·skill-catalog·형제 스킬 상호참조).
 
 ## [0.12.1] — 2026-07-26 (이슈 #1283)
 

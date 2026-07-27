@@ -1,4 +1,4 @@
-"""plan-work 스킬 — Ground-check 유틸리티.
+"""work-plan 스킬 — Ground-check 유틸리티.
 
 AC-6: 스킬명 검증 (카탈로그에 실제 존재하는지)
 AC-7: 환경변수명 검증 (알려진 목록에 있는지)

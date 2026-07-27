@@ -14,7 +14,7 @@ metadata:
   category: "domain"
   status: "active"
   recommended: true
-  version: "0.1.0"
+  version: "0.1.1"
   created_at: "2026-07-27"
   updated_at: "2026-07-27"
   tags: "FSS, financial supervisory, work materials, board scraping, korea government"

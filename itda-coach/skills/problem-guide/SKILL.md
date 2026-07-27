@@ -5,7 +5,7 @@ description: >
   Claude Code(자유 환경) 두 갈래의 단계별 해결 가이드 문서를 만들어 줍니다.
   "원하는 대로 안 나와요", "HTML 보고서가 이상해요", "형식을 매번 다시 설명해야 해요",
   "지시를 어떻게 써야 할지 모르겠어요"처럼 *어떻게 지시할지가 막막할 때* 쓰면 됩니다.
-  (데이터를 앞에 두고 바로 분석은 analysis-guide, 무엇을 할지 자체가 막막하면 find-work.)
+  (데이터를 앞에 두고 바로 분석은 analysis-guide, 무엇을 할지 자체가 막막하면 work-find.)
 license: Apache-2.0
 compatibility: "Claude Code & Cowork. 비개발자는 Track A(Cowork) 주력."
 allowed-tools: Read, Write, Edit
@@ -150,7 +150,7 @@ metadata:
 
 ## 다음 단계 (handoff)
 
-- 아직 **무엇을** 할지(어떤 업무를 자동화·개선할지) 자체가 안 정해졌으면 → **find-work**(itda-work)로 발굴부터.
+- 아직 **무엇을** 할지(어떤 업무를 자동화·개선할지) 자체가 안 정해졌으면 → **work-find**(itda-work)로 발굴부터.
 - 문제는 구체화됐는데 **오늘 1시간 안에 뭘 먼저 만들지** 막막하면 → **hour-slice**로 한 조각을 자른다.
 - 이 작업이 **반복**이라 매번 자동으로 굳히고 싶으면 → **miniskill-forge**로 재사용 미니스킬을 도출한다.
 - 데이터를 앞에 두고 **지금 같이 분석**부터 하고 싶으면 → **analysis-guide**.

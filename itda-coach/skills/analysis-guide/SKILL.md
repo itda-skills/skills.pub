@@ -5,7 +5,7 @@ description: >
   다음엔 스스로 시작하도록 이끄는 라이브 길잡이입니다. "이 데이터로 뭘 할 수 있어?",
   "분석하고 싶은데 어디서 시작하죠?", "파일은 있는데 뭘 물어봐야 할지 모르겠어요"처럼
   데이터 파일이 *이미 손에 있을 때* 쓰며, 분석을 대신 끝내지 않고 매 단계 쉬운 말과 선택지로
-  안내합니다. (지시 설계가 막막하면 problem-guide, 무엇을 할지 자체가 막막하면 find-work.)
+  안내합니다. (지시 설계가 막막하면 problem-guide, 무엇을 할지 자체가 막막하면 work-find.)
 license: Apache-2.0
 compatibility: "Claude Code & Cowork. 비개발자·입문자 1순위."
 allowed-tools: Read, Write, Bash, mcp__workspace__bash
@@ -101,7 +101,7 @@ metadata:
 - "오늘 1시간 안에 **뭘 만들지**부터 정하자" → **hour-slice**
 - "이걸 **매번 자동으로**" → **miniskill-forge**
 - "어떻게 **지시**해야 잘 나오는지 자체가 막막" → **problem-guide**
-- "**무엇을** 할지(어떤 업무를 자동화할지) 자체가 막막" → **find-work**(itda-work)
+- "**무엇을** 할지(어떤 업무를 자동화할지) 자체가 막막" → **work-find**(itda-work)
 - "**출처·신뢰성**이 핵심" → ground-check / 출처검증 계열
 
 ## 사용 팁 / 보안

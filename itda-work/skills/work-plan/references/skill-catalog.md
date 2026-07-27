@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 96개 스킬 / 22개 팩.
+총 98개 스킬 / 22개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -88,7 +88,6 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | draft-post | 블로그·보고서·기획서·보도자료·뉴스레터를 도메인 맞춤 인터뷰로 초안 작성하는 스킬입니다. | 없음 | "블로그 글 써줘", "보고서 초안 작성해줘", "기획서 만들어줘" | itda-work |
 | email | 네이버·Gmail·다음/카카오·아이클라우드·커스텀 SMTP/IMAP에서 멀티 계정으로 메일을 보내고 받는 스킬입니다. | DAUM_APP_PASSWORD, DAUM_EMAIL, GOOGLE_APP_PASSWORD, GOOGLE_EMAIL, ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "메일 보내줘", "받은편지함 확인해줘", "아이클라우드 메일 읽어줘" | itda-work |
 | exchange-rate | 원화 기준 일별·월 평균 기준 환율을 조회하는 스킬입니다. | 없음 | "오늘 달러 환율 알려줘", "이번 달 엔화 평균 환율 보여줘", "EUR 환율 조회해줘" | itda-work |
-| find-work | 비개발자 Cowork 사용자가 어떤 업무를 자동화할지 함께 찾아주는 인터뷰 스킬입니다. | 없음 | "업무 찾기 도와줘", "자동화 아이디어가 없어요", "Cowork로 뭘 해볼까" | itda-work |
 | ground-check | 1차 출처 강제 인용과 독립 검증으로 환각·hedge 표현을 절차로 차단하는 리서치 스킬입니다. | 없음 | "팩트체크해서 보고서 써줘", "출처 확인해서 정리해줘", "1차 소스만 써서 정리해줘" | itda-work |
 | html-report | 마크다운 보고서·분석 결과·회의 정리를 연차보고서 수준의 단일 파일 HTML 문서로 렌더링하는 스킬입니다. | 없음 | "이 보고서 HTML 파일로 만들어줘", "주간 현황 보고서를 하나의 HTML로 렌더해줘", "재무제표를 HTML 보고서로 변환해줘" | itda-work |
 | human-tone | 이미 작성된 한국어 사무 글(보고서·메일·기획서·공지)에서 AI 흔적을 걷어내는 후처리 스킬입니다. | 없음 | "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘" | itda-work |
@@ -98,12 +97,15 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | investigate | 경쟁 가설과 반증 실험으로 근본 원인을 체계적으로 조사하는 스킬입니다. | 없음 | "왜 이렇게 느리지?", "이 에러 원인이 뭐야?", "원인 분석해줘" | itda-work |
 | market-scan | 외부 시장·산업 자료를 찾아 의사결정용으로 구조화하는 시장조사 스킬입니다. | DART_API_KEY, ECOS_API_KEY, EXA_API_KEY, KOSIS_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "OO 시장 조사해줘", "시장 규모랑 경쟁사 알려줘", "신사업 진입할 만한지 분석해줘" | itda-work |
 | pdf-context-refinery | PDF를 LLM 컨텍스트·지식베이스용 구조화 마크다운으로 정제하는 스킬입니다. | 없음 | "PDF를 마크다운으로 변환해줘", "이 교재를 지식베이스로 만들어줘", "PDF OCR 정리해줘" | itda-work |
-| plan-work | 사용자의 요청을 적합한 itda-* 스킬 조합으로 매핑해 실행 계획을 만드는 스킬입니다. | 없음 | "계획 세워줘", "어떤 itda 스킬로 풀 수 있어?", "find-work 메모 받았는데 어떻게 진행해" | itda-work |
 | pptx-design | 콘텐츠 마크다운과 수치 데이터로 16:9 PPTX 발표자료를 크로스플랫폼(macOS/Linux, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "삼성전자 주가전망 ppt 만들어줘", "이 DESIGN.md로 발표자료 디자인해줘", "md 내용으로 슬라이드 덱 생성" | itda-work |
 | task-brief | 모호한 일상 요청을 에이전트에 던지기 전, 작업 범위·검증 방법·완료 정의 3요소를 채운 브리프 한 장으로 다듬는 스킬입니다. | 없음 | "작업 브리프 짜줘", "이 요청 다듬어줘", "브리프로 정리해줘" | itda-work |
 | weather-here | 현재 위치 또는 지정 지역의 날씨를 한국어로 빠르게 조회하는 스킬입니다. | 없음 | "날씨 알려줘", "지금 여기 날씨 어때", "부산 날씨 알려줘" | itda-work |
 | web-reader | WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·WAF 차단 정적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다. | 없음 | "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "403 뜨는 페이지 가져와줘" | itda-work |
 | web-search | 여러 검색엔진으로 웹을 한 번에 검색해 정규화된 결과 목록(제목·URL·발췌)을 돌려주는 스킬입니다. | EXA_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "파이썬 입문 자료 검색해줘", "AI 규제 관련 최신 기사 찾아줘", "경쟁사 가격 정책 정보 모아줘" | itda-work |
+| work-find | 비개발자 Cowork 사용자가 어떤 업무를 자동화할지 함께 찾아주는 인터뷰 스킬입니다. | 없음 | "업무 찾기 도와줘", "자동화 아이디어가 없어요", "Cowork로 뭘 해볼까" | itda-work |
+| work-pilot | 작성된 제안서·과제 신청서(또는 아이디어)를 Claude Cowork 안에서 실제로 돌아가는 파일럿으로 만드는 스킬입니다. | 없음 | "Cowork 가능 / 수동 브릿지 / 시스템 연동(IT 과제)", "신청서 다음 뭘 해야 해?", "이거 실제로 만들어보자" | itda-work |
+| work-plan | 사용자의 요청을 적합한 itda-* 스킬 조합으로 매핑해 실행 계획을 만드는 스킬입니다. | 없음 | "계획 세워줘", "어떤 itda 스킬로 풀 수 있어?", "work-find 메모 받았는데 어떻게 진행해" | itda-work |
+| work-proposal | 업무 개선·AI 과제 아이디어를 제안서 뼈대(프로젝트명·한 줄 소개·해결하려는 문제·AI 해결 방안(프로세스 포함)·핵심 기능·활용 계획 및 기대 효과)로 구조… | 없음 | "제안서 써줘", "AX 과제 신청서 도와줘", "이 아이디어 제안서로 정리해줘" | itda-work |
 | xlsx-design | 수치 데이터로 디자인된 Excel 통합문서(.xlsx)를 크로스플랫폼(macOS/Linux/Windows, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "NovaTech 실적 엑셀로 만들어줘", "이 프리셋으로 대시보드 시트 디자인해줘", "데이터로 디자인된 xlsx 생성" | itda-work |
 | stakeholder-map | 프로젝트 이해관계자별로 역할·요청할 것·받을 것·소통 방식과, 그 사람이 일을 시작하기 전에 알아야 할 선행 전달물(톤·형식·분량·필수 문구 같은 제약 조건)을… | 없음 | "이해관계자 정리해줘", "협업 지도 만들어줘", "누구한테 뭘 먼저 넘겨야 하지" | itda-workmap |
 | time-audit | 캘린더 실적(완료한 일정)을 모아 카테고리·난이도별 소요 시간, 주별 추이, 병목 후보를 결정론 스크립트로 집계하는 업무 시간 감사 스킬입니다. | 없음 | "내 시간 어디에 쓰는지 분석해줘", "업무 시간 매핑해줘", "시간 감사 해줘" | itda-workmap |
@@ -190,7 +192,6 @@ docx-design           → itda-work/skills/docx-design/
 draft-post            → itda-work/skills/draft-post/
 email                 → itda-work/skills/email/
 exchange-rate         → itda-work/skills/exchange-rate/
-find-work             → itda-work/skills/find-work/
 ground-check          → itda-work/skills/ground-check/
 html-report           → itda-work/skills/html-report/
 human-tone            → itda-work/skills/human-tone/
@@ -200,12 +201,15 @@ imagekit              → itda-work/skills/imagekit/
 investigate           → itda-work/skills/investigate/
 market-scan           → itda-work/skills/market-scan/
 pdf-context-refinery  → itda-work/skills/pdf-context-refinery/
-plan-work             → itda-work/skills/plan-work/
 pptx-design           → itda-work/skills/pptx-design/
 task-brief            → itda-work/skills/task-brief/
 weather-here          → itda-work/skills/weather-here/
 web-reader            → itda-work/skills/web-reader/
 web-search            → itda-work/skills/web-search/
+work-find             → itda-work/skills/work-find/
+work-pilot            → itda-work/skills/work-pilot/
+work-plan             → itda-work/skills/work-plan/
+work-proposal         → itda-work/skills/work-proposal/
 xlsx-design           → itda-work/skills/xlsx-design/
 stakeholder-map       → itda-workmap/skills/stakeholder-map/
 time-audit            → itda-workmap/skills/time-audit/

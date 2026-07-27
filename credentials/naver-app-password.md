@@ -40,4 +40,4 @@ NAVER_APP_PASSWORD=발급된_앱비밀번호
 
 - `itda-work/email` — 네이버 메일 읽기·발송 (IMAP 켜기 필요)
 - `itda-work/calendar` — 네이버 캘린더 (CalDAV)
-- `itda-work/plan-work` — 일정 기반 업무 계획 (calendar 경유)
+- `itda-work/work-plan` — 일정 기반 업무 계획 (calendar 경유)

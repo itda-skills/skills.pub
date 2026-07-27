@@ -30,7 +30,7 @@ stakeholders/*.md    # 이해관계자별 요청·선행 전달할 제약 조건
 
 ```
 time-audit(실측) ─▶ work-redesign(업무 지도) ─▶ stakeholder-map(협업 지도)
-                       ├─ 자동화할 것   → itda-work:find-work → itda-coach:miniskill-forge
+                       ├─ 자동화할 것   → itda-work:work-find → itda-coach:miniskill-forge
                        ├─ 위임 1건 실행 → itda-work:task-brief ◀─ 선행 전달물 복사
                        └─ 오늘 첫 조각  → itda-coach:hour-slice
 ```

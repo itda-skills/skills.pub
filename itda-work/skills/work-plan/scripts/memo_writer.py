@@ -1,4 +1,4 @@
-"""plan-work 스킬 — 메모 작성 유틸리티.
+"""work-plan 스킬 — 메모 작성 유틸리티.
 
 - mirror-back 반복 한도 상수 (AC-5)
 - PrereqItem 데이터클래스 (AC-8: 4필드 강제)
@@ -6,7 +6,7 @@
 - 확정 게이트 선택지 (AC-10)
 - should_save_full / should_save_partial (AC-11)
 - 파일명 생성: YYYY-MM-DD_HHmm_<slug>.md (AC-12)
-- get_memo_base_dir: resolve_data_dir("plan-work") (AC-12)
+- get_memo_base_dir: resolve_data_dir("work-plan") (AC-12)
 - apply_미정_markers: 빈 섹션 채우기 (AC-13)
 - is_exit_keyword: 종료 키워드 감지 (AC-14)
 - parse_plan_work_memo: 6섹션 파싱 (AC-15)
@@ -210,7 +210,7 @@ def get_memo_base_dir() -> Path:
     Returns:
         Path 객체.
     """
-    return resolve_data_dir("plan-work")
+    return resolve_data_dir("work-plan")
 
 
 # ---------------------------------------------------------------------------
@@ -269,7 +269,7 @@ def is_exit_keyword(text: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# plan-work 메모 6섹션 파싱 (AC-15)
+# work-plan 메모 6섹션 파싱 (AC-15)
 # ---------------------------------------------------------------------------
 
 _SECTION_HEADER_MAP: dict[str, str] = {
@@ -283,10 +283,10 @@ _SECTION_HEADER_MAP: dict[str, str] = {
 
 
 def parse_plan_work_memo(memo_text: str) -> dict[str, str]:
-    """plan-work 메모에서 6개 섹션을 파싱해 반환한다 (AC-15).
+    """work-plan 메모에서 6개 섹션을 파싱해 반환한다 (AC-15).
 
     Args:
-        memo_text: plan-work 메모 마크다운 전문.
+        memo_text: work-plan 메모 마크다운 전문.
 
     Returns:
         {"requirements": ..., "plan": ..., "prereqs": ...,

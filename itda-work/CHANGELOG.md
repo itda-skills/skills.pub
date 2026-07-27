@@ -5,7 +5,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- `work-proposal`·`work-pilot` 신설 (#1310) — itda-ceragem ax-proposal·ax-pilot 범용화 편입. work-find → work-proposal → work-pilot 업무 파이프라인 완성.
+
 ### Changed
+
+- `find-work` → `work-find`, `plan-work` → `work-plan` rename (#1310) — `work-*` 접두 패밀리 통일(하위 호환 미고려, 마스터 결정 2026-07-27).
 
 - **`web-reader` 복귀 (#1301)** — #1299 에서 `itda-hyve` 로 이전했던 web-reader 를 itda-work 로
   되돌렸다. 코어는 자체 HTTP 페치(`curl_cffi` TLS impersonation)로 hyve 없이 동작하며, 본문의

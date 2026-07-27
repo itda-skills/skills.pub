@@ -34,7 +34,7 @@
     - Jira 티켓 내보내기 — 다음: miniskill-forge로 굳히기
 
     ## 다음 행동
-    - 자동화 1순위를 find-work로 구체화
+    - 자동화 1순위를 work-find로 구체화
 
 사용:
     python3 check_work_map.py <work-map.md>        # 파일

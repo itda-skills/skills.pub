@@ -1,4 +1,12 @@
-# Changelog — find-work
+# Changelog — work-find
+
+## [0.14.0] — 2026-07-27 (이슈 #1310)
+
+### Changed
+
+- 스킬명 `find-work` → `work-find` — itda-work 업무 파이프라인 `work-*` 접두 패밀리 통일(work-find → work-proposal → work-pilot, 실행 관리 work-plan). 한국어 aliases(업무찾기·자동화발굴)는 유지.
+- 말미에 work-proposal(제안서 구조화)·work-pilot(파일럿 실증) 핸드오프 안내 추가.
+
 
 ## [0.13.0] — 2026-07-26 (이슈 #1284, #1280 이관분)
 
