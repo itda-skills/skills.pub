@@ -117,8 +117,8 @@ metadata:
 
 ## 파이프라인 (itda-work 업무 스킬 패밀리)
 
-`work-find`(무엇을 풀지 발굴) → **`work-proposal`(제안서로 구조화)** → `work-pilot`(파일럿 실증·스킬화).
-계획·실행 관리로 가려면 `work-plan`. 앞 단계 산출 메모/텍스트를 첨부하면 이어서 진행한다.
+`work-find`(무엇을 풀지 발굴, itda-coach 팩) → **`work-proposal`(제안서로 구조화)** → `work-pilot`(파일럿 실증·스킬화).
+계획·실행 관리로 가려면 `work-plan`(itda-coach 팩). 앞 단계 산출 메모/텍스트를 첨부하면 이어서 진행한다.
 
 ---
 

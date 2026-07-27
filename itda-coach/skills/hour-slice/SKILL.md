@@ -10,7 +10,7 @@ license: Apache-2.0
 compatibility: "Claude Code & Cowork. 강의·실습 1순위."
 allowed-tools: Read, Write
 user-invocable: true
-argument-hint: "[구체화된 문제 또는 problem-guide 산출물]"
+argument-hint: "[구체화된 문제 또는 work-find 산출물]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "facilitation"
@@ -40,7 +40,7 @@ metadata:
 
 ## 입력
 
-구체화된 문제 한 줄(또는 problem-guide 산출물). 아직 *무엇을* 할지조차 안 정해졌으면 work-find(itda-work)로 발굴부터, 문제는 있는데 막연하면 problem-guide로 먼저 좁히고 오라고 안내하되, 가벼운 건 여기서 한 번에 좁혀도 된다.
+구체화된 문제 한 줄(또는 work-find 산출물). 아직 *무엇을* 할지조차 안 정해졌거나 문제가 막연하면 work-find(발굴 트랙/문제 구체화 모드)로 먼저 좁히고 오라고 안내하되, 가벼운 건 여기서 한 번에 좁혀도 된다.
 
 ## 진행 절차
 
@@ -60,7 +60,7 @@ metadata:
 체크리스트 5축이 다 왼쪽인 **가장 작은** 조각을 고르고, "오늘의 한 조각" 템플릿을 채운다. **"이번엔 안 하는 것"을 반드시 적는다** — 범위가 다시 부풀지 않게.
 
 ### 5단계 — 핸드오프
-- 데이터를 앞에 두고 *지금 같이 실행* → **analysis-guide**
+- 데이터를 앞에 두고 *지금 같이 실행* → **data-compass**(itda-data)
 - 이 조각이 *반복*이라 매번 자동으로 → **miniskill-forge**
 - 조각이 여전히 크면 → 2단계로 돌아가 더 자른다
 
@@ -92,7 +92,7 @@ metadata:
 - 성공 판정(1시간 끝에 이게 보이면 OK):
 - 이번엔 안 하는 것 (out-of-scope):
   -
-- 다음 단계: <analysis-guide 라이브 실행 / miniskill-forge 굳히기>
+- 다음 단계: <data-compass(itda-data) 분석 지도 / miniskill-forge 굳히기>
 ```
 
 ## 종료 / 핸드오프

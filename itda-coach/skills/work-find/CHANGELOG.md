@@ -1,5 +1,19 @@
 # Changelog — work-find
 
+## [0.15.0] — 2026-07-28 (이슈 #1319)
+
+### Added
+
+- **모드 C — 문제 구체화** 신설: 구 problem-guide 스킬 병합 흡수. 진입 질문 3번 옵션으로 분기,
+  역질문 5축 → 재정의 → Cowork/Code 두 갈래 가이드 → 가이드 문서(.md). 상세 카탈로그는
+  `references/problem-mode.md` (진단 매핑표·작동 예시·부재/배치 모드).
+
+### Changed
+
+- itda-work → itda-coach 팩 이동 (여정 코칭 팩 재편 — 탐색·구체화 단계).
+- description·aliases·tags 에 문제 구체화 트리거 흡수. 진입 질문 옵션 재배열(혼합은 4번으로).
+- 핸드오프: analysis-guide → data-compass(itda-data) 로 교체 (analysis-guide 폐기).
+
 ## [0.14.0] — 2026-07-27 (이슈 #1310)
 
 ### Changed

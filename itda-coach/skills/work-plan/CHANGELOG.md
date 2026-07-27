@@ -1,4 +1,10 @@
-# Changelog — itda-work work-plan
+# Changelog — work-plan
+
+## [move] — 2026-07-28 (이슈 #1319)
+
+### Changed
+
+- itda-work → itda-coach 팩 이동 (여정 코칭 팩 재편 — 계획 단계 편입). 스킬 이름·계약 불변, skill-catalog 소속 표기 갱신.
 
 ## [rename] — 2026-07-27 (이슈 #1310)
 

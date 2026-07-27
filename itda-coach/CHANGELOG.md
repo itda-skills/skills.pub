@@ -2,6 +2,17 @@
 
 이 플러그인의 주요 변경 사항을 기록합니다. 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [SemVer](https://semver.org/)를 따릅니다.
 
+## 2026-07-28 (이슈 #1319) — AI 활용 여정 코칭 팩으로 재편
+
+### Added
+- **itda-workmap 팩 흡수**: `work-redesign`·`time-audit`·`stakeholder-map` 편입 (workmap 팩 소멸 — 설치 사용자 0 시점 재편).
+- **itda-work에서 편입**: `work-find`(탐색), `work-plan`(실행 계획) — 여정(탐색→구조화→계획→조각→굳히기)이 한 팩에 완결.
+- `work-find` v0.15.0 — 모드 C(문제 구체화) 신설: 구 `problem-guide` 워크플로우(역질문 5축→재정의→Cowork/Code 두 갈래 가이드)를 흡수, 상세는 `references/problem-mode.md`.
+
+### Removed
+- `problem-guide` — work-find 모드 C로 병합 폐기.
+- `analysis-guide` — itda-data `data-compass`와 pain 중복으로 폐기(공개·성숙 측 존치). 여정 핸드오프는 data-compass로 연결.
+
 ## 2026-07-26 (이슈 #1280·#1281·#1282·#1283)
 
 ### Changed

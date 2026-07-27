@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 97개 스킬 / 20개 팩.
+총 95개 스킬 / 19개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -25,10 +25,13 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | fss-docs | 금융감독원 공통업무자료 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "금감원 업무자료 확인해줘", "금융감독원 공통업무자료 이번 주 것만 보여줘", "금감원에서 사모펀드 자료 찾아줘" | itda-class-igm |
 | kacem-tender | 군인공제회(KACEM) 입찰 공고를 수집하고 첨부(hwp·hwpx·pdf)에서 사업개요·사업비를 추출해 표·JSON으로 정리하는 스킬입니다. | 없음 | "군인공제회 최근 공고 받아줘", "공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘" | itda-class-igm |
 | mmaa-welfare | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(축하금·위로금)·회원콘도·제휴복지 안내를 출처 URL·수집일과 함께 답합니다. | 없음 | "출산축하금 얼마?", "군인공제회 콘도 예약", "제휴 할인 알려줘" | itda-class-igm |
-| analysis-guide | 데이터를 앞에 두고 "뭐부터 해야 할지 모르겠다"는 사람을 위해, 한 걸음씩 같이 분석하며 다음엔 스스로 시작하도록 이끄는 라이브 길잡이입니다. | 없음 | "뭐부터 해야 할지 모르겠다", "이 데이터로 뭘 할 수 있어?", "분석하고 싶은데 어디서 시작하죠?" | itda-coach |
 | hour-slice | 하고 싶은 업무 개선은 큰데 "오늘 1시간 안에 뭘 만들 수 있지?"가 막막한 사람을 위해, 문제를 ~1시간 안에 눈에 보이는 결과가 나오는 한 조각으로 잘라… | 없음 | "오늘 1시간 안에 뭘 만들 수 있지?", "이거 너무 큰데 뭐부터 해볼까", "1시간 안에 만들 수 있는 걸로 줄여줘" | itda-coach |
 | miniskill-forge | 매번 같은 작업에 긴 프롬프트를 다시 쓰고 사람마다·날마다 결과가 달라지는 반복 업무를, Claude Cowork에서 한 마디로 부르는 재사용 미니스킬(SKIL… | 없음 | "이거 매번 자동으로 했으면", "내 반복 업무를 스킬로 만들어줘", "맨날 같은 프롬프트 다시 쓰기 싫어" | itda-coach |
-| problem-guide | 막연한 업무 문제 한 줄을 받아 먼저 역질문으로 구체화한 뒤, Claude Cowork(제약 환경)와 Claude Code(자유 환경) 두 갈래의 단계별 해결… | 없음 | "원하는 대로 안 나와요", "HTML 보고서가 이상해요", "형식을 매번 다시 설명해야 해요" | itda-coach |
+| stakeholder-map | 프로젝트 이해관계자별로 역할·요청할 것·받을 것·소통 방식과, 그 사람이 일을 시작하기 전에 알아야 할 선행 전달물(톤·형식·분량·필수 문구 같은 제약 조건)을… | 없음 | "이해관계자 정리해줘", "협업 지도 만들어줘", "누구한테 뭘 먼저 넘겨야 하지" | itda-coach |
+| time-audit | 캘린더 실적(완료한 일정)을 모아 카테고리·난이도별 소요 시간, 주별 추이, 병목 후보를 결정론 스크립트로 집계하는 업무 시간 감사 스킬입니다. | 없음 | "내 시간 어디에 쓰는지 분석해줘", "업무 시간 매핑해줘", "시간 감사 해줘" | itda-coach |
+| work-find | 비개발자 Cowork 사용자가 AI로 풀 업무를 함께 찾고 구체화하는 인터뷰 스킬입니다. | 없음 | "업무 찾기 도와줘", "자동화 아이디어가 없어요", "Cowork로 뭘 해볼까" | itda-coach |
+| work-plan | 사용자의 요청을 적합한 itda-* 스킬 조합으로 매핑해 실행 계획을 만드는 스킬입니다. | 없음 | "계획 세워줘", "어떤 itda 스킬로 풀 수 있어?", "work-find 메모 받았는데 어떻게 진행해" | itda-coach |
+| work-redesign | 내 업무를 태스크→행동 단위로 쪼개고 가치×AI개입 4분면(인간이 지킬 것/AI로 증강할 것/ 일부러 유지할 것/자동화할 것)으로 매핑해, 위임 계획과 상시 컨… | 없음 | "내 업무 구조화해줘", "뭘 AI한테 맡겨야 할지 모르겠어", "업무 지도 만들어줘" | itda-coach |
 | aspect-sentiment | 한국어 텍스트의 측면별 감정·상태를 Claude가 직접 추출하는 ABSA(측면 기반 감정분석) 스킬입니다. | 없음 | "이 리뷰들 측면별 감정 뽑아줘", "상담 로그 측면 분석", "배송·품질 따로 긍부정 분류" | itda-cs |
 | cs-intent | 한국어 CS 상담·문의 텍스트를 "왜 연락했나"(인텐트/문의유형)로 분류하는 스킬입니다. | 없음 | "왜 연락했나", "이 문의 유형 분류해줘", "상담 인텐트 뽑아줘" | itda-cs |
 | iaa-builder | CS 분류 라벨의 어노테이터 간 일치도(IAA)를 Cohen·Fleiss κ로 측정하는 스킬입니다. | 없음 | "이 라벨링 일치도 재줘", "Cohen 카파 계산", "골드셋 만들어줘" | itda-cs |
@@ -101,14 +104,9 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | weather-here | 현재 위치 또는 지정 지역의 날씨를 한국어로 빠르게 조회하는 스킬입니다. | 없음 | "날씨 알려줘", "지금 여기 날씨 어때", "부산 날씨 알려줘" | itda-work |
 | web-reader | WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·WAF 차단 정적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다. | 없음 | "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "403 뜨는 페이지 가져와줘" | itda-work |
 | web-search | 여러 검색엔진으로 웹을 한 번에 검색해 정규화된 결과 목록(제목·URL·발췌)을 돌려주는 스킬입니다. | EXA_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "파이썬 입문 자료 검색해줘", "AI 규제 관련 최신 기사 찾아줘", "경쟁사 가격 정책 정보 모아줘" | itda-work |
-| work-find | 비개발자 Cowork 사용자가 어떤 업무를 자동화할지 함께 찾아주는 인터뷰 스킬입니다. | 없음 | "업무 찾기 도와줘", "자동화 아이디어가 없어요", "Cowork로 뭘 해볼까" | itda-work |
 | work-pilot | 작성된 제안서·과제 신청서(또는 아이디어)를 Claude Cowork 안에서 실제로 돌아가는 파일럿으로 만드는 스킬입니다. | 없음 | "Cowork 가능 / 수동 브릿지 / 시스템 연동(IT 과제)", "신청서 다음 뭘 해야 해?", "이거 실제로 만들어보자" | itda-work |
-| work-plan | 사용자의 요청을 적합한 itda-* 스킬 조합으로 매핑해 실행 계획을 만드는 스킬입니다. | 없음 | "계획 세워줘", "어떤 itda 스킬로 풀 수 있어?", "work-find 메모 받았는데 어떻게 진행해" | itda-work |
 | work-proposal | 업무 개선·AI 과제 아이디어를 제안서 뼈대(프로젝트명·한 줄 소개·해결하려는 문제·AI 해결 방안(프로세스 포함)·핵심 기능·활용 계획 및 기대 효과)로 구조… | 없음 | "제안서 써줘", "AX 과제 신청서 도와줘", "이 아이디어 제안서로 정리해줘" | itda-work |
 | xlsx-design | 수치 데이터로 디자인된 Excel 통합문서(.xlsx)를 크로스플랫폼(macOS/Linux/Windows, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "NovaTech 실적 엑셀로 만들어줘", "이 프리셋으로 대시보드 시트 디자인해줘", "데이터로 디자인된 xlsx 생성" | itda-work |
-| stakeholder-map | 프로젝트 이해관계자별로 역할·요청할 것·받을 것·소통 방식과, 그 사람이 일을 시작하기 전에 알아야 할 선행 전달물(톤·형식·분량·필수 문구 같은 제약 조건)을… | 없음 | "이해관계자 정리해줘", "협업 지도 만들어줘", "누구한테 뭘 먼저 넘겨야 하지" | itda-workmap |
-| time-audit | 캘린더 실적(완료한 일정)을 모아 카테고리·난이도별 소요 시간, 주별 추이, 병목 후보를 결정론 스크립트로 집계하는 업무 시간 감사 스킬입니다. | 없음 | "내 시간 어디에 쓰는지 분석해줘", "업무 시간 매핑해줘", "시간 감사 해줘" | itda-workmap |
-| work-redesign | 내 업무를 태스크→행동 단위로 쪼개고 가치×AI개입 4분면(인간이 지킬 것/AI로 증강할 것/ 일부러 유지할 것/자동화할 것)으로 매핑해, 위임 계획과 상시 컨… | 없음 | "내 업무 구조화해줘", "뭘 AI한테 맡겨야 할지 모르겠어", "업무 지도 만들어줘" | itda-workmap |
 
 ## 스킬 디렉토리 경로 매핑
 
@@ -128,10 +126,13 @@ customs-notice        → itda-class-igm/skills/customs-notice/
 fss-docs              → itda-class-igm/skills/fss-docs/
 kacem-tender          → itda-class-igm/skills/kacem-tender/
 mmaa-welfare          → itda-class-igm/skills/mmaa-welfare/
-analysis-guide        → itda-coach/skills/analysis-guide/
 hour-slice            → itda-coach/skills/hour-slice/
 miniskill-forge       → itda-coach/skills/miniskill-forge/
-problem-guide         → itda-coach/skills/problem-guide/
+stakeholder-map       → itda-coach/skills/stakeholder-map/
+time-audit            → itda-coach/skills/time-audit/
+work-find             → itda-coach/skills/work-find/
+work-plan             → itda-coach/skills/work-plan/
+work-redesign         → itda-coach/skills/work-redesign/
 aspect-sentiment      → itda-cs/skills/aspect-sentiment/
 cs-intent             → itda-cs/skills/cs-intent/
 iaa-builder           → itda-cs/skills/iaa-builder/
@@ -204,12 +205,7 @@ task-brief            → itda-work/skills/task-brief/
 weather-here          → itda-work/skills/weather-here/
 web-reader            → itda-work/skills/web-reader/
 web-search            → itda-work/skills/web-search/
-work-find             → itda-work/skills/work-find/
 work-pilot            → itda-work/skills/work-pilot/
-work-plan             → itda-work/skills/work-plan/
 work-proposal         → itda-work/skills/work-proposal/
 xlsx-design           → itda-work/skills/xlsx-design/
-stakeholder-map       → itda-workmap/skills/stakeholder-map/
-time-audit            → itda-workmap/skills/time-audit/
-work-redesign         → itda-workmap/skills/work-redesign/
 ```

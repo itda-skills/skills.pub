@@ -1,5 +1,11 @@
 # Changelog — time-audit
 
+## [0.1.4] — 2026-07-28 (이슈 #1319)
+
+### Changed
+
+- itda-workmap → itda-coach 팩 이동 (workmap 팩 소멸, 여정 코칭 팩 재편). 스킬 이름·계약 불변.
+
 ## [0.1.3] — 2026-07-26 (이슈 #1279)
 
 ### Changed
