@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 91개 스킬 / 20개 팩.
+총 92개 스킬 / 20개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -85,6 +85,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | exchange-rate | 원화 기준 일별·월 평균 기준 환율을 조회하는 스킬입니다. | 없음 | "오늘 달러 환율 알려줘", "이번 달 엔화 평균 환율 보여줘", "EUR 환율 조회해줘" | itda-work |
 | find-work | 비개발자 Cowork 사용자가 어떤 업무를 자동화할지 함께 찾아주는 인터뷰 스킬입니다. | 없음 | "업무 찾기 도와줘", "자동화 아이디어가 없어요", "Cowork로 뭘 해볼까" | itda-work |
 | ground-check | 1차 출처 강제 인용과 독립 검증으로 환각·hedge 표현을 절차로 차단하는 리서치 스킬입니다. | 없음 | "팩트체크해서 보고서 써줘", "출처 확인해서 정리해줘", "1차 소스만 써서 정리해줘" | itda-work |
+| html-report | 마크다운 보고서·분석 결과·회의 정리를 연차보고서 수준의 단일 파일 HTML 문서로 렌더링하는 스킬입니다. | 없음 | "이 보고서 HTML 파일로 만들어줘", "주간 현황 보고서를 하나의 HTML로 렌더해줘", "재무제표를 HTML 보고서로 변환해줘" | itda-work |
 | human-tone | 이미 작성된 한국어 사무 글(보고서·메일·기획서·공지)에서 AI 흔적을 걷어내는 후처리 스킬입니다. | 없음 | "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘" | itda-work |
 | hwpx-reader | 한글 HWP·HWPX 문서를 읽어 Markdown·HTML로 변환하는 Python native 스킬입니다. | 없음 | "이 HWP 파일 읽어줘", "한글 문서 내용 보여줘", "HWP를 마크다운으로 변환해줘" | itda-work |
 | hwpx-report | 마크다운으로 작성한 보고서를 대한민국 정부 범용 한글 서식(.hwpx)으로 변환하는 스킬입니다. | 없음 | "이 보고서 한글 정부 서식으로 만들어줘", "마크다운을 hwpx 보고서로 변환해줘", "개조식 정부 보고서 .hwpx로 뽑아줘" | itda-work |
@@ -182,6 +183,7 @@ email                 → itda-work/skills/email/
 exchange-rate         → itda-work/skills/exchange-rate/
 find-work             → itda-work/skills/find-work/
 ground-check          → itda-work/skills/ground-check/
+html-report           → itda-work/skills/html-report/
 human-tone            → itda-work/skills/human-tone/
 hwpx-reader           → itda-work/skills/hwpx-reader/
 hwpx-report           → itda-work/skills/hwpx-report/
