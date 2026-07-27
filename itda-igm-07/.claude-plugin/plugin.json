@@ -1,6 +1,6 @@
 {
-  "name": "itda-gov",
-  "description": "한국 정부 공공데이터 API 스킬팩 — 전자공시, 통계, 경제지표, 지원사업, 입찰공고",
+  "name": "itda-igm-07",
+  "description": "Itda IGM 07 — 공공기관 게시판·포털 수집 스킬팩 (관세청·금융감독원·감사원·군인공제회)",
   "version": "8.41.0",
   "author": {
     "name": "스킬.잇다",
@@ -10,10 +10,10 @@
   "repository": "https://github.com/itda-skills/skills.pub",
   "license": "Apache-2.0",
   "keywords": [
-    "government",
-    "public-data",
+    "public-sector",
+    "board-scraping",
     "korea",
-    "공공데이터",
-    "정부API"
+    "공공기관",
+    "게시판수집"
   ]
 }

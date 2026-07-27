@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.40.0",
+    "version": "8.41.0",
     "language": "ko"
   },
   "plugins": [
@@ -94,6 +94,11 @@
       "name": "itda-hyve",
       "source": "./itda-hyve",
       "description": "hyve 데스크톱 앱의 MCP 도구(web_browse·office 등)를 쓰는 스킬 모음 — hyve 가동 전제"
+    },
+    {
+      "name": "itda-igm-07",
+      "source": "./itda-igm-07",
+      "description": "Itda IGM 07 — 공공기관 게시판·포털 수집 스킬팩 (관세청·금융감독원·감사원·군인공제회)"
     }
   ]
 }

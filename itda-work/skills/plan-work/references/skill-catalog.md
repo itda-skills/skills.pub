@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 92개 스킬 / 21개 팩.
+총 96개 스킬 / 22개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -46,6 +46,10 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | harness | 하네스를 구성합니다. | 없음 | "하네스 구성해줘", "하네스 구축해줘", "하네스 설계 도와줘" | itda-harness |
 | pptx-diff | PPTX 발표자료 두 버전의 차이를 슬라이드·도형·텍스트 단위로 비교해 한국어로 요약하는 스킬입니다. | 없음 | "이 pptx 두 버전 비교해줘", "덱 뭐가 바뀌었어?", "발표자료 개정본 리뷰해줘" | itda-hyve |
 | web-automation | hyve web_browse MCP로 웹 자동화(로그인 세션·폼 입력·클릭 탐색·대량 수집·차단 사이트 우회)를 할 때 올바른 액션 조합을 안내하는 레시피 스킬… | 없음 | "이 사이트 로그인해서 데이터 모아줘", "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘" | itda-hyve |
+| bai-notice | 감사원 통합공지 게시판을 내부 JSON API로 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "감사원 공지 확인해줘", "감사원 통합공지 최근 10건 보여줘", "감사원에서 채용 공고 찾아줘" | itda-igm-07 |
+| customs-notice | 관세청 공지사항 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "관세청 공지 확인해줘", "관세청 공지사항 최근 10건 보여줘", "관세청에서 원산지 관련 공지 찾아줘" | itda-igm-07 |
+| fss-docs | 금융감독원 공통업무자료 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "금감원 업무자료 확인해줘", "금융감독원 공통업무자료 이번 주 것만 보여줘", "금감원에서 사모펀드 자료 찾아줘" | itda-igm-07 |
+| mmaa-welfare | 군인공제회 복지포털의 복지 상품·서비스 카탈로그와 공지사항을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "군인공제회 공지 확인해줘", "군인공제회 복지 상품 뭐 있는지 보여줘", "공제회에서 건강검진 관련 복지 찾아줘" | itda-igm-07 |
 | imagegen | 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성하는 스킬입니다. | 없음 | "블로그 히어로 이미지 만들어줘", "슬라이드 배경 비주얼", "쇼츠용 세로 삽화" | itda-media |
 | pixel-art | 이미지 파일을 픽셀 아트(도트 그림)로 변환하는 스킬입니다. | 없음 | "이 이미지 픽셀아트로 만들어줘", "도트 그림으로", "8비트 스타일로" | itda-media |
 | kacem-tender | 군인공제회(KACEM) 입찰 공고를 수집하고 첨부(hwp·hwpx·pdf)에서 사업개요·사업비를 추출해 표·JSON으로 정리하는 스킬입니다. | 없음 | "군인공제회 최근 공고 받아줘", "공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘" | itda-mmaa |
@@ -144,6 +148,10 @@ kosis                 → itda-gov/skills/kosis/
 harness               → itda-harness/skills/harness/
 pptx-diff             → itda-hyve/skills/pptx-diff/
 web-automation        → itda-hyve/skills/web-automation/
+bai-notice            → itda-igm-07/skills/bai-notice/
+customs-notice        → itda-igm-07/skills/customs-notice/
+fss-docs              → itda-igm-07/skills/fss-docs/
+mmaa-welfare          → itda-igm-07/skills/mmaa-welfare/
 imagegen              → itda-media/skills/imagegen/
 pixel-art             → itda-media/skills/pixel-art/
 kacem-tender          → itda-mmaa/skills/kacem-tender/

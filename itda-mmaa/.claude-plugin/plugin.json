@@ -1,7 +1,7 @@
 {
   "name": "itda-mmaa",
   "description": "군인공제회(MMAA) 업무 자동화 플러그인 — KACEM 입찰 공고 수집·추출 + 복지포털 스냅샷 Q&A",
-  "version": "8.40.0",
+  "version": "8.41.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
