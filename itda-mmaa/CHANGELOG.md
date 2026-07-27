@@ -2,6 +2,12 @@
 
 군인공제회(MMAA) 업무 자동화 스킬팩 — KACEM 게시판 모니터링 + ZIP 첨부 자동 압축해제 + 사업개요·사업비 추출 + 웹메일 조회 + 복지포털 스냅샷 Q&A.
 
+## 2026-07-27 (이슈 #1303) — v0.13.2
+
+### Fixed
+
+- **kacem-tender-extract v1.1.0** — hwp/hwpx 변환기를 구 `hwpx` 바이너리(convert 소멸 drift)에서 hwpx-reader 동봉 `hwpx_native` 로 교체. 통합 테스트 2건 GREEN 복원.
+
 ## 2026-07-27 (이슈 #1302 후속) — v0.13.1
 
 ### Changed

@@ -1,7 +1,7 @@
 {
   "name": "itda-workmap",
   "description": "업무 구조화 스킬팩 — 내 일을 태스크→행동 단위로 쪼개고 가치×AI개입 4분면으로 매핑해, AI에게 위임할 것과 인간이 지킬 것을 가르는 업무 지도를 만든다",
-  "version": "8.39.0",
+  "version": "8.39.1",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

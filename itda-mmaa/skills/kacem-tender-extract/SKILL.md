@@ -14,9 +14,9 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "active"
-  version: "1.0.5"
+  version: "1.1.0"
   created_at: "2026-04-30"
-  updated_at: "2026-07-26"
+  updated_at: "2026-07-27"
   tags: "MMAA, KACEM, hwp, hwpx, pdf, extraction"
 ---
 
@@ -149,8 +149,10 @@ python3 "$SKILL_DIR/scripts/main.py" validate ./summary.json
 apt install poppler-utils        # Debian/Ubuntu
 brew install poppler             # macOS
 
-# hwpx 바이너리 — hwp/hwpx 변환 필수
-# itda-work/skills/hwpx 스킬 또는 PATH에 hwpx 설치
+# hwpx_native 변환기 — hwp/hwpx 변환 필수 (#1303: 구 hwpx 바이너리 계약 대체)
+# itda-work 플러그인의 hwpx-reader 스킬을 설치하면 자동 발견된다.
+# 비표준 위치는 env HWPX_READER_DIR=<hwpx-reader 스킬 디렉토리> 로 지정.
+# (.hwp 원본 변환에는 olefile 패키지 추가 필요)
 ```
 
 ### Python 패키지 (pdfplumber 폴백)
@@ -178,7 +180,7 @@ python3 -m pip install -r "$SKILL_DIR/requirements.txt"
 
 | 상황 | 처리 |
 |------|------|
-| hwpx 바이너리 없음 | HwpxNotFoundError + 설치 안내 |
+| hwpx_native 변환기(hwpx-reader 스킬) 미발견 | HwpxNotFoundError + 설치 안내 |
 | pdftotext 및 pdfplumber 모두 없음 | PdfExtractError + 설치 안내 |
 | JSON 스키마 검증 실패 | SchemValidationError + 상세 필드 안내 |
 | 텍스트 추출 결과 없음 | 해당 건 실패 표기 + 다음 건 진행 |

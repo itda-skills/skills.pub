@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.0] — 2026-07-27 (이슈 #1303)
+
+### Changed
+
+- **hwp/hwpx 변환기를 hwpx_native 로 교체 (#1303)** — 외부 `hwpx` 바이너리가 문서 에이전트 인터페이스로 개편되며 `convert` 서브커맨드가 소멸해 통합 테스트 2건이 깨진 drift 해소. hwpx-reader 스킬 동봉 순수 파이썬 변환기(`python3 -m hwpx_native convert`)를 서브프로세스 호출(동일 `-o`/`--format md` 계약). 발견 순서: env `HWPX_READER_DIR` → 저장소 조상 경로 → Claude Code 플러그인 설치 경로 → Cowork 세션 마운트. 미발견 시 HwpxNotFoundError 로 명시 안내.
+
 ## [1.0.5] — 2026-07-26 (이슈 #1283)
 
 ### Changed
