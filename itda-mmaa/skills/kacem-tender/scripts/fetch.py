@@ -1,10 +1,10 @@
-"""kacem-tender-fetch CLI 엔트리포인트.
+"""KACEM 게시판 수집 모듈 (구 kacem-tender-fetch — #1306 통합).
 
 KACEM 게시판 목록 수집 → 첨부 다운로드 → ZIP 해제 → 모집공고 식별.
+CLI 진입은 main.py 의 `fetch` 서브커맨드가 담당한다.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
 import sys
@@ -211,33 +211,3 @@ def _build_meta(post: dict, post_dir: Path, skipped: bool = False) -> dict:
 def _write_json(path: Path, data: dict) -> None:
     """딕셔너리를 JSON 파일로 저장한다."""
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def main() -> None:
-    """CLI 엔트리포인트."""
-    parser = argparse.ArgumentParser(description="KACEM 입찰 게시판 첨부 다운로더")
-    parser.add_argument("--category-no", type=int, default=3)
-    parser.add_argument("--max-pages", type=int, default=1)
-    parser.add_argument("--since", type=lambda s: date.fromisoformat(s), default=None)
-    parser.add_argument("--output-dir", type=Path, default=Path("."))
-    parser.add_argument("--no-confirm", action="store_true")
-    parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--force", action="store_true")
-    parser.add_argument("-v", "--verbose", action="store_true")
-    args = parser.parse_args()
-
-    result = run_fetch(
-        output_dir=args.output_dir,
-        category_no=args.category_no,
-        max_pages=args.max_pages,
-        since=args.since,
-        limit=args.limit,
-        no_confirm=args.no_confirm,
-        force=args.force,
-        verbose=args.verbose,
-    )
-    print(f"\n완료: {result['downloaded']}건 다운로드")
-
-
-if __name__ == "__main__":
-    main()

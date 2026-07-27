@@ -1,8 +1,8 @@
 ---
-title: "kacem-tender-extract 활용 가이드"
+title: "kacem-tender 활용 가이드"
 ---
 
-# kacem-tender-extract 사용 가이드
+# kacem-tender 사용 가이드
 
 군인공제회 모집공고 첨부 파일(hwp·hwpx·pdf)에서 사업개요와 사업비를 추출해 표·JSON으로 정리합니다.
 **Claude에게 말로 부탁하면 됩니다** — "이 공고 사업비 정리해줘", "발주처랑 공급가액 뽑아줘"처럼요.
@@ -49,9 +49,9 @@ title: "kacem-tender-extract 활용 가이드"
 
 ---
 
-## kacem-tender-fetch와 함께 쓰기
+## kacem-tender fetch 서브커맨드와 함께 쓰기
 
-`kacem-tender-fetch` 스킬로 군인공제회 게시판에서 공고 파일을 먼저 받아두면, 이 스킬이 그 파일을 바로 읽어 처리합니다. "공고 받아서 사업비 정리까지 해줘"처럼 말하면 두 스킬이 이어서 동작합니다.
+`kacem-tender fetch 서브커맨드` 스킬로 군인공제회 게시판에서 공고 파일을 먼저 받아두면, 이 스킬이 그 파일을 바로 읽어 처리합니다. "공고 받아서 사업비 정리까지 해줘"처럼 말하면 두 스킬이 이어서 동작합니다.
 
 ---
 

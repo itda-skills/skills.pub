@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.0] — 2026-07-27 (이슈 #1306)
+
+### Changed
+
+- **kacem-tender-fetch 흡수 통합 — 스킬명 kacem-tender 로 개명 (#1306, 마스터 결정)** — 두 스킬은 한 pain('공고 수집→사업비 정리')의 단계 분할이라 단일 스킬로 통합. `main.py fetch` 서브커맨드 신설(구 fetch CLI 플래그 동일) + `fetch --extract` 원스톱(수집 직후 _index.json 일괄 추출 — core_document 상대경로 핸드오프 마찰을 프로세스 내부에서 해소, 라이브 실측 #1306). 구 kacem-tender-fetch 의 변경 이력은 해당 스킬의 git 히스토리 참조.
+
 ## [1.1.0] — 2026-07-27 (이슈 #1303)
 
 ### Changed

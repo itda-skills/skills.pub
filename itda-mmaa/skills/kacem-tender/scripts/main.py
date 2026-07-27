@@ -1,6 +1,7 @@
-"""kacem-tender-extract CLI 진입점.
+"""kacem-tender CLI 진입점 (#1306 — kacem-tender-fetch + kacem-tender-extract 통합).
 
 서브커맨드:
+  fetch [--max-pages N] [--since YYYY-MM-DD] [--output-dir PATH] [--extract]
   extract <input> [--output PATH]
   render <summary.json> --post-id N --title T --output-dir PATH [--include-csv]
   validate <summary.json>
@@ -23,6 +24,35 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # 서브커맨드 핸들러
 # ---------------------------------------------------------------------------
+
+def cmd_fetch(args: argparse.Namespace) -> int:
+    """fetch 서브커맨드: KACEM 게시판 수집. --extract 시 추출까지 원스톱."""
+    from fetch import run_fetch
+
+    result = run_fetch(
+        output_dir=args.output_dir,
+        category_no=args.category_no,
+        max_pages=args.max_pages,
+        since=args.since,
+        limit=args.limit,
+        no_confirm=getattr(args, "no_confirm", False),
+        force=args.force,
+        verbose=getattr(args, "verbose", False),
+    )
+    print(f"\n완료: {result['downloaded']}건 다운로드")
+
+    if getattr(args, "extract", False):
+        # 수집 산출 디렉토리(_index.json)를 그대로 일괄 추출 — 상대경로 이음새를
+        # 프로세스 내부에서 해소한다 (#1306).
+        extract_args = argparse.Namespace(
+            input=str(args.output_dir),
+            output=None,
+            doc=None,
+            verbose=getattr(args, "verbose", False),
+        )
+        return cmd_extract(extract_args)
+    return 0
+
 
 def cmd_extract(args: argparse.Namespace) -> int:
     """extract 서브커맨드: 파일/디렉토리에서 텍스트를 추출한다."""
@@ -258,7 +288,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     """argparse 파서를 구성하고 반환한다."""
     parser = argparse.ArgumentParser(
-        prog="kacem-tender-extract",
+        prog="kacem-tender",
         description="군인공제회 모집공고에서 사업개요·사업비를 추출합니다.",
     )
 
@@ -277,6 +307,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
+
+    # fetch 서브커맨드 (구 kacem-tender-fetch, #1306 통합)
+    from datetime import date as _date
+    fetch_parser = subparsers.add_parser(
+        "fetch",
+        help="KACEM 게시판 수집: 목록 → 첨부 ZIP 다운로드 → 해제 → 모집공고 식별",
+    )
+    fetch_parser.add_argument("--category-no", type=int, default=3)
+    fetch_parser.add_argument("--max-pages", type=int, default=1)
+    fetch_parser.add_argument(
+        "--since", type=lambda s: _date.fromisoformat(s), default=None)
+    fetch_parser.add_argument("--output-dir", type=Path, default=Path("."))
+    fetch_parser.add_argument("--limit", type=int, default=None)
+    fetch_parser.add_argument("--force", action="store_true")
+    fetch_parser.add_argument(
+        "--extract",
+        action="store_true",
+        help="수집 직후 식별된 모집공고를 일괄 텍스트 추출 (원스톱)",
+    )
 
     # extract 서브커맨드
     extract_parser = subparsers.add_parser(
@@ -369,6 +418,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     dispatch = {
+        "fetch": cmd_fetch,
         "extract": cmd_extract,
         "render": cmd_render,
         "validate": cmd_validate,

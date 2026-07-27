@@ -1,32 +1,36 @@
 ---
-name: kacem-tender-extract
+name: kacem-tender
 description: >
-  군인공제회 공고 첨부(hwp·hwpx·pdf)에서 사업개요와 사업비를 추출해 표·JSON으로 정리하는 스킬입니다.
-  "공고 사업비랑 사업개요
-  정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘", "공고 요약을 표로 정리해줘"처럼 말하면 됩니다.
-  결정적 텍스트 추출 후 Claude 기반 필드 식별 2단계로 동작합니다.
+  군인공제회(KACEM) 입찰 공고를 수집하고 첨부(hwp·hwpx·pdf)에서 사업개요·사업비를 추출해
+  표·JSON으로 정리하는 스킬입니다. "군인공제회 최근 공고 받아줘", "공고 사업비랑 사업개요
+  정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘"처럼 말하면 됩니다.
+  게시판 수집·ZIP 해제·모집공고 식별부터 결정적 텍스트 추출·Claude 필드 구조화까지 원스톱입니다.
 license: Apache-2.0
 compatibility: "Claude Code / Claude Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write, mcp__workspace__bash
 user-invocable: true
-argument-hint: "extract <파일> | render <summary.json> --post-id N --title T --output-dir PATH"
+argument-hint: "fetch [--max-pages N] [--extract] | extract <파일> | render <summary.json> --post-id N --title T --output-dir PATH"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "active"
-  version: "1.1.0"
+  version: "2.0.0"
   created_at: "2026-04-30"
   updated_at: "2026-07-27"
-  tags: "MMAA, KACEM, hwp, hwpx, pdf, extraction"
+  tags: "MMAA, KACEM, tender, scraping, download, hwp, hwpx, pdf, extraction"
 ---
 
-# kacem-tender-extract
+# kacem-tender
 
-군인공제회 모집공고 핵심 첨부 파일(hwp/hwpx/pdf)에서 **사업개요**와 **사업비**를 추출해 Markdown 표 + JSON으로 정리합니다.
+KACEM 군인공제회 입찰 게시판(기본 category_no=3, 공동주택감리)을 수집하고, 모집공고
+핵심 첨부(hwp/hwpx/pdf)에서 **사업개요**와 **사업비**를 추출해 Markdown 표 + JSON으로
+정리합니다 (#1306 — 구 kacem-tender-fetch·kacem-tender-extract 통합).
 
 ## 전체 워크플로우
 
 ```
+0. [스크립트] fetch — 게시판 목록 수집 → 첨부 ZIP 다운로드·해제 → 모집공고 식별
+   (--extract 시 1~2단계까지 원스톱)
 1. [Claude] 파일 경로 결정 → extract 실행
 2. [스크립트] 텍스트 추출 (deterministic)
 3. [Claude AI] 텍스트에서 항목 식별·구조화 → summary.json 생성
@@ -40,18 +44,45 @@ metadata:
 
 ```bash
 # Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
-SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/kacem-tender-extract}"
-[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/kacem-tender-extract' 2>/dev/null | head -1)
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/kacem-tender}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/kacem-tender' 2>/dev/null | head -1)
 # 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 ```
 
 Windows(PowerShell):
 
 ```powershell
-$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\kacem-tender-extract"  # 미설정이면 SKILL.md 위치 절대경로 사용
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\kacem-tender"  # 미설정이면 SKILL.md 위치 절대경로 사용
 ```
 
 ## 사용 예시
+
+### 0단계: 게시판 수집 (fetch)
+
+```bash
+# 최근 1페이지 수집
+python3 "$SKILL_DIR/scripts/main.py" fetch --output-dir ./mmaa-2026-07
+
+# 지난 30일 모두 + 수집 직후 일괄 추출 (원스톱)
+python3 "$SKILL_DIR/scripts/main.py" fetch --since 2026-06-27 --max-pages 5 \
+  --output-dir ./mmaa-archive --extract
+
+# Windows
+py -3 "$env:SKILL_DIR\scripts\main.py" fetch --output-dir .\mmaa-2026-07
+```
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `--category-no` | 3 | 카테고리 번호 (3 = 공동주택감리) |
+| `--max-pages` | 1 | 최대 페이징 깊이 |
+| `--since YYYY-MM-DD` | (없음) | 이 날짜 이전 글 만나면 중단 |
+| `--output-dir` | `.` | 결과 저장 경로 |
+| `--limit` | (없음) | 최대 다운로드 건수 |
+| `--force` | False | 이미 존재하는 디렉토리도 재다운로드 |
+| `--extract` | False | 수집 직후 식별된 모집공고 일괄 텍스트 추출 |
+
+수집 산출: `{output_dir}/_index.json` + 게시글별 `{num}_{제목slug}/`(meta.json ·
+attachment/ · extracted/). 식별된 모집공고는 meta.json 의 `core_document`.
 
 ### 1단계: 텍스트 추출 (extract)
 
