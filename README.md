@@ -11,7 +11,7 @@ Claude Code · Claude Cowork에서 대한민국 직장인·공공업무·투자�
 /plugin install itda-work@itda-skills/skills.pub
 ```
 
-현재 publish 대상 플러그인 (release.yml PLUGINS): `itda-work`, `itda-gov`, `itda-mmaa`, `itda-data`. `itda-realty`는 source 저장소에 존재하지만 publish 단계에서 제외됨 (별도 공개 시점 미정).
+현재 publish 대상 플러그인 (release.yml PLUGINS): `itda-work`, `itda-gov`, `itda-class-igm`, `itda-data`. `itda-realty`는 source 저장소에 존재하지만 publish 단계에서 제외됨 (별도 공개 시점 미정).
 
 ## 개발 저장소
 

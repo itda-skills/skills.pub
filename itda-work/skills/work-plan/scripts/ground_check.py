@@ -41,7 +41,7 @@ _KNOWN_ENV_VARS: frozenset[str] = frozenset({
     "KOSIS_API_KEY",
     "DART_API_KEY",
     "ECOS_API_KEY",
-    # itda-mmaa / itda-stocks
+    # itda-class-igm / itda-stocks
     "KIS_APP_KEY",
     "KIS_APP_SECRET",
     "KIS_ACCOUNT_NO",

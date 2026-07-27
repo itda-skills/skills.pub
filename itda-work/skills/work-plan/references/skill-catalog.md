@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 98개 스킬 / 22개 팩.
+총 98개 스킬 / 21개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -20,6 +20,12 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | brain-fixture | 함정(모순·버전지옥·규정이중화·손상파일 등)을 의도적으로 심은 가상 회사의 연습용 데이터셋 폴더(워드·엑셀·PPT·PDF·txt·csv)를 만드는 스킬입니다. | 없음 | "연습용 가상 폴더 만들어줘", "함정 심은 모의 데이터셋 생성해줘", "헬스케어 회사 연습 데이터 만들어줘" | itda-brain |
 | brain-ingest | 업무DB(뇌)에 새 문서를 증분 적재하는 스킬입니다(v1.1). | 없음 | "뇌에 새 문서 반영해줘", "이 견적서들 업무DB에 넣어줘", "업무DB 업데이트" | itda-brain |
 | brain-scribe | 업무DB(뇌)의 규약을 배워 규약 준수 문서를 생성하는 스킬입니다(v1.5). | 없음 | "추정", "이번 달 견적서 규약대로 써줘", "회의록 양식으로 초안 만들어줘" | itda-brain |
+| bai-notice | 감사원 통합공지 게시판을 내부 JSON API로 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "감사원 공지 확인해줘", "감사원 통합공지 최근 10건 보여줘", "감사원에서 채용 공고 찾아줘" | itda-class-igm |
+| customs-notice | 관세청 공지사항 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "관세청 공지 확인해줘", "관세청 공지사항 최근 10건 보여줘", "관세청에서 원산지 관련 공지 찾아줘" | itda-class-igm |
+| fss-docs | 금융감독원 공통업무자료 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "금감원 업무자료 확인해줘", "금융감독원 공통업무자료 이번 주 것만 보여줘", "금감원에서 사모펀드 자료 찾아줘" | itda-class-igm |
+| kacem-tender | 군인공제회(KACEM) 입찰 공고를 수집하고 첨부(hwp·hwpx·pdf)에서 사업개요·사업비를 추출해 표·JSON으로 정리하는 스킬입니다. | 없음 | "군인공제회 최근 공고 받아줘", "공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘" | itda-class-igm |
+| mmaa-welfare | 군인공제회 복지포털의 복지 상품·서비스 카탈로그와 공지사항을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "군인공제회 공지 확인해줘", "군인공제회 복지 상품 뭐 있는지 보여줘", "공제회에서 건강검진 관련 복지 찾아줘" | itda-class-igm |
+| welfare-portal | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(축하금·위로금)·회원콘도·제휴복지 안내를 출처 URL·수집일과 함께 답합니다. | 없음 | "출산축하금 얼마?", "군인공제회 콘도 예약", "제휴 할인 알려줘" | itda-class-igm |
 | analysis-guide | 데이터를 앞에 두고 "뭐부터 해야 할지 모르겠다"는 사람을 위해, 한 걸음씩 같이 분석하며 다음엔 스스로 시작하도록 이끄는 라이브 길잡이입니다. | 없음 | "뭐부터 해야 할지 모르겠다", "이 데이터로 뭘 할 수 있어?", "분석하고 싶은데 어디서 시작하죠?" | itda-coach |
 | hour-slice | 하고 싶은 업무 개선은 큰데 "오늘 1시간 안에 뭘 만들 수 있지?"가 막막한 사람을 위해, 문제를 ~1시간 안에 눈에 보이는 결과가 나오는 한 조각으로 잘라… | 없음 | "오늘 1시간 안에 뭘 만들 수 있지?", "이거 너무 큰데 뭐부터 해볼까", "1시간 안에 만들 수 있는 걸로 줄여줘" | itda-coach |
 | miniskill-forge | 매번 같은 작업에 긴 프롬프트를 다시 쓰고 사람마다·날마다 결과가 달라지는 반복 업무를, Claude Cowork에서 한 마디로 부르는 재사용 미니스킬(SKIL… | 없음 | "이거 매번 자동으로 했으면", "내 반복 업무를 스킬로 만들어줘", "맨날 같은 프롬프트 다시 쓰기 싫어" | itda-coach |
@@ -46,14 +52,8 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | harness | 하네스를 구성합니다. | 없음 | "하네스 구성해줘", "하네스 구축해줘", "하네스 설계 도와줘" | itda-harness |
 | pptx-diff | PPTX 발표자료 두 버전의 차이를 슬라이드·도형·텍스트 단위로 비교해 한국어로 요약하는 스킬입니다. | 없음 | "이 pptx 두 버전 비교해줘", "덱 뭐가 바뀌었어?", "발표자료 개정본 리뷰해줘" | itda-hyve |
 | web-automation | hyve web_browse MCP로 웹 자동화(로그인 세션·폼 입력·클릭 탐색·대량 수집·차단 사이트 우회)를 할 때 올바른 액션 조합을 안내하는 레시피 스킬… | 없음 | "이 사이트 로그인해서 데이터 모아줘", "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘" | itda-hyve |
-| bai-notice | 감사원 통합공지 게시판을 내부 JSON API로 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "감사원 공지 확인해줘", "감사원 통합공지 최근 10건 보여줘", "감사원에서 채용 공고 찾아줘" | itda-igm-07 |
-| customs-notice | 관세청 공지사항 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "관세청 공지 확인해줘", "관세청 공지사항 최근 10건 보여줘", "관세청에서 원산지 관련 공지 찾아줘" | itda-igm-07 |
-| fss-docs | 금융감독원 공통업무자료 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "금감원 업무자료 확인해줘", "금융감독원 공통업무자료 이번 주 것만 보여줘", "금감원에서 사모펀드 자료 찾아줘" | itda-igm-07 |
-| mmaa-welfare | 군인공제회 복지포털의 복지 상품·서비스 카탈로그와 공지사항을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "군인공제회 공지 확인해줘", "군인공제회 복지 상품 뭐 있는지 보여줘", "공제회에서 건강검진 관련 복지 찾아줘" | itda-igm-07 |
 | imagegen | 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성하는 스킬입니다. | 없음 | "블로그 히어로 이미지 만들어줘", "슬라이드 배경 비주얼", "쇼츠용 세로 삽화" | itda-media |
 | pixel-art | 이미지 파일을 픽셀 아트(도트 그림)로 변환하는 스킬입니다. | 없음 | "이 이미지 픽셀아트로 만들어줘", "도트 그림으로", "8비트 스타일로" | itda-media |
-| kacem-tender | 군인공제회(KACEM) 입찰 공고를 수집하고 첨부(hwp·hwpx·pdf)에서 사업개요·사업비를 추출해 표·JSON으로 정리하는 스킬입니다. | 없음 | "군인공제회 최근 공고 받아줘", "공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘" | itda-mmaa |
-| welfare-portal | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(축하금·위로금)·회원콘도·제휴복지 안내를 출처 URL·수집일과 함께 답합니다. | 없음 | "출산축하금 얼마?", "군인공제회 콘도 예약", "제휴 할인 알려줘" | itda-mmaa |
 | cloudflare-tunnel | 포트포워딩 없이 Cloudflare Tunnel로 내 서비스(원격 데스크톱·SSH·웹)를 안전하게 노출/접근하도록 셋업하는 스킬입니다. | CLOUDFLARE_API_TOKEN | "집 윈도우에 RDP 터널 깔아줘", "cloudflare tunnel로 ssh 열어줘", "터널 라우트에 access 걸어줘" | itda-ops |
 | court-auction | 대법원 법원경매정보(courtauction.go.kr)의 부동산 매각공고·사건·물건을 조회하는 스킬입니다. | 없음 | "오늘 서울중앙지법 경매 공고 보여줘", "2024타경100001 사건 진행상황 알려줘", "강남 아파트 5억 이하 유찰 1회 물건 찾아줘" | itda-realty |
 | realty-deals | 국토교통부 부동산 실거래 12개 유형을 단일 인터페이스로 수집하는 스킬입니다. | KO_DATA_API_KEY | "최근 6개월 강남구 아파트 실거래 전부 받아줘", "분당 연립다세대 매매 2025년 데이터 CSV로 줘", "강서구 오피스텔 전월세 조회해줘" | itda-realty |
@@ -124,6 +124,12 @@ brain-build           → itda-brain/skills/brain-build/
 brain-fixture         → itda-brain/skills/brain-fixture/
 brain-ingest          → itda-brain/skills/brain-ingest/
 brain-scribe          → itda-brain/skills/brain-scribe/
+bai-notice            → itda-class-igm/skills/bai-notice/
+customs-notice        → itda-class-igm/skills/customs-notice/
+fss-docs              → itda-class-igm/skills/fss-docs/
+kacem-tender          → itda-class-igm/skills/kacem-tender/
+mmaa-welfare          → itda-class-igm/skills/mmaa-welfare/
+welfare-portal        → itda-class-igm/skills/welfare-portal/
 analysis-guide        → itda-coach/skills/analysis-guide/
 hour-slice            → itda-coach/skills/hour-slice/
 miniskill-forge       → itda-coach/skills/miniskill-forge/
@@ -150,14 +156,8 @@ kosis                 → itda-gov/skills/kosis/
 harness               → itda-harness/skills/harness/
 pptx-diff             → itda-hyve/skills/pptx-diff/
 web-automation        → itda-hyve/skills/web-automation/
-bai-notice            → itda-igm-07/skills/bai-notice/
-customs-notice        → itda-igm-07/skills/customs-notice/
-fss-docs              → itda-igm-07/skills/fss-docs/
-mmaa-welfare          → itda-igm-07/skills/mmaa-welfare/
 imagegen              → itda-media/skills/imagegen/
 pixel-art             → itda-media/skills/pixel-art/
-kacem-tender          → itda-mmaa/skills/kacem-tender/
-welfare-portal        → itda-mmaa/skills/welfare-portal/
 cloudflare-tunnel     → itda-ops/skills/cloudflare-tunnel/
 court-auction         → itda-realty/skills/court-auction/
 realty-deals          → itda-realty/skills/realty-deals/
