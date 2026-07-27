@@ -29,7 +29,7 @@ _DEFAULT_PROFILES: dict[str, dict] = {
         ],
         "referer_strategies": ["self_root", "google_search", "none"],
         "url_transform_order": ["original", "mobile_subdomain"],
-        "fallback_when_challenge": ["lightpanda_dynamic", "hyve_mcp"],
+        "fallback_when_challenge": ["hyve_mcp"],
         "notes": "in-code default — waf_profiles.yaml unavailable",
     },
 }

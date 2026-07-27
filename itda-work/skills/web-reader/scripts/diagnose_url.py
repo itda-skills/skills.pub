@@ -227,7 +227,7 @@ def diagnose(report: dict) -> tuple[str, str]:
     if code == 403:
         return ("http_403_forbidden",
                 "403 Forbidden. anti-bot/User-Agent 차단/지역 차단/유료 콘텐츠 가능. "
-                "fetch_dynamic.py(브라우저 fetch) 시도 권장.")
+                "hyve MCP web_browse 시도 권장.")
     if code == 404:
         return ("http_404_not_found", "404 Not Found. URL 자체가 잘못됨.")
     if code == 429:

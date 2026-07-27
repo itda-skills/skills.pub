@@ -25,6 +25,16 @@ metadata:
 
 ---
 
+## Prerequisites
+
+- **HTTP 페치는 같은 플러그인의 `web-reader` 스킬에 위임** — blog-reader 자체에는 HTTP 라이브러리
+  의존성이 없고, 형제 스킬 `web-reader` 의 `fetch_html.py` 를 subprocess 로 호출합니다.
+  itda-work 를 설치하면 두 스킬이 함께 들어오므로 별도 준비가 필요 없습니다.
+  web-reader 를 찾지 못하면 조용히 우회하지 않고 에러로 표면화됩니다.
+- **Python 3.10+** — 그 외 런타임 의존성 없음(표준 라이브러리만 사용).
+
+---
+
 ## 환경 변수
 
 | Variable | Service | Guide |
@@ -396,6 +406,7 @@ itda-work/skills/web-reader   — fetch_html.py HTTP 페치 위임 (필수)
 ```
 
 web-reader의 `fetch_html.py`를 subprocess로 호출합니다. blog-reader 자체에는 외부 HTTP 라이브러리 의존성이 없습니다.
+비표준 배치에서는 `ITDA_BLOG_READER_FETCH_HTML` 로 절대 경로를 지정합니다.
 
 ```bash
 # web-reader 의존성 설치 (필요 시) — 형제 스킬 디렉토리 기준

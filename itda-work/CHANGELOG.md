@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **`web-reader` 복귀 (#1301)** — #1299 에서 `itda-hyve` 로 이전했던 web-reader 를 itda-work 로
+  되돌렸다. 코어는 자체 HTTP 페치(`curl_cffi` TLS impersonation)로 hyve 없이 동작하며, 본문의
+  hyve `web_browse` 참조는 전부 anti-bot 차단 시 **에스컬레이션 폴백**이다 — hyve 전용 스킬이
+  아니다. `blog-reader` 의 페치 위임도 같은 플러그인 형제 스킬 관계로 복원됐다(#1299 에서
+  크로스-플러그인 의존으로 벌어졌던 배포 전제 소멸). `web-automation` 은 itda-hyve 에 잔류한다.
+
 
 
 

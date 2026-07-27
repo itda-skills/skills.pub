@@ -184,7 +184,7 @@ _DIR_MAP_LINE_RE = re.compile(r"^(\S+)\s*→\s*(\S+?)/?\s*$")
 def _load_skill_dir_map() -> dict[str, list[str]]:
     """카탈로그의 경로 매핑 블록을 파싱한다.
 
-    동명 스킬(예: web-automation — itda-work·itda-taxhero)은 복수 경로를 허용한다.
+    동명 스킬(예: web-automation — itda-hyve·itda-taxhero)은 복수 경로를 허용한다.
     """
     if not _CATALOG_MD.exists():
         return {}

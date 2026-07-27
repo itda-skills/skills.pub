@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 92개 스킬 / 20개 팩.
+총 93개 스킬 / 21개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -44,6 +44,8 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | g2b | 조달청 나라장터 G2B API로 정부 입찰 공고를 검색·조회하는 스킬입니다. | KO_DATA_API_KEY | "나라장터 입찰공고 검색해줘", "조달청 공고 확인해줘", "소프트웨어 개발 입찰 공고 찾아줘" | itda-gov |
 | kosis | 통계청 KOSIS 국가통계포털 API로 공식 통계를 검색·탐색·조회하는 스킬입니다. | KOSIS_API_KEY | "인구 통계 알려줘", "KOSIS 통계표 검색해줘", "이 통계표 분류·항목 코드 찾아줘" | itda-gov |
 | harness | 하네스를 구성합니다. | 없음 | "하네스 구성해줘", "하네스 구축해줘", "하네스 설계 도와줘" | itda-harness |
+| pptx-diff | PPTX 발표자료 두 버전의 차이를 슬라이드·도형·텍스트 단위로 비교해 한국어로 요약하는 스킬입니다. | 없음 | "이 pptx 두 버전 비교해줘", "덱 뭐가 바뀌었어?", "발표자료 개정본 리뷰해줘" | itda-hyve |
+| web-automation | hyve web_browse MCP로 웹 자동화(로그인 세션·폼 입력·클릭 탐색·대량 수집·차단 사이트 우회)를 할 때 올바른 액션 조합을 안내하는 레시피 스킬… | 없음 | "이 사이트 로그인해서 데이터 모아줘", "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘" | itda-hyve |
 | imagegen | 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성하는 스킬입니다. | 없음 | "블로그 히어로 이미지 만들어줘", "슬라이드 배경 비주얼", "쇼츠용 세로 삽화" | itda-media |
 | pixel-art | 이미지 파일을 픽셀 아트(도트 그림)로 변환하는 스킬입니다. | 없음 | "이 이미지 픽셀아트로 만들어줘", "도트 그림으로", "8비트 스타일로" | itda-media |
 | kacem-tender-extract | 군인공제회 공고 첨부(hwp·hwpx·pdf)에서 사업개요와 사업비를 추출해 표·JSON으로 정리하는 스킬입니다. | 없음 | "공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘", "공고 요약을 표로 정리해줘" | itda-mmaa |
@@ -97,8 +99,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | pptx-design | 콘텐츠 마크다운과 수치 데이터로 16:9 PPTX 발표자료를 크로스플랫폼(macOS/Linux, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "삼성전자 주가전망 ppt 만들어줘", "이 DESIGN.md로 발표자료 디자인해줘", "md 내용으로 슬라이드 덱 생성" | itda-work |
 | task-brief | 모호한 일상 요청을 에이전트에 던지기 전, 작업 범위·검증 방법·완료 정의 3요소를 채운 브리프 한 장으로 다듬는 스킬입니다. | 없음 | "작업 브리프 짜줘", "이 요청 다듬어줘", "브리프로 정리해줘" | itda-work |
 | weather-here | 현재 위치 또는 지정 지역의 날씨를 한국어로 빠르게 조회하는 스킬입니다. | 없음 | "날씨 알려줘", "지금 여기 날씨 어때", "부산 날씨 알려줘" | itda-work |
-| web-automation | hyve web_browse MCP로 웹 자동화(로그인 세션·폼 입력·클릭 탐색·대량 수집·차단 사이트 우회)를 할 때 올바른 액션 조합을 안내하는 레시피 스킬… | 없음 | "이 사이트 로그인해서 데이터 모아줘", "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘" | itda-work |
-| web-reader | WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·JS 동적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다. | 없음 | "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "JS 동적 페이지 읽어줘" | itda-work |
+| web-reader | WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·WAF 차단 정적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다. | 없음 | "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "403 뜨는 페이지 가져와줘" | itda-work |
 | web-search | 여러 검색엔진으로 웹을 한 번에 검색해 정규화된 결과 목록(제목·URL·발췌)을 돌려주는 스킬입니다. | EXA_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "파이썬 입문 자료 검색해줘", "AI 규제 관련 최신 기사 찾아줘", "경쟁사 가격 정책 정보 모아줘" | itda-work |
 | xlsx-design | 수치 데이터로 디자인된 Excel 통합문서(.xlsx)를 크로스플랫폼(macOS/Linux/Windows, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "NovaTech 실적 엑셀로 만들어줘", "이 프리셋으로 대시보드 시트 디자인해줘", "데이터로 디자인된 xlsx 생성" | itda-work |
 | stakeholder-map | 프로젝트 이해관계자별로 역할·요청할 것·받을 것·소통 방식과, 그 사람이 일을 시작하기 전에 알아야 할 선행 전달물(톤·형식·분량·필수 문구 같은 제약 조건)을… | 없음 | "이해관계자 정리해줘", "협업 지도 만들어줘", "누구한테 뭘 먼저 넘겨야 하지" | itda-workmap |
@@ -142,6 +143,8 @@ funding               → itda-gov/skills/funding/
 g2b                   → itda-gov/skills/g2b/
 kosis                 → itda-gov/skills/kosis/
 harness               → itda-harness/skills/harness/
+pptx-diff             → itda-hyve/skills/pptx-diff/
+web-automation        → itda-hyve/skills/web-automation/
 imagegen              → itda-media/skills/imagegen/
 pixel-art             → itda-media/skills/pixel-art/
 kacem-tender-extract  → itda-mmaa/skills/kacem-tender-extract/
@@ -195,7 +198,6 @@ plan-work             → itda-work/skills/plan-work/
 pptx-design           → itda-work/skills/pptx-design/
 task-brief            → itda-work/skills/task-brief/
 weather-here          → itda-work/skills/weather-here/
-web-automation        → itda-work/skills/web-automation/
 web-reader            → itda-work/skills/web-reader/
 web-search            → itda-work/skills/web-search/
 xlsx-design           → itda-work/skills/xlsx-design/

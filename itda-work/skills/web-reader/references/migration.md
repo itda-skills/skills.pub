@@ -1,8 +1,24 @@
 # web-reader 마이그레이션 안내 (개발자·기존 사용자용)
 
-> 이 문서는 v2.x ~ v5.x 마이그레이션이 필요한 기존 사용자·외부 호출자용 내부 문서입니다. 일반 사용자는 `../GUIDE.md`만 보면 됩니다. 스킬 호출 시 자동 로드되지 않습니다.
+> 이 문서는 v2.x ~ v7.x 마이그레이션이 필요한 기존 사용자·외부 호출자용 내부 문서입니다. 일반 사용자는 `../GUIDE.md`만 보면 됩니다. 스킬 호출 시 자동 로드되지 않습니다.
 
 ---
+
+## v6 → v7 (Lightpanda 동적 fetch 재제거)
+
+web-reader v7.0.0에서 Lightpanda 동적 fetch가 **다시 제거**되었습니다 (#1298). Cowork 실측 근거:
+
+- 설치 경로가 세션 홈(휘발 영역)이라 **세션마다 151MB / 약 33초 재설치**가 반복됨
+- 핵심 대상인 진성 CSR SPA(wanted.co.kr·map.naver.com·musinsa.com)에서 lightpanda 0.3.6(aarch64-linux)이 **SIGILL 크래시 100% 재현** — v5 재흡수 근거("가벼운 설치 + 안정 동작")가 성립하지 않음
+
+| v5~v6 호출 | v7.0.0 대체 |
+|---|---|
+| `extract_content.py --url URL --dynamic-only` | hyve MCP `web_browse` (호출 시 exit 4 + 안내) |
+| `--dynamic-only --lp-markdown` / `--no-auto-install` | 플래그 삭제 |
+| `fetch_dynamic.py` / `install_lightpanda.py` | 스크립트 삭제 |
+| `$ITDA_LIGHTPANDA_DIR` / `$ITDA_LIGHTPANDA_BIN` | 더 이상 읽지 않음 |
+
+아래 v4→v5 절은 역사 기록으로만 보존합니다.
 
 ## v4 → v5 (Lightpanda로 동적 fetch 부활)
 

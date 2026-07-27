@@ -47,7 +47,6 @@ akamai_bot_manager:
     - mobile_subdomain
   fallback_when_challenge:
     - curl_grid_exhaust
-    - lightpanda_dynamic
     - hyve_mcp
 
 cloudflare_turnstile:
@@ -66,7 +65,6 @@ cloudflare_turnstile:
   url_transform_order:
     - original
   fallback_when_challenge:
-    - lightpanda_dynamic
     - hyve_mcp
 
 f5_big_ip:
@@ -109,7 +107,6 @@ datadome_probable:
   url_transform_order:
     - original
   fallback_when_challenge:
-    - lightpanda_dynamic
     - hyve_mcp
 
 perimeterx_human:
@@ -126,7 +123,6 @@ perimeterx_human:
   url_transform_order:
     - original
   fallback_when_challenge:
-    - lightpanda_dynamic
     - hyve_mcp
 
 unknown_challenge:
@@ -147,5 +143,4 @@ unknown_challenge:
     - original
     - mobile_subdomain
   fallback_when_challenge:
-    - lightpanda_dynamic
     - hyve_mcp

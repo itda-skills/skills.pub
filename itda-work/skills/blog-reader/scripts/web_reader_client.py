@@ -31,22 +31,50 @@ DEFAULT_MOBILE_SAFARI_UA = (
 
 # fetch_html.py 경로 탐색
 # 1. 환경변수 ITDA_BLOG_READER_FETCH_HTML (테스트 override)
-# 2. 현재 스킬 기준 상대 경로: ../../web-reader/scripts/fetch_html.py
+# 2. 같은 플러그인 내 형제 스킬: ../../web-reader/scripts/fetch_html.py — 정본. 정상 배치면 즉시 적중.
+# 3. 형제 플러그인 전수 glob: */skills/web-reader/scripts/fetch_html.py — 방어층.
+#    플러그인 디렉토리명을 가정하지 않으므로(Cowork 는 plugin_<ID> 로 마운트) 비표준 배치에서도 해소된다.
 _THIS_DIR = Path(__file__).parent.resolve()
-_DEFAULT_FETCH_HTML_PATH = (
-    _THIS_DIR.parent.parent / "web-reader" / "scripts" / "fetch_html.py"
+_SKILLS_ROOT = _THIS_DIR.parent.parent          # <plugin>/skills/
+_PLUGINS_ROOT = _SKILLS_ROOT.parent.parent      # <plugin> 들의 부모
+_REL_FROM_SKILLS_ROOT = Path("web-reader") / "scripts" / "fetch_html.py"
+_REL_FROM_PLUGIN_ROOT = Path("skills") / _REL_FROM_SKILLS_ROOT
+
+# 기본값 = 같은 플러그인 내 형제 스킬. 전 후보가 실패했을 때의 에러 메시지 기준 경로이기도 하다.
+_DEFAULT_FETCH_HTML_PATH = _SKILLS_ROOT / _REL_FROM_SKILLS_ROOT
+
+# 후보 전부 실패 시의 안내. web-reader 는 blog-reader 와 같은 플러그인(itda-work)에 있으므로,
+# 여기까지 오면 설치가 깨졌거나 비표준 배치다.
+_MISSING_DEP_HINT = (
+    "web-reader 스킬(fetch_html.py)을 찾지 못했습니다 — blog-reader 의 HTTP 페치 위임 대상입니다.\n"
+    "  해결 1) itda-work 플러그인 설치 상태를 확인하세요 (web-reader 는 같은 플러그인에 함께 들어옵니다).\n"
+    "  해결 2) 비표준 배치라면 ITDA_BLOG_READER_FETCH_HTML 에 fetch_html.py 절대 경로를 지정하세요."
 )
+
+
+def _iter_fetch_html_candidates() -> "list[Path]":
+    """fetch_html.py 후보 경로를 우선순위 순으로 만든다 (존재 여부 미검사)."""
+    candidates = [_DEFAULT_FETCH_HTML_PATH]
+    try:
+        candidates.extend(sorted(_PLUGINS_ROOT.glob(str(Path("*") / _REL_FROM_PLUGIN_ROOT))))
+    except OSError:
+        pass
+    return candidates
 
 
 def _get_fetch_html_path() -> Path:
     """fetch_html.py 경로를 결정한다.
 
     환경변수 ITDA_BLOG_READER_FETCH_HTML이 설정되어 있으면 그 경로를 사용하고,
-    없으면 web-reader 스킬의 기본 위치를 사용한다.
+    없으면 web-reader 스킬의 후보 경로 중 실존하는 첫 항목을 쓴다. 전부 없으면
+    기본 경로를 그대로 반환해 호출부가 "미발견" 에러를 내게 한다 (조용한 우회 금지).
     """
     env_path = os.environ.get("ITDA_BLOG_READER_FETCH_HTML")
     if env_path:
         return Path(env_path)
+    for candidate in _iter_fetch_html_candidates():
+        if candidate.is_file():
+            return candidate
     return _DEFAULT_FETCH_HTML_PATH
 
 
@@ -136,6 +164,9 @@ def fetch_html(
         BlogReaderError: 기타 오류 시.
     """
     fetch_path = _get_fetch_html_path()
+    if not fetch_path.is_file():
+        # 조용한 우회 금지 — 의존 미설치를 즉시 원인과 함께 표면화한다.
+        raise BlogReaderError(f"{_MISSING_DEP_HINT}\n  탐색한 기준 경로: {fetch_path}")
 
     cmd = [
         sys.executable,
@@ -163,7 +194,7 @@ def fetch_html(
         ) from exc
     except FileNotFoundError as exc:
         raise BlogReaderError(
-            f"fetch_html.py를 찾을 수 없습니다: {fetch_path}"
+            f"fetch_html.py를 찾을 수 없습니다: {fetch_path}\n{_MISSING_DEP_HINT}"
         ) from exc
 
     if result.returncode != 0:

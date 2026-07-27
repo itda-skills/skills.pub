@@ -16,12 +16,13 @@
 >
 > ℹ️ **2026-04-28 변경 안내(SPEC-INCUBATE-003, itda-work 슬림화)**: `itda-name-badge`·`itda-naver-place`·`itda-hyve-pptx`도 `itda-egg`로 이전되었습니다. 직장인 핵심 생산성에 집중도를 높이기 위한 정리이며, 사용은 [itda-egg/README](../itda-egg/README.md) 참고.
 
+> ℹ️ **2026-07-27 변경 안내(#1299·#1301)**: `web-automation` 은 hyve MCP 전용 플러그인 [`itda-hyve`](../itda-hyve/README.md) 로 이전되었습니다(호출 표기 `itda-hyve:web-automation`). `web-reader` 는 #1299 에서 함께 이전됐다가 **#1301 로 itda-work 에 복귀**했습니다 — 코어가 자체 HTTP 페치(`curl_cffi`)이고 hyve `web_browse` 는 차단 사이트 에스컬레이션 폴백이라 hyve 전용 스킬이 아닙니다.
+
 ### 웹·미디어
 
 | 스킬 | 설명 | 환경 |
 |------|------|:----:|
-| **itda-web-reader** | 웹페이지 읽기·요약·추출 (한국어 사이트, JS 렌더링 포함) | 🌐 |
-| **itda-web-automation** | hyve `web_browse` MCP 웹 자동화 레시피 정본 (로그인 세션·폼 입력·대량 수집·차단 사이트 attach) | 🌐 🔧 |
+| **itda-web-reader** | 웹페이지 읽기·요약·추출 (한국어 사이트, WAF 차단 정적 페이지 포함) | 🌐 |
 | **itda-web-search** | 여러 검색엔진(Tavily·Serper·Perplexity·Naver·Exa)으로 웹 검색 → 정규화 결과 목록 (조회 전용, 키 보유 엔진만 auto 선택) | 🌐 🔑 |
 | **itda-blog-reader** | 네이버 블로그 글 목록·본문·댓글 트리·블로그 내 검색 (로그인 없이, 공개 포스트 전용) | 🌐 |
 | **itda-email** | Naver/Gmail/Daum/iCloud/커스텀 SMTP로 이메일 전송, IMAP 수신 (iCloud는 STARTTLS 587 분기) | 🌐 🔑 |
@@ -78,8 +79,7 @@
 | 스킬 | Python 패키지 | API 키 | 기타 |
 |------|:---:|:---:|------|
 | itda-pdf-context-refinery | — | — | `poppler-utils` |
-| itda-web-reader | `requests` | — | Playwright 선택 |
-| itda-web-automation | — | — | hyve MCP 커넥터 (`hyve serve`) |
+| itda-web-reader | `curl_cffi`·`PyYAML`·`beautifulsoup4`·`markdownify` | — | — |
 | itda-web-search | — | 검색엔진별 키(최소 1개) | — |
 | itda-email | — | 메일 서비스별 앱 비밀번호 | — |
 | itda-imagekit | `Pillow` | — | — |
@@ -113,7 +113,7 @@ NAVER_APP_PASSWORD=...
 python3 -m pip install Pillow
 
 # 웹 리더 (itda-web-reader)
-python3 -m pip install requests
+python3 -m pip install -r skills/web-reader/requirements.txt
 ```
 
 > `uv`가 없다면: `pip3 install` 사용
@@ -152,10 +152,10 @@ Claude Cowork 채팅창에서 다음 메시지를 순서대로 입력하세요.
 
 **주요 기능:**
 
-- 정적(static) + 동적(JS 렌더링) 페이지 모두 지원
+- `curl_cffi` TLS impersonation 기반 정적 페치 (WAF·봇 차단 페이지 대응)
 - Defuddle 기반 노이즈 제거 (광고, 네비게이션, 사이드바 등)
 - 한국어 사이트 특화 (EUC-KR/CP949 인코딩)
-- Playwright 선택 설치로 JS 렌더링 지원
+- JS 렌더링이 필요한 페이지는 hyve `web_browse` MCP로 에스컬레이션 안내
 
 ### itda-email — 이메일 전송/수신 + 피싱 탐지
 

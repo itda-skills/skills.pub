@@ -430,7 +430,7 @@ def main() -> None:
         help=(
             "Base URL to fetch and extract content from. "
             "Mutually exclusive with INPUT_FILE. "
-            "Triggers automatic static→dynamic fallback unless --static-only or --dynamic-only is set."
+            "Static fetch with WAF retry grid (동적 렌더링은 v7.0.0에서 제거 — hyve MCP web_browse 사용)."
         ),
     )
     parser.add_argument(
@@ -469,23 +469,7 @@ def main() -> None:
         dest="dynamic_only",
         action="store_true",
         default=False,
-        help="동적 fetch만 실행 (web-reader v5.0.0: Lightpanda 백엔드). 정적 시도 없이 곧장 Lightpanda 호출.",
-    )
-    # SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001: Lightpanda --dump markdown 직접 사용 옵션
-    parser.add_argument(
-        "--lp-markdown",
-        dest="lp_markdown",
-        action="store_true",
-        default=False,
-        help="--dynamic-only와 함께 사용 시 Lightpanda의 --dump markdown 출력을 그대로 반환 (extract 파이프라인 우회). 한국 미디어 사이트에서 권장.",
-    )
-    # SPEC-WEBREADER-LIGHTPANDA-INSTALLER-001 (#513): 미설치 시 자동 설치 비활성(CI/테스트)
-    parser.add_argument(
-        "--no-auto-install",
-        dest="no_auto_install",
-        action="store_true",
-        default=False,
-        help="--dynamic-only에서 Lightpanda 미설치 시 자동 설치를 끈다 (CI/테스트). 기본은 자동 설치 ON.",
+        help="(v7.0.0에서 제거됨) 지정 시 exit 4 + hyve MCP web_browse 안내. legacy 호환 플래그.",
     )
     # --no-fallback은 --static-only의 alias (legacy 호환 별칭)
     parser.add_argument(
@@ -530,15 +514,17 @@ def main() -> None:
         # --help → 0, argparse 오류 → 2. 코드를 삼키지 않는다.
         sys.exit(e.code if isinstance(e.code, int) else 2)
 
-    # SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001 (v5.0.0): --dynamic-only는 Lightpanda 백엔드 호출.
-    # LIGHTEN(v3.0.0)에서 fail-fast 처리하던 것을 Lightpanda 등장으로 복원.
-    # 실제 호출은 아래 url 분기 안에서 처리한다. 여기서는 args 검증만.
-    if getattr(args, "dynamic_only", False) and not getattr(args, "url", None):
+    # v7.0.0: 동적 fetch(Lightpanda) 제거 — Cowork 실측(#1298)에서 세션당 151MB 재설치 +
+    # 진성 CSR SPA(wanted 등) SIGILL 크래시로 v5 재흡수 근거가 무너져 v3 fail-fast 체제 복귀.
+    if getattr(args, "dynamic_only", False):
         print(
-            "Error: --dynamic-only requires --url",
+            "[web-reader v7.0.0] --dynamic-only (Lightpanda 동적 렌더링) 는 제거되었습니다.\n"
+            "- JavaScript 동적 페이지: hyve MCP 의 web_browse 사용 "
+            "(SPA XHR 원본은 observe{network} 캡처 권장)\n"
+            "마이그레이션 안내: itda-work/skills/web-reader/GUIDE.md 참조.",
             file=sys.stderr,
         )
-        sys.exit(2)
+        sys.exit(4)
 
     # REQ-LIGHTEN-003.3: SPA 어댑터 플래그 fail-fast (web-reader v3.0.0)
     # AC-3 검증 키워드: "SPA 어댑터", "네이버 부동산", "web_browse"
@@ -567,7 +553,6 @@ def main() -> None:
 
     # --no-fallback은 --static-only의 alias (REQ-2.4)
     effective_static_only = getattr(args, "static_only", False) or getattr(args, "no_fallback", False)
-    effective_dynamic_only = getattr(args, "dynamic_only", False)
 
     # REQ-3.3: 품질 임계값 우선순위 (CLI > env > default)
     import os as _os_env
@@ -604,96 +589,48 @@ def main() -> None:
                 )
                 sys.exit(2)
 
-            # SPEC-WEBREADER-DYNAMIC-LIGHTPANDA-001 (v5.0.0): --dynamic-only는 Lightpanda 백엔드
-            if getattr(args, "dynamic_only", False):
-                _fd = _load_module("fetch_dynamic")
-                lp_result = _fd.fetch_dynamic(
+            # 일반 URL: fetch_pipeline orchestrator 사용 (REQ-2, WI-2)
+            from exceptions import StaticFetchEscalate  # type: ignore[import]
+            try:
+                _fp = _load_module("fetch_pipeline")
+                _ws = _load_module("web_selectors")
+                site_pattern = _ws.match_site_pattern(args.url)
+                fetch_pipeline_result = _fp.fetch_with_fallback(
                     args.url,
-                    wait_until="domcontentloaded",
-                    terminate_ms=15000,
-                    strip_mode="js,css" if getattr(args, "lp_markdown", False) else None,
-                    dump_markdown=getattr(args, "lp_markdown", False),
-                    auto_install=not getattr(args, "no_auto_install", False),
+                    static_only=effective_static_only,
+                    dynamic_only=False,
+                    min_text_length=min_text_length,
+                    min_meaningful_tags=min_meaningful_tags,
+                    site_pattern=site_pattern,
                 )
-                if lp_result["exit_code"] == 3:
-                    print(lp_result["stderr_tail"], file=sys.stderr)
-                    sys.exit(3)
-                if lp_result["exit_code"] == 4:
+                html = fetch_pipeline_result.html
+                final_url = fetch_pipeline_result.final_url or args.url
+            except StaticFetchEscalate as _esc:
+                # P0: WAF 차단 소진 → exit 4 (web_browse 에스컬레이트). broad fallback
+                # 보다 먼저 catch.
+                print(_esc.escalation_message(), file=sys.stderr)
+                sys.exit(4)
+            except Exception as _fp_err:
+                # fetch_pipeline 미사용 환경 폴백: 기존 fetch_html 직접 호출
+                _fh = _load_module("fetch_html")
+                fetch_result = _fh.fetch_url(args.url)
+                if fetch_result.get("must_escalate"):
+                    # 폴백 경로에서도 정적 give-up 을 exit 4 로 surface (P0).
                     print(
-                        _fd.hyve_escalation_message(
-                            args.url, lp_result["bot_signal"] or "unknown"
-                        ),
+                        StaticFetchEscalate(
+                            url=args.url,
+                            stop_reason=str(fetch_result.get("stop_reason", "")),
+                            untried_routes=list(fetch_result.get("untried_routes") or []),
+                        ).escalation_message(),
                         file=sys.stderr,
                     )
                     sys.exit(4)
-                if lp_result["exit_code"] != 0:
-                    print(
-                        f"[web-reader] Lightpanda 호출 실패 ({lp_result['lightpanda_path']}):\n  {lp_result['stderr_tail']}",
-                        file=sys.stderr,
-                    )
+                if not fetch_result.get("content") or fetch_result.get("error"):
+                    error_msg = fetch_result.get("error", "empty response")
+                    print(f"Error fetching URL: {error_msg}", file=sys.stderr)
                     sys.exit(1)
-
-                # --lp-markdown: 정제 파이프라인 우회, Lightpanda markdown 그대로 출력
-                if getattr(args, "lp_markdown", False):
-                    if args.output:
-                        with open(args.output, "w", encoding="utf-8") as f:
-                            f.write(lp_result["content"])
-                    else:
-                        print(lp_result["content"])
-                    print(
-                        f"size={lp_result['size']} time={lp_result['parse_time_ms']}ms "
-                        f"format=markdown backend=lightpanda",
-                        file=sys.stderr,
-                    )
-                    sys.exit(0)
-
-                # HTML 모드: html 변수에 할당하여 기존 extract 파이프라인 통과
-                html = lp_result["content"]
-                final_url = args.url
-                fetch_pipeline_result = None
-            else:
-                # 일반 URL: fetch_pipeline orchestrator 사용 (REQ-2, WI-2)
-                from exceptions import StaticFetchEscalate  # type: ignore[import]
-                try:
-                    _fp = _load_module("fetch_pipeline")
-                    _ws = _load_module("web_selectors")
-                    site_pattern = _ws.match_site_pattern(args.url)
-                    fetch_pipeline_result = _fp.fetch_with_fallback(
-                        args.url,
-                        static_only=effective_static_only,
-                        dynamic_only=effective_dynamic_only,
-                        min_text_length=min_text_length,
-                        min_meaningful_tags=min_meaningful_tags,
-                        site_pattern=site_pattern,
-                    )
-                    html = fetch_pipeline_result.html
-                    final_url = fetch_pipeline_result.final_url or args.url
-                except StaticFetchEscalate as _esc:
-                    # P0: WAF 차단 소진 → exit 4 (web_browse 에스컬레이트). broad fallback
-                    # 보다 먼저 catch — fetch_dynamic 의 bot-challenge exit 4 와 동일 의미.
-                    print(_esc.escalation_message(), file=sys.stderr)
-                    sys.exit(4)
-                except Exception as _fp_err:
-                    # fetch_pipeline 미사용 환경 폴백: 기존 fetch_html 직접 호출
-                    _fh = _load_module("fetch_html")
-                    fetch_result = _fh.fetch_url(args.url)
-                    if fetch_result.get("must_escalate"):
-                        # 폴백 경로에서도 정적 give-up 을 exit 4 로 surface (P0).
-                        print(
-                            StaticFetchEscalate(
-                                url=args.url,
-                                stop_reason=str(fetch_result.get("stop_reason", "")),
-                                untried_routes=list(fetch_result.get("untried_routes") or []),
-                            ).escalation_message(),
-                            file=sys.stderr,
-                        )
-                        sys.exit(4)
-                    if not fetch_result.get("content") or fetch_result.get("error"):
-                        error_msg = fetch_result.get("error", "empty response")
-                        print(f"Error fetching URL: {error_msg}", file=sys.stderr)
-                        sys.exit(1)
-                    html = str(fetch_result["content"])
-                    final_url = str(fetch_result.get("url") or args.url)
+                html = str(fetch_result["content"])
+                final_url = str(fetch_result.get("url") or args.url)
         elif args.input:
             with open(args.input, encoding="utf-8") as f:
                 html = f.read()

@@ -1,30 +1,28 @@
 ---
 name: web-reader
 description: >
-  WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·JS 동적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다.
-  "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "JS 동적 페이지 읽어줘"처럼 말하면 됩니다.
+  WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·WAF 차단 정적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다.
+  "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "403 뜨는 페이지 가져와줘"처럼 말하면 됩니다.
 license: Apache-2.0
 compatibility: Claude Code & Cowork
 allowed-tools: Bash, Read, Write, Agent, mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "6.2.4"
+  version: "7.0.0"
   created_at: "2026-03-18"
-  updated_at: "2026-07-26"
-  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, lightpanda, dynamic, javascript, headless, spa"
+  updated_at: "2026-07-27"
+  tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, waf, tls, static"
 ---
 
 # web-reader
 
-웹페이지를 깔끔한 Markdown 또는 JSON으로 변환한다. 한국 웹사이트(EUC-KR/CP949), 쿠키 인증 정적 페이지, JavaScript 동적 페이지(Lightpanda 백엔드)에 최적화된 페치 전용 스킬.
+웹페이지를 깔끔한 Markdown 또는 JSON으로 변환한다. 한국 웹사이트(EUC-KR/CP949), 쿠키 인증 정적 페이지, WAF 차단 페이지(TLS impersonation 격자)에 최적화된 정적 페치 전용 스킬. JavaScript 동적 렌더링은 hyve MCP `web_browse` 담당.
 
-> **v6.1.0 안내**: Lightpanda 바이너리 설치를 `install_lightpanda.py`로 자동화했습니다. 동적 fetch
-> 요청 시 미설치면 **추가 도구 호출 없이 최신 안정 버전을 자동 설치**한 뒤 진행합니다(자동 ensure,
-> 덮어쓰지 않음). 바이너리 검출 체인을 명시 입력 우선(`--lightpanda-bin` → `$ITDA_LIGHTPANDA_BIN`
-> → `$ITDA_LIGHTPANDA_DIR` → `$PATH` → `~/.itda-skills/bin`)으로 교체하고, Cowork에서 세션 휘발하던
-> cwd 상대 추측 경로(`./mnt/...`)를 제거했습니다. `$ITDA_LIGHTPANDA_DIR`로 영속 경로를 지정하면 세션
-> 간 재사용됩니다. 업데이트/다운그레이드는 명시 요청 시에만.
+> **v7.0.0 안내**: Lightpanda 동적 fetch(`--dynamic-only`)가 제거되었습니다 (#1298). Cowork 실측에서
+> 세션마다 151MB 바이너리 재설치가 발생하고, 핵심 대상인 진성 CSR SPA(wanted.co.kr 등)에서
+> SIGILL 크래시로 동작하지 않아 v5.0.0 재흡수 근거가 무너졌습니다. 동적 렌더링은 v3 체제와
+> 동일하게 hyve MCP `web_browse` 로 위임합니다. `--dynamic-only` 호출은 exit 4 + 안내로 fail-fast.
 
 > **v6.0.0 안내**: 정적 HTTP fetch 백엔드가 `curl_cffi` 단일 경로로 전환되었습니다. 기본 TLS
 > impersonation은 `safari`이며, 첫 응답을 HTTP 200만으로 성공 처리하지 않고 challenge marker,
@@ -32,12 +30,6 @@ metadata:
 > 보이면 `TLS impersonate × URL transform × Referer` 격자를 제한된 횟수로 자동 시도합니다.
 > 인코딩 감지, SSRF 방지, cross-domain 쿠키 scoping, 50MB 제한은 기존과 동일하게 유지됩니다.
 
-> **v5.0.0 안내**: 동적 fetch가 `--dynamic-only` 플래그로 부활했습니다. 백엔드는 **Lightpanda**
-> (Zig+V8 단일 바이너리, ~65–135MB, 24MB 메모리, 100ms 부팅). LIGHTEN(v3.0.0)에서 Playwright/Chromium의
-> 무거운 설치를 이유로 hyve MCP로 위임했던 동적 fetch가, Lightpanda 등장으로 가벼운 설치 + 안정 동작이
-> 가능해져 web-reader로 재흡수되었습니다. 22-URL 검증에서 일반 사이트 100% 성공.
-> 마이그레이션 가이드는 [GUIDE.md](GUIDE.md)의 "마이그레이션 안내 (v4 → v5)" 섹션을 참조하세요.
->
 > **v4.0.0 안내**: YouTube 자막 추출 기능은 v4.0.0에서 제거되었습니다. `yt-dlp` + Claude 위임으로
 > 동등 결과를 얻을 수 있어 이중 유지보수를 종료했습니다.
 >
@@ -90,54 +82,11 @@ py -3 "$env:SKILL_DIR\scripts\fetch_html.py" --url "URL" --output page.html
 py -3 "$env:SKILL_DIR\scripts\extract_content.py" page.html --format markdown
 ```
 
-### 동적 fetch (JavaScript 렌더링, v5.0.0)
+### 동적 페이지 (JavaScript 렌더링) — v7.0.0에서 제거됨
 
-**[HARD] 우선순위 규칙**: 동적 fetch가 필요한 자연어 요청을 처리할 때 — Claude는 먼저 현재 available tools에 `mcp__lightpanda__*` 도구가 노출되어 있는지 점검하세요 (ToolSearch 사용 가능). 노출되어 있다면 그 MCP 도구를 직접 호출하는 것이 본 스킬을 활성화하는 것보다 우선합니다. 본 스킬의 `--dynamic-only` subprocess는 아래 fallback 경로:
-
-- (a) `mcp__lightpanda__*` 도구가 현재 세션에 노출되지 않은 환경 (예: lightpanda를 사용자가 등록 안 함, 또는 Claude Code CLI 환경)
-- (b) 정제 파이프라인 결과(YAML frontmatter, CSS selector 추출, 노이즈 제거)가 필요한 경우
-- (c) CLI 자동화 스크립트·파이프라인에서 명시 호출
-
-사용자가 "이 SPA 동적으로 가져와줘"라고 자연어로 요청했을 때, 현재 세션에 lightpanda MCP가 보이면 본 스킬 활성화를 건너뛰고 MCP 도구로 직접 호출하세요. 사용자에게 묻지 않습니다 (정책).
-
-```bash
-# (fallback) Lightpanda 백엔드로 동적 페이지 가져오기 (정제 파이프라인 통과)
-python3 "$SKILL_DIR/scripts/extract_content.py" --url "https://news.naver.com/section/100" --dynamic-only --format markdown
-
-# (fallback) Lightpanda 자체 --dump markdown 출력 (정제 파이프라인 우회, 한국 미디어에 빠름)
-python3 "$SKILL_DIR/scripts/extract_content.py" --url "https://news.naver.com/" --dynamic-only --lp-markdown
-
-# (fallback) 세부 옵션은 fetch_dynamic.py CLI 직접 사용
-python3 "$SKILL_DIR/scripts/fetch_dynamic.py" --url "URL" --wait-selector "article.body" --terminate-ms 20000
-```
-
-**미설치 시 자동 설치** (REQ-INST-007): `--dynamic-only`/`fetch_dynamic.py`는 바이너리가 없으면 `install_lightpanda.py`를 자동 호출해 최신 안정 버전을 설치한 뒤 진행한다(추가 도구 호출 0). CI/테스트는 `--no-auto-install`로 끄면 exit 3 + 설치 안내. Anti-bot 차단 페이지(coupang 등) 호출 시 exit 4 + hyve MCP escalation 안내.
-
-### Lightpanda 설치 관리 (install_lightpanda.py)
-
-세션 간 재사용을 위해 영속 경로에 1회 설치하는 것을 권장한다. 설치 위치 판단·주입은 에이전트 책임이며(`automation-responsibility-split.md` 길 X — 코드는 받은 경로로만 동작), 세션 시작 시 1회 export한다. 표준 라이브러리만 사용(신규 의존성 0), 플랫폼/아키텍처는 자동 감지한다.
-
-```bash
-# 세션 1회 — 프로젝트 tools/에 영속 설치 (이후 자동 검출·재사용)
-# 반드시 절대경로로 지정한다 — 상대경로는 cwd에 따라 검출과 어긋나 재사용이 깨진다.
-export ITDA_LIGHTPANDA_DIR="$(pwd)/tools"   # 검출·설치 위치 둘 다 이 경로 사용 (Cowork 한정 권장 — Claude Code 는 기본값 `~/.itda-skills/bin` 이 이미 영속이라 export 불요)
-python3 "$SKILL_DIR/scripts/install_lightpanda.py"        # 최신 안정 설치 (이미 있으면 skip, 멱등)
-
-# Windows (WSL2 내부에서)
-# py -3 "$env:SKILL_DIR\scripts\install_lightpanda.py"
-```
-
-> CI/테스트에서 동적 fetch가 네트워크·설치를 트리거하지 않게 하려면 `extract_content.py --dynamic-only --no-auto-install` 또는 `fetch_dynamic.py --no-auto-install`을 사용한다(미설치 시 exit 3 + 안내).
-
-| 트리거 (자연어) | 호출 |
-|---|---|
-| 미설치 + 동적 fetch 요청 | (자동 ensure — 추가 호출 없이 최신 안정 설치, 덮어쓰지 않음) |
-| "lightpanda 업데이트해줘" / "최신으로" | `python3 "$SKILL_DIR/scripts/install_lightpanda.py" --version latest --force` |
-| "lightpanda 0.3.0으로" (다운그레이드/특정 버전) | `python3 "$SKILL_DIR/scripts/install_lightpanda.py" --version 0.3.0` |
-
-자동 ensure는 기존 바이너리를 **절대 덮어쓰지 않는다** — 업그레이드/다운그레이드는 위처럼 사용자 명시 요청 시 `--version`/`--force`로만(REQ-INST-008). Windows 네이티브는 미지원(WSL2 내부 Linux 바이너리). 릴리즈가 checksum을 제공하지 않아 `lightpanda version` 실행으로 무결성을 검증한다.
-
-> **참고**: Lightpanda는 stdio MCP 서버 모드를 내장합니다 (`lightpanda mcp`). Claude Desktop의 `claude_desktop_config.json`에 등록하면 Cowork 환경에서도 자동 활성화됩니다 (사용자 영역 — 본 스킬은 등록 안내·실행에 관여하지 않음).
+JS 렌더링이 필요한 페이지(진성 CSR SPA)는 본 스킬 범위 밖이다. hyve MCP `web_browse` 를 사용한다
+(SPA 데이터는 `observe{network}` 로 XHR 원본 캡처 권장). `--dynamic-only` 호출은 exit 4 + 안내 메시지로
+fail-fast 한다. 참고: Next.js SSR 사이트는 SPA처럼 보여도 본문이 정적으로 내려오므로 먼저 정적 fetch를 시도한다.
 
 ### 출력 포맷
 
@@ -146,7 +95,6 @@ python3 "$SKILL_DIR/scripts/install_lightpanda.py"        # 최신 안정 설치
 | HTML | `--format html` | 정제된 HTML (기본값) |
 | Markdown | `--format markdown` | YAML frontmatter 포함 |
 | JSON | `--format json` | 메타데이터 + 콘텐츠 구조화 |
-| Lightpanda raw markdown | `--dynamic-only --lp-markdown` | 정제 파이프라인 우회, 한국 미디어 권장 |
 
 ## 특정 영역만 추출하기 (--selector)
 
@@ -173,10 +121,9 @@ python3 "$SKILL_DIR/scripts/extract_content.py" page.html --selector "table.pric
 | exit code | 의미 |
 |-----------|------|
 | 0 | 정상 추출 |
-| 1 | selector 매칭 0건 또는 Lightpanda runtime 오류 |
+| 1 | selector 매칭 0건 또는 I/O·네트워크 오류 |
 | 2 | selector 문법 오류 또는 잘못된 인자 |
-| 3 | Lightpanda 바이너리 미설치 (stderr에 설치 안내) |
-| 4 | Bot challenge 감지(동적 --dynamic-only) **또는 정적 curl WAF 격자 소진**(must_escalate) 또는 SPA 어댑터 요청 → hyve MCP web_browse escalation |
+| 4 | 정적 curl WAF 격자 소진(must_escalate) 또는 동적/SPA 요청(--dynamic-only·--adapter 등) → hyve MCP web_browse escalation |
 
 ## 인증 및 쿠키
 
@@ -216,8 +163,8 @@ HTTP 백엔드: curl_cffi 단일 경로. 기본 --impersonate safari.
   curl 격자가 WAF/차단으로 소진되면 exit 4 + stderr ⛔ NOT EXHAUSTED 배너를 출력하고,
   결과 dict 에 must_escalate / stop_reason(challenge·forbidden) / untried_routes /
   grid_exhausted / executed_attempts / content_is_challenge 를 담는다. exit 4 는
-  '차단됨, 다음 경로로 에스컬레이트' 의미(fetch_dynamic 의 bot-challenge exit 4 와 동일):
-  → Lightpanda 동적(--dynamic-only) 또는 hyve web_browse MCP(anti-bot stealth).
+  '차단됨, 다음 경로로 에스컬레이트' 의미:
+  → hyve web_browse MCP(anti-bot stealth).
   반대로 429(rate_limited)·401(auth_required)·404(not_found)·네트워크 에러는 must_escalate=False
   이며 exit 1 로 종결(브라우저로 가도 무익) — 429 는 백오프 후 재시도. extract_content 가 이
   신호를 읽어 자동으로 exit 4 를 surface 한다(에이전트가 프로즈를 추측할 필요 없음).
@@ -227,10 +174,8 @@ HTTP 백엔드: curl_cffi 단일 경로. 기본 --impersonate safari.
 ```
 CLI: extract_content.py [INPUT_FILE] [--output FILE]
                         [--format html|markdown|json] [--url URL] [--lang CODE]
-                        [--selector CSS] [--dynamic-only [--lp-markdown]]
-                        [--no-auto-install]
+                        [--selector CSS]
      (reads stdin if INPUT_FILE omitted)
-     --no-auto-install: --dynamic-only에서 Lightpanda 미설치 시 자동 설치 비활성(CI/테스트)
      --url과 INPUT_FILE은 상호 배타적 (동시 지정 시 에러)
      YouTube URL이 --url에 주어지면 v4.0.0부터 exit 2 + yt-dlp 안내 메시지 출력
 
@@ -239,80 +184,15 @@ CLI: extract_content.py [INPUT_FILE] [--output FILE]
                           노이즈 제거(EXACT_REMOVE_SELECTORS, PARTIAL_REMOVE_PATTERNS)는 여전히 적용.
                           매칭 0건 → exit 1, 문법 오류(SelectorSyntaxError) → exit 2.
 
-동적 fetch: --dynamic-only 는 v5.0.0에서 Lightpanda 백엔드로 복원됨(아래 참조).
-  미설치 시 자동 설치, 미설치+자동 OFF면 exit 3, bot challenge면 exit 4.
-
 Exit codes: 0=success, 1=I/O or parse error or selector 매칭 0건,
             2=invalid args or selector 문법 오류,
-            3=Lightpanda 미설치(--dynamic-only, 자동 설치 OFF/실패),
-            4=bot challenge(--dynamic-only) 또는 정적 curl WAF 격자 소진(must_escalate)
-              또는 SPA 어댑터 요청 (--adapter, --from-capture, --adapter-page) — hyve MCP escalation
+            4=정적 curl WAF 격자 소진(must_escalate) 또는 동적/SPA 플래그 — hyve MCP escalation
 
-v3.0.0 폐기 플래그 (호출 시 exit 4 + hyve MCP 안내):
+폐기 플래그 (호출 시 exit 4 + hyve MCP 안내):
+  --dynamic-only            → v7.0.0 제거 (#1298). hyve MCP web_browse 사용.
   --adapter NAME            → hyve MCP web_browse 레시피(네이버 부동산 등 SPA: observe{network}로 XHR 캡처)
   --adapter-page KEY        → 위와 동일
   --from-capture FILE       → hyve MCP web_browse의 capture 기능 사용
-  (--dynamic-only 는 v5.0.0에서 Lightpanda 동적 fetch로 부활 — 폐기 아님)
-```
-
-### fetch_dynamic.py (v5.0.0+)
-```
-CLI: fetch_dynamic.py --url URL [--output FILE] [--dump-markdown]
-                      [--wait-until {load,domcontentloaded,networkidle,done}]
-                      [--wait-selector CSS] [--wait-ms N]
-                      [--terminate-ms N] [--http-timeout-ms N]
-                      [--strip-mode {js,css,ui,full,"js,css"}]
-                      [--cookie-file FILE] [--http-proxy URL] [--allow-private]
-                      [--lightpanda-bin PATH] [--no-auto-install]
-
-Backend: Lightpanda (Zig+V8 단일 바이너리). 검출 우선순위 (REQ-INST-006):
-  1. --lightpanda-bin 인자
-  2. $ITDA_LIGHTPANDA_BIN (바이너리 경로)
-  3. $ITDA_LIGHTPANDA_DIR/lightpanda (설치 디렉터리)
-  4. $PATH (which lightpanda)
-  5. ~/.itda-skills/bin/lightpanda (기본)
-미설치 시 install_lightpanda.py를 자동 호출해 최신 안정 설치 후 진행
-(--no-auto-install로 비활성, 기본 ON). 자동 설치는 덮어쓰지 않는다.
-
-Exit codes:
-  0 = success
-  1 = Lightpanda runtime error (subprocess rc != 0)
-  2 = invalid args
-  3 = lightpanda binary not found (자동 설치 OFF/실패 — stderr: 설치 안내)
-  4 = bot challenge detected (stderr: hyve MCP escalation 안내)
-
-SSRF: --block-private-networks 기본 활성. --allow-private로 해제 가능.
-
-Non-goals (hyve MCP escalation):
-  - Anti-bot 우회 (Akamai/Cloudflare stealth)
-  - SNS 인증 (인스타·X 로그인 토큰)
-  - 네이버 부동산 (SPA — web_browse observe{network}로 XHR 캡처)
-```
-
-### install_lightpanda.py (v6.1.0)
-```
-CLI: install_lightpanda.py [--version X.Y.Z|vX.Y.Z|nightly|latest]
-                           [--install-dir DIR] [--force] [--timeout SEC]
-
-Lightpanda 바이너리 설치/업그레이드/다운그레이드. 표준 라이브러리만 사용.
-플랫폼/아키텍처 자동 감지(aarch64/x86_64 × macos/linux).
-
-설치 위치 우선순위 (REQ-INST-005):
-  --install-dir → $ITDA_LIGHTPANDA_DIR → ~/.itda-skills/bin
-
-동작:
-  - 인자 없음: ensure 멱등 — 있으면 skip, 없으면 최신 안정 설치(덮어쓰지 않음).
-  - --version/--force: 다운로드 → chmod +x → (macOS) xattr 제거 →
-    `lightpanda version` 검증 통과 시에만 원자적 교체(손상 시 기존 바이너리 보존).
-  - 최신 안정 해석: /releases/latest(=nightly) 미사용. semver 태그(v?X.Y.Z) 중
-    prerelease/draft 제외 최고 버전. (nightly는 prerelease=false여도 semver가
-    아니라 제외됨.)
-
-Exit codes:
-  0 = success (설치 또는 skip)
-  1 = 설치 실패 (네트워크/디스크/검증)
-  2 = invalid args
-  3 = 미지원 플랫폼 (Windows 네이티브 → WSL2 안내)
 ```
 
 ### clean_html.py
@@ -383,20 +263,19 @@ retry 전략 (단어 수 부족 시 자동 완화):
 
 ## 마이그레이션
 
-### v4.x → v5.0.0 (Lightpanda 동적 fetch 부활)
+### v6.x → v7.0.0 (Lightpanda 동적 fetch 재제거)
 
-LIGHTEN(v3.0.0)에서 Playwright/Chromium 설치 부담을 이유로 hyve MCP로 위임했던 동적 fetch가, Lightpanda 등장으로 v5.0.0에서 web-reader로 재흡수되었습니다.
+v5.0.0에서 재흡수했던 Lightpanda 동적 fetch가 제거되었습니다 (#1298). Cowork 실측에서 세션당
+151MB 바이너리 재설치가 반복되고, 핵심 대상인 진성 CSR SPA(wanted.co.kr·map.naver.com 등)에서
+SIGILL 크래시가 100% 재현되어 재흡수 근거("가벼운 설치 + 안정 동작")가 무너졌습니다.
 
-| 이전 (v3~v4) | v5.0.0 대체 |
+| 이전 (v5~v6) | v7.0.0 대체 |
 |-------------|-------------|
-| (동적 fetch) hyve MCP `web_browse` | `extract_content.py --url URL --dynamic-only --format markdown` |
-| 한국 미디어 빠른 추출 | `extract_content.py --url URL --dynamic-only --lp-markdown` |
-| 세부 옵션(`--wait-selector` 등) | `fetch_dynamic.py` CLI 직접 사용 |
+| `extract_content.py --url URL --dynamic-only` | hyve MCP `web_browse` (exit 4 + 안내로 fail-fast) |
+| `--dynamic-only --lp-markdown` | hyve MCP `web_browse` |
+| `fetch_dynamic.py` / `install_lightpanda.py` | 삭제됨 |
 | Anti-bot 차단 사이트 | **여전히 hyve MCP** (escalation 자동 안내) |
-| SNS (인스타·X) | **여전히 hyve MCP** (인증 필요) |
-| 네이버 부동산 | **여전히 hyve MCP** `web_browse` (`observe{network}`로 XHR 캡처) |
-
-자세한 안내는 [GUIDE.md](GUIDE.md)의 "마이그레이션 안내 (v4 → v5)" 섹션 참조.
+| 네이버 부동산 등 SPA | **여전히 hyve MCP** `web_browse` (`observe{network}`로 XHR 캡처) |
 
 ### v3.x → v4.0.0 (YouTube 자막 제거)
 
@@ -412,13 +291,13 @@ YouTube 자막 기능이 제거되었습니다. `yt-dlp` 한 줄로 동일한 �
 
 ### v2.x → v3.0.0 (동적 fetch 제거) — 역사 기록
 
-> 아래는 v3.0.0 당시 표다. `fetch_dynamic.py`/`--dynamic-only` 동적 fetch는 **v5.0.0에서 Lightpanda 백엔드로 부활**했다(현재 계약은 위 Script Reference 참조). `--adapter`/`--from-capture`는 여전히 hyve MCP 영역.
+> 아래는 v3.0.0 당시 표다. 동적 fetch는 v5.0.0에서 Lightpanda로 부활했다가 **v7.0.0에서 재제거**되었다 — 현행 계약은 v3 과 동일(hyve MCP 위임).
 
 | v2.x 호출 | v3.0.0 당시 대체 (현재는 일부 부활) |
 |-----------|-------------|
-| `fetch_dynamic.py --url URL` | v3: hyve MCP `web_browse` → **v5.0.0: Lightpanda로 부활** |
+| `fetch_dynamic.py --url URL` | hyve MCP `web_browse` (v5~v6 한시 부활 후 v7.0.0 재제거) |
 | `--adapter naver_land` (단지/매물) | hyve MCP `web_browse` (`observe{network}`로 단지/매물 XHR API 캡처) |
 | `--from-capture <jsonl>` | hyve MCP `web_browse` capture 모드 (현행) |
-| `extract_content.py --dynamic-only` | v3: hyve MCP `web_browse` → **v5.0.0: Lightpanda로 부활** |
+| `extract_content.py --dynamic-only` | hyve MCP `web_browse` (v5~v6 한시 부활 후 v7.0.0 재제거) |
 
 호출 시 exit code 4 + stderr 안내 메시지로 마이그레이션 경로가 표시됩니다.

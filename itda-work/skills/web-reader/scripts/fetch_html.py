@@ -500,7 +500,6 @@ def _is_escalation_candidate(status_code: int, verdict: str) -> bool:
 # Routes the static curl path structurally cannot run itself. Surfaced on give-up
 # so the agent/orchestrator escalates instead of declaring the site unreachable.
 _BROWSER_ESCALATION_ROUTES = [
-    "Lightpanda 동적 렌더: extract_content.py --url <URL> --dynamic-only",
     "hyve web_browse MCP (anti-bot stealth / 상호작용): \"hyve web_browse 로 가져와줘\"",
 ]
 
@@ -1104,7 +1103,7 @@ def _escalate_grid(
         if best_result.get("error"):
             best_result["error"] = (
                 f"{best_result['error']}; curl_cffi grid exhausted. "
-                "JS challenge may require Lightpanda --dynamic-only or hyve MCP web_browse."
+                "JS challenge requires hyve MCP web_browse."
             )
         best_result.update(
             {
@@ -1125,7 +1124,7 @@ def _escalate_grid(
         status_code=_giveup_status,
         error=(
             "curl_cffi grid exhausted without a usable response. "
-            "JS challenge may require Lightpanda --dynamic-only or hyve MCP web_browse."
+            "JS challenge requires hyve MCP web_browse."
         ),
         size=first_body_size,
         content=first_decoded,
@@ -1296,7 +1295,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Failure-gate (P0): a WAF/challenge give-up is NOT 'unreachable' — exit 4
     # so a standalone-CLI agent escalates to web-automation/web_browse (same exit
-    # code meaning as fetch_dynamic's bot-challenge). 404/network/timeout stay 1.
+    # code meaning as bot-challenge exit 4). 404/network/timeout stay 1.
     if result.get("must_escalate"):
         print(
             "⛔ NOT EXHAUSTED — 정적 curl 한계. 사이트를 '도달 불가'로 선언하지 마세요.",

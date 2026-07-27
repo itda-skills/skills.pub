@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.38.0",
+    "version": "8.38.1",
     "language": "ko"
   },
   "plugins": [
@@ -89,6 +89,11 @@
       "name": "itda-workmap",
       "source": "./itda-workmap",
       "description": "업무 구조화 스킬팩 — 일을 태스크→행동 단위로 쪼개고 가치×AI개입 4분면으로 매핑해 AI 위임 계획과 업무 지도를 만든다"
+    },
+    {
+      "name": "itda-hyve",
+      "source": "./itda-hyve",
+      "description": "hyve 데스크톱 앱의 MCP 도구(web_browse·office 등)를 쓰는 스킬 모음 — hyve 가동 전제"
     }
   ]
 }

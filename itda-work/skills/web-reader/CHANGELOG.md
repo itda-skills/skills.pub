@@ -1,5 +1,12 @@
 # Changelog — itda-web-reader
 
+## [7.0.0] — 2026-07-27 (이슈 #1298)
+
+### Removed
+
+- **Lightpanda 동적 fetch 제거 (BREAKING)** — `scripts/fetch_dynamic.py`·`scripts/install_lightpanda.py` 및 관련 테스트 삭제. `--dynamic-only` 는 legacy 호환 플래그로만 남아 exit 4 + hyve MCP `web_browse` 안내로 fail-fast (v3.0.0 LIGHTEN 체제 복귀). `--lp-markdown`·`--no-auto-install` 플래그, exit 3(미설치) 계약, `$ITDA_LIGHTPANDA_DIR`/`$ITDA_LIGHTPANDA_BIN` 검출 삭제.
+- 근거 (Cowork 실측 2026-07-27): ① 설치 경로가 세션 홈(휘발)이라 세션마다 151MB/33s 재설치 반복 ② 진성 CSR SPA(wanted.co.kr·map.naver.com·musinsa.com)에서 lightpanda 0.3.6 aarch64-linux SIGILL 크래시 100% 재현 — v5.0.0 재흡수 근거("가벼운 설치 + 안정 동작") 붕괴. 정적 fetch(curl_cffi·EUC-KR·WAF 격자·쿠키·SSRF)는 회귀 없음.
+
 ## [6.2.4] — 2026-07-26 (이슈 #1283)
 
 ### Changed

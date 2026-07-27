@@ -12,12 +12,8 @@ title: "web-reader 상세 가이드"
 
 이 한 줄이면 스킬이 자동으로 URL 유형을 판별하고, 최적의 추출 전략을 선택하여 마크다운을 생성합니다. 일반 기사·블로그·한국어 인코딩 사이트를 하나의 요청으로 처리합니다.
 
-자바스크립트로 그려지는 페이지(SPA)도 v5.0.0부터 직접 처리합니다:
-
-```
-이 SPA 페이지 동적으로 가져와줘
-```
-
+> 자바스크립트로 그려지는 페이지(진성 CSR SPA)는 v7.0.0부터 web-reader가 다루지 않습니다 — hyve MCP `web_browse` 로 요청하세요.
+>
 > YouTube 자막은 v4.0.0부터 다루지 않습니다. "이 유튜브 자막 받아서 정리해줘"라고 요청하면 Claude가 `yt-dlp`를 알아서 호출합니다.
 
 ## 활용 시나리오
@@ -64,9 +60,9 @@ title: "web-reader 상세 가이드"
 
 ## 검증된 데이터 수집 사이트 (2026-05-13 실측)
 
-다음 표는 web-reader 단독으로 처리 가능한 사이트를 카테고리별로 실측한 결과입니다. **대부분 정적 fetch만으로 충분**합니다 — Next.js SSR이 보편화되면서 SPA처럼 보여도 본문은 정적으로 같이 내려오는 경우가 많기 때문입니다. JavaScript 렌더링(Lightpanda)은 client-side fetch에만 의존하는 진성 CSR SPA에서만 필요합니다.
+다음 표는 web-reader 단독으로 처리 가능한 사이트를 카테고리별로 실측한 결과입니다. **대부분 정적 fetch만으로 충분**합니다 — Next.js SSR이 보편화되면서 SPA처럼 보여도 본문은 정적으로 같이 내려오는 경우가 많기 때문입니다. client-side fetch에만 의존하는 진성 CSR SPA는 web-reader 범위 밖(hyve MCP `web_browse` 영역)입니다.
 
-### 정적 fetch로 충분한 사이트 (Lightpanda 불필요)
+### 정적 fetch로 충분한 사이트
 
 | 카테고리 | 사이트·URL | 실측 추출량 | 활용 |
 |---|---|---|---|
@@ -92,28 +88,18 @@ GeekNews 오늘 인기글 5개 요약해줘
 이 다나와 카테고리 페이지 가격 표로 정리해줘
 ```
 
-### Lightpanda가 필요한 사이트 (정적 fetch 실패 → 동적 OK)
+### 정적 fetch가 실패하는 사이트 (hyve MCP 영역)
 
-| 카테고리 | 사이트·URL | 정적 결과 | Lightpanda 결과 |
+| 카테고리 | 사이트·URL | 정적 결과 | 처리 경로 |
 |---|---|---|---|
-| 한국 채용 SPA | `wanted.co.kr/wdlist` | 0 words (빈 페이지) | 채용 카드 다수 회수 |
-| 한국 메이커 커뮤니티 | `disquiet.io` | 0 words | 트렌딩 프로덕트 회수 |
-
-자연어 호출 예시:
-
-```
-원티드 백엔드 채용 공고 동적으로 가져와줘
-```
-
-```
-디스콰이엇 트렌딩 프로덕트 동적으로 가져와줘
-```
+| 한국 채용 SPA | `wanted.co.kr/wdlist` | 0 words (빈 페이지) | hyve MCP `web_browse` |
+| 한국 메이커 커뮤니티 | `disquiet.io` | 0 words | hyve MCP `web_browse` |
 
 ### 의사결정 휴리스틱
 
-1. **먼저 정적 fetch 시도** — 1초 안에 끝나고 lightpanda 부팅·메모리 비용 없음
-2. 본문이 비어있거나 단어 수가 0이면 → 자연어로 "이 페이지 동적으로 가져와줘"라고 다시 요청
-3. 동적 fetch에서도 비어있거나 Bot challenge 차단되면 → 해당 사이트는 web-reader 단독 범위 밖 (hyve MCP 영역)
+1. **먼저 정적 fetch 시도** — 1초 안에 끝납니다
+2. 본문이 비어있거나 단어 수가 0이면 → JavaScript 렌더링이 필요한 페이지입니다. hyve MCP `web_browse` 로 요청하세요 (web-reader 범위 밖)
+3. Bot challenge 로 차단되면 → 역시 hyve MCP 영역입니다 (자동으로 안내 메시지가 출력됩니다)
 
 ### 효용성 있는 업무 워크플로우 3개
 
@@ -139,33 +125,24 @@ https://boards.greenhouse.io/anthropic 의 모든 공고 목록 정리해줘
 https://linear.app/changelog 최근 업데이트 5건 요약해줘
 ```
 
-→ Next.js SSR이라 정적 fetch만으로 본문 회수. lightpanda 불필요.
+→ Next.js SSR이라 정적 fetch만으로 본문 회수.
 
 ### 실측에서 발견한 패턴
 
 - **외산 SaaS는 SEO 위해 SSR이 표준** — Linear, Vercel, Greenhouse, Dev.to 모두 정적 fetch로 본문 통째로 회수됨
 - **외산 ATS는 anti-bot이 의도적으로 약함** — recruiter 트래픽이 매출원이라 크롤 친화. 정적 fetch 안전
 - **한국 미디어 메인 페이지도 대부분 SSR** — 본문 lazy load는 있지만 헤드라인·요약은 정적으로 내려옴
-- **CSR SPA 진성 케이스**: Wanted, Disquiet — 이런 곳에서만 lightpanda 진정한 효용 발휘
+- **CSR SPA 진성 케이스**: Wanted, Disquiet — 이런 곳은 hyve MCP `web_browse` 가 담당
 - **alio.go.kr 같은 정부 사이트는 옛 URL이 404**일 수 있으니 루트(`/`)로 먼저 시도
 
 ## JavaScript로 그려지는 페이지(SPA) 처리
 
-v5.0.0부터 web-reader가 **JavaScript 동적 페이지를 직접 처리**합니다. (v3 ~ v4에서는 hyve MCP로 위임했으나 Lightpanda 도입으로 부활)
+v7.0.0부터 web-reader는 **정적 fetch 전용**입니다. JavaScript 동적 렌더링이 필요한 페이지(진성 CSR SPA)는
+hyve MCP `web_browse` 가 담당합니다 — 동적 요청을 하면 web-reader가 자동으로 안내 메시지를 출력합니다.
 
-### 우선순위
-
-1. **`lightpanda` MCP 도구가 세션에 노출된 환경**: MCP 도구 직접 호출이 가장 빠름. Claude가 자동 선택
-2. **MCP 미노출 / 정제 파이프라인 필요**: 자연어 "이 SPA 동적으로 가져와줘" — web-reader가 fallback 처리
-3. **Anti-bot 차단 (Cloudflare/Akamai)·SNS 인증·네이버 부동산**: web-reader가 차단을 자동 감지해 hyve MCP 사용 안내 메시지를 출력합니다
-
-### Lightpanda 설치 (자동)
-
-동적 fetch가 동작하려면 `lightpanda` 바이너리가 필요합니다. **미설치 상태에서 동적 페이지를 요청하면 web-reader가 최신 안정 버전을 자동으로 내려받아 설치한 뒤 그대로 진행합니다** — 사전 준비가 필요 없습니다. 한 번 설치하면 다음 요청부터는 재사용합니다.
-
-업데이트하고 싶으면 "lightpanda 업데이트해줘", 특정 버전으로 내리고 싶으면 "lightpanda 0.3.0으로 바꿔줘"처럼 말하면 됩니다. Windows는 네이티브 미지원이라 WSL2 안에서 동작합니다.
-
-> 자동 설치는 기존에 설치된 바이너리를 덮어쓰지 않습니다(업데이트·다운그레이드는 위처럼 명시 요청할 때만). Anti-bot 차단 사이트·SNS 인증·네이버 부동산은 web-reader 범위 밖이라 자동으로 hyve MCP 사용 안내가 나옵니다.
+> v5.0.0~v6.x에서 Lightpanda 백엔드로 동적 fetch를 내장했으나, Cowork 실측에서 세션마다 대용량(151MB)
+> 재설치가 반복되고 핵심 대상 SPA(wanted.co.kr 등)에서 크래시가 재현되어 v7.0.0에서 제거했습니다.
+> Anti-bot 차단·SNS 인증·네이버 부동산은 이전과 동일하게 hyve MCP 영역입니다.
 
 ## 팁
 
@@ -177,7 +154,7 @@ v5.0.0부터 web-reader가 **JavaScript 동적 페이지를 직접 처리**합�
 ## 제한사항
 
 - **SSRF 차단**: 내부망 IP(`127.x`, `10.x`, `192.168.x` 등) 호출은 기본 차단됩니다. 명시적 우회는 옵션 지정으로만 허용됩니다.
-- **JavaScript 렌더링은 Lightpanda 필요**: v5.0.0부터 동적 fetch가 부활했고, `lightpanda` 바이너리는 첫 동적 요청 시 자동으로 설치됩니다(세션 간 재사용). Windows는 WSL2 필수.
+- **JavaScript 렌더링 미지원**: v7.0.0부터 동적 fetch가 제거되었습니다. 진성 CSR SPA는 hyve MCP `web_browse` 로 요청하세요.
 - **Anti-bot/SNS 인증 페이지는 web-reader 범위 밖**: Cloudflare/Akamai 등 봇 차단이 적용된 사이트(coupang 등) 또는 SNS(인스타·X) 인증 흐름은 자동 감지되어 hyve MCP escalation 안내가 출력됩니다.
 - **응답 크기 50MB 상한**: 대형 파일 다운로드 용도로는 부적합합니다.
 - **YouTube 자막 미지원**: v4.0.0부터 자막 추출 기능이 제거되었습니다. 자연어로 "이 유튜브 자막 정리해줘"라고 요청하면 Claude가 `yt-dlp`로 처리합니다.
