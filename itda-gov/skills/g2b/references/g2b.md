@@ -245,8 +245,8 @@ python3 scripts/collect_company.py profile --name "조달청" --year 2024
 # 3. 거시경제 환경 파악 (ECOS)
 python3 scripts/collect_econ.py key
 
-# 4. 관련 정부 지원사업 확인
-python3 scripts/collect_funding.py search --keyword "소프트웨어" --active
+# 4. 관련 정부 지원사업 확인 (funding 스킬 — 모집중 전수 수집 후 검토)
+python3 scripts/survey_crawl.py list kstartup -o kstartup_all.jsonl
 ```
 
 ## 제약사항

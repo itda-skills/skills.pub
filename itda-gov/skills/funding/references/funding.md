@@ -2,12 +2,18 @@
 
 ## 개요
 
-중소벤처기업부 K-Startup 통합공고 시스템의 공공데이터 API를 통해 창업·중소기업 지원사업 정보를 수집합니다.
+중소벤처기업부 K-Startup 통합공고 시스템의 공공데이터 API 명세다.
+`funding` 스킬에서 이 API 는 **K-Startup 소스 수집의 최적화 경로**이며,
+전수 커버리지의 보증 경로는 공개 페이지 크롤이다(`scripts/kstartup_api.py` → 실패 시 크롤 폴백,
+사유는 stderr 로 명시 고지).
 
-- **데이터 출처**: 공공데이터포털 (data.go.kr)
-- **인증**: `KO_DATA_API_KEY` (일반 인증키/Encoding)
+- **데이터 출처**: 공공데이터포털 (data.go.kr), 데이터셋 15125364
+- **인증**: `KO_DATA_API_KEY` — **선택**. 없으면 크롤 경로로 동작한다
+- **키 해석**: `shared/env_loader.py` 규약 (`os.environ` > `~/.claude/settings.json` > `.env` 계열).
+  키는 로그·에러·URL 어디에도 출력하지 않는다(인코딩 변형까지 마스킹)
 - **응답 형식**: JSON
 - **데이터 특성**: K-Startup(www.k-startup.go.kr) 통합공고 기준
+- **CLI 표면 정본**: [cli-contract.md](cli-contract.md) — 인자·exit code·jsonl/manifest 스키마
 
 ## API 키 발급
 
@@ -96,74 +102,55 @@ Base URL: `https://nidapi.k-startup.go.kr/api/kisedKstartupService/v1`
 
 ## CLI 사용 예시
 
+이 API 는 `survey_crawl.py list kstartup` 안에서 자동으로 쓰인다 — 별도 API 전용 서브커맨드는 없다.
+
 ```bash
-# AI 관련 지원사업 검색
-python3 scripts/collect_funding.py search --keyword "AI"
+# 키가 해석되면 API 우선, 실패 시 크롤 폴백 (사유 stderr 고지)
+python3 "$SKILL_DIR/scripts/survey_crawl.py" list kstartup -o survey.jsonl
 
-# 현재 모집 중인 사업화 지원 공고만 조회
-python3 scripts/collect_funding.py search --keyword "스타트업" --active --field "사업화"
-
-# 특정 기간 접수 공고 조회
-python3 scripts/collect_funding.py search --keyword "청년" \
-  --from-date 20260101 --to-date 20261231
-
-# 2026년 통합공고 사업 현황
-python3 scripts/collect_funding.py overview --keyword "창업사관학교" --year 2026
-
-# 테이블 형식 출력
-python3 scripts/collect_funding.py --format table search --keyword "AI"
+# 키가 없으면 곧바로 크롤 경로 (정상 기본 경로 — 고지 없음)
 ```
 
 Windows: `python3` → `py -3`
 
+> `collect_funding.py search/overview` 는 v1.0.0 에서 제거됐다(CHANGELOG 참조).
+> 키워드 검색 대신 전수 수집 후 전건 검토가 정본 워크플로다.
+
+## 커버리지 정직성 (API 경로)
+
+이 데이터셋은 등록순(최신 우선)이고 모집중 공고가 마감 이력 사이에 분산돼 있다.
+따라서 API 경로는 최신 우선으로 스캔해 모집중 집합을 모은다:
+
+| 상황 | manifest `stop_reason` | exit |
+|---|---|---|
+| 데이터셋 끝까지 스캔해 `totalCount` 로 소진 증명 | `api` | 0 (전수) |
+| 최신 우선 무마감 페이지 연속으로 조기 종료 | `api-window` | 2 (partial) |
+
+`api-window` 는 **최근 구간 커버리지**일 뿐이라 뒤늦게 재연장된 오래된 공고가 빠질 수 있다.
+전수 보증은 크롤이 권위이며, **diff 는 `api-window` 회차를 근거로 GONE 을 단정하지 않는다.**
+`reported_total` 은 전체 이력 건수(모집중 건수가 아니다).
+
+401/403·200 위장 차단(CAPTCHA)은 크롤로 우회하지 않고 **exit 3(수동 전환)** 이다.
+
 ## 주의사항
 
-1. **데이터 특성**: K-Startup 통합공고 기준. 개별 기관 공고는 미포함될 수 있음.
+1. **데이터 특성**: K-Startup 통합공고 기준. 개별 기관 공고는 미포함될 수 있어 기업마당 등으로 보강한다.
 2. **모집 기간 종료**: `rcrt_prgs_yn=N`인 공고는 이미 마감.
 3. **실시간성**: API 데이터는 K-Startup 시스템 기준으로 주기적 갱신.
 4. **페이지당 최대 건수**: 일반적으로 100건. 전체 조회 시 페이징 필요.
-
-## API 래퍼 함수
-
-```python
-import funding_api
-
-# 지원사업 공고 검색
-result = funding_api.search_announcements(
-    api_key="...",
-    keyword="AI",
-    active_only=True,     # 모집 중만
-    field="사업화",        # 분야 필터
-    from_date="20260101",
-    to_date="20261231",
-    page=1,
-    rows=100,
-)
-# result: {"total_count": N, "items": [...]}
-
-# 통합공고 사업 현황
-result = funding_api.get_business_overview(
-    api_key="...",
-    keyword="청년창업사관학교",
-    year="2026",
-)
-# result: {"total_count": N, "items": [...]}
-```
+5. **게이트웨이 URL 주의**: 활용신청 페이지의 `apis.data.go.kr/B552735/...` 는 이 서비스에서 동작하지 않는다.
 
 ## 워크플로우 예시: 자금 조달 계획
 
 ```
-1. 관련 지원사업 검색
-   → collect_funding.py search --keyword "{사업 키워드}" --active
-
-2. 지원 분야별 필터링
-   → collect_funding.py search --keyword "{키워드}" --field "사업화"
-
-3. 연간 사업 현황 파악
-   → collect_funding.py overview --keyword "{사업명}" --year 2026
-
-4. K-Startup 상세 페이지 확인
-   → detl_pg_url 필드로 직접 접근 (itda-web-reader 연동 가능)
-
-5. 신청 일정 정리 및 보고서 작성
+1. 프로필 확정 + 저장 경로 합의 (SKILL.md 0·0.5단계)
+2. 전수 수집
+   → survey_crawl.py list all -o <회차>/survey.jsonl --max-pages 70
+3. run_manifest.json 으로 커버리지 판정 (partial 이면 한계 고지)
+4. 전체 목록 제목 직접 검토 → 후보 선별 (grep 대체 금지)
+5. 후보 상세·첨부 검증 (사용자 옵트인 후)
+   → survey_crawl.py detail <source> <url...> --download-dir ... --merge-into ...
+6. A/B/C 분류 보고서 + 우선순위 액션 + 한계 고지
+7. 2~4주 뒤 재조사
+   → survey_diff.py <직전 회차> <새 회차> --out new_items.jsonl --old-profile ... --new-profile ...
 ```

@@ -7,7 +7,7 @@ title: "web-reader 상세 가이드"
 웹페이지를 깨끗한 마크다운으로 가져오는 가장 간단한 방법입니다.
 
 ```
-이 링크 읽어줘
+/web-reader 이 링크 읽어줘
 ```
 
 이 한 줄이면 스킬이 자동으로 URL 유형을 판별하고, 최적의 추출 전략을 선택하여 마크다운을 생성합니다. 일반 기사·블로그·한국어 인코딩 사이트를 하나의 요청으로 처리합니다.
@@ -23,7 +23,7 @@ title: "web-reader 상세 가이드"
 네이버 뉴스, 티스토리, 미디엄 같은 글 사이트를 YAML frontmatter가 포함된 깔끔한 마크다운으로 변환합니다.
 
 ```
-이 기사 마크다운으로 정리해줘
+/web-reader 이 기사 마크다운으로 정리해줘
 ```
 
 ### 쿠키 인증이 필요한 정적 페이지
@@ -31,7 +31,7 @@ title: "web-reader 상세 가이드"
 로그인이 필요하지만 본문이 HTML로 응답되는 페이지를 쿠키와 함께 가져옵니다.
 
 ```
-이 페이지를 내 쿠키로 읽어줘
+/web-reader 이 페이지를 내 쿠키로 읽어줘
 ```
 
 ### 한국어 인코딩 사이트 (EUC-KR / CP949)
@@ -39,7 +39,7 @@ title: "web-reader 상세 가이드"
 옛 한국 사이트들이 쓰는 EUC-KR·CP949 인코딩을 자동 감지·변환합니다.
 
 ```
-이 한겨레 옛날 기사 인코딩 깨지지 않게 가져와줘
+/web-reader 이 한겨레 옛날 기사 인코딩 깨지지 않게 가져와줘
 ```
 
 ### 정밀 추출 (특정 영역만)
@@ -47,7 +47,7 @@ title: "web-reader 상세 가이드"
 본문 위치를 알고 있다면 그 영역만 골라낼 수 있습니다.
 
 ```
-이 페이지에서 article 본문만 마크다운으로 추출해줘
+/web-reader 이 페이지에서 article 본문만 마크다운으로 추출해줘
 ```
 
 ## 출력 옵션
@@ -77,15 +77,15 @@ title: "web-reader 상세 가이드"
 자연어 호출 예시:
 
 ```
-네이버 뉴스 IT 섹션 오늘 헤드라인 정리해줘
+/web-reader 네이버 뉴스 IT 섹션 오늘 헤드라인 정리해줘
 ```
 
 ```
-GeekNews 오늘 인기글 5개 요약해줘
+/web-reader GeekNews 오늘 인기글 5개 요약해줘
 ```
 
 ```
-이 다나와 카테고리 페이지 가격 표로 정리해줘
+/web-reader 이 다나와 카테고리 페이지 가격 표로 정리해줘
 ```
 
 ### 정적 fetch가 실패하는 사이트 (hyve MCP 영역)
@@ -106,7 +106,7 @@ GeekNews 오늘 인기글 5개 요약해줘
 **1. 매일 아침 IT 헤드라인 자동 수집**
 
 ```
-네이버 뉴스 IT 섹션에서 오늘 헤드라인 10개 추려서 요약해줘
+/web-reader 네이버 뉴스 IT 섹션에서 오늘 헤드라인 10개 추려서 요약해줘
 ```
 
 → 정적 fetch 1회, 7000 단어 마크다운에서 Claude가 상위 헤드라인 추출. 매일 아침 1분 안에 완료.
@@ -114,7 +114,7 @@ GeekNews 오늘 인기글 5개 요약해줘
 **2. 경쟁사 Greenhouse 채용 공고 주간 diff**
 
 ```
-https://boards.greenhouse.io/anthropic 의 모든 공고 목록 정리해줘
+/web-reader https://boards.greenhouse.io/anthropic 의 모든 공고 목록 정리해줘
 ```
 
 → 정적 fetch 1회로 직무명·위치·링크 전수 회수. 주 1회 실행해 이전 결과와 diff하면 신규 채용 자동 감지.
@@ -122,7 +122,7 @@ https://boards.greenhouse.io/anthropic 의 모든 공고 목록 정리해줘
 **3. Linear changelog 매주 신규 항목 수집**
 
 ```
-https://linear.app/changelog 최근 업데이트 5건 요약해줘
+/web-reader https://linear.app/changelog 최근 업데이트 5건 요약해줘
 ```
 
 → Next.js SSR이라 정적 fetch만으로 본문 회수.
@@ -147,8 +147,8 @@ hyve MCP `web_browse` 가 담당합니다 — 동적 요청을 하면 web-reader
 ## 팁
 
 - **자동 retry 완화**: 추출된 본문이 짧으면 스킬이 스스로 selector·hidden element·content scoring을 단계적으로 해제하며 재시도합니다. 사용자가 별도 옵션을 지정할 필요 없습니다.
-- **본문 위치를 알면 더 정확하게**: "이 페이지에서 `article.post` 부분만 추출해줘" 처럼 selector를 직접 지정하면 자동 탐지를 건너뛰고 그 영역만 가져옵니다.
-- **사전 진단**: fetch가 실패하면 "이 URL 진단해줘"라고 요청하면 SSRF → DNS → TCP → SSL → HTTP HEAD → robots.txt 레이어를 한 번에 점검합니다.
+- **본문 위치를 알면 더 정확하게**: "/web-reader 이 페이지에서 `article.post` 부분만 추출해줘" 처럼 selector를 직접 지정하면 자동 탐지를 건너뛰고 그 영역만 가져옵니다.
+- **사전 진단**: fetch가 실패하면 "/web-reader 이 URL 진단해줘"라고 요청하면 SSRF → DNS → TCP → SSL → HTTP HEAD → robots.txt 레이어를 한 번에 점검합니다.
 - **YouTube 자막은 별도 도구**: "이 유튜브 자막 받아서 정리해줘"라고 하면 Claude가 `yt-dlp`로 알아서 처리합니다 (v4.0.0부터 web-reader 내장 기능은 제거).
 
 ## 제한사항

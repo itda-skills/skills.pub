@@ -11,14 +11,14 @@
 
 ## 무엇을 할 수 있나요
 
-| 하고 싶은 것 | 이렇게 말하세요 |
+| 하고 싶은 것 | 이렇게 실행하세요 |
 |--------------|-----------------|
-| 원격 데스크톱(RDP) 열기 | "집 윈도우에 원격 데스크톱 터널 깔아줘" |
-| SSH 접속 열기 | "내 서버에 ssh 터널 열어줘" |
-| 내부 웹페이지 노출 | "localhost:8080에서 도는 웹을 blog.example.com으로 열어줘" |
-| 구성이 안전한지 검증 | "이 desired-state로 터널 구성 검증해줘" |
-| 노출 위험 점검 | "지금 터널 구성에서 위험하게 열린 게 있는지 봐줘" |
-| 라우트에 접근 통제 걸기 | "터널 라우트에 access 걸어줘" |
+| 원격 데스크톱(RDP) 열기 | `/cloudflare-tunnel 집 윈도우에 원격 데스크톱 터널 깔아줘` |
+| SSH 접속 열기 | `/cloudflare-tunnel 내 서버에 ssh 터널 열어줘` |
+| 내부 웹페이지 노출 | `/cloudflare-tunnel localhost:8080에서 도는 웹을 blog.example.com으로 열어줘` |
+| 구성이 안전한지 검증 | `/cloudflare-tunnel 이 desired-state로 터널 구성 검증해줘` |
+| 노출 위험 점검 | `/cloudflare-tunnel 지금 터널 구성에서 위험하게 열린 게 있는지 봐줘` |
+| 라우트에 접근 통제 걸기 | `/cloudflare-tunnel 터널 라우트에 access 걸어줘` |
 
 지원 OS는 **Windows · macOS · Linux** 모두입니다.
 
@@ -121,11 +121,11 @@ Claude가 다음 순서로 도와줍니다. 사용자는 자연어로 요청만 
 이렇게 말하세요:
 
 ```
-이 desired-state로 터널 구성 검증하고 계획 보여줘
+/cloudflare-tunnel 이 desired-state로 터널 구성 검증하고 계획 보여줘
 ```
 
 ```
-지금 구성에서 위험하게 열린 게 있는지 점검만 해줘
+/cloudflare-tunnel 지금 구성에서 위험하게 열린 게 있는지 점검만 해줘
 ```
 
 공개로 열린 통로나, 보호하기로 해놓고 실제로는 보호가 빠진 곳이 있으면 경고로 알려줍니다. 만들어진 구성 파일은 cloudflared 자체 검증기로 교차 확인할 수도 있습니다(이때는 Cloudflare 계정도 필요 없습니다).
@@ -137,7 +137,7 @@ Claude가 다음 순서로 도와줍니다. 사용자는 자연어로 요청만 
 이렇게 말하세요:
 
 ```
-검증 통과했으니 이 터널 실제로 만들고 적용해줘
+/cloudflare-tunnel 검증 통과했으니 이 터널 실제로 만들고 적용해줘
 ```
 
 이 단계에서 일어나는 일(요약): Cloudflare 로그인(최초 1회 브라우저 인증) → 터널 생성 → 구성 파일 만들기 → 각 주소를 터널에 연결(DNS) → 보호 대상 주소에 접근 통제 앱 생성 → 재부팅 후에도 자동 실행되도록 OS 서비스로 등록.
@@ -157,7 +157,7 @@ Claude가 다음 순서로 도와줍니다. 사용자는 자연어로 요청만 
 외출 중에 집 윈도우 PC에 포트포워딩 없이 접속하고 싶을 때.
 
 ```
-집 윈도우에 RDP 터널 rdp.example.com으로 깔아줘. 내 이메일만 접근 가능하게.
+/cloudflare-tunnel 집 윈도우에 RDP 터널 rdp.example.com으로 깔아줘. 내 이메일만 접근 가능하게.
 ```
 
 RDP는 **항상 접근 통제로 보호**됩니다(공개 불가). 접속 시에는 클라이언트 컴퓨터에서 로컬 프록시를 띄우고 브라우저로 인증(이메일 OTP/SSO)을 거친 뒤, 윈도우 원격 데스크톱 앱으로 `localhost:3389`에 접속합니다. macOS에서는 Windows App(구 Microsoft Remote Desktop)으로 같은 방식으로 접속합니다. 자세한 단계는 스킬의 `references/rdp-recipe.md` 레시피를 Claude가 안내해 줍니다.
@@ -167,7 +167,7 @@ RDP는 **항상 접근 통제로 보호**됩니다(공개 불가). 접속 시에
 서버에 SSH로 접속하되 공인 IP·방화벽 개방 없이.
 
 ```
-내 서버 ssh.example.com에 ssh 터널 열어줘
+/cloudflare-tunnel 내 서버 ssh.example.com에 ssh 터널 열어줘
 ```
 
 SSH도 비-HTTP 서비스라 공개로 열 수 없고, 접근 통제로 보호됩니다.
@@ -177,7 +177,7 @@ SSH도 비-HTTP 서비스라 공개로 열 수 없고, 접근 통제로 보호�
 블로그나 데모처럼 누구나 봐도 되는 웹을 외부에 열 때.
 
 ```
-localhost:8080에서 도는 블로그를 blog.example.com으로 공개로 열어줘
+/cloudflare-tunnel localhost:8080에서 도는 블로그를 blog.example.com으로 공개로 열어줘
 ```
 
 이 경우에만 "공개로"라고 명시해야 인증 없이 열립니다. 그 외에는 기본 보호가 적용됩니다.
@@ -187,7 +187,7 @@ localhost:8080에서 도는 블로그를 blog.example.com으로 공개로 열어
 아직 적용하지 않고 "이 구성이 안전한가"만 보고 싶을 때.
 
 ```
-이 desired-state 적용하기 전에 노출 위험만 감사해줘
+/cloudflare-tunnel 이 desired-state 적용하기 전에 노출 위험만 감사해줘
 ```
 
 공개로 열린 통로, 알 수 없는 서비스 형식 등을 경고로 정리해 줍니다.

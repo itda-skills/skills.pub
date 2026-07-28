@@ -31,7 +31,7 @@ KO_DATA_API_KEY=...
 ```
 
 > **주의**
-> - `KO_DATA_API_KEY`는 공공데이터포털(data.go.kr) 키 하나로 `funding`, `g2b`에서 함께 사용합니다.
+> - `KO_DATA_API_KEY`는 공공데이터포털(data.go.kr) 키 하나로 `funding`, `g2b`에서 함께 사용합니다. `funding`에서는 **선택**입니다 — 키가 없으면 K-Startup을 공개 페이지 크롤로 수집합니다.
 > - `KOSIS_API_KEY`는 Base64 형태일 수 있으므로 끝 `=` 패딩이 잘리지 않도록 전체를 복사하세요.
 
 ## 포함 스킬
@@ -41,7 +41,7 @@ KO_DATA_API_KEY=...
 | [`dart`](skills/dart/SKILL.md) | DART 전자공시 | 기업개황, 재무제표, 직원현황 |
 | [`kosis`](skills/kosis/SKILL.md) | KOSIS 국가통계 | 인구, 산업, 시장 통계 |
 | [`ecos`](skills/ecos/SKILL.md) | ECOS 한국은행 | GDP, 금리, 환율, 물가 |
-| [`funding`](skills/funding/SKILL.md) | K-Startup 지원사업 | 정부 창업·중소기업 지원사업 공고 |
+| [`funding`](skills/funding/SKILL.md) | K-Startup·기업마당·NIPA·KOCCA·SMTECH | 정부 지원사업 공고 전수조사·증분 재조사·적합성 판정 |
 | [`g2b`](skills/g2b/SKILL.md) | 나라장터 (G2B) | 입찰공고 검색·상세 |
 
 > **정본 문서 가이드 (SPEC-ITDAGOV-DOCS-001, 2026-04-28 정비 완료)**: 6개 스킬 모두 발급처 정본 명세를 `skills/{스킬}/references/`에 보존하고, 각 SKILL.md 하단 "상세 API 가이드" 섹션에서 정본 파일을 직접 링크합니다. 활용신청 안내, 정본 에러 코드 매핑(한글 hint + 자동 활용신청 URL 부착), HTTP 403 처리, 라이브 응답 필드 매핑이 통일되어 있습니다.
@@ -104,7 +104,8 @@ KO_DATA_API_KEY=...
    → ecos: collect_econ.py key
 
 4. 정부 지원사업 연계
-   → funding: collect_funding.py search --keyword "소프트웨어" --active
+   → funding: survey_crawl.py list all -o <회차>/survey.jsonl
+     (전수 수집 후 전건 검토로 소프트웨어 연계 사업 선별)
 
 5. 종합: 입찰 제안서 초안 작성
 ```
@@ -112,19 +113,27 @@ KO_DATA_API_KEY=...
 ### 자금 조달 계획
 
 ```
-1. 관련 정부 지원사업 검색
-   → funding: collect_funding.py search --keyword "{사업 키워드}" --active
-2. 분야별 지원사업 필터
-   → funding: collect_funding.py search --keyword "{키워드}" --field "사업화"
-3. 연간 사업 현황 파악
-   → funding: collect_funding.py overview --keyword "{사업명}" --year 2026
-4. K-Startup 상세 내용 확인 (detl_pg_url)
-5. 신청 일정 정리 및 자금 조달 계획서 작성
+1. 프로필 확정 + 저장 경로 합의 (funding SKILL.md 0·0.5단계)
+2. 모집중 공고 전수 수집
+   → funding: survey_crawl.py list all -o <회차>/survey.jsonl --max-pages 70
+3. run_manifest.json 으로 커버리지 판정 (partial 이면 보고서에 한계 고지)
+4. 전체 목록 직접 검토 → 후보 선별 → 상세·첨부 검증 (사용자 옵트인 후)
+   → funding: survey_crawl.py detail <source> <url...> --download-dir ... --merge-into ...
+5. A/B/C 분류 + 우선순위 액션으로 자금 조달 계획서 작성
+6. 2~4주 뒤 증분 재조사
+   → funding: survey_diff.py <직전 회차> <새 회차> --out new_items.jsonl
 ```
 
 ## 신규 Collector 추가 시 패턴 가이드
 
-신규 collector 스크립트(`itda-gov/skills/{name}/scripts/collect_{name}.py`)는 기존 4개(`funding`/`dart`/`kosis`/`ecos`)와 동일한 CLI 인자 구조를 따릅니다 (SPEC-COLLECTOR-CLI-001).
+신규 collector 스크립트(`itda-gov/skills/{name}/scripts/collect_{name}.py`)는 기존 3개(`dart`/`kosis`/`ecos`)와 동일한 CLI 인자 구조를 따릅니다 (SPEC-COLLECTOR-CLI-001).
+
+> **예외 — `funding`(v1.0.0~)**: funding 은 이 규약의 **적용 대상이 아닙니다.** 표면이 단발 조회기
+> (`collect_*.py <서브커맨드> --keyword`)가 아니라 **수집·diff 파이프라인**(`survey_crawl.py list|detail`,
+> `survey_diff.py <old> <new>`)이기 때문입니다 — `--format json|table` 로 stdout 에 결과를 흘리는 대신
+> jsonl·`run_manifest.json` 파일을 산출하고, exit code 로 커버리지(0/2/3)를 계약합니다.
+> 규약 개정이 아니라 예외 등재입니다. funding 의 표면 정본은
+> [`skills/funding/references/cli-contract.md`](skills/funding/references/cli-contract.md) 입니다.
 
 ### `--format` 등 공용 옵션은 서브커맨드 앞/뒤 양쪽에서 동작해야 함
 
@@ -175,9 +184,9 @@ class TestFormatArgPosition:
 
 ### SKILL.md Troubleshooting 섹션
 
-Cowork sandbox 등에서 한글 경로가 인식 안 되는 케이스를 SKILL.md에 명시. 4개 collector 모두 동일 가이드 보유 (SPEC-COLLECTOR-CLI-001 REQ-2).
+Cowork sandbox 등에서 한글 경로가 인식 안 되는 케이스를 SKILL.md에 명시. 규약 대상 3개 collector + `funding` 모두 동일 가이드 보유 (SPEC-COLLECTOR-CLI-001 REQ-2 — funding 은 규약 비대상이나 이 가이드는 공통 적용).
 
-> 5번째 collector 추가 시점에 `shared/cli_builder.py` 공통 헬퍼화를 재평가합니다. 현재 4개는 코드 중복이 단순(`_add_common` 8~15줄)하므로 헬퍼화 ROI가 낮습니다.
+> 규약 대상 collector 가 5개에 도달하는 시점에 `shared/cli_builder.py` 공통 헬퍼화를 재평가합니다. 현재 3개는 코드 중복이 단순(`_add_common` 8~15줄)하므로 헬퍼화 ROI가 낮습니다.
 
 ## 개발
 
