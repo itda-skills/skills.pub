@@ -37,10 +37,15 @@
     - 자동화 1순위를 work-find로 구체화
 
 사용:
-    python3 check_work_map.py <work-map.md>        # 파일
-    py -3 check_work_map.py <work-map.md>          # Windows
-    cat work-map.md | python3 check_work_map.py    # stdin
-    python3 check_work_map.py <work-map.md> --json # 기계 판독
+    python3 check_work_map.py <work-map.md>          # 파일
+    py -3 check_work_map.py <work-map.md>            # Windows
+    cat work-map.md | python3 check_work_map.py      # stdin
+    python3 check_work_map.py <work-map.md> --json   # 기계 판독
+    python3 check_work_map.py <work-map.md> --single # 단일 업무 경량 모드(C3 태스크 하한 2→1)
+
+--single 은 "업무 하나만 들고 온" 경량 모드용 완화다: 태스크는 1개면 되지만,
+행동 ≥2/태스크(뭉텅이 반려)·좌측 계약·고유 맥락 교차·증강 검증 서술은 그대로 강제한다 —
+의존 방지 철학은 축소판에서도 동일하다.
 
 exit code: 0 = 모든 hard 검사 통과, 1 = 위반, 2 = 사용법 오류
 """
@@ -164,7 +169,7 @@ def _context_tokens(context_lines):
     return tokens
 
 
-def evaluate(raw: str):
+def evaluate(raw: str, single: bool = False):
     parsed = parse(raw)
     sections = parsed["sections"]
     tasks = parsed["tasks"]
@@ -190,15 +195,19 @@ def evaluate(raw: str):
     add("C2", "좌측 계약 — 인간이 지킬 것 ≥1, 일부러 유지할 것 ≥1", keep_n >= 1 and hold_n >= 1,
         f"지킬 것={keep_n}건, 유지할 것={hold_n}건 (0건이면 전부-자동화 답안 — 지킬 것과 안 할 것부터 정한다)")
 
-    # C3 분해 계약: 태스크 ≥2, 각 태스크 행동 ≥2 (뭉텅이 반려)
+    # C3 분해 계약: 태스크 ≥2(단일 업무 모드는 ≥1), 각 태스크 행동 ≥2 (뭉텅이 반려)
+    min_tasks = 1 if single else 2
     thin = [t["name"] for t in tasks if len(t["actions"]) < 2]
-    c3_ok = len(tasks) >= 2 and not thin
+    c3_ok = len(tasks) >= min_tasks and not thin
     detail = []
-    if len(tasks) < 2:
-        detail.append(f"태스크 {len(tasks)}개 (<2 — 프로젝트가 태스크 1개면 아직 뭉텅이)")
+    if len(tasks) < min_tasks:
+        if single:
+            detail.append(f"태스크 {len(tasks)}개 (<1 — 분해할 업무가 없다)")
+        else:
+            detail.append(f"태스크 {len(tasks)}개 (<2 — 프로젝트가 태스크 1개면 아직 뭉텅이)")
     if thin:
         detail.append("행동 <2 태스크: " + ", ".join(thin))
-    add("C3", "분해 계약 — 태스크 ≥2, 태스크마다 행동 ≥2", c3_ok,
+    add("C3", f"분해 계약 — 태스크 ≥{min_tasks}, 태스크마다 행동 ≥2", c3_ok,
         "; ".join(detail) if detail else "OK")
 
     # C4 고유 맥락 교차: 맥락 토큰 ≥3 선언 + 그중 ≥2 가 본문(태스크·4분면)에 재등장
@@ -250,6 +259,7 @@ def evaluate(raw: str):
     return {
         "ok": all(c["ok"] for c in hard),
         "score": f"{passed}/{len(hard)}",
+        "mode": "single" if single else "full",
         "checks": checks,
         "sections_found": sorted(sections.keys()),
         "task_count": len(tasks),
@@ -258,7 +268,8 @@ def evaluate(raw: str):
 
 
 def render_human(result) -> str:
-    lines = [f"work-redesign 구조 게이트 — {'PASS ✅' if result['ok'] else 'FAIL ❌'}  ({result['score']} hard)", ""]
+    mode_tag = " · 단일 업무 모드" if result.get("mode") == "single" else ""
+    lines = [f"work-redesign 구조 게이트 — {'PASS ✅' if result['ok'] else 'FAIL ❌'}  ({result['score']} hard{mode_tag})", ""]
     for c in result["checks"]:
         mark = "⚠️ " if c["severity"] == "warn" else ("✅" if c["ok"] else "❌")
         lines.append(f"{mark} {c['id']} {c['name']}")
@@ -274,6 +285,7 @@ def render_human(result) -> str:
 def main(argv):
     args = [a for a in argv[1:] if not a.startswith("--")]
     as_json = "--json" in argv
+    single = "--single" in argv
     if args:
         try:
             raw = open(args[0], encoding="utf-8").read()
@@ -286,7 +298,7 @@ def main(argv):
             return 2
         raw = sys.stdin.read()
 
-    result = evaluate(raw)
+    result = evaluate(raw, single=single)
     if as_json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:

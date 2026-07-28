@@ -5,7 +5,9 @@ description: >
   일부러 유지할 것/자동화할 것)으로 매핑해, 위임 계획과 상시 컨텍스트 문서(업무 지도)를
   만드는 인터뷰 스킬입니다. "내 업무 구조화해줘", "뭘 AI한테 맡겨야 할지 모르겠어",
   "업무 지도 만들어줘", "워크 리디자인 해줘", "AI 위임 계획 세워줘", "일을 어떻게 나눠서
-  맡기지"처럼 말하면 됩니다. 사용자 맥락을 역질문으로 강제 수집하고, 전부-자동화 답안과
+  맡기지"처럼 말하면 됩니다. "이 업무 자동화하고 싶은데 너무 커", "이 일 쪼개서 뭘
+  AI한테 맡길지 정해줘"처럼 업무 하나만 들고 오면 단일 업무 경량 모드로 그것만 분해해
+  4분면에 배치합니다. 사용자 맥락을 역질문으로 강제 수집하고, 전부-자동화 답안과
   일반론은 구조 게이트가 반려합니다.
 license: Apache-2.0
 compatibility: Claude Cowork & Code, Python 3.10+
@@ -14,11 +16,11 @@ allowed-tools: Read, Write, Edit, Bash, AskUserQuestion, mcp__workspace__bash
 argument-hint: "[프로젝트/업무 영역 한 줄, 또는 비워서 인터뷰]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.1.3"
+  version: "0.2.1"
   category: "productivity"
   status: "experimental"
   created_at: "2026-07-24"
-  updated_at: "2026-07-27"
+  updated_at: "2026-07-29"
   aliases: "업무구조화, 업무지도, 워크리디자인, 위임계획, 업무쪼개기"
   tags: "Cowork, work redesign, work map, task decomposition, delegation vs dependence, AI human task mapping, quadrant, workslop prevention"
 ---
@@ -52,7 +54,8 @@ metadata:
 ## 발동하지 않는 경우 (인접 스킬 경계)
 
 - **개별 요청 1건**을 다듬어 던지려면 → `task-brief` (이 스킬은 업무 전체의 지도)
-- **무엇을 자동화할지 탐색**만 하려면 → `work-find`
+- **무엇을 자동화할지 탐색**만 하려면 → `work-find` (자동화할 업무가 이미 정해졌고
+  덩어리가 커서 쪼개기+분면 판정이 필요하면 → 이 스킬의 단일 업무 경량 모드)
 - 정해진 문제를 **오늘 1시간 조각**으로 자르려면 → `hour-slice`
 - 반복 작업을 **미니스킬로 굳히려면** → `miniskill-forge`
 - 이해관계자별 **선행 전달물(제약 조건)을 심화**하려면 → `stakeholder-map` (이 스킬의 stakeholders 스텁을 이어받음)
@@ -68,6 +71,11 @@ work-map.md          # 업무 지도 — 맥락·태스크 인벤토리·4분면
 project-context.md   # 프로젝트 맥락 — 목표·현황·제약 조건·용어
 stakeholders/<이름>.md  # 이해관계자별 — 역할·요청할 것·선행 전달할 제약 조건 (스텁 허용)
 ```
+
+**단일 업무 경량 모드**(아래 0단계 분기)에서는 `work-map.md` **축소판 한 장만** 만듭니다 —
+같은 파일명·같은 섹션 구조에 태스크 1개(들고 온 업무)만 담고, `project-context.md`·
+`stakeholders/` 는 생략합니다. 나중에 영역 전체 인터뷰로 확장할 때 이 축소판에 태스크를
+이어 붙이면 그대로 전체 지도가 됩니다(형식 호환이 축소판의 존재 이유).
 
 `work-map.md` 형식 (최상위 섹션은 `##` 고정, 태스크는 `###` — 게이트 파서 계약):
 
@@ -113,11 +121,24 @@ $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\work-redesign"  # 미설정이�
 ```
 
 
-### 0. 범위 고정 (뭉텅이 방지 1차)
+### 0. 범위 고정 (뭉텅이 방지 1차) + 단일 업무 분기
 
 업무 **전체**가 아니라 **프로젝트/업무 영역 1개**를 고릅니다. 사용자가 여러 개를 말하면
 "가장 시간을 많이 쓰는 것 하나"로 좁힙니다. 업무분장표·할일 목록·캘린더 내보내기 등
 실자료가 있으면 첨부를 요청해 Read로 읽고, 이후 질문의 추천 기본값을 실측 근거로 만듭니다.
+
+**단일 업무 분기** — 사용자가 영역이 아니라 **자동화하고 싶은 업무 하나**를 들고 왔으면
+("월간 정산 보고를 자동화하고 싶은데 너무 커요" 류), AskUserQuestion 으로 두 경로 중
+고르게 합니다: ① **이 업무만 분해**(단일 업무 경량 모드, 권장 기본) ② 그 업무가 속한
+**영역 전체 인터뷰**. 경량 모드를 고르면:
+
+- 들고 온 업무를 **태스크 인벤토리의 유일한 태스크**로 삼아 1→3→4단계를 그대로 진행합니다
+  (2단계 태스크 나열은 생략 — 태스크가 이미 정해져 있으므로).
+- 1단계 맥락 수집은 그 업무 범위로 축소하되 **고유명사 ≥3 규율은 동일**합니다
+  (업무명·도구·결과 받는 사람이면 충분).
+- 산출은 `work-map.md` 축소판 한 장, 게이트는 `--single` 플래그로 겁니다(5단계).
+- 4분면의 **우측 2칸(증강·자동화)이 곧 "AI가 필요한 조각"의 답**이고, 좌측 2칸이
+  "통째로 맡기면 안 되는 이유"입니다 — 경량 모드에서도 좌측을 비우면 게이트가 반려합니다.
 
 **워크 리디자인 시트 첨부 시** — 사용자가 skills.itda.work `/tools/work-redesign-sheet`
 폼으로 만든 시트(`# 워크 리디자인 시트 — …` 로 시작, 맥락·업무 흐름·없애거나 줄일 단계·
@@ -163,7 +184,7 @@ $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\work-redesign"  # 미설정이�
 산출 3종을 쓰고 `work-map.md` 에 게이트를 겁니다:
 
 ```bash
-# macOS/Linux
+# macOS/Linux — 단일 업무 경량 모드는 --single 추가
 python3 "$SKILL_DIR/scripts/check_work_map.py" work-map.md
 # Windows
 py -3 "$env:SKILL_DIR\scripts\check_work_map.py" work-map.md
@@ -172,6 +193,8 @@ py -3 "$env:SKILL_DIR\scripts\check_work_map.py" work-map.md
 게이트(기계)는 C1~C5 를 강제합니다: 필수 섹션 존재 · 좌측 계약(지킬 것 ≥1 + 유지할 것 ≥1) ·
 분해 계약(태스크 ≥2, 행동 ≥2/태스크) · 고유 맥락 교차(맥락 토큰 ≥3, 본문 재등장 ≥2) ·
 증강 항목 검증 서술. W1~W3(과잉 자동화 비율·재검토 시점·핸드오프)은 경고입니다.
+**단일 업무 경량 모드는 `--single` 로 실행**합니다 — 태스크 하한만 ≥1 로 완화되고
+나머지 축(행동 ≥2·좌측 계약·맥락 교차·증강 검증)은 그대로입니다.
 **FAIL 축은 에이전트가 채우지 말고 해당 인터뷰 단계로 되돌아가 사용자에게 묻습니다.**
 
 **의미 점검(에이전트)** — 게이트가 못 잡는 것을 직접 채점합니다:
@@ -215,5 +238,6 @@ work-redesign/
     ├── test_check_work_map.py
     └── fixtures/
         ├── good_work_map.md   # 통과 예시
-        └── bad_work_map.md    # 실패 예시(전부-자동화·뭉텅이·일반론)
+        ├── bad_work_map.md    # 실패 예시(전부-자동화·뭉텅이·일반론)
+        └── single_work_map.md # 단일 업무 축소판 — 기본 모드 FAIL·--single PASS
 ```
