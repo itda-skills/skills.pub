@@ -7,9 +7,13 @@
 
 ### Added
 
+- `hwpx` v1.0.0 — **양식 채우기** 신설: 기존 .hwpx 양식의 서식·표를 유지한 채 placeholder 만 치환(`scripts/fill_hwpx.py`, 표준 라이브러리 전용·외부 서버 무의존). `--list` 후보 탐지 / `--set`·`--map` 치환 / 동일 서식 분절 run 자동 병합 / mimetype STORED 보존 / 미발견 키 경고(`--strict` exit 3). 테스트 8종 GREEN(report 엔진 실산출물 + validate_archive 교차 검증 포함).
+
 - `work-proposal`·`work-pilot` 신설 (#1310) — itda-ceragem ax-proposal·ax-pilot 범용화 편입. work-find → work-proposal → work-pilot 업무 파이프라인 완성.
 
 ### Changed
+
+- `hwpx-reader`(v4.0.1)·`hwpx-report`(v0.3.3) → **`hwpx` 단일 스킬로 병합** (마스터 지시 2026-07-28, 미배포 상태라 별칭 없이 일괄 전환). 구조: `reader/`·`report/` 엔진 서브트리 + 루트 SKILL.md 작업 라우팅(읽기/채우기/생성), 테스트 `tests/{reader,report,fill}` 단일화, requirements 병합. 참조 전수 갱신: release-skills.yml(테스트 매트릭스·requirements)·publish.py(REQUIRED_PLUGIN_FILES)·kacem-tender(탐색 경로)·work-plan 카탈로그·README·lessons 인덱스.
 
 - `find-work` → `work-find`, `plan-work` → `work-plan` rename (#1310) — `work-*` 접두 패밀리 통일(하위 호환 미고려, 마스터 결정 2026-07-27).
 

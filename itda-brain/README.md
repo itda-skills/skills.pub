@@ -72,7 +72,7 @@ Layer 3  Schema 업무DB/CLAUDE.md (질답·운영 규율 + 뇌 메타 자기서
 
 ## evals — 검수관 검출력 회귀 가드
 
-`evals/`에 함정 6종(단가 모순·거래방향 미끼·파일명 함정·잠금 임시파일·빈 문서·시계열 미끼)을 심은
-골든 fixture 와 assertions(A1~A10)가 있습니다. `brain-audit/tests/`(pytest)가 저울(freshness.py)을
+`evals/`에 함정 7종(단가 모순·거래방향 미끼·파일명 함정·잠금 임시파일·빈 문서·시계열 미끼·
+시점 역행 time-warp)을 심은 골든 fixture 와 assertions(A1~A11)가 있습니다. `brain-audit/tests/`(pytest)가 저울(freshness.py)을
 지킨다면 evals 는 검수관(SKILL.md·brain-auditor 지시서)의 유능함을 지킵니다 — 지시서를 고치면
 `evals/README.md` 절차로 재실행해 검출률·오탐률 유지를 확인합니다.

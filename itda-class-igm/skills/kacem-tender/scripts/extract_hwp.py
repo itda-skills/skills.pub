@@ -1,6 +1,6 @@
 """hwp/hwpx 텍스트 추출 모듈.
 
-hwpx-reader 스킬 동봉 순수 파이썬 변환기 `hwpx_native`
+hwpx 스킬(reader 경로) 동봉 순수 파이썬 변환기 `hwpx_native`
 (`python3 -m hwpx_native convert <input> -o <output> --format md`)를 서브프로세스로
 호출해 hwp/hwpx 파일을 Markdown으로 변환한다.
 
@@ -20,18 +20,18 @@ from pathlib import Path
 
 
 class HwpxNotFoundError(RuntimeError):
-    """hwpx_native 변환기(hwpx-reader 스킬)를 찾을 수 없을 때 발생하는 예외."""
+    """hwpx_native 변환기(hwpx 스킬 reader)를 찾을 수 없을 때 발생하는 예외."""
     pass
 
 
 def _find_reader_dir() -> Path | None:
-    """hwpx_native 패키지를 담은 hwpx-reader 스킬 디렉토리를 찾는다.
+    """hwpx_native 패키지를 담은 hwpx 스킬의 reader 디렉토리를 찾는다.
 
     해석 순서 (모두 실패하면 None):
     1. env `HWPX_READER_DIR` — 명시 지정 (그 안에 hwpx_native/ 가 있어야 함)
-    2. 저장소 체크아웃 — 이 파일 조상 경로에서 `itda-work/skills/hwpx-reader` 탐색
-    3. Claude Code 플러그인 설치 경로 (`~/.claude/plugins/**/skills/hwpx-reader`)
-    4. Cowork 세션 마운트 (`/sessions/*/mnt/.remote-plugins/**/skills/hwpx-reader`)
+    2. 저장소 체크아웃 — 이 파일 조상 경로에서 `itda-work/skills/hwpx/reader` 탐색
+    3. Claude Code 플러그인 설치 경로 (`~/.claude/plugins/**/skills/hwpx/reader`)
+    4. Cowork 세션 마운트 (`/sessions/*/mnt/.remote-plugins/**/skills/hwpx/reader`)
     """
     env = os.environ.get("HWPX_READER_DIR", "").strip()
     if env:
@@ -40,13 +40,13 @@ def _find_reader_dir() -> Path | None:
 
     here = Path(__file__).resolve()
     for ancestor in here.parents:
-        cand = ancestor / "itda-work" / "skills" / "hwpx-reader"
+        cand = ancestor / "itda-work" / "skills" / "hwpx" / "reader"
         if (cand / "hwpx_native" / "__main__.py").exists():
             return cand
 
     patterns = [
-        str(Path.home() / ".claude" / "plugins" / "**" / "skills" / "hwpx-reader"),
-        "/sessions/*/mnt/.remote-plugins/**/skills/hwpx-reader",
+        str(Path.home() / ".claude" / "plugins" / "**" / "skills" / "hwpx" / "reader"),
+        "/sessions/*/mnt/.remote-plugins/**/skills/hwpx/reader",
     ]
     for pat in patterns:
         for hit in glob.glob(pat, recursive=True):
@@ -67,15 +67,15 @@ def extract_hwp(input_path: Path, output_path: Path | None = None) -> str:
         추출된 Markdown 텍스트
 
     Raises:
-        HwpxNotFoundError: hwpx_native 변환기(hwpx-reader 스킬)를 찾을 수 없을 때
+        HwpxNotFoundError: hwpx_native 변환기(hwpx 스킬 reader)를 찾을 수 없을 때
         RuntimeError: 변환 실행 또는 결과 파일 읽기 실패
     """
     reader_dir = _find_reader_dir()
     if reader_dir is None:
         raise HwpxNotFoundError(
             "hwpx 변환기(hwpx_native)를 찾을 수 없습니다.\n"
-            "itda-work 플러그인의 hwpx-reader 스킬이 필요합니다 — 설치하거나,\n"
-            "env HWPX_READER_DIR 로 hwpx-reader 스킬 디렉토리를 지정하세요.\n"
+            "itda-work 플러그인의 hwpx 스킬이 필요합니다 — 설치하거나,\n"
+            "env HWPX_READER_DIR 로 hwpx 스킬의 reader 디렉토리를 지정하세요.\n"
             "(.hwp 원본 변환에는 추가로 olefile 패키지가 필요합니다)"
         )
 

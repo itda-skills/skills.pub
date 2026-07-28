@@ -5,8 +5,8 @@
 ## CLI
 
 ```bash
-PYTHONPATH=/path/to/hwpx-reader python3 -m hwpx_native convert input.hwp -o output.md --format md
-PYTHONPATH=/path/to/hwpx-reader python3 -m hwpx_native convert input.hwpx -o output.html --format html
+PYTHONPATH=/path/to/hwpx/reader python3 -m hwpx_native convert input.hwp -o output.md --format md
+PYTHONPATH=/path/to/hwpx/reader python3 -m hwpx_native convert input.hwpx -o output.html --format html
 ```
 
 옵션:

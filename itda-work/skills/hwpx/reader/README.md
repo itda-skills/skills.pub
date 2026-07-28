@@ -1,4 +1,4 @@
-# hwpx-reader — HWP/HWPX Python Native Reader
+# hwpx / reader — HWP/HWPX Python Native Reader (구 hwpx-reader)
 
 한글 HWP5(.hwp)와 HWPX(.hwpx) 문서를 Markdown/HTML로 변환하는 Claude Cowork 스킬입니다.
 

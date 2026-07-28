@@ -1,5 +1,5 @@
 ---
-title: "hwpx-reader 사용 가이드"
+title: "hwpx 읽기(reader) 사용 가이드"
 ---
 
 HWP/HWPX 문서를 읽거나 Markdown·HTML로 변환합니다.

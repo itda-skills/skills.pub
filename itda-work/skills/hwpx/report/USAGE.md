@@ -1,35 +1,14 @@
----
-name: hwpx-report
-description: >
-  마크다운으로 작성한 보고서를 대한민국 정부 범용 한글 서식(.hwpx)으로 변환하는 스킬입니다.
-  "이 보고서 한글 정부 서식으로 만들어줘", "마크다운을 hwpx 보고서로 변환해줘",
-  "개조식 정부 보고서 .hwpx로 뽑아줘"처럼 말하면 됩니다.
-  제목·보고일·부서를 머리글에 채우고 □/❍ 개조식 본문을 자동 구성해 gov-report 서식으로 출력합니다.
-license: Apache-2.0
-compatibility:
-  claude_desktop: false
-  claude_code: true
-user-invocable: true
-allowed-tools: Bash, Read, Write, mcp__workspace__bash
-argument-hint: "<보고서_마크다운_경로>"
-metadata:
-  author: "스킬.잇다 <dev@itda.work>"
-  tags: "hwp, hwpx, report, government, markdown, docspec"
-  version: "0.3.3"
-  category: "document"
-  created_at: "2026-06-08"
-  updated_at: "2026-07-26"
-  status: "experimental"
-  recommended: true
----
+> 이 문서는 통합 hwpx 스킬의 report 경로 상세 사용법이다 (구 hwpx-report SKILL.md).
+> 아래 `SKILL_DIR` 블록은 통합 스킬의 `report/` 서브트리를 가리키도록 갱신되어 있다.
+> `requirements.txt` 는 스킬 루트로 병합: `"${SKILL_DIR}/../requirements.txt"`.
 
-# 마크다운 → 정부 보고서 HWPX (hwpx-report)
+# 마크다운 → 정부 보고서 HWPX (hwpx 서식 생성)
 
 Claude(또는 사용자)가 **마크다운으로 쓴 보고서**를 대한민국 정부 범용 한글 서식
 `.hwpx`(gov-report 템플릿)로 변환합니다. LLM 의 강점(콘텐츠 작성)과 엔진의 강점
 (서식 보존 생성)을 분업합니다.
 
-이 스킬은 **생성(쓰기) 전용**입니다. 반대 방향(HWP/HWPX → 마크다운 읽기)은 `hwpx-reader` 스킬을 쓰세요.
+이 스킬은 **생성(쓰기) 전용**입니다. 반대 방향(HWP/HWPX → 마크다운 읽기)은 reader 경로를 쓰세요(../reader/USAGE.md).
 
 ## 설계 원칙
 
@@ -48,23 +27,24 @@ Claude(또는 사용자)가 **마크다운으로 쓴 보고서**를 대한민국
 
 ```bash
 # Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
-SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/hwpx-report}"
-[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/hwpx-report' 2>/dev/null | head -1)
-# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/hwpx}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/hwpx' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 스킬 루트(SKILL.md 위치) 절대경로를 그대로 사용
+SKILL_DIR="$SKILL_DIR/report"
 ```
 
 ```powershell
-$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\hwpx-report"  # 미설정이면 SKILL.md 위치 절대경로 사용
+$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\hwpx\report"  # 미설정이면 SKILL.md 위치 절대경로 사용
 ```
 
 - 이미지를 넣는 보고서는 크기 산정을 위해 `Pillow`가 필요합니다. 누락 시 다음처럼 설치합니다.
 
 ```bash
-python3 -m pip install -r "${SKILL_DIR}/requirements.txt"
+python3 -m pip install -r "${SKILL_DIR}/../requirements.txt"
 ```
 
 ```powershell
-py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"
+py -3 -m pip install -r "$env:SKILL_DIR\..\requirements.txt"
 ```
 
 ---
@@ -170,7 +150,7 @@ dept: 전략기획팀
 - **복잡한 표** — 셀 병합·중첩 표·표 안 이미지는 비목표입니다. 정교한 표는 사용자 양식 + FILL/ANALYZE 경로를 쓰세요.
 - **이미지** — 단독 줄 `![alt](src)`(로컬/상대 경로)는 본문에 임베드합니다. 상대 경로는 입력 마크다운 파일 위치 기준으로 해석합니다. 큰 이미지는 본문 폭에 맞춰 비율 유지 축소(fit-to-page). 원격 URL(http/https/data)·셀 내 이미지·캡션 자동생성·리사이즈는 비목표(제외+경고). 텍스트에 섞인 이미지는 평문화. **신뢰 경계**: `src` 는 경로 격리 없이 그대로 읽어 임베드하므로(상대 경로 traversal·절대 경로 허용), 마크다운은 신뢰 가능한 출처여야 합니다(임의 로컬 파일 노출 방지).
 - **3단계 이상 중첩 / inline 서식** — 깊은 계층은 level 2 로 clamp, `**굵게**`·`[링크](url)`·`` `코드` `` 는 평문으로 strip.
-- **조직별 맞춤 서식 / 공문(수신·발신명의 고정 필드)** — 사용자가 자기 양식을 가져오는 경우입니다. `hwpx-reader` 의 FILL(`fill_field`)·ANALYZE 경로를 쓰세요(별개 워크플로).
+- **조직별 맞춤 서식 / 공문(수신·발신명의 고정 필드)** — 사용자가 자기 양식을 가져오는 경우입니다. 통합 hwpx 스킬의 채우기 경로(`../scripts/fill_hwpx.py`)를 쓰세요(별개 워크플로).
 
 ---
 
@@ -178,7 +158,7 @@ dept: 전략기획팀
 
 | 상황 | 대응 |
 |---|---|
-| `No module named PIL` | `python3 -m pip install -r "${SKILL_DIR}/requirements.txt"` 실행 안내 |
+| `No module named PIL` | `python3 -m pip install -r "${SKILL_DIR}/../requirements.txt"` 실행 안내 |
 | `No module named hwpx_report` | `PYTHONPATH="${SKILL_DIR}..."` 설정 누락 여부 확인 |
 | 매퍼가 제목 경고 출력 | `--title` 인자 또는 `# 제목` 추가 안내 |
 | 생성 실패(exit != 0) | stderr 전달. spec.json 의 `level` 이 1/2 인지 확인 |

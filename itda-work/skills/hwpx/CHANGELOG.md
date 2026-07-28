@@ -1,5 +1,15 @@
 # Changelog — itda-hwpx
 
+## [1.0.0] — 2026-07-28 (hwpx 통합 스킬)
+
+### Changed
+
+- **hwpx-reader(v4.0.1) + hwpx-report(v0.3.3) 를 단일 `hwpx` 스킬로 병합** (마스터 지시, 미배포 상태라 별칭 없이 일괄 전환). 디렉토리: `reader/`(hwpx_native 읽기 엔진) · `report/`(hwpx_report 생성 엔진) · `scripts/fill_hwpx.py`(신규 채우기). 구 SKILL.md 는 `reader/USAGE.md`·`report/USAGE.md` 로 보존. 테스트는 `tests/{reader,report,fill}` 로 통합(스킬당 tests/ 단일 규칙). 버전은 1.0.0 에서 재시작하며 아래 항목들은 구 스킬 히스토리다.
+
+### Added
+
+- **양식 채우기 `scripts/fill_hwpx.py`** (표준 라이브러리 전용, hyve MCP 무의존): 기존 .hwpx 양식의 `Contents/section*.xml` 텍스트 placeholder 만 치환해 서식·표·번호 유지. `--list`(후보 탐지) / `--set`·`--map`(치환) / `--strict`. 동일 서식 인접 run 자동 병합(분절 placeholder 대응), mimetype 첫 엔트리·STORED 보존, 치환 후 XML 정합성 검사, 미발견 키 경고(무성 실패 금지). 테스트 8종(GREEN) — report 엔진 실산출물 채움 + `validate_archive` 교차 검증 포함.
+
 모든 주요 변경사항을 기록합니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
 ## [4.0.1] — 2026-07-26 (이슈 #1274)

@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 95개 스킬 / 19개 팩.
+총 94개 스킬 / 19개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -93,8 +93,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | ground-check | 1차 출처 강제 인용과 독립 검증으로 환각·hedge 표현을 절차로 차단하는 리서치 스킬입니다. | 없음 | "팩트체크해서 보고서 써줘", "출처 확인해서 정리해줘", "1차 소스만 써서 정리해줘" | itda-work |
 | html-report | 마크다운 보고서·분석 결과·회의 정리를 연차보고서 수준의 단일 파일 HTML 문서로 렌더링하는 스킬입니다. | 없음 | "이 보고서 HTML 파일로 만들어줘", "주간 현황 보고서를 하나의 HTML로 렌더해줘", "재무제표를 HTML 보고서로 변환해줘" | itda-work |
 | human-tone | 이미 작성된 한국어 사무 글(보고서·메일·기획서·공지)에서 AI 흔적을 걷어내는 후처리 스킬입니다. | 없음 | "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘" | itda-work |
-| hwpx-reader | 한글 HWP·HWPX 문서를 읽어 Markdown·HTML로 변환하는 Python native 스킬입니다. | 없음 | "이 HWP 파일 읽어줘", "한글 문서 내용 보여줘", "HWP를 마크다운으로 변환해줘" | itda-work |
-| hwpx-report | 마크다운으로 작성한 보고서를 대한민국 정부 범용 한글 서식(.hwpx)으로 변환하는 스킬입니다. | 없음 | "이 보고서 한글 정부 서식으로 만들어줘", "마크다운을 hwpx 보고서로 변환해줘", "개조식 정부 보고서 .hwpx로 뽑아줘" | itda-work |
+| hwpx | 한글 HWP·HWPX 문서 스킬입니다. | 없음 | "이 HWP 파일 읽어줘", "이 한글 양식 채워줘", "정부 보고서 서식 hwpx로 만들어줘" | itda-work |
 | imagekit | 이미지 조회·리사이즈·여백 크롭·DPI 변경·포맷 변환·회전을 단일 CLI로 처리하는 스킬입니다. | 없음 | "이미지 크기 줄여줘", "여백 크롭해줘", "PNG를 JPG로 변환해줘" | itda-work |
 | investigate | 경쟁 가설과 반증 실험으로 근본 원인을 체계적으로 조사하는 스킬입니다. | 없음 | "왜 이렇게 느리지?", "이 에러 원인이 뭐야?", "원인 분석해줘" | itda-work |
 | market-scan | 외부 시장·산업 자료를 찾아 의사결정용으로 구조화하는 시장조사 스킬입니다. | DART_API_KEY, ECOS_API_KEY, EXA_API_KEY, KOSIS_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "OO 시장 조사해줘", "시장 규모랑 경쟁사 알려줘", "신사업 진입할 만한지 분석해줘" | itda-work |
@@ -194,8 +193,7 @@ exchange-rate         → itda-work/skills/exchange-rate/
 ground-check          → itda-work/skills/ground-check/
 html-report           → itda-work/skills/html-report/
 human-tone            → itda-work/skills/human-tone/
-hwpx-reader           → itda-work/skills/hwpx-reader/
-hwpx-report           → itda-work/skills/hwpx-report/
+hwpx                  → itda-work/skills/hwpx/
 imagekit              → itda-work/skills/imagekit/
 investigate           → itda-work/skills/investigate/
 market-scan           → itda-work/skills/market-scan/

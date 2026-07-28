@@ -1,18 +1,6 @@
----
-name: hwpx-reader
-description: >
-  한글 HWP·HWPX 문서를 읽어 Markdown·HTML로 변환하는 Python native 스킬입니다.
-  "이 HWP 파일 읽어줘", "한글 문서 내용 보여줘", "HWP를 마크다운으로 변환해줘"처럼 말하면 됩니다.
-  한국 공공문서 표 평탄화와 선택적 이미지·캡션 처리를 포함합니다.
-license: Apache-2.0
-metadata:
-  author: "스킬.잇다 <dev@itda.work>"
-  tags: "hwp, hwpx, document, convert, markdown, html"
-  version: "4.0.1"
-  category: "document"
-  created_at: "2026-03-20"
-  updated_at: "2026-07-26"
----
+> 이 문서는 통합 hwpx 스킬의 reader 경로 상세 사용법이다 (구 hwpx-reader SKILL.md).
+> 아래 `SKILL_DIR` 블록은 통합 스킬의 `reader/` 서브트리를 가리키도록 갱신되어 있다.
+> `requirements.txt` 는 스킬 루트로 병합: `"${SKILL_DIR}/../requirements.txt"`.
 
 # HWP/HWPX 문서 처리
 
@@ -33,15 +21,16 @@ HWP5(.hwp) 및 HWPX(.hwpx) 문서를 읽고 Markdown/HTML로 변환합니다.
 
 ```bash
 # Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
-SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/hwpx-reader}"
-[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/hwpx-reader' 2>/dev/null | head -1)
-# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/hwpx}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/hwpx' 2>/dev/null | head -1)
+# 둘 다 아니면(저장소 체크아웃 등) 스킬 루트(SKILL.md 위치) 절대경로를 그대로 사용
+SKILL_DIR="$SKILL_DIR/reader"
 ```
 
 스킬 디렉토리에서 Python 의존성을 사용할 수 있어야 합니다.
 
 ```bash
-python3 -m pip install -r "${SKILL_DIR}/requirements.txt"
+python3 -m pip install -r "${SKILL_DIR}/../requirements.txt"
 ```
 
 필수 의존성:
@@ -204,7 +193,7 @@ HTML 변환에는 적용하지 않습니다.
 
 | 에러 상황 | 대응 |
 |----------|------|
-| Python 의존성 없음 | `python3 -m pip install -r "${SKILL_DIR}/requirements.txt"` 실행 |
+| Python 의존성 없음 | `python3 -m pip install -r "${SKILL_DIR}/../requirements.txt"` 실행 |
 | 변환 실패 | traceback의 마지막 오류를 사용자에게 전달하고, HWP5 Markdown 실패 시 HTML 변환을 시도 |
 | 파일을 찾을 수 없음 | 입력 파일 경로를 다시 확인 |
 | 미지원 포맷 | HWP/HWPX → Markdown/HTML만 지원한다고 안내 |

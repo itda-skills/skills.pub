@@ -33,8 +33,7 @@
 | 스킬 | 설명 | 환경 |
 |------|------|:----:|
 | **itda-pdf-context-refinery** | PDF를 LLM 컨텍스트용 마크다운으로 정제 (OCR 정리, 테이블 복원, 한국어 띄어쓰기) | 📦 🔧 |
-| **itda-hwpx-reader** | HWP/HWPX 문서 읽기 → Markdown/HTML 변환 | 📦 |
-| **itda-hwpx-report** | 마크다운 보고서 → 정부 서식 HWPX 생성 | 📦 |
+| **itda-hwpx** | 한글 문서 통합 — 읽기(→MD/HTML)·양식 채우기(서식 유지)·정부 서식 생성 | 📦 |
 
 ### 투자·경제
 
@@ -81,7 +80,7 @@
 | itda-web-search | — | 검색엔진별 키(최소 1개) | — |
 | itda-email | — | 메일 서비스별 앱 비밀번호 | — |
 | itda-imagekit | `Pillow` | — | — |
-| itda-hwpx-report | `Pillow` | — | — |
+| itda-hwpx | `Pillow`, `olefile` | — | — |
 | itda-exchange-rate | — | — | — |
 | itda-blog-seo | — | — | 네이버 데이터 조회 |
 | itda-draft-post | — | — | — |
@@ -107,7 +106,7 @@ NAVER_APP_PASSWORD=...
 ### Python 패키지 설치
 
 ```bash
-# 이미지 처리 (itda-imagekit), HWPX 보고서 이미지 크기 산정 (itda-hwpx-report)
+# 이미지 처리 (itda-imagekit), HWPX 보고서 이미지 크기 산정 (itda-hwpx)
 python3 -m pip install Pillow
 
 # 웹 리더 (itda-web-reader)
