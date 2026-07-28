@@ -7,6 +7,8 @@
 
 ### Added
 
+- `hwpx` v1.0.1 — 통합 GUIDE.md 신설(읽기/채우기/생성 3경로, 게재 전 3경로 연결 실측 검증).
+
 - `hwpx` v1.0.0 — **양식 채우기** 신설: 기존 .hwpx 양식의 서식·표를 유지한 채 placeholder 만 치환(`scripts/fill_hwpx.py`, 표준 라이브러리 전용·외부 서버 무의존). `--list` 후보 탐지 / `--set`·`--map` 치환 / 동일 서식 분절 run 자동 병합 / mimetype STORED 보존 / 미발견 키 경고(`--strict` exit 3). 테스트 8종 GREEN(report 엔진 실산출물 + validate_archive 교차 검증 포함).
 
 - `work-proposal`·`work-pilot` 신설 (#1310) — itda-ceragem ax-proposal·ax-pilot 범용화 편입. work-find → work-proposal → work-pilot 업무 파이프라인 완성.
