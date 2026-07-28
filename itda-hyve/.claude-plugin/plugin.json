@@ -1,7 +1,7 @@
 {
   "name": "itda-hyve",
   "description": "hyve 데스크톱 앱의 MCP 도구(web_browse·office 등)를 쓰는 스킬 모음 — hyve 가동 전제. 웹 자동화 레시피(web-automation)·PPTX 버전 비교(pptx-diff).",
-  "version": "8.46.0",
+  "version": "8.46.1",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
