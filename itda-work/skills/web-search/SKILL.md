@@ -14,9 +14,9 @@ argument-hint: "[질의어] [--engine auto|tavily|serper|perplexity|naver|exa] [
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "search"
-  version: "0.1.5"
+  version: "0.1.6"
   created_at: "2026-06-09"
-  updated_at: "2026-07-26"
+  updated_at: "2026-07-30"
   tags: "search, web search, query, multi engine, tavily, serper, perplexity, naver, exa"
 ---
 
@@ -162,6 +162,7 @@ python3 "$SKILL_DIR/scripts/web_search.py" --check-env
 | 1차 소스 강제 **팩트체크**·교차검증 | ground-check |
 | 이미 아는 **URL의 본문** 추출 | web-reader |
 | 네이버 블로그 본문·댓글 | blog-reader |
+| **네이버 블로그 한정** 키워드 검색을 API 키 없이 (검색→정독 파이프라인) | blog-reader `discover` |
 | 블로그 SEO 블루키워드 발굴 | blog-seo |
 | 근본원인 규명("왜 느리지") | investigate |
 
@@ -175,8 +176,13 @@ market-scan으로 구분한다.
 | 다음 단계 | 스킬 |
 |-----------|------|
 | 결과 URL의 **본문**이 필요할 때 | web-reader |
+| 결과 중 **blog.naver.com URL의 본문·댓글** | blog-reader `read` |
 | 결과를 **1차 소스로 팩트체크** | ground-check |
 | 수집을 **의사결정용 보고서로** | market-scan |
+
+네이버 블로그 검색은 두 경로가 있다: 다중 엔진 교차검증·뉴스/웹 포함 범용 탐색은
+본 스킬(`--engine naver --naver-type blog`, 공식 OpenAPI), **네이버 블로그만** API 키
+없이 찾아 바로 읽을 때는 blog-reader `discover`(→ `read` 이어읽기)가 경량 경로다 (#1334).
 
 ## 주의
 

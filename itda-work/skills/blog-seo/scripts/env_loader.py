@@ -31,15 +31,36 @@ from itda_path import find_env_files
 
 
 def _default_claude_settings_path() -> Path | None:
-    """~/.claude/settings.json 경로를 반환. HOME 미확정 환경이면 None.
+    """Claude Code settings.json 경로를 반환. HOME 미확정 환경이면 None.
 
     SPEC-DART-FEEDBACK-001 REQ-002: Cowork 환경에서 subprocess env inject가
     누락되는 경우를 위한 보조 탐색 경로.
+
+    #1330: Claude Code 공식 계약 — ``CLAUDE_CONFIG_DIR`` 설정 시 모든
+    ``~/.claude`` 경로가 그 디렉토리로 대체된다. 하드코딩하면 설정 분리
+    사용자에게 활성 settings 가 아닌 구 위치의 stale 키를 읽는 결함이 된다.
     """
+    config_dir = os.environ.get("CLAUDE_CONFIG_DIR", "").strip()
+    if config_dir:
+        return Path(config_dir).expanduser() / "settings.json"
     try:
         return Path.home() / ".claude" / "settings.json"
     except RuntimeError:
         return None
+
+
+def claude_settings_label() -> str:
+    """진단·provenance 표시용 settings.json 출처 라벨 (#1330).
+
+    기본 위치면 관례 표기 ``~/.claude/settings.json`` 을, CLAUDE_CONFIG_DIR
+    로 재지정된 환경이면 실제 해석 경로를 반환한다 — 진단 출력이 실경로와
+    어긋나지 않게 한다. 값이 아닌 경로 라벨만 다룬다(보안 계약 무관).
+    """
+    if os.environ.get("CLAUDE_CONFIG_DIR", "").strip():
+        path = _default_claude_settings_path()
+        if path is not None:
+            return str(path)
+    return "~/.claude/settings.json"
 
 # ---------------------------------------------------------------------------
 # law-korean 전용 상수
@@ -345,9 +366,9 @@ def resolve_api_key(
         resolved = env_val
         _emit_provenance(var_name, "os.environ")
     elif settings_val := _load_claude_settings_env().get(var_name):
-        # ~/.claude/settings.json env 키 (Cowork 환경에서 subprocess inject 누락 보조)
+        # Claude settings.json env 키 (Cowork 환경에서 subprocess inject 누락 보조)
         resolved = settings_val
-        _emit_provenance(var_name, "~/.claude/settings.json")
+        _emit_provenance(var_name, claude_settings_label())
     else:
         # find_env_files()로 다중 경로 탐색 — 이긴 파일 경로를 추적해 provenance 로 표시
         dotenv_val = None

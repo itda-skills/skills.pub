@@ -29,6 +29,7 @@ from post_list_parser import (
     parse_post_search_html,
 )
 from post_parser import parse_post_html
+from section_search_parser import parse_section_search_json
 from tag_parser import parse_tag_list_json
 from url_normalize import normalize_naver_blog_url
 
@@ -68,6 +69,17 @@ _SEARCH_DEFAULT_UA = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/124.0.0.0 Safari/537.36"
 )
+
+# REQ-015 (#1334): 네이버 블로그 전역 검색 (섹션 검색) 엔드포인트
+# 실측 2026-07-30: 무자격(쿠키·로그인 없음) UA+Referer 만으로 JSON 응답.
+_SECTION_SEARCH_URL = "https://section.blog.naver.com/ajax/SearchList.naver"
+_SECTION_SEARCH_REFERER = "https://section.blog.naver.com/Search/Post.naver"
+_SECTION_SEARCH_PAGE_SIZE = 20          # 실측 동작 확인 페이지 크기
+_SECTION_SEARCH_MAX_PAGE = 50           # totalCount 상한 1000 관측 → 20×50
+_SECTION_SEARCH_ORDER_MAP = {
+    "sim": "sim",           # 관련도순
+    "date": "recentdate",   # 최신순 (실측 파라미터명: recentdate)
+}
 
 # REQ-004.1: cbox 댓글 JSONP API 엔드포인트
 # 실측 2026-05-15: pool=blogid, objectId={blogNo}_201_{logNo}, groupId={blogNo}
@@ -831,3 +843,83 @@ class NaverBlogAdapter(BlogAdapter):
             )
 
         return results
+
+    # @MX:ANCHOR: [AUTO] NaverBlogAdapter.discover — 전역 검색 단일 진입점
+    # @MX:REASON: CLI discover 서브커맨드가 직접 호출 (#1334), read 이어읽기의 발견 단계
+    def discover(self, query: str, options: dict[str, Any]) -> dict[str, Any]:
+        """네이버 블로그 전역 키워드 검색 (REQ-015, #1334).
+
+        section.blog.naver.com 섹션 검색 ajax 로 네이버 블로그 전체에서
+        키워드에 매칭되는 포스트의 **메타데이터만** 반환한다 (제목·요약·URL·
+        blog_id·log_no). 본문은 read 서브커맨드로 이어읽는다.
+
+        실측 2026-07-30: 무자격(쿠키·로그인 없음), UA + Referer 만으로 응답.
+        차단 신호(blockedByBifrostShield)는 파서에서 AntiBotBlockError(exit 4)로
+        표면화하며 우회하지 않는다.
+
+        Args:
+            query: 검색 키워드.
+            options: {
+                "limit": 최대 반환 수 (선택, 기본 20),
+                "order_by": "sim"(관련도, 기본) | "date"(최신순),
+            }
+
+        Returns:
+            {"posts": [...], "total_count": N}
+            posts 항목: blog_id, log_no, title, url, published_at, summary,
+                        blog_name, nickname.
+
+        Raises:
+            EmptyResultError: 검색 결과가 0건일 때 (exit 3).
+            AntiBotBlockError: 차단 감지 시 (exit 4, 우회 없음).
+            BlogStructureChangedError: 응답 구조 변경 시 (exit 1).
+        """
+        limit: int = options.get("limit", _DEFAULT_LIMIT)
+        order_by: str = options.get("order_by", "sim")
+        naver_order = _SECTION_SEARCH_ORDER_MAP.get(order_by, "sim")
+
+        encoded_query = _url_quote(query, safe="")
+        search_ua = self._options.get("user_agent", _SEARCH_DEFAULT_UA)
+
+        posts: list[dict[str, Any]] = []
+        total_count = 0
+
+        for page in range(1, _SECTION_SEARCH_MAX_PAGE + 1):
+            url = (
+                f"{_SECTION_SEARCH_URL}"
+                f"?countPerPage={_SECTION_SEARCH_PAGE_SIZE}"
+                f"&currentPage={page}"
+                f"&keyword={encoded_query}"
+                f"&orderBy={naver_order}"
+                f"&type=post"
+            )
+            fetch_kwargs = dict(
+                self._build_fetch_kwargs({"Referer": _SECTION_SEARCH_REFERER})
+            )
+            fetch_kwargs["user_agent"] = search_ua
+
+            self._throttle_gate()
+            raw = self._client.fetch_html(url, **fetch_kwargs)
+            parsed = parse_section_search_json(raw, query)
+            page_posts = parsed["posts"]
+            total_count = parsed["total_count"]
+
+            for post in page_posts:
+                posts.append(post)
+                if len(posts) >= limit:
+                    break
+
+            if len(posts) >= limit:
+                break
+            # 결과 0건 또는 전체 수집 완료 → 종료
+            if not page_posts:
+                break
+            if total_count > 0 and len(posts) >= total_count:
+                break
+
+        if not posts:
+            raise EmptyResultError(
+                f"네이버 블로그 전역에서 {query!r} 검색 결과가 없습니다."
+            )
+
+        return {"posts": posts, "total_count": total_count}

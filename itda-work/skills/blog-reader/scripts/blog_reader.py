@@ -25,6 +25,7 @@ from naver_adapter import NaverBlogAdapter
 from output_format import (
     format_json,
     format_markdown_comments,
+    format_markdown_discover,
     format_markdown_list,
     format_markdown_post,
     format_markdown_read,
@@ -177,6 +178,25 @@ def _build_parser(common: argparse.ArgumentParser) -> argparse.ArgumentParser:
     p_search.add_argument("--blog-id", required=True, metavar="ID", help="검색 대상 블로그 ID")
     p_search.add_argument("--query", required=True, metavar="키워드", help="검색 키워드")
     p_search.add_argument("--limit", type=int, default=20, metavar="N", help="최대 반환 수 (기본: 20)")
+
+    # ---- discover ----
+    p_discover = sub.add_parser(
+        "discover",
+        parents=[common_sup],
+        help="네이버 블로그 전역 키워드 검색 (메타데이터만, #1334)",
+        description=(
+            "네이버 블로그 전체에서 키워드로 포스트를 검색해 "
+            "제목·요약·URL 메타데이터만 반환합니다. 본문은 read로 이어읽습니다."
+        ),
+    )
+    p_discover.add_argument("--query", required=True, metavar="키워드", help="검색 키워드")
+    p_discover.add_argument("--limit", type=int, default=20, metavar="N", help="최대 반환 수 (기본: 20)")
+    p_discover.add_argument(
+        "--order",
+        choices=["sim", "date"],
+        default="sim",
+        help="정렬 (sim=관련도순, date=최신순). 기본값: sim",
+    )
 
     # ---- read ----
     p_read = sub.add_parser(
@@ -432,6 +452,28 @@ def _handle_search(args: argparse.Namespace, adapter: NaverBlogAdapter) -> int:
     return EXIT_OK
 
 
+def _handle_discover(args: argparse.Namespace, adapter: NaverBlogAdapter) -> int:
+    query = getattr(args, "query", None)
+    if not query:
+        _exit_arg_error("discover 서브커맨드에 --query가 필요합니다.")
+
+    if args.limit is not None and args.limit <= 0:
+        _exit_arg_error(f"--limit은 1 이상이어야 합니다 (입력값: {args.limit}).")
+
+    options: "dict[str, Any]" = {
+        "limit": args.limit,
+        "order_by": getattr(args, "order", "sim"),
+    }
+    result = adapter.discover(query, options)
+    _output(
+        result,
+        args.format,
+        format_markdown_discover,
+        args.output,
+    )
+    return EXIT_OK
+
+
 def _handle_read(args: argparse.Namespace, adapter: NaverBlogAdapter) -> int:
     url = _resolve_url(args)
     options: "dict[str, Any]" = {}
@@ -461,6 +503,7 @@ _SUBCOMMAND_HANDLERS = {
     "post": _handle_post,
     "comments": _handle_comments,
     "search": _handle_search,
+    "discover": _handle_discover,
     "read": _handle_read,
 }
 

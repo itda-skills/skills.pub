@@ -318,20 +318,25 @@ d. web_browse session.close {session_id}   # 로그인은 profile_id 데이터�
 (값은 요청·응답·로그에 미노출). takeover 가 불가한 headless(예: phantom 데몬) 자동 로그인의 정본.
 
 ```text
-a. 운영자 사전 설정(1회) — serve 프로세스 env (에이전트 미접근):
-   HYVE_WEB_SECRET_ALLOWLIST="WEHAGO_USERNAME@wehago.com,WEHAGO_PASSWORD@wehago.com"
-   WEHAGO_USERNAME=... / WEHAGO_PASSWORD=...
+a. 사용자 사전 설정(1회) — hyve 설정 > 계정 (에이전트 미접근):
+   WEHAGO 계정(아이디·비밀번호)을 등록하고 해당 provider 의 디폴트 계정으로 지정.
+   → 시크릿 이름 account:wehago:username / account:wehago:password 가 그 디폴트 계정을 가리킵니다.
 b. web_browse session.new {profile_id:"default"}
    web_browse navigate {session_id, url:"https://로그인URL/"}
-c. web_browse type {session_id, selector_ref:"e_id", secret:"WEHAGO_USERNAME", mode:"fill"}
-   web_browse type {session_id, selector_ref:"e_pw", secret:"WEHAGO_PASSWORD", mode:"fill"}
+c. web_browse type {session_id, selector_ref:"e_id", secret:"account:wehago:username", mode:"fill"}
+   web_browse type {session_id, selector_ref:"e_pw", secret:"account:wehago:password", mode:"fill"}
    web_browse interact {session_id, type:"click", selector_ref:"e_login"}
 d. 영속 프로필이라 이후 세션은 쿠키 재사용(재로그인 불요).
 ```
 
+지원 이름은 계정 시크릿 4종 고정입니다 — WEHAGO `account:wehago:username`·`account:wehago:password`,
+HOMETAX `account:hometax:cert_name`(인증서 CN)·`account:hometax:cert_password`(인증서 암호).
+각 이름의 사이트 도메인 바인딩은 내장 고정이라 env 로 바꿀 수 없습니다.
+
 - `secret` 은 `text` 와 상호배타(동시 지정 시 `secret_text_conflict`). fill 전용(sequential 미지원).
-- allowlist 미등재 → `secret_not_allowlisted`(임의 env 주입·유출 차단). 도메인 불일치 →
-  `secret_domain_mismatch`(피싱/오사이트 비밀 주입 차단). 미설정 → `secret_not_configured`.
+- 미등재 이름 → `secret_not_allowlisted`(임의 비밀 주입·유출 차단). 도메인 불일치 →
+  `secret_domain_mismatch`(피싱/오사이트 비밀 주입 차단). 디폴트 계정·비밀 미등록 →
+  `secret_not_configured`(복구: 사용자에게 **설정 > 계정** 등록·디폴트 지정을 안내 — 에이전트가 값을 받지 않습니다).
 - 응답엔 `secret_used:true` 만, 값·길이 미노출.
 - ⚠️ 에이전트가 비밀 *값* 을 직접 `text` 로 넣는 것은 금지 — 반드시 `secret`(이름) 경로를 씁니다
   (Claude 안전 규칙: 에이전트는 비밀번호 값을 필드에 직접 입력하지 않음).

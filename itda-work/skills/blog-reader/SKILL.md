@@ -1,21 +1,22 @@
 ---
 name: blog-reader
 description: >
-  네이버 블로그의 글 목록·본문·댓글 트리·블로그 내 검색을 로그인 없이 읽는 스킬입니다.
-  "네이버 블로그 글 가져와줘", "블로그 본문이랑 댓글 보여줘", "이 블로그 최근 7일 글 보여줘"처럼 말하면 됩니다.
+  네이버 블로그의 글 목록·본문·댓글 트리·블로그 내 검색·전역 키워드 검색을 로그인 없이 읽는 스킬입니다.
+  "네이버 블로그 글 가져와줘", "블로그 본문이랑 댓글 보여줘", "이 블로그 최근 7일 글 보여줘",
+  "네이버 블로그에서 클로드 관련 글 찾아서 읽어줘"처럼 말하면 됩니다.
   공개 포스트 전용이며 봇 차단 우회는 하지 않습니다.
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
 allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
-argument-hint: "[list|post|comments|search|read] [options]"
+argument-hint: "[list|post|comments|search|discover|read] [options]"
 metadata:
   author: "Chinseok"
-  version: "0.11.7"
+  version: "0.12.0"
   category: "data-fetching"
   status: "stable"
   created_at: "2026-05-15"
-  updated_at: "2026-07-26"
+  updated_at: "2026-07-30"
   tags: "naver, blog, comments, search, read-only"
 ---
 
@@ -51,9 +52,11 @@ metadata:
 | `post` | 포스트 URL 또는 ID로 본문을 가져옵니다 |
 | `comments` | 포스트의 댓글·대댓글 트리를 가져옵니다 |
 | `search` | 블로그 내에서 키워드로 포스트를 검색합니다 |
+| `discover` | **네이버 블로그 전체**에서 키워드로 포스트를 검색합니다 (제목·요약·URL 메타데이터만) |
 | `read` | URL 하나로 본문 + 댓글 트리를 **한 번에** 가져옵니다 |
 
 `read`는 포스팅을 열면 본문과 댓글을 동시에 보고 싶을 때 편리합니다.
+`discover`로 글을 찾고, 결과의 URL을 `read`에 넘기면 검색→정독이 이어집니다.
 
 ---
 
@@ -99,6 +102,14 @@ python3 "$SKILL_DIR/scripts/blog_reader.py" comments
 ```bash
 python3 "$SKILL_DIR/scripts/blog_reader.py" search
   --blog-id astroyuji --query 인공지능
+```
+
+**"네이버 블로그에서 '클로드 코워크' 관련 글 찾아서 읽어줘"**
+```bash
+# ① 발견 — 전역 검색으로 후보 확보 (메타데이터만)
+python3 "$SKILL_DIR/scripts/blog_reader.py" discover --query "클로드 코워크" --limit 5
+# ② 정독 — 결과의 url을 read로
+python3 "$SKILL_DIR/scripts/blog_reader.py" read --url <①의 url>
 ```
 
 **"이 글에 홍길동이 단 댓글만 모아줘"**
@@ -212,6 +223,60 @@ python3 "$SKILL_DIR/scripts/blog_reader.py" search --blog-id <ID> --query <키�
 ```bash
 python3 "$SKILL_DIR/scripts/blog_reader.py" search --blog-id astroyuji --query 인공지능 --limit 5
 ```
+
+---
+
+### `discover` — 네이버 블로그 전역 검색 (#1334)
+
+**네이버 블로그 전체**에서 키워드로 포스트를 검색해 **메타데이터만**(제목·요약·URL·blogId·logNo·블로그명·작성일) 반환합니다. 본문·댓글은 결과의 `url`을 `read`에 넘겨 이어읽습니다. 자격증명·로그인 불필요.
+
+```bash
+python3 "$SKILL_DIR/scripts/blog_reader.py" discover --query <키워드> [옵션]
+```
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `--query 키워드` | 필수 | 검색어 |
+| `--limit N` | 20 | 최대 반환 수 (N ≥ 1) |
+| `--order {sim,date}` | sim | 정렬 (sim=관련도순, date=최신순) |
+
+JSON 응답 구조:
+```json
+{
+  "posts": [
+    {
+      "blog_id": "oheyong",
+      "log_no": "224362855439",
+      "title": "포스팅 제목",
+      "url": "https://blog.naver.com/oheyong/224362855439",
+      "published_at": "2026-07-30T06:17:00+00:00",
+      "summary": "검색 요약 스니펫",
+      "blog_name": "블로그명",
+      "nickname": "작성자"
+    }
+  ],
+  "total_count": 1000
+}
+```
+
+주의:
+- `--limit`에 0 이하 값 지정 시 exit 2, 결과 0건 시 exit 3
+- 차단 감지(Bifrost Shield) 시 exit 4 — 우회하지 않습니다
+- 대량 키워드 모니터링(반복 대량 수집)은 비목표입니다 — `--throttle` 계약이 동일 적용됩니다
+
+예시:
+```bash
+# 관련도순 5건
+python3 "$SKILL_DIR/scripts/blog_reader.py" discover --query "클로드 코워크" --limit 5
+
+# 최신순으로 찾고 markdown 테이블로
+python3 "$SKILL_DIR/scripts/blog_reader.py" discover --query 세무사랑 --order date --format markdown
+```
+
+> **web-search와의 경계**: 다중 엔진 교차검증·뉴스/웹 포함 범용 검색은 형제 스킬
+> `web-search`(네이버 공식 OpenAPI, `--naver-type blog`) 소관입니다. `discover`는
+> **네이버 블로그 한정 + 자격증명 없는 경량 경로**이며, 어느 쪽으로 찾았든 결과 URL의
+> 정독은 blog-reader `read`가 맡습니다.
 
 ---
 
@@ -353,6 +418,7 @@ UTF-8 pretty-print JSON (들여쓰기 2칸, `ensure_ascii=false`).
 ### Markdown
 
 - `list` / `search`: 제목·URL·작성일·요약을 담은 마크다운 테이블
+- `discover`: 전체 건수 헤더 + blogId·제목(링크)·작성일·블로그명 테이블
 - `post`: H1(제목) + 메타(작성자/카테고리/태그) + 본문
 - `comments`: 깊이 기반 들여쓰기 중첩 리스트
 - `read`: 본문 + 댓글 트리 통합 마크다운

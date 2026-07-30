@@ -2,6 +2,12 @@
 
 이 스킬의 주요 변경 이력입니다. (Keep a Changelog 형식)
 
+## [0.1.6] — 2026-07-30 (이슈 #1334)
+
+### Changed
+
+- blog-reader `discover`와의 라우팅 경계·핸드오프 명문화 (#1332·#1334) — 네이버 블로그 한정 무자격 검색은 blog-reader `discover`(→`read` 이어읽기), 범용·다엔진 교차검증은 본 스킬 naver 엔진(공식 OpenAPI). 결과 중 blog.naver.com URL 본문·댓글은 blog-reader `read`로 위임.
+
 ## [0.1.5] — 2026-07-26 (이슈 #1283)
 
 ### Changed

@@ -2,6 +2,13 @@
 
 이 스킬의 변경 이력입니다. [Keep a Changelog](https://keepachangelog.com) 포맷을 따릅니다.
 
+## [0.12.0] — 2026-07-30 (이슈 #1334)
+
+### Added
+
+- `discover` 서브커맨드 — 네이버 블로그 **전역** 키워드 검색 (#1334). section.blog.naver.com 섹션 검색 ajax(`SearchList.naver`) 기반, 자격증명·로그인 불필요. 제목·요약·URL·blogId·logNo 메타데이터만 반환하고 본문은 `read`로 이어읽는 발견→정독 파이프라인. `--order sim|date`(관련도/최신순), 차단 신호(`blockedByBifrostShield`) 감지 시 exit 4 즉시 표면화(우회 없음), 결과 0건 exit 3. 실응답 fixture 기반 테스트 + 라이브 E2E(discover→read) 실측 PASS.
+- SKILL.md에 web-search와의 라우팅 경계 명문화 (#1332 흡수) — 범용·다엔진 = web-search(공식 OpenAPI), 네이버 블로그 한정 무자격 = `discover`, 정독은 `read`.
+
 ## [0.11.7] — 2026-07-26 (이슈 #1283)
 
 ### Changed

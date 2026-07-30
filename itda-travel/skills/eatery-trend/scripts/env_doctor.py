@@ -35,8 +35,9 @@ from pathlib import Path
 import env_loader
 import itda_path
 
-# 출처 라벨 (파일 경로가 아닌 특수 출처)
-_SETTINGS_LABEL = "~/.claude/settings.json"
+# 출처 라벨 (파일 경로가 아닌 특수 출처).
+# settings 라벨은 CLAUDE_CONFIG_DIR 재지정을 반영해 동적으로 얻는다(#1330) —
+# env_loader.claude_settings_label() 참조 (기본: "~/.claude/settings.json").
 _ENVIRON_LABEL = "os.environ"
 
 
@@ -85,7 +86,7 @@ def collect_diagnosis() -> dict:
     for path in env_files:
         layered.append((str(path), list(env_loader.load_env(path).keys())))
     settings_keys = list(env_loader._load_claude_settings_env().keys())
-    layered.append((_SETTINGS_LABEL, settings_keys))
+    layered.append((env_loader.claude_settings_label(), settings_keys))
 
     keys: dict[str, dict] = {}
     for source, key_names in layered:

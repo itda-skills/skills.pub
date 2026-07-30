@@ -82,7 +82,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | train-ktx | KTX 열차를 검색하고 예약하는 스킬입니다. | KORAIL_PASSWORD, KORAIL_USER_ID | "다음 주 금요일 서울에서 부산 KTX 찾아줘", "오후 2시 이후 동대구 가는 표 있어?", "아까 그 열차로 예약해줘" | itda-travel |
 | train-srt | SRT(수서고속철) 열차를 검색하고 예약하는 스킬입니다. | SRT_PASSWORD, SRT_USER_ID | "내일 수서에서 부산 SRT 찾아줘", "오후 6시 이후 동탄 가는 표 있어?", "아까 그 열차로 예약해줘" | itda-travel |
 | biz-redact | 업무 문서의 영업기밀(거래처명·프로젝트코드·담당자·단가 등)을 외부 AI에 넣기 전 로컬에서 결정론적으로 마스킹하고, AI 산출물의 토큰을 원값으로 되돌리는 왕… | 없음 | "이 견적서 마스킹해서 검토해줘", "거래처명 가리고 원가절감안 분석해줘", "AI가 돌려준 검토서 원래 이름으로 복원해줘" | itda-work |
-| blog-reader | 네이버 블로그의 글 목록·본문·댓글 트리·블로그 내 검색을 로그인 없이 읽는 스킬입니다. | 없음 | "네이버 블로그 글 가져와줘", "블로그 본문이랑 댓글 보여줘", "이 블로그 최근 7일 글 보여줘" | itda-work |
+| blog-reader | 네이버 블로그의 글 목록·본문·댓글 트리·블로그 내 검색·전역 키워드 검색을 로그인 없이 읽는 스킬입니다. | 없음 | "네이버 블로그 글 가져와줘", "블로그 본문이랑 댓글 보여줘", "이 블로그 최근 7일 글 보여줘" | itda-work |
 | blog-seo | 네이버 SearchAd API로 블로그 SEO용 블루키워드를 발굴하는 스킬입니다. | NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, NAVER_SEARCHAD_ACCESS_KEY, NAVER_SEARCHAD_CUSTOMER_ID, NAVER_SEARCHAD_SECRET_KEY | "블루키워드 찾아줘", "경쟁 적은 키워드 분석해줘", "블로그 키워드 포화지수 확인해줘" | itda-work |
 | calendar | 아이클라우드·네이버(및 커스텀 CalDAV) 캘린더에서 일정을 조회·추가·수정·삭제하는 스킬입니다. | ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "내일 3시 회의 추가해줘", "이번 주 일정 보여줘", "그 약속 취소해줘" | itda-work |
 | design-core | 브랜드 디자인을 고르고(getdesign 표준 DESIGN.md 카탈로그 차용), 만들고(한국·자사 브랜드 저작), 검증·조회해 웹·PPTX·DOCX·XLSX… | 없음 | "스포티파이 톤으로 디자인 골라줘", "우리 브랜드 디자인 시스템 정의해줘", "이 DESIGN.md 검증해줘" | itda-work |

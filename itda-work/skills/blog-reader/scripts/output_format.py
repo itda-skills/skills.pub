@@ -88,6 +88,36 @@ def format_markdown_search(posts: "list[dict[str, Any]]") -> str:
     return format_markdown_list(posts)
 
 
+def format_markdown_discover(result: "dict[str, Any]") -> str:
+    """전역 검색(discover) 결과를 마크다운 테이블로 변환한다 (REQ-015, #1334).
+
+    Args:
+        result: {"posts": [...], "total_count": N} 딕셔너리.
+                posts 항목은 blog_id, log_no, title, url, published_at,
+                blog_name, summary 포함.
+
+    Returns:
+        마크다운 테이블 문자열 (전체 건수 헤더 포함).
+    """
+    posts = result.get("posts", [])
+    total = result.get("total_count", 0)
+    lines: list[str] = [
+        f"전체 {total}건 중 {len(posts)}건",
+        "",
+        "| blogId | title | published_at | blogName |",
+        "| --- | --- | --- | --- |",
+    ]
+    for post in posts:
+        blog_id = _escape_md(str(post.get("blog_id", "")))
+        title = _escape_md(str(post.get("title", "")))
+        url = str(post.get("url", ""))
+        pub = _escape_md(str(post.get("published_at", "")))
+        blog_name = _escape_md(str(post.get("blog_name", "")))
+        title_cell = f"[{title}]({url})" if url else title
+        lines.append(f"| {blog_id} | {title_cell} | {pub} | {blog_name} |")
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 # Markdown 포맷터 — post 본문
 # ---------------------------------------------------------------------------
