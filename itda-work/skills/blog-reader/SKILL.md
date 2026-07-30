@@ -12,7 +12,7 @@ allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[list|post|comments|search|discover|read] [options]"
 metadata:
   author: "Chinseok"
-  version: "0.12.0"
+  version: "0.12.1"
   category: "data-fetching"
   status: "stable"
   created_at: "2026-05-15"
