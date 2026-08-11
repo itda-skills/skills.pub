@@ -43,9 +43,8 @@ hyve `web_browse` MCP 도구로 웹 자동화를 수행할 때의 **액션 조�
 > 등록 후 다시 시도하세요.
 
 **최초 사용 시 동의(EULA)**: 첫 액션이 EULA 미동의로 거부되면 사용자에게 자동화 책임 동의를
-확인받고 `web_browse` `consent.grant` `{type:"eula"}` 를 호출합니다. 사이트별 동의를 요구하는
-응답이 오면 `consent.grant` `{type:"domain", domain:"<host>"}` (rolling 24h 유지). 현재 동의
-상태는 `consent.list` 로 조회합니다.
+확인받고 `web_browse` `consent.grant` `{type:"eula"}` 를 호출합니다. 현재 동의 상태는
+`consent.list` 로 조회합니다. (사이트별 도메인 동의는 폐지되어 더 이상 요구되지 않습니다.)
 
 ## 0.05 백엔드 엔진 (#1106 — 단일 엔진 OS-WebView)
 
@@ -188,10 +187,10 @@ g. web_browse session.close {session_id}
 - 요소 지정은 snapshot 이 준 `selector_ref`(예: `"e12"`) 우선 — self-healing 경로가 selector 변화를 흡수합니다.
 - 연속 조작은 `batch_interact` `{session_id, commands:[...], stop_on_error:true}` 로 묶으면 왕복이 줄어듭니다.
 - 탭: `tabs` `{session_id, op:"create|list|switch|close", url?, tab_id?}`.
-- **클릭이 새 창(window.open)을 열면** `interact {session_id, type:"click", selector_ref:"e..", expect_new_tab:true}` 로 클릭합니다(#456) —
-  새 창을 추적해 **활성 탭으로 자동 전환**하고 `opened_tab_id`/`opened_tab_url` 을 반환합니다. 이후 `snapshot`/`interact`/`observe` 는
-  새 창에서 동작합니다(예: ERP 수임처 "회계" → 더존 SmartA 새 창). 전환 직후 `wait {condition:"page_loaded"}` 후 `snapshot` 을 권장합니다.
-  새 창이 안 열리면 `switched_to_new_tab:false`(정직 신호). 일반 클릭에는 쓰지 않습니다(opt-in — no-popup 대기세 회피).
+- **클릭이 새 창(window.open)을 열면** — 구 `expect_new_tab`(#456)은 Chrome 백엔드 제거(#1106)에 따라 **폐지**됐습니다(#1466).
+  현행 OS-WebView 엔진에서 web_browse MCP 표면에는 새창으로 전환하는 액션이 없습니다 — 클릭 후에도 `snapshot`/`interact` 는
+  부모 창에서 동작합니다. 새창(팝업) 진입이 필요한 자동화(예: ERP 수임처 "회계" → 더존 SmartA 새 창)는 hyve 레시피의
+  새창 진입 계약(`open_window`)이 담당합니다.
 - 페이지 상태 진단: `observe` `{session_id, type:"console|network|actionable"}`. **시각 캡처**는 `observe {type:"screenshot", mode:"viewport(기본)|full|element", output_path?}`(#217) — a11y 가 못 보는 캡차·canvas·레이아웃을 PNG 로 떠 옵니다. `output_path` 미지정 시 MCP image 로 직접 반환(모델이 봄), 지정 시 디스크 저장 + `bytes_written` 만(토큰 미경유, whitelist 경로). ⚠️ `mode:"full"` 은 무거운 SPA 에서 타임아웃 가능(#445) → `viewport` 권장.
 - **모달이 후속 클릭을 가로막으면** 세션을 `session.new {auto_dismiss_dialogs:true}` 로 시작합니다(#450).
   서버사이드 워처가 세션 수명 동안 visible 모달(프로모·공지 LUXDialog 스택, "오늘 하루 보지 않기" 류)의
@@ -382,7 +381,7 @@ g. web_browse session.close {session_id}    # 프로필은 유지되고 세션�
 | 클릭으로 페이지 전환 직후 snapshot 이 빈 트리/실패 | `wait` `{condition:"page_loaded"}` 또는 짧은 `{condition:"timeout"}` 후 재관측 |
 | 모달이 클릭을 가려 `interact{click}` 이 30s 타임아웃(스택 LUXDialog 등) | 자동: `session.new {auto_dismiss_dialogs:true}` 워처(#450, ambient 비파괴 닫기). 명시: `interact {type:"dom_click", selector, all:true}`(#449) — 지금 이 selector 를 `el.click()` 직발로 일괄 닫기(워처 범용셋이 못 잡거나 표적 지정 시) |
 | 오버레이/z-index 에 가려 표준 `interact{click}` 이 안 먹는 비-모달 버튼 | `interact {type:"dom_click", selector}`(#449) — pointer hit-testing 우회로 핸들러 직발. `visible_only`(기본 true)·`all`(기본 false)·`clicked_count` 반환. 임의 JS 미수신(고정 `el.click()`) |
-| 클릭이 새 창(window.open)을 열어 `interact{click}` 이 timeout 되거나 새 창이 `tabs` 에 안 잡힘 | `interact {type:"click", expect_new_tab:true}` — 새 창 추적·활성 page 전환 + `opened_tab_id` 반환(#456, 더존 SmartA 류). `auto_dismiss_dialogs` 와 상보(가리는 모달=#450, 새 창=#456) |
+| 클릭이 새 창(window.open)을 열어 후속 관측이 부모 창에 남음 | 구 `expect_new_tab`(#456)은 폐지(#1466 — Chrome 백엔드 제거 #1106 후 생산자 0). web_browse MCP 표면에는 새창 전환 액션이 없다 — 새창 진입 자동화(더존 SmartA 류)는 hyve 레시피의 `open_window` 계약으로 수행 |
 | full a11y 로 링크 밀집 페이지 관측 | 응답 한도 초과로 도구 결과 거부 가능 — `interactive_only:true` 기본 |
 | 같은 페이지를 매 스텝 full 재관측 | `diff:true` — 무변경이면 수백 바이트로 끝 |
 | `not_implemented` 응답에 우회 루프 | `interact` 의 `drag`/`fill_form` 만 미구현이 정상 — 작업을 다른 액션으로 분해하거나 보고 (`observe(screenshot)` 은 #217 로 실구현됨) |

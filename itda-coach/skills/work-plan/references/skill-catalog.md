@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 94개 스킬 / 19개 팩.
+총 96개 스킬 / 19개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -52,6 +52,8 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | g2b | 조달청 나라장터 G2B API로 정부 입찰 공고를 검색·조회하는 스킬입니다. | KO_DATA_API_KEY | "나라장터 입찰공고 검색해줘", "조달청 공고 확인해줘", "소프트웨어 개발 입찰 공고 찾아줘" | itda-gov |
 | kosis | 통계청 KOSIS 국가통계포털 API로 공식 통계를 검색·탐색·조회하는 스킬입니다. | KOSIS_API_KEY | "인구 통계 알려줘", "KOSIS 통계표 검색해줘", "이 통계표 분류·항목 코드 찾아줘" | itda-gov |
 | harness | 하네스를 구성합니다. | 없음 | "하네스 구성해줘", "하네스 구축해줘", "하네스 설계 도와줘" | itda-harness |
+| changelog | Orca(onorca.dev)·Claude Code·Codex CLI 의 최근 릴리즈를 모아 버전별 한국어 요약으로 만들고 Orca 내장 브라우저 탭으로 연다. | 없음 | "orca 업데이트 뭐 바뀌었어", "claude code 새 버전 뭐가 달라졌나", "codex cli 최근 릴리즈 요약" | itda-hyve |
+| orca-coach | Orca(온오르카) 기능 활용 코치. | 없음 | "orca로 뭘 할 수 있어?", "이 작업에 orca 기능 뭐 쓰면 좋을까?", "orca 활용 아이디어 줘" | itda-hyve |
 | pptx-diff | PPTX 발표자료 두 버전의 차이를 슬라이드·도형·텍스트 단위로 비교해 한국어로 요약하는 스킬입니다. | 없음 | "이 pptx 두 버전 비교해줘", "덱 뭐가 바뀌었어?", "발표자료 개정본 리뷰해줘" | itda-hyve |
 | web-automation | hyve web_browse MCP로 웹 자동화(로그인 세션·폼 입력·클릭 탐색·대량 수집·차단 사이트 우회)를 할 때 올바른 액션 조합을 안내하는 레시피 스킬… | 없음 | "이 사이트 로그인해서 데이터 모아줘", "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘" | itda-hyve |
 | imagegen | 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성하는 스킬입니다. | 없음 | "블로그 히어로 이미지 만들어줘", "슬라이드 배경 비주얼", "쇼츠용 세로 삽화" | itda-media |
@@ -152,6 +154,8 @@ funding               → itda-gov/skills/funding/
 g2b                   → itda-gov/skills/g2b/
 kosis                 → itda-gov/skills/kosis/
 harness               → itda-harness/skills/harness/
+changelog             → itda-hyve/skills/changelog/
+orca-coach            → itda-hyve/skills/orca-coach/
 pptx-diff             → itda-hyve/skills/pptx-diff/
 web-automation        → itda-hyve/skills/web-automation/
 imagegen              → itda-media/skills/imagegen/

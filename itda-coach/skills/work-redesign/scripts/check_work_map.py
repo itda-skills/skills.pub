@@ -89,11 +89,16 @@ SECTION_LABELS = {
 QUADRANTS = ["KEEP", "AUGMENT", "HOLD", "AUTOMATE"]
 
 # 증강 항목의 검증 서술 신호 — 위임은 검증을 동반해야 한다(없으면 의존).
-VERIFY_SIGNAL = re.compile(r"검증|대조|판정|일치|기준|verify|check against", re.I)
+VERIFY_SIGNAL = re.compile(r"검증|대조|판정|일치|기준|정답|정석|체크리스트|verify|check against", re.I)
 # HOLD 항목의 재검토 시점 신호(경고)
 REVISIT_SIGNAL = re.compile(r"재검토|뒤|후에|시점|revisit|later", re.I)
 # 자동화 항목의 다음 행동(핸드오프) 신호(경고)
 HANDOFF_SIGNAL = re.compile(r"다음|→|굳히|스킬|next|handoff", re.I)
+# 협업(사람 인터페이스) 신호 — 명시 태그 [협업] 또는 대인 행동 어휘.
+# "보고서"·"회의록"(산출물)은 제외하고 "보고"·"회의"(행위)만 잡는다.
+COLLAB_SIGNAL = re.compile(
+    r"\[협업\]|전화|회의(?!록)|미팅|면담|대면|설득|협의|소통|발표|보고(?!서)|meeting|negotiat|present", re.I
+)
 
 # 맥락 값 토큰에서 제외할 일반어 — 재등장 카운트가 공허해지는 것을 막는다.
 GENERIC_TOKENS = {
@@ -253,6 +258,13 @@ def evaluate(raw: str, single: bool = False):
     if auto_nonext:
         add("W3", "자동화 항목에 다음 행동 권장(예: 다음: miniskill-forge)", False,
             "다음 행동 없는 항목: " + "; ".join(auto_nonext), severity="warn")
+
+    # W4 자동화 항목의 협업 신호 — 사람 인터페이스가 걸린 행동을 통째로 자동화하려는 신호.
+    # 기술 부분(집계·초안)만 분리해 위임하고 전달·설득은 사람 몫으로 남기는지 재검토.
+    auto_collab = [ln for ln in sections.get("AUTOMATE", []) if COLLAB_SIGNAL.search(ln)]
+    if auto_collab:
+        add("W4", "자동화 항목에 협업(사람 인터페이스) 신호 — 기술만 분리 위임 검토", False,
+            "협업 신호 항목: " + "; ".join(auto_collab), severity="warn")
 
     hard = [c for c in checks if c["severity"] == "hard"]
     passed = sum(1 for c in hard if c["ok"])
