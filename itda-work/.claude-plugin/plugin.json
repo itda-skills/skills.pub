@@ -1,7 +1,7 @@
 {
   "name": "itda-work",
   "description": "대한민국 직장인을 위한 AI 코치 스킬팩",
-  "version": "8.51.2",
+  "version": "8.52.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"
@@ -18,6 +18,8 @@
     "검수",
     "work-plan",
     "계획수립",
+    "work-find",
+    "업무찾기",
     "translation",
     "번역",
     "pptx",

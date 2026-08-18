@@ -2,6 +2,11 @@
 
 이 플러그인의 주요 변경 사항을 기록합니다. 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [SemVer](https://semver.org/)를 따릅니다.
 
+## 2026-08-18 (이슈 #1511) — v0.3.0
+
+### Removed
+- `work-find` → **itda-work 팩으로 이동** (마스터 결정 2026-08-18 — 코치 팩 중 사용성이 높은 스킬을 주력 팩으로, #1319 편입의 원복). 여정 ①(탐색·구체화)은 크로스팩 연계로 유지 — README·GUIDE 표기 갱신.
+
 ## 2026-07-28 (이슈 #1319) — AI 활용 여정 코칭 팩으로 재편
 
 ### Added

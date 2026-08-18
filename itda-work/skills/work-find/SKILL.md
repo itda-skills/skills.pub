@@ -13,11 +13,11 @@ allowed-tools: Read, Write, Edit, Bash, mcp__workspace__bash
 argument-hint: "[focus-area]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.15.0"
+  version: "0.15.1"
   category: "productivity"
   status: "stable"
   created_at: "2026-05-12"
-  updated_at: "2026-07-28"
+  updated_at: "2026-08-18"
   aliases: "업무찾기, 자동화발굴, 문제구체화"
   tags: "Cowork, find work, work discovery, automation ideation, pain point interview, problem framing, reverse-question, non-developer"
 ---
