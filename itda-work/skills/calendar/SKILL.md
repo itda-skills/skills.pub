@@ -1,19 +1,20 @@
 ---
 name: calendar
 description: >
-  아이클라우드·네이버(및 커스텀 CalDAV) 캘린더에서 일정을 조회·추가·수정·삭제하는 스킬입니다.
-  "내일 3시 회의 추가해줘", "이번 주 일정 보여줘", "그 약속 취소해줘"처럼 말하면 됩니다.
-  반복 일정·알림·시간대(KST)와 ETag 동시성, 삭제 확인 게이트를 지원합니다.
+  아이클라우드·네이버(및 커스텀 CalDAV) 캘린더에서 일정을 조회·검색·추가·수정·삭제하고
+  빈 시간을 찾아주는 스킬입니다. "내일 3시 회의 추가해줘", "이번 주 일정 보여줘",
+  "다음 주에 1시간 빈 시간 찾아줘", "OO 프로젝트 회의 다 찾아줘", "그 약속 취소해줘"처럼
+  말하면 됩니다. 반복 일정·알림·시간대(KST)와 ETag 동시성, 삭제 확인 게이트를 지원합니다.
 license: Apache-2.0
 compatibility: "Claude Code & Cowork. Python 3.10+. Requires caldav, icalendar (python3 -m pip install caldav icalendar)."
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.2.6"
+  version: "0.3.0"
   created_at: "2026-06-01"
-  updated_at: "2026-07-26"
-  tags: "calendar, caldav, icloud, apple, naver, event, schedule, recurrence, rrule, valarm, alarm, reminder, timezone, etag, ical, icalendar, multi-account, custom-caldav"
+  updated_at: "2026-08-20"
+  tags: "calendar, caldav, icloud, apple, naver, event, schedule, recurrence, rrule, valarm, alarm, reminder, timezone, etag, ical, icalendar, multi-account, custom-caldav, free-slots, availability, search"
 ---
 
 # calendar
@@ -93,11 +94,37 @@ python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud                   
 python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud --calendar "강의 일정"    # 특정 캘린더
 python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud --from 2026-06-01 --to 2026-06-30
 python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud --expand                 # 반복 일정 전개
+python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud --query "프로젝트"        # 텍스트 검색
 ```
 
-Arguments: `--provider`/`--account`, `--calendar`(name 또는 id, 생략 시 전체 캘린더), `--from`/`--to`(ISO date/datetime, 기본 now~+7d), `--expand`(반복 전개), `--refresh`(디스커버리 캐시 무시·재탐색), `--no-sanitize`(원문, LLM 비권장).
+Arguments: `--provider`/`--account`, `--calendar`(name 또는 id, 생략 시 전체 캘린더), `--from`/`--to`(ISO date/datetime, 기본 now~+7d), `--query`(텍스트 필터 — SUMMARY/DESCRIPTION/LOCATION 대상, 대소문자 무시 substring, 클라이언트 측·sanitize 후 매칭), `--expand`(반복 전개), `--refresh`(디스커버리 캐시 무시·재탐색), `--no-sanitize`(원문, LLM 비권장).
 
 출력은 이벤트 객체 배열. `uid`·`summary`·`start`·`end`·`all_day`·`location`·`description`·`rrule`·`alarms`·`status`·`url`·`etag`·`calendar`. **SUMMARY/DESCRIPTION/LOCATION은 기본 sanitize**(프롬프트 인젝션 방어).
+
+### Get Event (uid 단건 상세)
+
+```bash
+python3 "$SKILL_DIR/scripts/get_event.py" --provider icloud --calendar "강의 일정" --uid <uid>
+```
+
+조회 목록에서 uid를 확보한 뒤 그 일정 하나만 자세히 볼 때 쓴다(전량 재조회 불요). 출력은 list_events의 단건과 동형(`etag` 포함 — 이어지는 수정/삭제에 그대로 사용). `--no-sanitize` 지원.
+
+### Find Free Slots (빈 시간 제안, 읽기 전용)
+
+```bash
+python3 "$SKILL_DIR/scripts/find_free_slots.py" --provider icloud --duration 60          # 앞으로 7일, 60분 슬롯
+python3 "$SKILL_DIR/scripts/find_free_slots.py" --provider icloud \
+  --from 2026-09-07 --to 2026-09-12 --duration 90 --work-hours 10:00-17:00
+python3 "$SKILL_DIR/scripts/find_free_slots.py" --provider icloud --include-weekends --ignore-all-day
+```
+
+전 캘린더를 조회해 **클라이언트 측에서 busy를 병합**하고 근무시간 창 안의 빈 구간을 결정론 계산한다(서버 free-busy REPORT 비의존 — iCloud·네이버·custom 전부 성립). **범위는 "내 빈 시간" 한정** — 타인 free/busy 조회는 CalDAV 구조상 불가하다(참석자 조율은 공식 Google Calendar 커넥터/Outlook 생태계의 몫).
+
+Arguments: `--from`/`--to`(기본 now~+7d), `--duration`(분, 기본 60), `--work-hours`(HH:MM-HH:MM, 기본 09:00-18:00, 전일은 00:00-24:00), `--include-weekends`(기본 평일만), `--ignore-all-day`(종일 이벤트를 free 취급), `--limit`(기본 20), `--calendar`/`--refresh`.
+
+응답: `{"status":"ok","slots":[{start,end,duration_minutes}],"busy_count":N,...}` — 슬롯은 **gap 전체**를 반환하므로 Claude가 그 안에서 구체 시각을 제안한다. busy 판정: `STATUS:CANCELLED`·`TRANSP:TRANSPARENT`(캘린더 앱의 '한가함' 표시 — iOS 종일 이벤트 기본값)는 제외, 그 외 종일 이벤트는 busy(제외하려면 `--ignore-all-day`). 반복 일정은 서버 전개가 안 오는 경로(네이버)에서도 RRULE·EXDATE를 클라이언트 전개한다(회차 개별 이동 RECURRENCE-ID 오버라이드는 미반영 — 마스터 규칙 기준).
+
+**조용한 실패 금지 계약(fail-closed)**: 캘린더가 **하나라도 조회에 실패하면** 부분 결과 대신 `calendar_fetch_failed`(exit 1)를 반환한다 — 실패 캘린더의 일정이 빠진 채 그 시간을 빈 시간으로 제안하지 않는다(detail 에 실패 캘린더·사유 목록). 반복 일정의 클라이언트 전개가 실패하면(비표준 RRULE 등) 첫 회차만 busy 로 보수 반영하고 응답에 `warning` + `rrule_expand_failures:[{uid,summary}]` 를 싣는다 — **이 필드가 있으면 Claude는 제안에 "일부 반복 일정과 겹칠 수 있음" 단서를 달아 안내한다.**
 
 ### Create Event
 
@@ -115,7 +142,9 @@ python3 "$SKILL_DIR/scripts/create_event.py" --provider icloud --calendar "강�
   --summary "스탠드업" --start 2026-06-15T09:00:00 --rrule "FREQ=WEEKLY;BYDAY=MO"
 ```
 
-Arguments: `--calendar`(필수), `--summary`(필수), `--start`(필수, ISO date=종일 / datetime=시각), `--end`(기본 시각 +1h, 종일 +1d), `--all-day`, `--tz`(기본 `Asia/Seoul`), `--location`, `--description`, `--rrule`, `--alarm-minutes`(N분 전 DISPLAY 알람). 응답: `{"status":"ok","uid":...,"url":...,"etag":...}`.
+Arguments: `--calendar`(필수), `--summary`(필수), `--start`(필수, ISO date=종일 / datetime=시각), `--end`(기본 시각 +1h, 종일 +1d), `--all-day`, `--tz`(기본 `Asia/Seoul`), `--location`, `--description`, `--rrule`, `--alarm-minutes`(N분 전 DISPLAY 알람), `--check-conflicts`(옵트인 — 아래). 응답: `{"status":"ok","uid":...,"url":...,"etag":...}`.
+
+**`--check-conflicts` (옵트인 겹침 표면화)**: 생성 전에 전 캘린더에서 같은 시간대 겹침을 조회해 응답에 `conflicts:[{uid,summary,start,end,all_day,calendar}]` 로 싣는다(빈 배열 = 겹침 없음). **겹침이 있어도 생성은 막지 않는다** — Claude가 사용자에게 알리고 필요 시 수정/삭제를 제안한다. 판정은 find_free_slots와 동일(CANCELLED·TRANSPARENT 제외, RRULE 클라이언트 전개). 조회 왕복이 추가되므로(네이버 대형 캘린더는 수 초+) 기본은 꺼짐 — 사용자가 겹침 확인을 원하거나 시간이 촉박해 보일 때만 쓴다. RRULE 생성 이벤트는 첫 회차 창만 검사. 겹침 조회가 통째로 실패하면 생성은 진행되고 `conflicts:null`+`conflicts_error` 로 표면화된다. **일부 캘린더만 실패하면** `conflicts` 는 성공 캘린더 기준 부분 결과이며 `conflict_check:"partial"` + `failed_calendars:[{calendar,error}]` 가 함께 실린다 — 전체-무충돌로 위장하지 않으므로, **partial 이면 Claude는 "일부 캘린더는 확인 못 함" 단서를 달아 보고한다.**
 
 ### Update Event (ETag 낙관적 동시성)
 
@@ -135,9 +164,15 @@ python3 "$SKILL_DIR/scripts/update_event.py" --provider icloud --calendar "강�
 ```bash
 python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강의 일정" --uid <uid>        # confirm_required (미삭제)
 python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강의 일정" --uid <uid> --yes  # 실제 삭제
+
+# 반복 일정의 이 회차만 삭제 (시리즈는 유지 — EXDATE)
+python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강의 일정" \
+  --uid <uid> --occurrence 2026-09-14 --yes
 ```
 
 `--yes` 없이 호출하면 삭제 대상 요약을 반환하고 **삭제하지 않는다**(되돌리기 어려운 작업 보호). `--etag`로 충돌 감지 가능.
+
+**`--occurrence <ISO date/datetime>` (단일 회차 삭제)**: 반복 일정에서 그 회차만 EXDATE 로 제외한다(시리즈·다른 회차는 유지). 날짜만 주면 그 날의 회차로 자동 특정되고, 같은 날 여러 회차면 `occurrence_ambiguous`(시각까지 지정). 실재하지 않는 회차는 `occurrence_not_found`, 반복 아닌 일정은 `not_recurring`. EXDATE 값은 마스터 DTSTART 와 같은 형(종일=DATE, 시각=같은 TZ datetime)으로 넣고, **수정 후 재조회로 반영을 검증**한다 — 서버가 형식 불일치 EXDATE 를 조용히 무시하면 `exdate_not_applied`(exit 1)로 표면화되며 성공으로 위장되지 않는다. 회차 개별 이동본(RECURRENCE-ID 오버라이드)이 있는 시리즈는 미고려(마스터 규칙 기준). 응답: `{"status":"occurrence_deleted","occurrence":...,"new_etag":...}`.
 
 ---
 
@@ -152,6 +187,11 @@ python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강�
 | "그 회의 30분 미뤄줘" | 조회로 uid 확보 → `update_event.py --start +30m` |
 | "매주 월요일 스탠드업 9시" | `--rrule "FREQ=WEEKLY;BYDAY=MO"` → `create_event.py` |
 | "토요일 약속 취소" | 조회 → 사용자 확인 → `delete_event.py --uid ... --yes` |
+| "다음 주 월요일 스탠드업만 빼줘" | 반복 일정이면 조회 → 확인 → `delete_event.py --occurrence <날짜> --yes` (시리즈 유지) — "매주 다 취소"와 반드시 구분해 확인 |
+| "다음 주에 1시간 빈 시간 찾아줘" | `find_free_slots.py --from <월> --to <금> --duration 60` — 겹침 계산은 코드가 담당(암산 금지) |
+| "겹치는 일정 없는지 확인하고 잡아줘" | `create_event.py --check-conflicts` → `conflicts` 비면 완료 보고, 있으면 겹침을 알리고 유지/이동 확인 |
+| "OO 프로젝트 회의 다 찾아줘" | `list_events.py --query "OO 프로젝트"` (기간을 넉넉히 잡는다) |
+| "그 회의 자세히 보여줘" | 조회로 uid 확보 → `get_event.py --uid ...` |
 
 **삭제·수정 전 확인**: 삭제는 항상 대상 일정(제목·날짜)을 사용자에게 보여주고 동의를 받은 뒤 `--yes`로 실행한다. 시간 이동·수정도 변경 내용을 먼저 요약한다.
 
@@ -171,9 +211,10 @@ python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강�
 
 ## Notes & Limits
 
-- **VTODO(미리알림)·참석자 초대·free/busy는 범위 밖**이다(CalDAV 제약). 이벤트(VEVENT)에 집중한다.
+- **VTODO(미리알림)·참석자 초대·타인 free/busy는 범위 밖**이다(CalDAV 제약). 이벤트(VEVENT)에 집중한다. **내 빈 시간**은 `find_free_slots.py`가 클라이언트 측 계산으로 제공한다(서버 free-busy REPORT 비의존).
+- **`--query`는 클라이언트 측 필터**다(CalDAV 텍스트 검색 REPORT 비의존 — 서버 편차 회피). 조회 범위(`--from`/`--to`) 안에서만 검색되므로, 과거 일정 검색은 기간을 명시한다.
 - **iCloud**: `event_by_uid`(UID REPORT)를 `412`로 거부 → uid 조회는 이벤트 열거 매칭(`find_event_by_uid`). 호스트 샤딩(`p{NN}-caldav.icloud.com`)을 동적으로 추종.
-- **Naver**: `comp-filter`+`time-range` REPORT가 빈 결과를 주므로, 조회는 **objects 열거 후 클라이언트 측 시간범위 필터**로 폴백한다. 수정 PUT에 `200 OK`를 반환해 `ev.save()` 대신 **직접 PUT**으로 처리하며, **ETag를 제공하지 않아 동시성 가드는 best-effort**(read-modify-write 의존)다. 캘린더 생성(`make_calendar`)은 미지원이고, **`--expand` 반복 전개도 미지원**(objects 경로는 반복 일정의 마스터 이벤트만 반환 — iCloud/custom만 전개).
+- **Naver**: `comp-filter`+`time-range` REPORT가 빈 결과를 주므로, 조회는 **objects 열거 후 클라이언트 측 시간범위 필터**로 폴백한다. 수정 PUT에 `200 OK`를 반환해 `ev.save()` 대신 **직접 PUT**으로 처리하며, **ETag를 제공하지 않아 동시성 가드는 best-effort**(read-modify-write 의존)다. 캘린더 생성(`make_calendar`)은 미지원이고, **`list_events --expand` 반복 전개도 미지원**(objects 경로는 반복 일정의 마스터 이벤트만 반환 — iCloud/custom만 전개). 단 `find_free_slots.py`는 RRULE 마스터를 **자체 클라이언트 전개**하므로 네이버에서도 반복 일정을 busy로 정확히 반영한다(라이브 검증됨).
 - 시작시간만 옮기면(`--start`만, `--end` 생략) 기존 일정 길이를 유지해 종료시간도 함께 이동한다(모순 방지).
 - 이벤트가 매우 많은 캘린더에서는 uid 조회·수정/삭제가 느릴 수 있다.
 

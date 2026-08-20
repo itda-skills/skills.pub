@@ -3,7 +3,34 @@
 All notable changes to the `calendar` skill are documented here.
 This skill follows the itda-skills SPEC workflow (SPEC-CALENDAR-001).
 
-## [0.2.6] — 2026-07-26 (이슈 #1280·#1281·#1282)
+## [0.3.0] — 2026-08-20 (이슈 #1514)
+
+Google Calendar MCP 커넥터 벤치마킹에서 확인된 세 갭을 채운다 — 빈 시간 제안·텍스트 검색·uid 단건 상세. 겹침 계산을 LLM 암산에서 결정론 코드로 옮기는 것이 핵심이다.
+
+### Added
+
+- **`find_free_slots.py`** — 빈 시간 제안(커넥터 `suggest_time` 동형). 전 캘린더 조회 후 **클라이언트 측 busy 병합**으로 근무시간 창 안의 빈 구간을 결정론 계산한다(서버 free-busy REPORT 비의존 — iCloud·네이버·custom 전부 성립). `--from/--to`(기본 now~+7d)·`--duration`(분, 기본 60)·`--work-hours`(기본 09:00-18:00)·`--include-weekends`(기본 평일만)·`--ignore-all-day`·`--limit`. busy 판정: `STATUS:CANCELLED`·`TRANSP:TRANSPARENT` 제외, 종일 이벤트는 기본 busy. **RRULE 마스터의 클라이언트 전개**(EXDATE 반영, dateutil — icalendar 기존 의존이라 requirements 불변)로 네이버 objects 경로에서도 반복 일정을 정확히 반영. 범위는 **"내 빈 시간" 한정**(타인 free/busy는 CalDAV 구조상 불가 — SKILL.md 명시). 순수 로직은 `free_slots.py` 분리.
+- **`list_events.py --query`** — 텍스트 필터(커넥터 `search_events` 동형). SUMMARY/DESCRIPTION/LOCATION 대상 대소문자 무시 substring, **클라이언트 측·sanitize 후 매칭**(화면 표시와 필터 결과 일치).
+- **`get_event.py`** — uid 단건 상세(내부 `find_event_by_uid` 재사용, etag 포함). "조회 → uid 확보 → 단건" 라우팅 경로 확보.
+- **`delete_event.py --occurrence`** (마스터 승인 확장 ②) — 반복 일정 단일 회차 삭제(EXDATE 추가, 시리즈 유지). 날짜만 주면 그 날의 회차 자동 특정(같은 날 복수 회차는 `occurrence_ambiguous`), 실재 검증(`occurrence_not_found`·`not_recurring`), confirm 게이트(`--yes`)·ETag 가드 동일 적용. EXDATE 는 마스터 DTSTART 동형(종일=DATE, 시각=동일 TZ)으로 넣고 **수정 후 재조회로 반영 검증** — 서버 무음 무시 시 `exdate_not_applied` 로 표면화(성공 위장 차단). 회차 전개는 `free_slots.rrule_occurrences` 공유. RECURRENCE-ID 오버라이드 시리즈는 미고려(문서화).
+- **`create_event.py --check-conflicts`** (옵트인, 마스터 승인 확장) — 생성 전에 전 캘린더에서 같은 시간대 겹침을 조회해 응답 `conflicts:[...]` 로 표면화(생성은 막지 않음). 판정은 `free_slots.overlapping_components` 공유(CANCELLED·TRANSPARENT 제외, RRULE 클라이언트 전개 — free-slots와 conflicts가 갈라지지 않는다). 기본(플래그 미지정)은 조회 왕복 없이 현행 유지. 조회 실패는 생성을 막지 않되 `conflicts:null`+`conflicts_error` 로 명시 표면화(무음 금지). RRULE 생성 이벤트는 첫 회차 창만 검사.
+
+### Fixed (릴리즈 전 — codex 적대 리뷰 findings 3건, 제안 표면의 조용한 실패)
+
+- **`find_free_slots.py` fail-closed** [P1] — 캘린더 조회 예외를 빈 목록으로 접어 그 캘린더의 일정이 통째로 빈 시간으로 제안되던 결함. 하나라도 실패 시 부분 결과 대신 `calendar_fetch_failed`(exit 1, 실패 캘린더·사유 목록) — hyve Go `executeCalendarFreeSlots` 와 동일 계약.
+- **`create_event.py --check-conflicts` 부분 실패 표면화** [P2] — 조회 실패 캘린더가 무충돌로 위장되던 결함. 생성(advisory)은 막지 않되 `conflict_check:"partial"` + `failed_calendars` 로 부분 결과임을 명시.
+- **RRULE 전개 실패 경고** [P2] — `busy_intervals` 의 마스터 1건 보수 폴백이 무음이던 결함. free-slots 응답에 `warning` + `rrule_expand_failures:[{uid,summary}]` 를 실어 소비자가 제안에 단서를 달 수 있게 함.
+- 셋 다 결함 주입 단위 테스트로 봉인(뮤테이션 3종 주입→RED→원복 GREEN 실측, `tests/test_silent_failure_guards.py`).
+
+### Verified
+
+- **라이브(iCloud 실계정)**: 실제 일정 회피 실측 — 기존 일정(15:20-16:20)·opaque 종일 이벤트를 피하고 TRANSPARENT 종일은 열림. 테스트 이벤트 생성 → 슬롯이 정확히 갈라짐(09-10, 11:30-18) → `--query` 제목·장소 매칭 → `get_event` 상세 → 삭제·잔존 0.
+- **라이브(네이버 실계정, objects 경로)**: 단건 + 반복(WEEKLY;COUNT=3) 생성 → busy 4건(반복 3회차 클라이언트 전개 정확) → 슬롯 회피 → `--query`·`get_event` → 삭제·잔존 0.
+- 단위/배포형 **119 passed, 0 skipped** (+62: free_slots 순수 로직·conflicts·occurrence 판정 43 · 조용한 실패 가드 6 · query 매칭 3 · deployed 계약 10).
+- **라이브(`--check-conflicts`)**: iCloud·네이버 실계정 — 겹치는 시간 생성 시 기존 이벤트가 `conflicts` 에 표면화되고 생성은 진행, 겹침 없는 시간은 `conflicts:[]`, 플래그 미지정은 필드 없음(현행 유지). 검증 후 완전 정리.
+- **라이브(`--occurrence`)**: iCloud — 주간 COUNT=4 에서 2회차만 삭제 → `--expand` 재조회로 그 회차 부재·나머지 3회차 존재 실증, free-slots 도 그 시간 free 로 정합. 네이버(직접 PUT 폴백 경로) — EXDATE 반영 재조회 검증 통과 + free-slots busy 2건(잔여 회차만). 검증 후 완전 정리.
+
+
 
 ### Changed
 

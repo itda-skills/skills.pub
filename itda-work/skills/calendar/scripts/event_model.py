@@ -175,3 +175,17 @@ def normalize_event(component, *, sanitize_fn=None,
     if etag is not None:
         out["etag"] = etag
     return out
+
+
+def event_matches_query(normalized: dict, query: str) -> bool:
+    """정규화 dict의 SUMMARY/DESCRIPTION/LOCATION에 대한 대소문자 무시 substring 매칭.
+
+    sanitize 이후의 정규화 결과를 대상으로 한다 — sanitize가 치환한 텍스트
+    기준으로 매칭해, 사용자가 화면에서 본 것과 필터 결과가 일치한다.
+    """
+    q = query.casefold()
+    return any(q in v.casefold()
+               for v in (normalized.get("summary"),
+                         normalized.get("description"),
+                         normalized.get("location"))
+               if v)

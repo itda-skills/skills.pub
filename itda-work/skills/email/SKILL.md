@@ -10,10 +10,10 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.29.2"
+  version: "0.30.0"
   created_at: "2026-03-18"
-  updated_at: "2026-07-26"
-  tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references"
+  updated_at: "2026-08-20"
+  tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references, move, spam, junk, trash, expunge, flag, seen, flagged, folder-create, folder-rename, folder-delete, special-use, uidplus"
 ---
 
 # email
@@ -310,6 +310,48 @@ Output: LIST 응답 순서 JSON 배열. `--no-status` 시 `messages`/`unseen` �
 
 한글 폴더(`보낸메일함` 등)·공백 포함 영문 폴더(`Sent Messages`)는 자동 인코딩/quote 처리된다. 폴더명이 불확실하면 `list_folders.py --no-status`로 확인 후 `name` 필드(디코딩된 사람 읽는 이름)를 그대로 `--folder`에 넘긴다 (`raw_name` 직접 사용 불필요).
 
+### Mail Management — 이동·폴더·스팸·휴지통·플래그 (v0.30.0)
+
+받은편지함 정리용 스크립트 5종. 공통 규약: `--provider`/`--account` (Send와 동일), `--uid`는 쉼표 복수(`5,6,7`), 폴더명은 한글·공백 포함 그대로 전달(Modified UTF-7 자동 인코딩). 성공 시 이동 계열 출력은 `{"status":"ok","moved":[uid...],"to_folder":...,"method":"move"|"copy_expunge","new_uids":[...]|null,"messages":[{"uid","from","subject","date"}]}`.
+
+- **canonical Trash/Junk 해석**: 서버 SPECIAL-USE(`\Trash`/`\Junk`) 우선 탐지, 미지원 시 제공자별 폴백 표(google=`[Gmail]/Trash`·`[Gmail]/Spam`, naver=`Deleted Messages`·`Junk`, daum=`휴지통`·`스팸편지함`, icloud=`Deleted Messages`·`Junk`). custom 은 폴백 없음 — SPECIAL-USE 미지원이면 `canonical_folder_unresolved` 에러.
+- **MOVE 폴백**: 서버가 MOVE 를 지원하면 UID MOVE, 아니면 COPY→`\Deleted`→UID EXPUNGE. UIDPLUS 가 없으면 폴백을 거부한다(`uidplus_unsupported`) — 일반 EXPUNGE 는 다른 `\Deleted` 메일까지 지우므로 안전상 실행하지 않는다.
+
+```bash
+# 메일 이동
+python3 "$SKILL_DIR/scripts/move_email.py" --provider naver --uid 5,6,7 --from-folder INBOX --to-folder 업무
+
+# 폴더 생성/이름변경/삭제 — canonical 폴더(INBOX/Sent/Drafts/Trash/Junk)는 rename·delete 차단
+python3 "$SKILL_DIR/scripts/manage_folder.py" --provider naver --create 업무
+python3 "$SKILL_DIR/scripts/manage_folder.py" --provider naver --rename 업무 --to 업무2026
+python3 "$SKILL_DIR/scripts/manage_folder.py" --provider naver --delete 옛폴더          # 비어있지 않으면 folder_not_empty
+python3 "$SKILL_DIR/scripts/manage_folder.py" --provider naver --delete 옛폴더 --force  # 내용물 휴지통 이동 후 삭제
+
+# 스팸 처리 (IMAP 이동만 — 스팸필터 학습은 미보장, 출력 note 필드 참조)
+python3 "$SKILL_DIR/scripts/mark_spam.py" --provider naver --uid 12
+python3 "$SKILL_DIR/scripts/mark_spam.py" --provider naver --uid 12 --unmark   # Junk → INBOX 고정
+
+# 휴지통 이동 / 복원 / 영구 삭제
+python3 "$SKILL_DIR/scripts/trash_email.py" --provider naver --uid 5,6
+python3 "$SKILL_DIR/scripts/trash_email.py" --provider naver --uid 5 --restore
+python3 "$SKILL_DIR/scripts/trash_email.py" --provider naver --uid 5 --expunge --dry-run  # 대상 메타만 출력, IMAP 쓰기 0
+python3 "$SKILL_DIR/scripts/trash_email.py" --provider naver --uid 5 --expunge            # 영구 삭제 (복구 불가)
+
+# 읽음/중요 플래그
+python3 "$SKILL_DIR/scripts/flag_email.py" --provider naver --uid 5,6 --set seen
+python3 "$SKILL_DIR/scripts/flag_email.py" --provider naver --uid 5 --unset flagged
+```
+
+에러 키: `folder_not_empty` · `canonical_folder_protected` · `canonical_folder_unresolved` · `uidplus_unsupported` · `uid_not_found`(요청 UID 가 선택 폴더에 없음 — detail 에 missing UID 와 폴더명, 부분 성공 없이 전체 거부) · `invalid_uid` · `folder_select_failed`. expunge dry-run 출력은 `{"status":"dry_run","targets":[메타...]}`.
+
+> **파괴적 작업 실행 규칙 (Claude 필수 준수)**
+>
+> - `--expunge`(영구 삭제)는 **사용자가 영구 삭제를 명시적으로 요청했을 때만** 실행한다. "삭제해줘"는 기본적으로 휴지통 이동(`trash_email.py` 기본 모드)이다.
+> - 실제 `--expunge` 실행 전 **반드시 `--dry-run`으로 대상 목록을 먼저 확인**하고, 그 결과(발신자·제목)를 사용자에게 보여 확인받은 뒤 실행한다.
+> - `manage_folder.py --delete --force`(내용물 있는 폴더 삭제)도 삭제 전 메시지 수를 사용자에게 알리고 진행한다.
+>
+> **Gmail 한계**: Gmail 은 폴더가 아니라 **라벨** 모델이다. 한 메일에 라벨이 여러 개면 IMAP MOVE 는 해당 라벨에서만 제거되는 등 폴더 semantics 와 다르게 동작할 수 있고, `[Gmail]/Trash` 이동은 모든 라벨에서 제거된다. 다중 라벨 부착·제거는 IMAP 표면으로는 표현되지 않는다.
+
 ### Test Connection
 
 ```bash
@@ -387,6 +429,11 @@ inbox-triager 는 **트리아지 전용**(발송·초안·삭제·서버 상태 
 - 메일 폴더 목록, 폴더 이름 알려줘
 - 임시보관함 저장/조회/발송
 - 회신 컨텍스트 모아줘, 답장 맥락, 이 메일 스레드 보고 회신, 관련 메일 모아줘, reply context
+- 스팸 처리해줘, 스팸 아니야(스팸 해제)
+- 휴지통으로 보내줘, 메일 삭제해줘, 휴지통 비워줘(영구 삭제)
+- 메일 정리, 메일 옮겨줘, 이 메일 업무 폴더로
+- 폴더 만들어줘, 폴더 이름 바꿔줘, 폴더 지워줘
+- 읽음 처리, 안읽음으로, 별표/중요 표시
 - 이메일 연결 테스트, SMTP 테스트
 - send/compose/write email, read inbox, check email, list mail folders, test email connection
 

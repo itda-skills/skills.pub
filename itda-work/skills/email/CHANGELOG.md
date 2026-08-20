@@ -1,5 +1,21 @@
 # Changelog — itda-email
 
+## [0.30.0] — 2026-08-20 (이슈 #1512 트랙 A)
+
+### Added
+
+- **IMAP 메일 정리 스크립트 5종 + 공용 모듈**:
+  - `_imap_common.py` — canonical Trash/Junk 해석(SPECIAL-USE 우선 → 제공자 폴백 표, custom 은 `canonical_folder_unresolved`), UID 파싱(쉼표 복수), MOVE-with-fallback(MOVE 미지원 시 COPY→`\Deleted`→UID EXPUNGE, UIDPLUS 부재 시 `uidplus_unsupported` 거부 — 일반 EXPUNGE 오폭 방지), COPYUID 파싱(`new_uids`).
+  - `move_email.py` — 폴더 간 이동 (`--uid 5,6,7 --from-folder INBOX --to-folder 업무`).
+  - `manage_folder.py` — 폴더 생성/이름변경/삭제. canonical 폴더 rename·delete 차단(`canonical_folder_protected`), 비어있지 않으면 `folder_not_empty`, `--force` 시 내용물 휴지통 이동 후 삭제.
+  - `mark_spam.py` — 스팸 이동/해제(`--unmark` 는 INBOX 고정 복원). IMAP 이동만 수행 — 스팸필터 학습 미보장(`note` 필드 안내).
+  - `trash_email.py` — 휴지통 이동/`--restore`/`--expunge`(영구 삭제, UIDPLUS 필수). `--dry-run` 은 대상 메타만 출력하며 IMAP 쓰기 명령 0회.
+  - `flag_email.py` — `--set/--unset seen|flagged` (STORE ±FLAGS).
+- SKILL.md: Mail Management 절, 파괴적 작업 실행 규칙(expunge 는 명시 요청 + dry-run 확인 후), Gmail 라벨 모델 한계, Trigger Keywords 확장.
+- **CAPABILITY 판정을 살아있는 post-auth 명령으로** (라이브 실측 결함 2호 수정): imaplib 의 `.capabilities` 속성은 접속 시점(pre-auth) 캐시라 iCloud·Gmail 처럼 로그인 후에만 MOVE/UIDPLUS 를 광고하는 서버에서 빈 값 → `uidplus_unsupported` 오폭으로 이동 전체가 거부됐다. `capabilities()` 가 로그인 후 `CAPABILITY` 명령을 직접 발행해 판정하고 연결당 1회 캐시한다(명령 실패 시에만 속성 캐시 폴백).
+- **미존재 UID 성공 위조 방지** (라이브 실측 결함 수정): 모든 조작 경로(move/spam/trash/restore/expunge/dry-run/flag)가 쓰기 명령 발행 전에 대상 UID 실재를 FETCH 로 검증하고, 하나라도 없으면 `uid_not_found`(detail 에 missing UID + 선택 폴더명)로 전체 거부한다. `fetch_meta` 는 실재 확인된 UID 만 반환(빈 메타 행 생성 금지) — 미존재 UID 에 대한 no-op STORE/EXPUNGE 가 `status:ok` 로 위조되던 결함을 차단.
+- 단위 테스트 83건 추가(인코딩 왕복·MOVE 폴백·COPYUID 파싱·canonical 보호·folder_not_empty/--force·dry-run 무변경·UIDPLUS 거부·exit code) — 트랙 B(Go) 와 공유하는 계약(폴백 표·에러 키·응답 필드) 고정.
+
 ## [0.29.2] — 2026-07-26 (이슈 #1280·#1282)
 
 ### Changed

@@ -16,7 +16,8 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).parent))
 from caldav_client import get_calendars_fast, search_events  # noqa: E402
 from cli_common import classify_error, emit, emit_error, resolve_provider_or_exit  # noqa: E402
-from event_model import DEFAULT_TZ, normalize_event, parse_dt  # noqa: E402
+from event_model import (DEFAULT_TZ, event_matches_query,  # noqa: E402
+                         normalize_event, parse_dt)
 from email_security import sanitize_for_llm  # noqa: E402
 
 
@@ -36,6 +37,8 @@ def main() -> None:
     ap.add_argument("--from", dest="from_", help="ISO date/datetime (default: now)")
     ap.add_argument("--to", help="ISO date/datetime (default: +7 days)")
     ap.add_argument("--expand", action="store_true", help="expand recurring events")
+    ap.add_argument("--query", help="클라이언트 측 텍스트 필터 — "
+                                    "SUMMARY/DESCRIPTION/LOCATION substring, 대소문자 무시")
     ap.add_argument("--no-sanitize", action="store_true", help="raw text (unsafe for LLM)")
     ap.add_argument("--refresh", action="store_true",
                     help="디스커버리 캐시를 무시하고 캘린더 목록을 재탐색")
@@ -80,6 +83,9 @@ def main() -> None:
                         etag=getattr(ev, "etag", None),
                     )
                     nd["calendar"] = c["name"]
+                    # sanitize 이후 텍스트 기준 매칭 — 화면 표시와 필터가 일치
+                    if args.query and not event_matches_query(nd, args.query):
+                        continue
                     results.append(nd)
 
     results.sort(key=lambda x: (x.get("start") or ""))

@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 96개 스킬 / 19개 팩.
+총 97개 스킬 / 19개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -44,6 +44,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | coupang | 쿠팡 상품 검색·리뷰·가격·유사상품·평판을 조회하는 스킬입니다. | 없음 | "방울토마토 검색해줘", "에어팟 프로 리뷰 모아줘", "이 상품 가격 알려줘" | itda-egg |
 | font-guide | 문서(docx/pptx/pdf)에 어울리는 무료 한글 폰트를 추천하고 자동 설치해주는 스킬입니다. | 없음 | "PPT용 폰트 추천해줘", "보고서에 어울리는 폰트 알려줘", "Pretendard 설치해줘" | itda-egg |
 | naver-place | 네이버 지도에서 식당·상점을 검색하고 리뷰를 모아주는 스킬입니다. | 없음 | "네이버 지도에서 대전 칼국수 검색해줘", "이 가게 리뷰 모아줘", "placeId 1288902633 리뷰 수집해줘" | itda-egg |
+| parcel-tracker | Track Korean parcel deliveries by waybill number over plain HTTP (no browser, stdlib only… | 없음 | "택배 조회해줘", "한진택배 537444594341 어디쯤이야", "운송장번호로 배송 상태 확인해줘" | itda-egg |
 | stt | 음성 파일(WAV·MP3·FLAC)을 텍스트로 변환하고, 회의록·통화 녹음은 화자 분리 (누가 언제 말했는지)까지 해주는 스킬입니다. | 없음 | "이 음성 파일 텍스트로 변환해줘", "회의 녹음 화자별로 정리해줘", "통화 녹음 받아쓰기 해줘" | itda-egg |
 | dart | 금융감독원 DART 전자공시 API로 기업 정보를 수집하는 스킬입니다. | DART_API_KEY | "삼성전자 재무제표 조회해줘", "경쟁사 직원수 알려줘", "사업보고서 비교해줘" | itda-gov |
 | ecos | 한국은행 ECOS API로 거시경제 지표를 조회하는 스킬입니다. | ECOS_API_KEY | "GDP 추이 알려줘", "금리 환율 정리해줘", "100대 경제지표 확인해줘" | itda-gov |
@@ -85,7 +86,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | biz-redact | 업무 문서의 영업기밀(거래처명·프로젝트코드·담당자·단가 등)을 외부 AI에 넣기 전 로컬에서 결정론적으로 마스킹하고, AI 산출물의 토큰을 원값으로 되돌리는 왕… | 없음 | "이 견적서 마스킹해서 검토해줘", "거래처명 가리고 원가절감안 분석해줘", "AI가 돌려준 검토서 원래 이름으로 복원해줘" | itda-work |
 | blog-reader | 네이버 블로그의 글 목록·본문·댓글 트리·블로그 내 검색·전역 키워드 검색을 로그인 없이 읽는 스킬입니다. | 없음 | "네이버 블로그 글 가져와줘", "블로그 본문이랑 댓글 보여줘", "이 블로그 최근 7일 글 보여줘" | itda-work |
 | blog-seo | 네이버 SearchAd API로 블로그 SEO용 블루키워드를 발굴하는 스킬입니다. | NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, NAVER_SEARCHAD_ACCESS_KEY, NAVER_SEARCHAD_CUSTOMER_ID, NAVER_SEARCHAD_SECRET_KEY | "블루키워드 찾아줘", "경쟁 적은 키워드 분석해줘", "블로그 키워드 포화지수 확인해줘" | itda-work |
-| calendar | 아이클라우드·네이버(및 커스텀 CalDAV) 캘린더에서 일정을 조회·추가·수정·삭제하는 스킬입니다. | ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "내일 3시 회의 추가해줘", "이번 주 일정 보여줘", "그 약속 취소해줘" | itda-work |
+| calendar | 아이클라우드·네이버(및 커스텀 CalDAV) 캘린더에서 일정을 조회·검색·추가·수정·삭제하고 빈 시간을 찾아주는 스킬입니다. | ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "내일 3시 회의 추가해줘", "이번 주 일정 보여줘", "다음 주에 1시간 빈 시간 찾아줘" | itda-work |
 | design-core | 브랜드 디자인을 고르고(getdesign 표준 DESIGN.md 카탈로그 차용), 만들고(한국·자사 브랜드 저작), 검증·조회해 웹·PPTX·DOCX·XLSX… | 없음 | "스포티파이 톤으로 디자인 골라줘", "우리 브랜드 디자인 시스템 정의해줘", "이 DESIGN.md 검증해줘" | itda-work |
 | docx-design | 콘텐츠 마크다운과 수치 데이터로 디자인된 Word 문서(.docx)를 크로스플랫폼(macOS/Linux/Windows, Office 불필요)으로 신규 생성하는… | 없음 | "NovaTech 연차보고서 docx로 만들어줘", "이 프리셋으로 워드 보고서 디자인해줘", "md 내용으로 디자인된 워드 문서 생성" | itda-work |
 | draft-post | 블로그·보고서·기획서·보도자료·뉴스레터를 도메인 맞춤 인터뷰로 초안 작성하는 스킬입니다. | 없음 | "블로그 글 써줘", "보고서 초안 작성해줘", "기획서 만들어줘" | itda-work |
@@ -146,6 +147,7 @@ book-pdf              → itda-egg/skills/book-pdf/
 coupang               → itda-egg/skills/coupang/
 font-guide            → itda-egg/skills/font-guide/
 naver-place           → itda-egg/skills/naver-place/
+parcel-tracker        → itda-egg/skills/parcel-tracker/
 stt                   → itda-egg/skills/stt/
 dart                  → itda-gov/skills/dart/
 ecos                  → itda-gov/skills/ecos/

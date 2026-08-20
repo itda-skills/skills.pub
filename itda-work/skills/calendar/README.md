@@ -1,8 +1,8 @@
 # calendar
 
-아이클라우드·네이버·커스텀 CalDAV 캘린더의 일정을 자연어로 **조회·추가·수정·삭제**하는 스킬.
+아이클라우드·네이버·커스텀 CalDAV 캘린더의 일정을 자연어로 **조회·검색·추가·수정·삭제**하고 **빈 시간을 찾아주는** 스킬.
 
-> "내일 3시 회의 추가해줘" · "이번 주 일정 보여줘" · "그 약속 30분 미뤄줘" · "토요일 약속 취소해줘"
+> "내일 3시 회의 추가해줘" · "이번 주 일정 보여줘" · "다음 주에 1시간 빈 시간 찾아줘" · "OO 프로젝트 회의 다 찾아줘" · "토요일 약속 취소해줘"
 
 이 README는 개요다. 실제 사용 절차는 **[GUIDE.md](GUIDE.md)**, 런타임 실행 계약은 **[SKILL.md](SKILL.md)**, 변경 이력은 **[CHANGELOG.md](CHANGELOG.md)** 를 본다.
 
@@ -11,8 +11,10 @@
 ## 기능
 
 - **일정 CRUD** — 기간 조회 · 생성 · 수정 · 삭제 + 캘린더 목록 / 연결 테스트
-- **반복(RRULE) · 알림(VALARM) · 시간대(기본 Asia/Seoul) · 종일/시각 이벤트**
-- **안전장치** — ETag 낙관적 동시성, 삭제 확인 게이트, 조회 결과 프롬프트 인젝션 sanitize
+- **빈 시간 제안** — 전 캘린더 busy를 클라이언트 측 병합해 근무시간 창 안의 빈 구간을 결정론 계산(내 빈 시간 한정, 서버 free-busy 비의존)
+- **텍스트 검색 · 단건 상세** — `--query`(제목·설명·장소 substring) / `get_event`(uid 상세, etag 포함)
+- **반복(RRULE) · 알림(VALARM) · 시간대(기본 Asia/Seoul) · 종일/시각 이벤트** + 반복 단일 회차 삭제(EXDATE, 시리즈 유지)
+- **안전장치** — ETag 낙관적 동시성, 삭제 확인 게이트, 조회 결과 프롬프트 인젝션 sanitize, 생성 시 겹침 표면화(옵트인 `--check-conflicts` — 생성은 막지 않음)
 - **멀티계정** — 환경변수에 `_{SUFFIX}` 부착 (`ICLOUD_EMAIL_WORK` 등)
 
 ## 지원 프로바이더
@@ -57,8 +59,9 @@ scripts/
   caldav_client.py      caldav 라이브러리 래퍼 + calendar-home url 디스커버리 캐싱
   event_model.py        iCalendar VEVENT ↔ 정규화 dict (타임존·RRULE·VALARM)
   cli_common.py         공통 CLI 헬퍼 (자격증명 해석 · 에러 분류)
-  check_env · check_connection · list_calendars · list_events
-  create_event · update_event · delete_event
+  free_slots.py           빈 시간 계산 순수 로직 (busy 병합·RRULE 클라이언트 전개)
+  check_env · check_connection · list_calendars · list_events · get_event
+  create_event · update_event · delete_event · find_free_slots
 
 (런타임에 공용 shared/ 모듈 env_loader.py·itda_path.py·email_security.py
  (프롬프트 인젝션 방어)를 PYTHONPATH로 참조 — #736 에서 sanitize.py 사본을 shared 정본으로 승격)
@@ -70,11 +73,11 @@ scripts/
 - **병렬 조회** — 캘린더별 REPORT를 동시에 실행.
 - **iCloud(search)는 데이터량에 둔감**, **네이버(objects)는 캘린더 총 이벤트 수에 비례**(time-range REPORT 미지원) — 일정이 많으면 `--calendar`로 한 캘린더만 좁히면 빠르다.
 
-## 제약 (v0.2.x)
+## 제약 (v0.3.x)
 
-- VTODO(미리알림) · 참석자 초대 · free/busy는 범위 밖. 이벤트(VEVENT)에 집중한다.
+- VTODO(미리알림) · 참석자 초대 · **타인** free/busy는 범위 밖. 이벤트(VEVENT)에 집중한다(**내** 빈 시간은 `find_free_slots`).
 - iCloud는 `event_by_uid`(UID REPORT)를 412로 거부 → 이벤트 열거 매칭으로 우회.
-- 네이버는 ETag 미제공(동시성 best-effort)·`make_calendar` 미지원·time-range REPORT 미지원·`--expand` 반복 전개 미지원(마스터 이벤트만 반환).
+- 네이버는 ETag 미제공(동시성 best-effort)·`make_calendar` 미지원·time-range REPORT 미지원·`list_events --expand` 반복 전개 미지원(마스터 이벤트만 반환 — 단 `find_free_slots`는 RRULE을 자체 클라이언트 전개).
 
 ## 의존성
 
