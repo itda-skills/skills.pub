@@ -1,5 +1,11 @@
 # Changelog — itda-brain
 
+## 2026-09-01 (이슈 #1621) — v0.6.2
+
+### Changed
+
+- **`agents/brain-auditor.md` AUDIT_SCHEMA 정합** — 검수 4각도·`검수리포트.md` 파일 릴레이는 그대로 두고 최종 텍스트를 공통 감사자 JSON(`verdict`·`findings`·`recomputed`·`unverifiable`)으로 고정. tools 에서 `Skill` 제거(감사자 허용목록 밖), 셸 쓰기 금지 [HARD] 명시. `brain-build` v0.3.4 관문7 이 `verdict` 필드를 읽도록 정합.
+
 ## 2026-07-26 (이슈 #1280·#1281·#1282·#1283)
 
 ### Changed

@@ -2,6 +2,12 @@
 
 외부 공개용 한국 세금 스킬팩.
 
+## [Unreleased]
+
+### Added
+
+- `taxlaw` v0.1.2 — description `[책임 경계]` 슬롯 + `## 이 스킬을 쓰지 않을 때` 표 파일럿 (#1620): 세법 조회 전담, 세무 포털 자동화는 `itda-taxhero:web-automation` 으로 라우팅.
+
 ## [0.2.0] — 2026-09-01 (이슈 #1617)
 
 ### Added

@@ -7,6 +7,12 @@
 
 ### Added
 
+- `agents/ground-verifier.md` — 공통 감사자 계약(AUDIT_SCHEMA, #1621) 정합: `tools: Read, Grep, Glob, Write, WebSearch, WebFetch, mcp__workspace__web_fetch, ToolSearch` 명시(읽기 전용 허용목록 — `Skill` 제외, web-reader 폴백은 본 세션 몫), 최종 텍스트를 `verdict`·`findings`·`recomputed`·`unverifiable` JSON 으로 고정(검증표 파일 릴레이·템플릿 1:1 정합 불변). `ground-check` v0.11.1 §Task 2 정합.
+
+- `human-tone` v2.1.1 · `draft-post` v1.2.7 · `blog-reader` v0.12.2 · `web-reader` v7.1.2 · `web-search` v0.1.7 — description `[책임 경계]` 슬롯 + 본문 `## 이 스킬을 쓰지 않을 때` 표 파일럿 (#1620, `skill-creator-validation.md` §description 슬롯 규약). human-tone↔draft-post 는 AI 흔적 사전의 **정본을 human-tone `ai-tell-taxonomy.md` 로 선언**하고, draft-post `_anti-ai-korean.md` 의 `~를 통해` 무조건 금지를 정본(A-2 S2, #1619)에 맞춰 남발 억제로 정합. blog-reader↔web-reader 상호 지목.
+
+- `human-tone` v2.1.0 — `scripts/verify_gates.py` 윤문 사후 결정적 판정 게이트 신설 (#1619): P0 변경률(30/50%)·P1 목표 달성/과교정·P2 수사 전멸·P3 보존 불변식, exit 0/1/2(INCONCLUSIVE, fail-closed)/3. 30/50% 문서 규율을 스크립트 판정으로 교체. 동반: 상류 `im-not-ai` 경험적 반증 3건 반영 — A-2 `~를 통해` S2 강등·I-1 `것이다` 조건부·A-16 대명사 직역 번역 맥락 한정(`references/empirical-validation.md`, 정정 이력 보존).
+
 - `work-find` v0.15.1 — **itda-coach 에서 재편입** (#1511, 마스터 결정 2026-08-18): 코치 팩 7종 중 사용성이 높은 work-find 를 주력 팩으로 이동(#1319 편입의 원복). 스킬명·내용 불변, work-proposal·work-pilot 파이프라인이 동일 팩에서 완결. work-plan 카탈로그 경로·README·lessons 인덱스·marketplace 참조 전수 갱신.
 
 - `hwpx` v1.0.1 — 통합 GUIDE.md 신설(읽기/채우기/생성 3경로, 게재 전 3경로 연결 실측 검증).

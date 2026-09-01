@@ -3,6 +3,7 @@ name: realty-price-stats
 description: >
   한국부동산원 R-ONE 가격지수·전월세전환율과 realty-deals raw 데이터 기반 파생 통계를 제공하는 스킬입니다.
   "강남구 아파트 주간 가격지수 6개월치 가져와줘", "분당구 최근 3개월 평균·중위 매매가 통계 보여줘", "전월세전환율 추이 조회해줘"처럼 말하면 됩니다.
+  [책임 경계] 본 스킬은 R-ONE 가격지수와 파생 통계 전담 — 실거래 원본 행 수집은 itda-realty:realty-deals(derive 의 입력), 공급·청약 지표는 itda-realty:realty-supply.
 license: Apache-2.0
 compatibility: "Python 3.10+, Claude Code & Cowork"
 user-invocable: true
@@ -10,11 +11,11 @@ allowed-tools: Bash, Read, Write, mcp__workspace__bash
 argument-hint: "지수 유형 + 기간 (예: 주간 가격지수 2026년 1~6월 / 강남구 아파트 매매 통계 2026년 1월)"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.9.8"
+  version: "0.9.9"
   category: "domain"
   status: "active"
   created_at: "2026-05-15"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-01"
   tags: "R-ONE, price index, statistics, realestate, reb"
 ---
 
@@ -154,6 +155,15 @@ python3 "$SKILL_DIR/scripts/price_stats_cli.py" derive \
 | RONE_API_KEY 미설정 | error | config | `.env`(작업 폴더 루트)에 `RONE_API_KEY=키` 넣기(권장) — 스킬이 자동 탐색. "Claude 지침"도 동작하나 컨텍스트에 노출. 개발자는 셸 환경변수도 가능 |
 | KO_DATA_API_KEY 미설정 (derive) | error | config | `.env`(작업 폴더 루트)에 `KO_DATA_API_KEY=키` 넣기(권장) — 스킬이 자동 탐색. "Claude 지침"도 동작하나 컨텍스트에 노출. 개발자는 셸 환경변수도 가능 |
 | API 서비스 오류 | error | api | 활용신청 승인 상태 점검 |
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 실거래 개별 건 원본(CSV/JSON) | itda-realty:realty-deals |
+| 미분양·인허가·청약 | itda-realty:realty-supply |
+| 전세가율·갭 | itda-realty:realty-jeonse-gap |
+| 스킬팩 전체 안내·키 발급 | itda-realty:realty-meta |
 
 ## 테스트 실행
 

@@ -36,15 +36,29 @@ STATE_DIR = os.path.join(
     "itda-changelog",
 )
 
+# 별칭만 여기 적는다. 제품 자체는 profiles/<product>.json 이 있으면 자동으로 인식되므로
+# 새 제품을 추가할 때 이 스크립트를 고칠 필요가 없다 (herdr 추가 때 이 구조로 바꿨다).
 PRODUCT_ALIASES = {
-    "orca": "orca",
     "claude": "claude-code",
-    "claude-code": "claude-code",
     "claudecode": "claude-code",
     "cc": "claude-code",
-    "codex": "codex",
     "codex-cli": "codex",
 }
+
+
+def known_products() -> list[str]:
+    try:
+        return sorted(
+            f[:-5] for f in os.listdir(PROFILES_DIR) if f.endswith(".json")
+        )
+    except OSError:
+        return []
+
+
+def resolve_product(name: str) -> str | None:
+    low = (name or "").lower()
+    resolved = PRODUCT_ALIASES.get(low, low)
+    return resolved if resolved in known_products() else None
 
 # `* fix(terminal)!: 제목 by @user in https://github.com/o/r/pull/123`
 CONVENTIONAL_RE = re.compile(
@@ -269,7 +283,7 @@ def select(stable: list[dict], spec: dict) -> list[dict]:
 def main() -> None:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("--product", required=True,
-                    help="orca | claude(-code) | codex")
+                    help="profiles/ 에 있는 제품 (orca | claude(-code) | codex | herdr)")
     ap.add_argument("--since", help="3d | 2w | 2026-08-01 | v1.4.170")
     ap.add_argument("--new", action="store_true", help="마지막으로 본 태그 이후")
     ap.add_argument("--all", action="store_true", help="수집 범위 전체")
@@ -277,9 +291,9 @@ def main() -> None:
     ap.add_argument("--out", help="JSON 출력 경로 (기본 stdout)")
     args = ap.parse_args()
 
-    product = PRODUCT_ALIASES.get(args.product.lower())
+    product = resolve_product(args.product)
     if not product:
-        die(f"알 수 없는 제품: {args.product} (orca | claude | codex)")
+        die(f"알 수 없는 제품: {args.product} ({' | '.join(known_products())})")
 
     profile = load_profile(product)
     repo = profile["repo"]

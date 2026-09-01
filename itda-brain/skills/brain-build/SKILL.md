@@ -10,12 +10,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, Agent, Skill, mcp__workspace__bash
 argument-hint: "[소스 폴더 경로] (예: ~/회사공유폴더)"
 metadata:
   author: "Chinseok"
-  version: "0.3.3"
+  version: "0.3.4"
   category: "knowledge-base"
   status: "experimental"
   recommended: false
   created_at: "2026-07-14"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-01"
   tags: "knowledge-base, second-brain, provenance, unstructured, docx, xlsx, pptx, pdf, wiki, reverse-engineering, convention, incubating"
 ---
 
@@ -161,7 +161,7 @@ python3 "$SKILL_DIR/../brain-audit/scripts/freshness.py" scan "<소스폴더>" \
 - 관문1 인벤토리(파일 목록 + **수정시각**) — 커버리지 표의 관측 필드(REQ-032) 기준선. 기계 기준선 manifest 는 관문6에서 이미 저장돼 있다.
 - 검수 4각도 지시(전수성·수치 재대조·근거 추적·교차 모순)와 산출 파일(`검수리포트.md`).
 
-brain-auditor 가 `검수리포트.md`를 쓰면, 발견된 핵심 모순 요약을 `INDEX.md`의 "알려진 핵심 모순"에 반영한다.
+brain-auditor 가 `검수리포트.md`를 쓰면, 발견된 핵심 모순 요약을 `INDEX.md`의 "알려진 핵심 모순"에 반영한다. brain-auditor 의 **최종 텍스트는 AUDIT_SCHEMA JSON**(`verdict`·`findings`·`recomputed`·`unverifiable`, #1621)이다 — 검수 통과 여부는 리포트 문장에서 추론하지 말고 `verdict` 필드로 읽는다(critical 1건 = `FAIL`, `unverifiable` 비어 있지 않으면 `PASS` 아님).
 
 **2차 경로 (에이전트 타입 부재 시)** — 환경에 `itda-brain:brain-auditor` 에이전트 타입이 없으면(스킬팩 미설치·소스 저장소 등), general-purpose 서브에이전트에 `"$SKILL_DIR/../../agents/brain-auditor.md"` 지시서를 먼저 읽고 그대로 따르라고 프롬프트로 명시해 디스패치한다. 새 컨텍스트의 서브에이전트가 지시서를 따르므로 **격리 검수가 동등하게 성립**한다(빌드 기억 미공유) — 이 경로는 배너 대상이 아니다.
 

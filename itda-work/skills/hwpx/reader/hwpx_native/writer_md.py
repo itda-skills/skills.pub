@@ -66,8 +66,9 @@ class MarkdownWriter:
 
     def _extract_image_file(self, image: docir.Image) -> str:
         self.image_counter += 1
-        ext = _mime_to_ext(image.format)
         data = image.data
+        # 선언 format 보다 실제 바이트가 우선 — 선언이 틀린 파일이 실재한다
+        ext = _sniff_ext(data) or _mime_to_ext(image.format)
         if ext == "bmp":
             converted = _convert_bmp_to_png(data)
             if converted is not None:
@@ -227,6 +228,25 @@ def _split_after(value: str, sep: str) -> list[str]:
         end = index + len(sep)
         parts.append(value[start:end])
         start = end
+
+
+def _sniff_ext(data: bytes) -> str | None:
+    """실제 바이트로 이미지 형식을 판정한다(선언 format 보다 우선).
+
+    HWPX 의 bindata 선언 확장자가 실제 페이로드와 다른 파일이 실재한다(실측:
+    format="bmp" 인데 바이트는 PNG). 선언만 믿으면 Pillow 가 없을 때 **PNG 를
+    .bmp 로 저장**한다 — Pillow 가 있으면 변환 과정에서 우연히 교정돼 있어
+    의존성이 있는 환경에서는 드러나지 않는다.
+    """
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "png"
+    if data[:2] == b"\xff\xd8":
+        return "jpg"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return "gif"
+    if data[:2] == b"BM":
+        return "bmp"
+    return None
 
 
 def _mime_to_ext(format_name: str) -> str:

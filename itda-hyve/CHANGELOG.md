@@ -2,6 +2,16 @@
 
 이 플러그인의 주요 변경 사항을 기록합니다. 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [SemVer](https://semver.org/)를 따릅니다.
 
+## [Unreleased]
+
+### Added
+
+- `web-automation` v0.4.8 — description `[책임 경계]` 슬롯 + `## 이 스킬을 쓰지 않을 때` 표 파일럿 (#1620): 동명 스킬 `itda-taxhero:web-automation` 과의 경계(사이트 무관 정본 ↔ 세무 포털 특화)를 상호 지목.
+
+### Fixed
+
+- `music-dl` v1.4.0 — 매칭 방어 3종 (#1629, 터보 베스트 70곡 실측): ① iTunes 후보가 곡명 변형 전부에서 0건이면 채널명 아티스트를 빼고 곡명만 재조회(`HANKOOK NORE` 오염으로 16곡 연속 미매칭). ② 매칭 곡명이 원제와 유사도 미달이면 `TITLE_MISMATCH` 로 자동 추가 게이트 — 판정은 괄호를 걷어낸 맨 제목끼리(`ALWAYS`→ONENESS `Turbo` 등 conf=high 오매칭 4건). ③ 자동 추가 폴더 복사명을 `아티스트 - 앨범 - NN 곡명.m4a` 로(동명 basename 덮어쓰기로 `01 Prologue.m4a` 1곡 소실).
+
 ## [0.14.0] — 2026-08-25
 
 앱 데이터가 76항목 → **784항목**(교재 전량 × 3언어)으로 늘면서 검수기가 새 콘텐츠에서

@@ -6,6 +6,7 @@ description: >
   "국세기본법 제18조 보여줘", "서면-2019-법령해석재산-1234 문서 찾아줘", "세법 해석사례 조사해줘",
   "국세청 상담사례 검색해줘"처럼 말하면 됩니다. 브라우저 없이 순수 HTTP 로 동작하며
   문서번호 검색·페이지네이션·정렬·전문 조회를 지원합니다.
+  [책임 경계] 본 스킬은 국세법령정보시스템 세법 조회(법령·예규·판례) 전담 — 위하고·홈택스 등 세무 포털 자동화·장부 수집은 itda-taxhero:web-automation 이며, 세법 밖 일반 법령은 다루지 않습니다.
 license: Apache-2.0
 compatibility: "Claude Code & Cowork. Python 3.10+"
 allowed-tools: Bash, Read, Write, mcp__workspace__bash
@@ -15,7 +16,7 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   status: "active"
-  version: "0.1.1"
+  version: "0.1.2"
   created_at: "2026-09-01"
   updated_at: "2026-09-01"
   tags: "tax law, NTS, statute, tax ruling, precedent, tax tribunal, Korea tax"
@@ -101,6 +102,15 @@ python3 "$SKILL_DIR/scripts/search_taxlaw.py" detail --domain counsel --id 1387
   그 URL 로 안내한다.
 - 세법해석례 중 `정비`(실효 사례) 문서는 상세 조회가 비어 있을 수 있다.
 - 대량 수집 용도가 아니다 — 조사·리서치 목적의 조회에만 사용한다.
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 위하고·홈택스 로그인·장부·분개장 수집 | itda-taxhero:web-automation |
+| 세법 밖 일반 법령·판례 | 미지원(국세법령정보시스템 범위 밖) |
+| 대량 수집·크롤링 | 미지원 — 조사 목적 조회만 |
+| 답변 근거의 출처 검증 | itda-work:ground-check |
 
 ## 부록: Claude Code 확장 (선택)
 

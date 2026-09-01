@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.54.5",
+    "version": "8.55.0",
     "language": "ko"
   },
   "plugins": [
@@ -43,7 +43,7 @@
     {
       "name": "itda-travel",
       "source": "./itda-travel",
-      "description": "여행 스킬팩 — KTX·SRT 열차 검색·예약과 여행지 유행 맛집 탐지"
+      "description": "여행 스킬팩 — 고속열차 검색·예약(KTX, 2026-09-01 SRT 통합)과 여행지 유행 맛집 탐지"
     },
     {
       "name": "itda-shopping",
@@ -78,7 +78,7 @@
     {
       "name": "itda-hyve",
       "source": "./itda-hyve",
-      "description": "하이브 데스크톱 스택(hyve 앱·개발 데스크톱 도구) 전제 스킬 모음 — 웹 자동화·PPTX 비교·개발도구 릴리즈 요약"
+      "description": "하이브 데스크톱 스택(hyve 앱·개발 데스크톱 도구) 전제 스킬 모음 — 웹 자동화·PPTX 비교·개발도구 릴리즈 요약·도서관 대출·한글 발음 표기·음원 정리"
     },
     {
       "name": "itda-class-igm",

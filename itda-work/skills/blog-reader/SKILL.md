@@ -5,6 +5,7 @@ description: >
   "네이버 블로그 글 가져와줘", "블로그 본문이랑 댓글 보여줘", "이 블로그 최근 7일 글 보여줘",
   "네이버 블로그에서 클로드 관련 글 찾아서 읽어줘"처럼 말하면 됩니다.
   공개 포스트 전용이며 봇 차단 우회는 하지 않습니다.
+  [책임 경계] 본 스킬은 네이버 블로그(blog.naver.com) 전담 — 그 밖의 한국 웹페이지·EUC-KR·WAF 정적 페이지는 itda-work:web-reader, 범용 키워드 검색은 itda-work:web-search.
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
@@ -12,11 +13,11 @@ allowed-tools: Read, Bash, Write, Glob, Grep, mcp__workspace__bash
 argument-hint: "[list|post|comments|search|discover|read] [options]"
 metadata:
   author: "Chinseok"
-  version: "0.12.1"
+  version: "0.12.2"
   category: "data-fetching"
   status: "stable"
   created_at: "2026-05-15"
-  updated_at: "2026-07-30"
+  updated_at: "2026-09-01"
   tags: "naver, blog, comments, search, read-only"
 ---
 
@@ -483,6 +484,16 @@ python3 -m pip install -r "$SKILL_DIR/../web-reader/requirements.txt"
 > uv 사용자는 `uv pip install -r "$SKILL_DIR/../web-reader/requirements.txt"`(venv 권장) 도 가능하다.
 
 ---
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 네이버 블로그가 아닌 웹페이지 본문 | itda-work:web-reader |
+| 여러 검색엔진 키워드 검색(출처 URL 수집) | itda-work:web-search |
+| 로그인·JavaScript 렌더·차단 사이트 | itda-hyve:web-automation |
+| 정보원 등급·플레이북 정찰 | itda-work:web-scout |
+| 티스토리·벨로그·브런치 | 미지원(아래 알려진 한계) |
 
 ## 알려진 한계 / 향후 작업
 

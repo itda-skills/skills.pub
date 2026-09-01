@@ -2,6 +2,12 @@
 
 본 스킬의 변경 이력. [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따른다.
 
+## [0.11.1] — 2026-09-01 (이슈 #1621)
+
+### Changed
+
+- §Task 2 디스패치 절에 ground-verifier 최종 텍스트 = AUDIT_SCHEMA JSON 계약 명시(검증표 파일 릴레이 불변). verifier 가 `Skill` 없이 도는 읽기 전용 감사자가 되어 web-reader 폴백은 본 세션 몫으로 이관.
+
 ## [0.11.0] — 2026-07-26 (이슈 #1285)
 
 ### Added

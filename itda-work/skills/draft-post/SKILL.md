@@ -4,6 +4,7 @@ description: >
   블로그·보고서·기획서·보도자료·뉴스레터를 도메인 맞춤 인터뷰로 초안 작성하는 스킬입니다.
   "블로그 글 써줘", "보고서 초안 작성해줘", "기획서 만들어줘"처럼 말하면 됩니다.
   컨텍스트를 모은 뒤 도메인별로 톤·구조를 조정한 마크다운 초안을 출력합니다.
+  [책임 경계] 본 스킬은 초안 생성 전담(AI 흔적 사전의 정본: itda-work:human-tone) — 이미 작성된 글의 AI 흔적 제거·문체 후처리는 itda-work:human-tone 이 맡고, 본 스킬은 발행·송부를 하지 않습니다.
 license: Apache-2.0
 compatibility: "Claude Code & Cowork"
 user-invocable: true
@@ -11,10 +12,10 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__workspace__bash
 argument-hint: "<topic> [--style <style>] [--save <path>] [--analyze <file>] [--list-styles]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "1.2.6"
+  version: "1.2.7"
   category: "writing"
   created_at: "2026-03-28"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-01"
   tags: "blog, report, draft, writing, official, government, press-release, proposal, briefing, newsletter, meeting-minutes"
 ---
 
@@ -190,6 +191,24 @@ metadata:
 - 인자가 없으면: 사용자에게 저장 여부를 질문
   - 저장 원함 → 경로를 입력받아 Write 도구로 저장
   - 저장 안 함 → 대화창 출력으로 완료
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 이미 작성된 글의 AI 흔적 제거·문체 다듬기 | itda-work:human-tone |
+| 네이버 블로그 키워드 선정(초안 앞 단계) | itda-work:blog-seo |
+| 주장·수치의 출처 검증 | itda-work:ground-check |
+| 완성 문서를 docx/pptx/hwpx 로 조판 | itda-work:docx-design · itda-work:pptx-design · itda-work:hwpx |
+| 메일 발송 | itda-work:email |
+
+## 권장 체인
+
+```
+blog-seo → draft-post → human-tone    (키워드 → 초안 → 송부 직전 검수)
+```
+
+`human-tone` 과 같은 글에 겹쳐 적용하지 않는다 — 본 스킬은 생성 단계 사전 가드, `human-tone` 은 후처리 검수(가드 정본).
 
 ## 스타일 확장 가이드
 

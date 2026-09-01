@@ -15,6 +15,7 @@ itda-gov의 대부분 스킬은 **사전 API 키(또는 OC) 발급이 필요**�
 | `KOSIS_API_KEY` | https://kosis.kr/openapi/ | 국가 통계 |
 | `ECOS_API_KEY` | https://ecos.bok.or.kr/api/ | 경제 지표 |
 | `KO_DATA_API_KEY` | https://www.data.go.kr | 실거래가, 지원사업, 나라장터, **주식시세(15094808 별도 활용신청 필요)** |
+| `OPINET_API_KEY` (선택) | https://www.opinet.co.kr/user/custapi/custApiInfo.do 「일반 API 이용 신청」 | 유가 — **기본 경로는 키 불요**(fuel-price) |
 
 ```bash
 # Claude Cowork 설정 (권장)
@@ -43,6 +44,7 @@ KO_DATA_API_KEY=...
 | [`ecos`](skills/ecos/SKILL.md) | ECOS 한국은행 | GDP, 금리, 환율, 물가 |
 | [`funding`](skills/funding/SKILL.md) | K-Startup·기업마당·NIPA·KOCCA·SMTECH | 정부 지원사업 공고 전수조사·증분 재조사·적합성 판정 |
 | [`g2b`](skills/g2b/SKILL.md) | 나라장터 (G2B) | 입찰공고 검색·상세 |
+| [`fuel-price`](skills/fuel-price/SKILL.md) | 오피넷 (한국석유공사) | 주유소 평균 유가(전국·시도 × 일/주/월) → 출장 유류비 km당 단가 → 직원 공지문. **키 불요** |
 
 > **정본 문서 가이드 (SPEC-ITDAGOV-DOCS-001, 2026-04-28 정비 완료)**: 6개 스킬 모두 발급처 정본 명세를 `skills/{스킬}/references/`에 보존하고, 각 SKILL.md 하단 "상세 API 가이드" 섹션에서 정본 파일을 직접 링크합니다. 활용신청 안내, 정본 에러 코드 매핑(한글 hint + 자동 활용신청 URL 부착), HTTP 403 처리, 라이브 응답 필드 매핑이 통일되어 있습니다.
 

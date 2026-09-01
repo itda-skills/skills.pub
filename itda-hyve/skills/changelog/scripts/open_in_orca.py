@@ -17,20 +17,38 @@ import sys
 from datetime import datetime, timezone
 
 # state 는 머신 로컬 가변 데이터라 스킬 디렉토리(저장소·플러그인 배포 자산) 밖에 둔다.
+PROFILES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "profiles"
+)
+
 STATE_DIR = os.path.join(
     os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"),
     "itda-changelog",
 )
 
+# 별칭만 여기 적는다. 제품 자체는 profiles/<product>.json 이 있으면 자동으로 인식되므로
+# 새 제품을 추가할 때 이 스크립트를 고칠 필요가 없다 (herdr 추가 때 이 구조로 바꿨다).
 PRODUCT_ALIASES = {
-    "orca": "orca",
     "claude": "claude-code",
-    "claude-code": "claude-code",
     "claudecode": "claude-code",
     "cc": "claude-code",
-    "codex": "codex",
     "codex-cli": "codex",
 }
+
+
+def known_products() -> list[str]:
+    try:
+        return sorted(
+            f[:-5] for f in os.listdir(PROFILES_DIR) if f.endswith(".json")
+        )
+    except OSError:
+        return []
+
+
+def resolve_product(name: str) -> str | None:
+    low = (name or "").lower()
+    resolved = PRODUCT_ALIASES.get(low, low)
+    return resolved if resolved in known_products() else None
 
 
 def orca(*args: str) -> tuple[int, str]:
@@ -65,15 +83,16 @@ def load_state(path: str) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--product", required=True, help="orca | claude(-code) | codex")
+    ap.add_argument("--product", required=True, help="profiles/ 에 있는 제품 (orca | claude(-code) | codex | herdr)")
     ap.add_argument("--file", required=True, help="열 HTML 경로")
     ap.add_argument("--tag", help="이번에 확인한 최신 태그 (last_seen 기록용)")
     ap.add_argument("--no-state", action="store_true", help="last_seen 갱신 안 함")
     args = ap.parse_args()
 
-    product = PRODUCT_ALIASES.get(args.product.lower())
+    product = resolve_product(args.product)
     if not product:
-        print(f"[changelog] 알 수 없는 제품: {args.product}", file=sys.stderr)
+        print(f"[changelog] 알 수 없는 제품: {args.product} "
+              f"({' | '.join(known_products())})", file=sys.stderr)
         sys.exit(1)
     state_path = os.path.join(STATE_DIR, f"{product}.json")
 

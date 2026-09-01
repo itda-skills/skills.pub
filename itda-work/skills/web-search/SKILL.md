@@ -7,6 +7,7 @@ description: >
   "경쟁사 가격 정책 정보 모아줘"처럼 말하면 됩니다.
   1회성 정보 탐색과 출처 URL 수집이 목적이며, 시장조사 보고서·팩트체크·본문 추출은
   다루지 않습니다.
+  [책임 경계] 본 스킬은 검색엔진 결과 목록(제목·URL·발췌) 수집 전담 — 찾은 URL 의 본문 추출은 itda-work:web-reader, 네이버 블로그는 itda-work:blog-reader 이며, 시장조사 보고서·팩트체크는 다루지 않습니다.
 license: Apache-2.0
 compatibility: "Claude Cowork & Code. Python 3.10+"
 allowed-tools: Bash, Read, Write, mcp__workspace__bash
@@ -14,9 +15,9 @@ argument-hint: "[질의어] [--engine auto|tavily|serper|perplexity|naver|exa] [
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "search"
-  version: "0.1.6"
+  version: "0.1.7"
   created_at: "2026-06-09"
-  updated_at: "2026-07-30"
+  updated_at: "2026-09-01"
   tags: "search, web search, query, multi engine, tavily, serper, perplexity, naver, exa"
 ---
 
@@ -153,6 +154,16 @@ python3 "$SKILL_DIR/scripts/web_search.py" --check-env
 | 6 | 네트워크/타임아웃 (전 엔진 실패) |
 
 일부 엔진만 실패하면 성공 엔진 결과를 반환하고 실패는 출력의 `errors[]`에 표기한다.
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 찾은 URL 의 본문을 마크다운으로 추출 | itda-work:web-reader |
+| 네이버 블로그 글·댓글·블로그 내 검색 | itda-work:blog-reader |
+| 시장조사 보고서·경쟁 분석 | itda-work:market-scan |
+| 주장·수치의 출처 검증 | itda-work:ground-check |
+| 로그인·JS 렌더가 필요한 사이트 | itda-hyve:web-automation |
 
 ## 범위 밖 (다른 스킬로 위임)
 

@@ -1,143 +1,77 @@
 ---
 name: train-srt
 description: >
-  SRT(수서고속철) 열차를 검색하고 예약하는 스킬입니다.
-  "내일 수서에서 부산 SRT 찾아줘", "오후 6시 이후 동탄 가는 표 있어?",
-  "아까 그 열차로 예약해줘", "SRT 계정 확인해줘"처럼 말하면 됩니다.
-  SR 비공식 API를 사용하며, 예약은 반드시 확인을 거치고
-  결제·취소는 사용자가 직접 합니다.
+  SRT는 2026-09-01부터 KTX로 통합되어 이 스킬은 기능을 갖지 않습니다.
+  "수서에서 부산 SRT 찾아줘", "SRT 예약해줘", "SRT 계정 확인해줘"처럼 SRT로
+  요청이 들어오면 통합 사실을 안내하고 train-ktx로 넘깁니다.
+  옛 SRT 구간(수서·동탄·평택지제)의 검색·예약은 train-ktx가 담당합니다.
+  [책임 경계] 본 스킬은 통합 안내 전용 스텁 —
+  실제 검색·예약은 itda-travel:train-ktx 가 전담합니다.
 license: MIT
-compatibility: "Python 3.10+. SR 비공식 클라이언트(SRTrain) 의존."
+compatibility: "Python 3.10+. 외부 의존 없음(구 SRTrain 의존 제거)."
 user-invocable: true
-allowed-tools: Bash, Read, AskUserQuestion, mcp__workspace__bash
-argument-hint: "수서에서 부산 SRT / 저녁 동탄 가는 표"
+allowed-tools: Bash, Read
+argument-hint: "수서에서 부산 SRT (→ train-ktx 로 안내)"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.2.3"
-  status: "experimental"
+  version: "0.3.0"
+  status: "deprecated"
   created_at: "2026-06-05"
-  updated_at: "2026-07-26"
-  tags: "srt, srail, train, booking, reservation, travel"
+  updated_at: "2026-09-01"
+  tags: "srt, srail, ktx, korail, train, deprecated, travel"
 ---
 
-# train-srt
+# train-srt (폐기 — 통합 안내 전용)
 
-SRT(수서고속철) 열차를 **검색**하고 **예약**합니다. KTX는 자매 스킬 train-ktx
-참조. 사용자용 가이드는 GUIDE.md 참조.
+**SRT는 2026-09-01부로 폐지되고 KTX로 통합됐습니다.** 이 스킬은 검색·예약
+기능을 갖지 않으며, 어떤 서브커맨드로 호출해도 통합 안내를 출력하고 `rc=2` 로
+종료합니다(#1624).
 
-## ⚠️ 시작 전 반드시 확인 (디스클레이머)
+## 무슨 일이 있었나
 
-- **SR 비공식 클라이언트(SRTrain)**를 사용합니다. SR 이용약관(ToS) 위반 소지가
-  있으며, SR 측 변경으로 **언제든 동작이 멈출 수 있습니다**.
-- 이 스킬은 **검색과 예약까지만** 합니다. **결제·취소는 하지 않습니다** —
-  사용자가 SR 앱/홈페이지(etk.srail.kr)에서 직접 진행합니다. 예약 후 결제기한 내
-  미결제 시 좌석은 **자동 취소**됩니다.
-- **예약·결제·노쇼에 대한 책임은 사용자 본인**에게 있습니다.
-- **매크로(취소표 자동 연타·반복 폴링)는 제공하지 않으며 금지**합니다.
+- 9월 1일 이후 **운행**하는 열차는 코레일+ 앱·코레일 홈페이지에서만 예매할 수
+  있습니다. SR 앱(etk.srail.kr) 예매는 8월 31일 운행분까지였습니다.
+- 옛 SRT 전용역(**수서·동탄·평택지제**)은 이제 코레일이 판매하며,
+  `train-ktx` 가 담당합니다.
+- 옛 SRT 열차는 코레일 표기로 **"KTX" / "KTX-산천"** 으로 나옵니다. 같은 열차입니다.
 
-## 자격증명 (계정)
-
-| Variable | 설명 | 발급 |
-|---|---|---|
-| `SRT_USER_ID` | SR 회원 ID (회원번호 / 휴대폰 / 이메일) | [etk.srail.kr](https://etk.srail.kr) 회원가입 |
-| `SRT_PASSWORD` | SR 로그인 비밀번호 | 위 계정의 비밀번호 |
-
-**권장 (비개발자 포함 모든 사용자) — 작업 폴더 `.env`에 계정 등록:**
-
-작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트) 루트에 `.env` 파일을 만들고 아래 두 줄을 넣어 두면 스킬이 자동으로 찾아 읽습니다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. `.env` 대신 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해 두어도 로더가 자동으로 찾습니다. 비밀번호가 담긴 `.env` 파일은 작업 폴더 밖으로 공유하지 마세요.
-
-```dotenv
-SRT_USER_ID=SR 회원번호 또는 휴대폰번호 또는 이메일
-SRT_PASSWORD=SR 로그인 비밀번호
-```
-
-등록을 마쳤으면 **"SRT 계정 확인해줘"** 라고 요청해 로그인 1회로 설정을
-검증할 수 있습니다(`check` — 규칙 7 참조).
-
-> **키 주입 (Claude 실행 규칙):** 자격증명 유무를 `ls`/`find` 등으로 **사전 점검하지 않는다** — 스크립트가 `.env`·`.env.txt`·`env.txt`·`환경변수.txt` 를 스스로 탐색하므로 **우선 실행**한다(셸 glob·검색 패턴은 별칭을 놓쳐 오탐한다: `.env*`→env.txt 누락, `*env*`→환경변수.txt 누락). 실행이 자격증명 누락으로 실패하면, 사용자 지침("Claude 지침"·`CLAUDE.md`)에 해당 변수가 선언돼 있는 경우 그 값을 환경변수로 전달해 재시도한다 — 예: `SRT_USER_ID=<ID> SRT_PASSWORD=<PW> python3 "$SKILL_DIR/scripts/main.py" ...`. 지침에도 없으면 fail-loud 안내를 제시한다. 주입한 값은 출력·요약·로그에 노출하지 않는다(SAFE-3). 수동 확인이 꼭 필요하면 파일명 4종(`.env`·`.env.txt`·`env.txt`·`환경변수.txt`)을 그대로 나열해 확인한다.
-
-> **출처 표시 (Claude 실행 규칙):** 스크립트 stderr 에 `[자격증명] KEY ← 출처` 줄이 나오면, 그 내용을 사용자에게 짧게 알린다(예: "환경변수.txt 의 SRT_PASSWORD 를 사용했습니다") — 사용자가 어느 설정파일이 쓰였는지 인지하게 하는 계약이다. 값은 어디에도 표시하지 않는다.
-
-**개발자 (선택) — 환경변수 / `.env`:** 셸 환경변수, `~/.claude/settings.json` 의 env, 작업 폴더/홈의 `.env`도 사용할 수 있습니다.
-> 조회 우선순위: 셸 환경변수 > `~/.claude/settings.json` 의 env(Claude 주입 포함) > 작업 폴더/홈의 `.env`.
-> 키가 없으면 fail-loud로 발급·설정 방법을 안내합니다(크래시 아님). 비밀번호는 출력·로그에 평문으로 남기지 않습니다(마스킹).
-
-## 실행
-
-먼저 스킬 디렉토리를 확정합니다(이후 모든 실행이 이 기준).
-
-```bash
-# Claude Code(플러그인 설치) = $CLAUDE_PLUGIN_ROOT / Cowork = 세션 마운트 탐색
-SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/train-srt}"
-[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/train-srt' 2>/dev/null | head -1)
-# 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
-```
-
-```powershell
-$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\train-srt"  # 미설정이면 SKILL.md 위치 절대경로 사용
-```
-
-```bash
-# macOS/Linux
-python3 "$SKILL_DIR/scripts/main.py" search --dep 수서 --arr 부산 --date 20260612 --time 180000
-python3 "$SKILL_DIR/scripts/main.py" reserve --dep 수서 --arr 부산 --date 20260612 --time 180000 --index 0            # 미리보기(예약 안 함)
-python3 "$SKILL_DIR/scripts/main.py" reserve --dep 수서 --arr 부산 --date 20260612 --time 180000 --index 0 --confirm  # 실제 예약
-python3 "$SKILL_DIR/scripts/main.py" check           # 계정 확인(로그인 1회, read-only)
-python3 "$SKILL_DIR/scripts/main.py" reservations
-
-# Windows
-py -3 "$env:SKILL_DIR\scripts\main.py" search --dep 수서 --arr 부산
-```
-
-> **저장소 개발 부연**: 스크립트는 공용 `shared/` 모듈(`env_loader`)을 import 합니다.
-> 배포본에서는 `shared/` 가 함께 주입되므로 별도 설정이 필요 없고, 저장소 체크아웃에서
-> 직접 실행할 때만 저장소 루트에서 `PYTHONPATH=skills/shared` 를 앞에 붙입니다.
-
-옵션: `--adults N`(기본 1) · `--children N` · `--seniors N` · `--seat general|special` ·
-`--include-no-seats`(매진 포함) · `--json`.
-전역 옵션 `--json` · `--id` · `--pw` 는 서브커맨드 **뒤**에 둡니다
-(예: `... main.py search --dep 수서 --arr 부산 --json`).
+라이브 실측(#1624, 2026-09-02 기준)으로 확인: 수서→부산 06:00 편이 SR API 에서는
+`SRT 303`, 코레일 API 에서는 `KTX-산천 303` 이고 **열차번호·종별코드·요금(52,400원)이
+일치**합니다. 같은 재고를 코레일이 팝니다.
 
 ## Claude 라우팅 가이드
 
-Claude가 이 스킬을 실행할 때 반드시 따르는 행동 규칙입니다.
+**규칙 1 — SRT 요청은 train-ktx 로 넘깁니다**
+사용자가 "SRT" 라고 불러도 그대로 `train-ktx` 로 처리합니다. 역명을 바꿀 필요가
+없습니다(수서·동탄·평택지제 모두 지원하며 `지제`·`평택` 은 `평택지제` 로 정규화).
+통합 사실은 **한 줄로만** 알리고, 사용자를 붙잡지 말고 바로 검색을 진행합니다.
 
-**규칙 1 — 역명 확인**
-출력에 "역을 찾지 못했습니다" + 후보가 나오면 임의로 고르지 말고 사용자에게
-확인합니다. 서울·용산·광명 등 **KTX 전용역은 SRT 미정차**임을 안내하고, 그
-구간이면 train-ktx 사용을 권합니다. SRT는 수서·동탄·평택지제에서 출발합니다.
+**규칙 2 — 이 스킬의 스크립트를 기능 목적으로 실행하지 않습니다**
+`scripts/main.py` 는 안내만 하고 `rc=2` 로 끝납니다. 실행 결과를 "검색 실패" 로
+보고하지 말고, `train-ktx` 로 재시도합니다.
 
-**규칙 2 — 예약 2단계 확인 게이트 (SAFE-1, 필수)**
-예약은 **절대 곧바로 `--confirm` 하지 않습니다.** 반드시 두 단계를 거칩니다:
-1. 먼저 `--confirm` **없이** `reserve` 를 실행해 미리보기를 받습니다(실제 예약 안 함).
-2. 미리보기를 `AskUserQuestion` 으로 제시하고 — 구간·시각·좌석유형·인원·예상 결제기한 명시 — **명시적 승인**을 받습니다.
-3. 승인된 경우에만 동일 명령에 `--confirm` 을 붙여 재실행합니다.
+**규칙 3 — SR 경로를 되살리지 않습니다**
+SR 조회 API 는 지금도 응답을 주지만, **9월 1일 이후 운행분은 SR 에서 예매할 수
+없습니다.** 그 경로를 되살리면 예약 단계에서 조용히 실패해 사용자가 좌석을 잡은
+줄 알게 됩니다. 우회 구현을 제안하지 않습니다.
 
-**규칙 3 — 결제·취소는 안내만 (SAFE-2)**
-이 스킬은 결제·취소를 하지 않습니다. 예약 후 "결제는 SR 앱/홈페이지에서 직접,
-결제기한 내" 임을 안내합니다. 취소 요청은 SR 앱/홈페이지·고객센터로 안내합니다.
+## 실행 (안내 확인용)
 
-**규칙 4 — fail-loud (SAFE-4)**
-"로그인 필요", "매진", "접속 지연/차단" 등 오류는 사유를 그대로 전달합니다.
-빈 검색 결과를 "열차 없음"으로 단정하기 전에 날짜·시각·역명을 점검합니다.
+```bash
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/train-srt}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/train-srt' 2>/dev/null | head -1)
 
-**규칙 5 — 자격증명 보호 (SAFE-3)**
-`SRT_USER_ID`/`SRT_PASSWORD` 값을 출력·요약·로그에 노출하지 않습니다.
+python3 "$SKILL_DIR/scripts/main.py"          # 통합 안내 (rc=2)
+python3 "$SKILL_DIR/scripts/main.py" --json   # 기계 소비자용 JSON (rc=2)
+```
 
-**규칙 6 — 매크로 금지 (SAFE-6)**
-매진 시 자동 반복 조회·취소표 낚기 루프를 만들지 않습니다.
-
-**규칙 7 — 계정 확인 (check)**
-"계정 확인해줘" 요청, 자격증명 최초 설정 직후, 로그인 오류 후 재설정 시에는
-`check` 를 실행해 로그인 1회로 자격증명을 검증합니다. 출력은 **마스킹된 ID와
-성공 여부만**입니다(SAFE-3 — 회원명 등 계정 정보 미출력). 검색·예약 흐름마다
-강제 실행하지는 않습니다(불필요한 로그인 왕복 최소화).
+JSON 계약: `{status: "integrated", integration_date, successor_skill,
+former_srt_stations[], message, booking_channel}`.
 
 ## 제약 (Exclusions)
 
-- **결제 자동완료 · 예약 취소 · 매크로/취소표 자동낚기** — 비목표(취소·매크로는 영구).
-- **KTX/Korail** — 대상 아님(서울·용산·광명 출발은 train-ktx). SRT 전용.
-- 예약대기(매진 시 대기 등록)는 v1 범위 밖 — 검색에서 "대기가능"으로 표기만 합니다.
-- 결제기한이 지나면 좌석은 **SR이 자동 소멸**시킵니다(이 스킬이 취소하는 것 아님).
-- 다구간 환승 · 운임 할인 자동 최적화 · 회원가입 — 비목표.
+- **검색·예약·예약조회·계정확인** — 전부 폐기(#1624). `train-ktx` 사용.
+- **SR API 재도입** — 영구 비목표(위 규칙 3).
+- 자격증명(`SRT_USER_ID`/`SRT_PASSWORD`)을 읽지 않습니다. `.env` 에 남아 있어도
+  이 스킬은 접근하지 않습니다.

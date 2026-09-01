@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `realty-deals` v0.9.9 · `realty-price-stats` v0.9.9 · `realty-supply` v0.9.8 — description `[책임 경계]` 슬롯 + `## 이 스킬을 쓰지 않을 때` 표 파일럿 (#1620): raw 수집(deals) ↔ 지수·파생 통계(price-stats) 경계를 상호 지목.
+
 
 
 ### Fixed

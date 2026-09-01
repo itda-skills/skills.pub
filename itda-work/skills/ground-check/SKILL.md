@@ -10,10 +10,10 @@ allowed-tools: WebSearch, WebFetch, Skill, Read, Write, mcp__workspace__web_fetc
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "research"
-  version: "0.11.0"
+  version: "0.11.1"
   status: "active"
   created_at: "2026-05-12"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-01"
   tags: "ground-check, source-check, fact-check, primary-source, citation, verification, cowork, hedge-detection"
 ---
 
@@ -78,7 +78,7 @@ LLM 산출물의 환각·hedge·자기 검증 편향을 **절차로 차단**하�
 
 본 세션은 **직접 검수하지 않는다**. 아래 검증 지침 블록을 독립 검증 라운드로 넘겨 Claude 자기검증 편향을 차단한다.
 
-> **검증 라운드 디스패치 (환경 분기).** 실행 환경에 `itda-work:ground-verifier` 서브에이전트가 있으면, 아래 검증 지침 블록(2-A)을 **그 에이전트에 명시 디스패치** 하는 것이 정본이다 — **라운드마다 신규 디스패치** 해 라운드별 컨텍스트를 격리한다(빌드·이전 라운드 기억과 분리). 디스패치 프롬프트에는 ground-verifier 입력 계약(주장 표 또는 산출물 파일 경로 / 이미 사용된 URL 목록 / 라운드 번호 / 검증 범위)을 함께 넘긴다. 에이전트가 없는 환경에서는 **degraded 폴백** 이다 — 자연어 발화만으로 독립 서브에이전트가 자동 분기되지는 않으므로(Cowork 능력 지도 실측 — 자동 위임 미발동), "본 세션이 검수하지 않는다" 는 완전히 성립하지 못한다. 이때는 본 세션이 아래 지침 블록을 직접 수행하되 ① **독립성 보존 불가(자기검증 편향 잔존)를 검증 결과·산출물 비고에 명시** 하거나 ② 진짜 독립 검증이 필요하면 사용자에게 **새 세션 handoff** (지침 블록을 새 대화에 붙여 재검증)를 안내한다. 자동 분기 성공으로 간주하지 않는다. 어느 경로든 2-A 지침 블록·2-B 라운드 관리·2-C Early Termination 은 불변이며, ground-verifier 는 아래 지침 블록을 승계한 부품이다.
+> **검증 라운드 디스패치 (환경 분기).** 실행 환경에 `itda-work:ground-verifier` 서브에이전트가 있으면, 아래 검증 지침 블록(2-A)을 **그 에이전트에 명시 디스패치** 하는 것이 정본이다 — **라운드마다 신규 디스패치** 해 라운드별 컨텍스트를 격리한다(빌드·이전 라운드 기억과 분리). 디스패치 프롬프트에는 ground-verifier 입력 계약(주장 표 또는 산출물 파일 경로 / 이미 사용된 URL 목록 / 라운드 번호 / 검증 범위)을 함께 넘긴다. ground-verifier 의 최종 텍스트는 **AUDIT_SCHEMA JSON**(#1621 — `verdict`·`findings`·`recomputed`·`unverifiable`)이며 검증표 파일(`outputs/verification-round-<N>.md`)은 그대로다; 라운드 판정(2-B)은 `verdict` 와 `unverifiable`(= `출처 부족`·`무효` 셀) 필드로 읽는다. ground-verifier 는 `Skill` 도구가 없어 web-reader 폴백을 스스로 하지 않는다 — 폴백은 본 세션(§ Fallback 체인)이 수행한 뒤 재디스패치한다. 에이전트가 없는 환경에서는 **degraded 폴백** 이다 — 자연어 발화만으로 독립 서브에이전트가 자동 분기되지는 않으므로(Cowork 능력 지도 실측 — 자동 위임 미발동), "본 세션이 검수하지 않는다" 는 완전히 성립하지 못한다. 이때는 본 세션이 아래 지침 블록을 직접 수행하되 ① **독립성 보존 불가(자기검증 편향 잔존)를 검증 결과·산출물 비고에 명시** 하거나 ② 진짜 독립 검증이 필요하면 사용자에게 **새 세션 handoff** (지침 블록을 새 대화에 붙여 재검증)를 안내한다. 자동 분기 성공으로 간주하지 않는다. 어느 경로든 2-A 지침 블록·2-B 라운드 관리·2-C Early Termination 은 불변이며, ground-verifier 는 아래 지침 블록을 승계한 부품이다.
 
 ### 2-A. 검증 지침 블록 (canonical — 수정 없이 발화)
 

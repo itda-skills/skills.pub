@@ -2,7 +2,8 @@
 
 순수 모듈(네트워크·라이브러리 의존 없음, NFR-005). 흔한 별칭("서울역"→"서울")과
 "역" 접미사를 정리하고, 알 수 없는 역은 유사 후보를 제시한다(차단보다 안내).
-SRT 전용역(수서·동탄·지제)은 v1 비목표임을 명확히 안내한다(EXC-6).
+2026-09-01 SRT→KTX 통합으로 옛 SRT 전용역(수서·동탄·평택지제)도 코레일이
+판매하므로 정상 역으로 취급한다(#1624 라이브 실측 — 각 구간 10건 조회 확인).
 
 화이트리스트는 *주요역 힌트*이며 코레일 전체 역명을 망라하지 않는다. 최종 유효성은
 실제 검색에서 코레일이 판단한다.
@@ -16,6 +17,8 @@ KNOWN_STATIONS: frozenset[str] = frozenset(
     {
         # 경부선 계열
         "서울", "용산", "영등포", "광명", "수원", "천안아산", "오송", "대전",
+        # 2026-09-01 SRT→KTX 통합으로 편입된 옛 SRT 전용역(#1624)
+        "수서", "동탄", "평택지제", "서대구",
         "김천구미", "동대구", "경주", "신경주", "울산", "부산", "구포", "밀양", "물금",
         "포항",
         # 호남·전라선 계열
@@ -46,12 +49,10 @@ ALIASES: dict[str, str] = {
     "울산역": "울산",
     "통도사": "울산",        # 울산(통도사) 병기역
     "천안": "천안아산",      # KTX는 천안아산역(일반 천안역과 구분)
+    "지제": "평택지제",      # 옛 SRT 표기(#1624 통합)
+    "평택": "평택지제",
     "아산": "천안아산",
 }
-
-# SRT 전용역(KTX 미정차) — v1 비목표(EXC-6) 안내용.
-SRT_ONLY: frozenset[str] = frozenset({"수서", "동탄", "지제"})
-
 
 class StationNotFound(ValueError):
     """역명을 해석하지 못함. 가까운 후보를 함께 전달한다(REQ-009)."""
@@ -66,17 +67,6 @@ class StationNotFound(ValueError):
             super().__init__(
                 f"'{raw}' 역을 찾지 못했습니다. 역명을 다시 확인해 주세요."
             )
-
-
-class SrtOnlyStation(ValueError):
-    """SRT 전용역 입력 — KTX(v1) 비목표(EXC-6)."""
-
-    def __init__(self, station: str):
-        self.station = station
-        super().__init__(
-            f"'{station}' 은(는) SRT 전용역으로 KTX는 정차하지 않습니다. "
-            "train-ktx v1은 KTX만 지원합니다(SRT는 후속)."
-        )
 
 
 def _strip_suffix(name: str) -> str:
@@ -94,7 +84,6 @@ def normalize_station(raw: str) -> str:
 
     Raises:
         StationNotFound: 해석 실패(가까운 후보 포함).
-        SrtOnlyStation: SRT 전용역(EXC-6).
         ValueError: 빈 입력.
     """
     if raw is None or not str(raw).strip():
@@ -107,22 +96,18 @@ def normalize_station(raw: str) -> str:
     if name in ALIASES:
         return ALIASES[name]
 
-    # 2) SRT 전용역
-    if name in SRT_ONLY or _strip_suffix(name) in SRT_ONLY:
-        raise SrtOnlyStation(_strip_suffix(name))
-
-    # 3) 이미 정식 표기
+    # 2) 이미 정식 표기
     if name in KNOWN_STATIONS:
         return name
 
-    # 4) '역' 접미사 제거 후 재시도(별칭·정식 모두)
+    # 3) '역' 접미사 제거 후 재시도(별칭·정식 모두)
     stripped = _strip_suffix(name)
     if stripped in ALIASES:
         return ALIASES[stripped]
     if stripped in KNOWN_STATIONS:
         return stripped
 
-    # 5) 유사 후보 제시(자동 교정하지 않고 사용자 확인 유도)
+    # 4) 유사 후보 제시(자동 교정하지 않고 사용자 확인 유도)
     pool = sorted(KNOWN_STATIONS | set(ALIASES.keys()))
     candidates = difflib.get_close_matches(stripped, pool, n=3, cutoff=0.6)
     # 별칭이 후보로 나오면 정식 표기로 환원

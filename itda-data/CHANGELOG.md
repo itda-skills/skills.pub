@@ -1,5 +1,11 @@
 # Changelog — itda-data
 
+## 2026-09-01 (이슈 #1621) — v0.19.0
+
+### Added
+
+- **`agents/data-auditor.md` 신설** — data-verify·data-ask·data-prep 산출물의 수치를 원장·원 셀에서 독립 재계산하는 읽기 전용 감사자. tools `Read, Grep, Glob, Write, Bash, mcp__workspace__bash`(산출은 `outputs/data-audit-report.md` 1개), 최종 텍스트는 공통 AUDIT_SCHEMA JSON(`verdict`·`findings`·`recomputed`·`unverifiable`, critical 1건 = FAIL). `data-verify` v0.2.3 에 권장 체인 절 추가. 계약: `cowork-agent-orchestration.md` §감사자.
+
 ## 2026-07-26 (이슈 #1280·#1281·#1282·#1283)
 
 ### Changed

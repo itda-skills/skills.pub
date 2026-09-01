@@ -4,6 +4,7 @@ description: >
   이미 작성된 한국어 사무 글(보고서·메일·기획서·공지)에서 AI 흔적을 걷어내는 후처리 스킬입니다.
   "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘"처럼 말하면 됩니다.
   숫자·고유명사·서명은 잠금 가드로 보존합니다.
+  [책임 경계] 본 스킬은 완성된 글의 후처리 검수 전담(AI 흔적 사전 가드 정본) — itda-work:draft-post 는 처음부터 초안을 쓰는 생성 단계이며, 같은 글에 두 스킬을 겹쳐 적용하지 않습니다.
 license: Apache-2.0
 compatibility: "Claude Code & Cowork"
 user-invocable: true
@@ -11,10 +12,10 @@ allowed-tools: Read, Write, Edit, Bash, mcp__workspace__bash
 argument-hint: "<text-or-file> [--scene report|email|proposal|notice] [--register formal|semi|casual] [--strict] [--diff]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "2.0.5"
+  version: "2.1.1"
   category: "writing"
   created_at: "2026-05-11"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-01"
   tags: "ai slop, humanize, human tone, post-processing, deslop, naturalize, korean writing, translationese, post-editese"
 ---
 
@@ -33,6 +34,8 @@ v1.0은 LLM 사전 지식에 기댄 휴리스틱 15개로 구성됐던 반면, v
 - `references/rewriting-playbook.md` — 카테고리별 치환 레시피 + 4장르 처리
 - `scripts/metrics.py` + `scripts/baseline.json` — 22지표 결정적 측정 (KatFish 베이스라인, 표준 라이브러리만)
 - `scripts/lock_preserved.py` — 보존 영역 placeholder 마스킹 가드 (자체 작성)
+- `scripts/verify_gates.py` — 윤문 사후 결정적 판정 게이트 4축 (v2.1, #1619 — P0 변경률·P1 목표 달성/과교정·P2 수사 전멸·P3 보존 불변식, exit 0/1/2/3)
+- `references/empirical-validation.md` — 상류 대조 코퍼스(G²) 반증 요약 (v2.1 — A-2 S2 강등·I-1 조건부·A-16 번역 맥락 한정의 근거)
 - 직장인 사무 도메인 **K 카테고리 5종** 자체 신설 (taxonomy/quick-rules/playbook 모두 K 부록 포함)
 
 ## 4대 철칙 (Prime Directives)
@@ -42,18 +45,19 @@ ref-im-not-ai에서 차용. 직장인 도메인은 오히려 더 엄격하게 �
 1. **의미 불변 (Fidelity First)** — 사실·주장·수치·고유명사·인용·서명은 100% 원문 보존. `lock_preserved.py`로 사전 잠금.
 2. **근거 기반 (Span-Grounded)** — 모든 변경은 탐지된 패턴에 연결. 탐지 없는 구간은 건드리지 않음.
 3. **장르 유지 (Tone Match)** — 보고서를 에세이로, 이메일을 광고 카피로 옮기지 않음. `--scene` 자동·수동 지정.
-4. **과윤문 금지 (No Over-Polish)** — 변경률 30% 초과 시 경고, 50% 초과 시 강제 중단. `metrics.py`로 결정적 측정.
+4. **과윤문 금지 (No Over-Polish)** — 변경률 30% 초과 시 경고, 50% 이상 시 강제 중단. `verify_gates.py` 가 결정적으로 판정한다(v2.1 부터 문서 규율이 아니라 스크립트 판정). **정상 한국어를 지우는 것도 과윤문이다** — `~를 통해` 1~2회·`것이다` 단발·자생 산문의 `그는` 은 보존 대상(상류 반증, `references/empirical-validation.md`).
 
-## 동료 스킬과의 차이
+## 이 스킬을 쓰지 않을 때
 
-| 상황 | 적합한 스킬 |
-|------|-----------|
-| 처음부터 글을 쓸 때 | `itda-draft-post` (`_anti-ai-korean.md` 사전 가드) |
-| 다른 AI 도구가 만든 초안을 받아서 다듬을 때 | **`itda-human-tone`** |
-| 본인이 쓴 글이 어쩐지 AI 같아 보일 때 | **`itda-human-tone`** |
-| draft-post 결과를 사내·외부 송부 직전 마지막 게이트 | **`itda-human-tone`** |
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 처음부터 글을 써야 할 때 | itda-work:draft-post |
+| 제품 카피·브랜드 슬로건(의도된 기교) | itda-work:draft-post `--style copy` |
+| 코드·JSON/CSV·로그·표·통계 | 적용 제외 — 아래 Do-NOT List |
+| 주장·수치의 출처가 맞는지 검증 | itda-work:ground-check |
+| 영업기밀·개인정보 마스킹 | itda-work:biz-redact |
 
-`draft-post`는 생성 단계 가드, `human-tone`은 후처리 검수. 같은 텍스트에 두 번 적용하지 않습니다.
+**가드 정본**: AI 흔적 사전은 본 스킬 `references/ai-tell-taxonomy.md` 가 정본이다(상류 G² 반증 반영, #1619). `draft-post` 의 `references/_anti-ai-korean.md` 는 이를 따르는 생성 단계 사전 가드 — 정본이 바뀌면 그쪽을 맞춘다(#1620).
 
 ## Arguments
 
@@ -65,7 +69,7 @@ ref-im-not-ai에서 차용. 직장인 도메인은 오히려 더 엄격하게 �
 
 ## 워크플로우 (Monolith Fast Path)
 
-기본은 단일 호출 fast path입니다. ≤5,000자 텍스트는 다음 5단계를 한 번의 검수로 처리합니다.
+기본은 단일 호출 fast path입니다. ≤5,000자 텍스트는 다음 6단계를 한 번의 검수로 처리합니다(마지막 6단계가 결정적 판정 게이트).
 
 ### 0단계 — 스킬 디렉토리 확정
 
@@ -111,7 +115,7 @@ python3 "$SKILL_DIR/scripts/lock_preserved.py" mask <input.txt> > _workspace/01_
 4. **어미 단조 해소** — 같은 어미 4회+ 시 1회만 변형
 5. **잉여 전환어 컷** — `또한`/`더불어`/`한편` 단락 첫머리 반복분 1~2개 제거
 
-### 4단계 — 결정적 측정 + 변경률 가드
+### 4단계 — 결정적 측정 (metrics 진단)
 
 ```bash
 # 빠른 위험도 한 줄 (stdout: low/medium/high)
@@ -125,11 +129,7 @@ python3 "$SKILL_DIR/scripts/metrics.py" --input _workspace/03_rewrite.md --basel
 
 `--output`을 지정하면 risk_band·risk_score·z_scores·lexicon_hits·evidence_spans 등 상세 진단을 JSON으로 기록합니다. 5단계의 의미 동등성 audit 블록은 이 JSON을 읽어 생성합니다.
 
-변경률 가드 (`python3 "$SKILL_DIR/scripts/lock_preserved.py" audit`):
-- ≥50% → **강제 중단**, 마지막 안정 버전 롤백
-- 30~50% → 경고 (`over_polish_warning: true`), 등급 1단계 하향
-- 5~30% → 정상 범위
-- <5% → 저윤문 경고 (S1 패턴 누락 의심)
+변경률 가드는 6단계의 `verify_gates.py` 가 판정한다(문서 규율 아님). 여기서는 metrics 진단만 기록한다.
 
 ### 5단계 — 보존 영역 복원 + 13항 의미 동등성 audit
 
@@ -156,6 +156,24 @@ python3 "$SKILL_DIR/scripts/lock_preserved.py" audit <input.txt> _workspace/05_f
 
 13항 중 1건이라도 fail이면 자동 롤백. 보고서·기획서는 모든 항목 100% 유효, 이메일은 9·10·11항 특히 중요.
 
+### 6단계 — 사후 판정 게이트 (결정적, 마지막 단계)
+
+```bash
+python3 "$SKILL_DIR/scripts/verify_gates.py" --before <input.txt> --after _workspace/05_final.txt --scene <scene>
+# JSON 이 필요하면 --json. exit: 0 PASS / 1 FAIL / 2 INCONCLUSIVE / 3 입력 오류
+```
+
+`verify_gates.py` 는 before/after 를 같은 기준으로 정규화(공백·따옴표·대시·NFC)한 뒤 4축을 판정한다:
+
+| 축 | 판정 | 실패 시 |
+|---|---|---|
+| P0 문자 변경률 | >30% WARN, ≥50% ABORT(`rollback: true`). 카피 씬은 면제 | ABORT 면 마지막 안정 버전으로 롤백, WARN 이면 변경을 탐지 근거와 대조 |
+| P1 목표 달성/과교정 | 윤문 전 z>2.0 이던 쉼표 지표가 z≤1.0 으로 들어왔는가 · **A-2·I-1·A-16 의 정상 사용을 0 으로 지웠는가** | 미달이면 남은 S1 을 처리, 과교정이면 지운 것을 되살린다 |
+| P2 수사 전멸 | 대구·부정 대조·문두 반복이 before ≥3 인데 after 0 | 하나는 살리고 나머지를 비대칭으로 |
+| P3 보존 불변식 | `lock_preserved` 토큰 전부 잔존 + 원문에 없던 숫자 0 | 롤백 후 재윤문 |
+
+**exit 2(INCONCLUSIVE)는 PASS 가 아니다** — 문장 10개 미만이거나 baseline 을 못 읽어 P1 z 를 재지 못한 것이다. 그 경우 P0·P2·P3 결과와 13항 audit 으로 판정하고, 출력의 진단 블록에 "게이트: INCONCLUSIVE(표본 짧음)" 을 명시한다. exit 1 은 축별 `status` 를 읽어 롤백(ABORT)과 보완(WARN·FAIL)을 가른다. exit 3 은 게이트를 건너뛴 것이므로 입력을 고쳐 다시 돌린다.
+
 ## 출력 형식
 
 `--diff` 미지정 시 다음 3블록:
@@ -171,6 +189,7 @@ python3 "$SKILL_DIR/scripts/lock_preserved.py" audit <input.txt> _workspace/05_f
 보존 잠금: 숫자 12개 · 고유명사 5개 · 결재선 1블록
 변경률: 22% (정상)
 의미 동등성: 13/13 통과
+게이트: PASS (P0 22% · P1 달성/과교정 0 · P2 수사 3→2 · P3 이상 없음)
 
 ### 다듬은 텍스트
 (전체 본문)
@@ -199,13 +218,13 @@ draft-post → human-tone               (사내 초안 → 송부 직전 검수)
 blog-seo → draft-post → human-tone    (네이버 블로그 발행 풀체인)
 ```
 
-`draft-post`와 동시 적용은 피합니다. 두 스킬은 같은 영역의 가드를 가지고 있어 중복 처리 시 의도된 직장인 화법(예: 결재 표현)이 과도하게 평준화될 수 있습니다.
+`draft-post`와 같은 글에 겹쳐 적용하지 않습니다 — 생성 단계 가드(draft-post)와 후처리 검수(본 스킬, 가드 정본)의 역할 분담이며, 두 번 돌리면 의도된 직장인 화법(예: 결재 표현)이 과도하게 평준화됩니다.
 
 ## 관련 스킬
 
-- `itda-draft-post` — 초안 생성 단계 가드
-- `itda-blog-seo` — 키워드 → 초안 → 검수 풀체인의 맨 앞
-- `itda-email` — 검수된 메일을 SMTP로 송부
+- `itda-work:draft-post` — 초안 생성 단계 가드(사전 정본은 본 스킬)
+- `itda-work:blog-seo` — 키워드 → 초안 → 검수 풀체인의 맨 앞
+- `itda-work:email` — 검수된 메일을 SMTP로 송부
 
 ## 차기 확장
 

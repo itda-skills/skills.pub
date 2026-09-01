@@ -3,6 +3,7 @@ name: realty-supply
 description: >
   KOSIS 주택 공급 지표(미분양·인허가·착공·준공·입주)와 청약홈 청약 통계를 수집하는 스킬입니다.
   "올해 강남구 아파트 미분양 추이 보여줘", "2024년 전국 인허가·착공·준공 통계 가져와줘", "최근 청약 경쟁률 높은 단지 목록 보여줘"처럼 말하면 됩니다.
+  [책임 경계] 본 스킬은 KOSIS 공급 지표·청약 통계 전담 — 개별 실거래 원본은 itda-realty:realty-deals, 가격지수·파생 통계는 itda-realty:realty-price-stats.
 license: Apache-2.0
 compatibility: "Python 3.10+, Claude Code & Cowork"
 user-invocable: true
@@ -10,11 +11,11 @@ allowed-tools: Bash, Read, Write, mcp__workspace__bash
 argument-hint: "지표 종류 + 기간 (예: 미분양 2024년 전국 / 청약경쟁률 2026년 1~6월)"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
-  version: "0.9.7"
+  version: "0.9.8"
   category: "domain"
   status: "active"
   created_at: "2026-05-15"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-01"
   tags: "KOSIS, supply, subscription, housing"
 ---
 
@@ -124,6 +125,15 @@ python3 "$SKILL_DIR/scripts/supply_cli.py" subscription \
 | KOSIS API 키 미설정 | error | config | `.env`(작업 폴더 루트)에 `KOSIS_API_KEY=키` 넣기(권장) — 스킬이 자동 탐색. "Claude 지침"도 동작하나 컨텍스트에 노출. 개발자는 셸 환경변수도 가능 |
 | data.go.kr 키 미설정 (subscription) | error | config | `.env`(작업 폴더 루트)에 `KO_DATA_API_KEY=키` 넣기(권장) — 스킬이 자동 탐색. "Claude 지침"도 동작하나 컨텍스트에 노출. 개발자는 셸 환경변수도 가능 |
 | API 서비스 오류 | error | api | 활용신청 승인 상태 점검 |
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 실거래 개별 건 원본(매매·전월세) | itda-realty:realty-deals |
+| 가격지수·전월세전환율·평균/중위 통계 | itda-realty:realty-price-stats |
+| 전세가율·갭 스크리닝 | itda-realty:realty-jeonse-gap |
+| 법원 경매 물건 | itda-realty:court-auction |
 
 ## 테스트 실행
 

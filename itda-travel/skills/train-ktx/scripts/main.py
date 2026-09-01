@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import format as fmt  # noqa: E402
 import reserve as rsv  # noqa: E402
 from korail_adapter import KtxError, connect  # noqa: E402
-from stations import SrtOnlyStation, StationNotFound, normalize_station  # noqa: E402
+from stations import StationNotFound, normalize_station  # noqa: E402
 from train_cli import (  # noqa: E402
     add_reserve_args,
     add_search_args,
@@ -176,7 +176,7 @@ def main(argv=None) -> int:
     return run_cli(
         build_parser(),
         argv,
-        station_errors=(StationNotFound, SrtOnlyStation),
+        station_errors=(StationNotFound,),
         adapter_error=KtxError,
     )
 

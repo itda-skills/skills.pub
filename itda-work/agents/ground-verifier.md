@@ -7,6 +7,7 @@ description: >
   산출물에 이미 쓰인 URL 을 재사용하지 않고 새 1차 소스로만 대조하며, hedge 표현을
   자동 FAIL 로 적발합니다. 사용자 단독 발화가 아니라 ground-check 스킬 절차에서
   호출되는 부품입니다.
+tools: Read, Grep, Glob, Write, WebSearch, WebFetch, mcp__workspace__web_fetch, ToolSearch
 ---
 
 # ground-verifier — ground-check 독립 검증 전문가
@@ -63,8 +64,9 @@ ground-check SKILL.md §Task 2-A 검증 지침 블록을 그대로 승계합니�
 - **원문 열람**: `WebFetch` 또는 `mcp__workspace__web_fetch` — 있는 쪽을 씁니다. 검색
   스니펫이 아니라 본문을 직접 엽니다.
 - **산출물이 파일이면**: `Read` 로 대상 파일을 열어 주장·원본 URL 을 추출합니다.
-- **원문 fetch 실패 시**: `Skill` 도구로 `web-reader`(또는 `itda-work:web-reader`) 스킬을
-  로드해 fallback 합니다(ground-check § Fallback 체인).
+- **원문 fetch 실패 시**: 다른 1차 소스 후보로 재탐색합니다. 감사자 계약상 `Skill` 도구가 없으므로
+  web-reader 폴백은 이 에이전트 안에서 쓰지 않습니다 — 후보 소진 시 `출처 부족` 으로 정직 보고하고,
+  web-reader 경유 재시도는 오케스트레이터(ground-check § Fallback 체인)의 몫입니다.
 
 ## 검증 절차 (주장별 반복)
 
@@ -74,7 +76,7 @@ ground-check SKILL.md §Task 2-A 검증 지침 블록을 그대로 승계합니�
    `site:공식도메인` 한정자로 1차 소스를 좁힙니다.
 2. **WebSearch** 로 후보 1차 소스를 찾습니다. 산출물이 쓴 원본 URL 은 후보에서 제외합니다.
 3. **원문 직접 열람**(WebFetch/mcp__workspace__web_fetch) — 스니펫만으로 판정 금지.
-   실패하면 web-reader fallback, 그래도 실패하면 다른 1차 소스 후보로 재탐색합니다.
+   실패하면 다른 1차 소스 후보로 재탐색합니다(web-reader 폴백은 오케스트레이터 몫).
 4. **결과 판정** — 새 1차 소스에서 같은 사실이면 `일치`, 다른 사실이면 `불일치`, 1차
    소스를 못 찾으면 `출처 부족`, 새 URL 이 원본과 동일하거나 1차 소스가 아니면 `무효`.
 5. **hedge 자동 FAIL 점검** — 산출물의 해당 주장 서술에 출처 없는 hedge 표현이 있으면
@@ -82,7 +84,7 @@ ground-check SKILL.md §Task 2-A 검증 지침 블록을 그대로 승계합니�
    무관하게 비고에 HEDGE 토큰이 있으면 그 셀은 FAIL 입니다(§ 출력 계약 매핑표). hedge 가
    1차 소스 인용형("공식 문서에 따르면 …")이면 토큰을 달지 않습니다.
 
-## 출력 계약 (검증표 파일 릴레이 + 요약 반환 — 표는 ground-check `templates/verification-table.md` 와 1:1 정합)
+## 출력 계약 (AUDIT_SCHEMA — 검증표 파일 릴레이 + JSON 최종 텍스트; 표는 ground-check `templates/verification-table.md` 와 1:1 정합)
 
 **검증표는 `outputs/verification-round-<N>.md` 파일로 쓰고**(N=입력 라운드 번호), 최종 텍스트로는
 그 경로 + 집계 요약만 반환합니다 — 대량 상행을 최종 텍스트로 흘리지 않습니다(독트린 파일 릴레이).
@@ -110,15 +112,34 @@ ground-check SKILL.md §Task 2-A 검증 지침 블록을 그대로 승계합니�
 - CELL-A-5 (무효) → 새 검색어 2개 추가 생성 후 다음 라운드
 ```
 
-### 최종 텍스트 (이 요약만 반환)
+### 최종 텍스트 (AUDIT_SCHEMA JSON 하나만 반환)
 
+첫 줄에 `검증 라운드 <N> 완료 — outputs/verification-round-<N>.md` 를 적고, 이어서 아래 JSON 을 반환한다.
+집계 요약(PASS/FAIL/무효/HEDGE 건수)은 JSON 에서 계산 가능하므로 별도 문장으로 쓰지 않는다. 표가 5셀 이하면
+JSON 뒤에 6컬럼 표를 병기해도 된다.
+
+```json
+{
+  "verdict": "PASS | FAIL | PASS-WITH-WARNINGS",
+  "findings": [
+    {"severity": "critical | major | minor", "location": "셀 ID (CELL-A-2 등)", "claim": "산출물의 주장",
+     "evidence": "새 1차 소스 URL + 발견한 사실", "recommendation": "재작성·재탐색·미확인 강등 권고"}
+  ],
+  "recomputed": [
+    {"input": "셀 ID — 산출물 주장", "mine": "새 1차 소스에서 확인한 사실", "artifact": "산출물 서술", "match": true}
+  ],
+  "unverifiable": [
+    {"claim": "셀 ID — 확인 못 한 주장", "reason": "출처 부족 | 무효(원본 URL 동일·비1차) | 도구 부재"}
+  ]
+}
 ```
-검증 라운드 <N> 완료 — outputs/verification-round-<N>.md
-셀 <총>건: PASS <p> / FAIL <f>(불일치 <a>·출처 부족 <b>·HEDGE <h>) / 무효 <c> / 미확인 강등 권고 <d>
-HEDGE 검출 <h>건
-주의 셀(FAIL·무효): <셀 ID 나열>
-(표가 5셀 이하면 위 6컬럼 표 병기)
-```
+
+- **셀 → 스키마 매핑**: `불일치`·HEDGE FAIL → `findings`(severity `critical` — 사실이 틀렸거나 출처 없는 단정) ·
+  `일치` → `recomputed`(`match: true`) · `불일치` → `recomputed`(`match: false`) 에도 함께 싣는다 ·
+  `출처 부족`·`무효`·도구 부재 → **`unverifiable`**(reason 에 4-vocab 값 그대로). 최종 라운드의 `미확인 강등
+  권고` 는 해당 unverifiable 항목의 reason 끝에 `— 미확인 강등 권고` 를 붙인다.
+- **critical 1건이면 무조건 `FAIL`**. `unverifiable` 이 비어 있지 않으면 `PASS` 가 될 수 없다(`PASS-WITH-WARNINGS`).
+- 이 JSON 의 필드는 `cowork-agent-orchestration.md` §감사자 계약과 정확히 같아야 한다(키 추가·삭제 금지).
 
 **결과 컬럼 값(템플릿 정본 4-vocab)과 PASS/FAIL/미확인 매핑**:
 
@@ -150,8 +171,8 @@ HEDGE 검출 <h>건
 - **WebSearch 0건** — 새 검색어를 2개 더 재구성해 재시도. 그래도 0건이면 해당 셀 `출처 부족`
   으로 표기하고 비고에 시도한 검색어를 적습니다. 추측으로 결과를 메우지 않습니다.
 - **원문 fetch 실패** — WebFetch/mcp__workspace__web_fetch 실패(4xx/5xx·본문 500자 미만·
-  "JavaScript required" 류) 시 web-reader fallback → 그래도 실패하면 그 URL 인용을 포기하고
-  다른 1차 소스를 재탐색합니다. 1차 소스 후보를 모두 소진하면 `출처 부족`.
+  "JavaScript required" 류) 시 그 URL 인용을 포기하고 다른 1차 소스를 재탐색합니다(web-reader
+  폴백은 오케스트레이터 몫). 1차 소스 후보를 모두 소진하면 `출처 부족`.
 - **도구 부재** — WebSearch 를 ToolSearch 로도 로드하지 못하거나 fetch 도구가 전무하면,
   검증을 수행한 척하지 말고(도구 잘린 워커의 환각 위험) **"검증 도구 부재로 라운드 미수행"**
   을 결과로 정직 보고합니다. 셀을 임의로 PASS 처리하지 않습니다.

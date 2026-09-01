@@ -5,6 +5,7 @@ description: >
   할 때 올바른 액션 조합을 안내하는 레시피 스킬입니다. "이 사이트 로그인해서 데이터 모아줘",
   "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘"처럼 말하면 됩니다.
   에이전트가 web_browse 액션 조합을 고를 때의 정본 가이드입니다.
+  [책임 경계] 본 스킬은 사이트 무관 web_browse 액션 조합의 정본 — 위하고·홈택스 세무 포털 특화 레시피는 itda-taxhero:web-automation, 정적 페이지 단건 읽기는 itda-work:web-reader.
 license: MIT
 compatibility: Claude Code & Cowork (hyve MCP 필요)
 user-invocable: true
@@ -12,10 +13,10 @@ allowed-tools: Read, Write, Bash, mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.4.7"
+  version: "0.4.8"
   status: "stable"
   created_at: "2026-06-11"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-01"
   tags: "web, automation, browser, session, login, form, scrape, harvest, extract, mcp, hyve, web-browse, recipe, webview, token-diet, webmail, mail"
 ---
 
@@ -425,3 +426,14 @@ g. web_browse session.close {session_id}    # 프로필은 유지되고 세션�
   2026-07-06, hyve#921).
 - 신규 사이트 특화 스킬을 만들 때 — 공통 레시피를 복붙하지 말고 본 스킬을 참조하세요.
   hyve 액션이 진화하면 이 파일이 같은 저장소 commit 에서 함께 갱신됩니다.
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 위하고·홈택스 세무 포털 자동화 | itda-taxhero:web-automation |
+| 정적 페이지 단건 페치·추출(JS 불요) | itda-work:web-reader |
+| 네이버 블로그 글·댓글 | itda-work:blog-reader |
+| IMAP/SMTP 가 열린 메일 | itda-work:email |
+| 쿠팡 등 사이트 특화 조회 | itda-egg:coupang 등 사이트 스킬(호출 패턴은 본 스킬) |
+

@@ -3,15 +3,16 @@ name: web-reader
 description: >
   WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·WAF 차단 정적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다.
   "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "403 뜨는 페이지 가져와줘"처럼 말하면 됩니다.
+  [책임 경계] 본 스킬은 정적 페이지 단건 페치·추출 전담 — 네이버 블로그는 itda-work:blog-reader, 키워드 검색은 itda-work:web-search, JS 렌더·로그인·차단 우회는 itda-hyve:web-automation.
 license: Apache-2.0
 compatibility: Claude Code & Cowork
 allowed-tools: Bash, Read, Write, Agent, mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "7.1.1"
+  version: "7.1.2"
   created_at: "2026-03-18"
-  updated_at: "2026-08-30"
+  updated_at: "2026-09-01"
   tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, waf, tls, static"
 ---
 
@@ -298,6 +299,16 @@ retry 전략 (단어 수 부족 시 자동 완화):
 - **Cookie scoping**: cross-domain redirect 시 쿠키 자동 제거
 - **Import 보호**: importlib 기반 모듈 로딩 + sys.modules 캐시 경로 검증
 - **응답 제한**: 50MB body 크기 제한 (Content-Length + chunked 양쪽)
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 네이버 블로그 글·댓글 | itda-work:blog-reader |
+| 키워드로 URL 찾기 | itda-work:web-search |
+| JavaScript 렌더·로그인 세션·봇 차단 우회 | itda-hyve:web-automation |
+| 사이트를 정찰해 등급·플레이북 만들기 | itda-work:web-scout |
+| 같은 정보원의 반복 수집·알림 | competitor-watch(hyve 로컬 운영 스킬) |
 
 ## 마이그레이션
 

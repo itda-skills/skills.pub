@@ -1,24 +1,25 @@
 ---
 name: changelog
 description: >
-  Orca(onorca.dev)·Claude Code·Codex CLI 의 최근 릴리즈를 모아 버전별 한국어 요약으로 만들고
-  Orca 내장 브라우저 탭으로 연다. "orca 업데이트 뭐 바뀌었어", "claude code 새 버전 뭐가 달라졌나",
-  "codex cli 최근 릴리즈 요약", "체인지로그 정리해줘", "/changelog" 같은 요청에 사용한다.
+  Orca(onorca.dev)·Claude Code·Codex CLI·herdr 의 최근 릴리즈를 모아 버전별 한국어 요약으로
+  만들고 Orca 내장 브라우저 탭으로 연다. "orca 업데이트 뭐 바뀌었어", "claude code 새 버전 뭐가
+  달라졌나", "codex cli 최근 릴리즈 요약", "herdr 뭐 바뀌었어", "체인지로그 정리해줘",
+  "/changelog" 같은 요청에 사용한다.
   이들 도구는 릴리즈가 잦고 릴리즈당 항목이 많아 사람이 따라갈 수 없으므로, 전량을 보존하면서
   체감 변경만 압축해 보여주는 것이 목적이다. 도구 자체의 사용법 질문(orca-guide·claude-code-guide)이나
   다른 저장소의 릴리즈에는 사용하지 않는다.
 license: MIT
 compatibility: Claude Code (Orca IDE + gh CLI 필요)
 user-invocable: true
-argument-hint: "[orca|claude|codex] [--since 3d|2w|<태그>] [--new] [--all] [--full]"
+argument-hint: "[orca|claude|codex|herdr] [--since 3d|2w|<태그>] [--new] [--all] [--full]"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "1.0.0"
+  version: "1.1.0"
   status: "experimental"
   created_at: "2026-08-09"
-  updated_at: "2026-08-10"
-  tags: "changelog, release, release-notes, update, summary, orca, claude-code, codex, github, gh, ide, devtools"
+  updated_at: "2026-09-01"
+  tags: "changelog, release, release-notes, update, summary, orca, claude-code, codex, herdr, github, gh, ide, devtools, terminal, multiplexer"
 ---
 
 # changelog
@@ -32,6 +33,7 @@ metadata:
 | Orca, 오르카 | `orca` | stablyai/orca | 최근 3일 (하루 1~2회 릴리즈) |
 | Claude Code, 클로드 코드 | `claude` | anthropics/claude-code | 최근 3일 (하루 1~3회 릴리즈) |
 | Codex, 코덱스 | `codex` | openai/codex | 최근 14일 (정식 릴리즈 주 1회쯤) |
+| herdr, 허더 | `herdr` | herdrdev/herdr | 최근 21일 (안정판 1~2주 간격, preview 는 제외) |
 
 대상이 불명하면 묻지 말고 **orca** 로 간다(이 스킬의 원형). 여러 제품을 함께 요청하면
 ("셋 다", "요즘 도구들 업데이트") 제품별로 아래 전 단계를 반복한다 — 제품마다 탭이 따로 열린다.
@@ -49,7 +51,7 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/changelog}"
 # 둘 다 아니면(심링크·저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 WORK="${TMPDIR:-/tmp}/changelog"
 mkdir -p "$WORK"
-P=orca   # 또는 claude | codex
+P=orca   # 또는 claude | codex | herdr
 ```
 
 ## 1단계 — 수집
@@ -139,8 +141,15 @@ python3 "$SKILL_DIR/scripts/open_in_orca.py" \
 ## 출력 구조 (참고)
 
 버전이 1차 축, 각 버전은 3층이다 — **눈에 띄는 변화**(네가 고른 것) / **표면별 집계**(칩:
-orca 는 scope, claude·codex 는 변경 종류) / **전체 N건 펼치기**(`<details>`, 원문 전량;
+orca 는 scope, claude·codex·herdr 는 변경 종류) / **전체 N건 펼치기**(`<details>`, 원문 전량;
 codex 는 PR 덤프 접힘 목록 추가). 무엇도 버려지지 않는다.
+
+## 제품 추가
+
+`profiles/<product>.json` 을 넣으면 그 이름으로 바로 쓸 수 있다 — 스크립트는 그 디렉터리를
+읽어 제품 목록을 만든다(별칭이 필요할 때만 `PRODUCT_ALIASES` 에 한 줄 추가). 파서는 세
+가지다: `conventional`(feat(scope): …) · `sections`(`### Added` 류 keep-a-changelog) ·
+`prose`. 릴리즈 본문을 먼저 몇 개 열어 보고 고른다.
 
 ## 필터에 대해
 

@@ -10,12 +10,12 @@ allowed-tools: Read, Bash, Glob, Grep, mcp__workspace__bash
 argument-hint: "[xlsx/csv 경로 또는 검수 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.2.2"
+  version: "0.2.3"
   category: "data-tidy"
   status: "experimental"
   recommended: false
   created_at: "2026-07-07"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-01"
   tags: "verify, reconcile, numbers, spreadsheet, openpyxl, integrity, incubating, com, live-annotation"
 ---
 
@@ -93,6 +93,21 @@ openpyxl(파일) 대신 hyve MCP 도구 **`office_audit.verify`** 를 호출한�
 | **교차 참조** | 시트 간/파일 간 같아야 할 값 | `cross` 짝 |
 
 심각도: **Critical**(정합 깨짐·원장 불일치) · **Warning**(규칙 위반·범위) · **Info**(참고).
+
+## 독립 검수 — 권장 체인 (data-auditor)
+
+이 스킬이 낸 검수 결과를 **같은 세션이 다시 믿지 않게** 하려면 읽기 전용 감사자에게 넘긴다:
+
+```
+data-verify(검수 보고) → itda-data:data-auditor(원장·원 셀 독립 재계산, AUDIT_SCHEMA JSON)
+```
+
+`Agent` 도구로 `itda-data:data-auditor` 를 명시 디스패치한다(자동 위임은 발동하지 않는다). 프롬프트에
+**검수 대상 산출물 경로 + 원장 경로**(없으면 원장 대조 축이 `unverifiable` 로 남는다)를 넘기고, 반환된
+JSON 의 `verdict` 를 필드로 읽는다 — critical 1건이면 `FAIL` 이고 `unverifiable` 이 비어 있지 않으면
+`PASS` 가 아니다. 감사자는 파일을 고치지 않으며 `outputs/data-audit-report.md` 1개만 쓴다
+(계약: `cowork-agent-orchestration.md` §감사자). 에이전트 타입이 없는 환경이면 general-purpose
+서브에이전트에 `agents/data-auditor.md` 지시서를 먼저 읽고 따르라고 명시한다.
 
 ## 범위 외
 - 수식 구조·오류 감사(#REF!·하드코드 등) → `data-audit`
