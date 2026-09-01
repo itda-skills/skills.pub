@@ -34,9 +34,11 @@ def render(pptx_path, out_dir=None, dpi=110):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        # --help 는 아래 필터(`not a.startswith("--")`)에서 걸러져 args 가 비고
+        # IndexError 로 죽었다(#1630 실측)
         print("usage: python3 render.py <pptx_path> [out_dir] [--dpi N]")
-        sys.exit(2)
+        sys.exit(0 if len(sys.argv) > 1 else 2)
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     dpi = 110
     for a in sys.argv[1:]:

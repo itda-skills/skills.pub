@@ -206,9 +206,10 @@ def preview(source, outdir: str, name: str = "preview", title: str = "디자인 
 
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv:
+    if not argv or argv[0] in ("-h", "--help"):
+        # --help 를 토큰 이름으로 받으면 FileNotFoundError 로 죽는다(#1630 실측)
         print("usage: python3 preview.py <이름|경로|-> [출력디렉토리]")
-        return 2
+        return 0 if argv else 2
     src = argv[0]
     outdir = argv[1] if len(argv) > 1 else os.path.join(HERE, os.pardir, "examples", "preview")
     if src == "-":

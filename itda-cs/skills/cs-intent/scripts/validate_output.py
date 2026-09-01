@@ -92,6 +92,10 @@ def validate_doc(doc, allowed):
 def main():
     if len(sys.argv) < 2:
         sys.exit("사용법: validate_output.py <출력.jsonl> [intent-taxonomy.yaml]")
+    if sys.argv[1] in ("-h", "--help"):
+        # --help 를 파일 경로로 받으면 FileNotFoundError 로 죽는다(#1630 실측)
+        print("사용법: validate_output.py <출력.jsonl> [intent-taxonomy.yaml]")
+        return
     path = sys.argv[1]
     here = os.path.dirname(os.path.abspath(__file__))
     tax = sys.argv[2] if len(sys.argv) > 2 else os.path.join(here, "..", "references", "intent-taxonomy.ko.yaml")

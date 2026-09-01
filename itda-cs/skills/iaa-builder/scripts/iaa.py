@@ -241,6 +241,10 @@ def run_csv(path: str, threshold: float = DEFAULT_THRESHOLD) -> dict:
 def main():
     if len(sys.argv) < 2:
         sys.exit(f"사용법: iaa.py <어노테이션시트.csv> [threshold={DEFAULT_THRESHOLD}]")
+    if sys.argv[1] in ("-h", "--help"):
+        # --help 를 파일 경로로 받으면 FileNotFoundError 로 죽는다(#1630 실측)
+        print(f"사용법: iaa.py <어노테이션시트.csv> [threshold={DEFAULT_THRESHOLD}]")
+        return
     path = sys.argv[1]
     threshold = float(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_THRESHOLD
     report = run_csv(path, threshold)

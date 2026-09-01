@@ -76,9 +76,10 @@ def _cli(argv: list[str]) -> int:
     """
     import sys
 
-    if len(argv) < 1:
+    if len(argv) < 1 or argv[0] in ("-h", "--help"):
+        # --help 를 위치 인자로 흘리면 그 이름의 파일을 열려다 죽는다(#1630 실측)
         print("usage: python meeting_adapter.py <transcript.md>", file=sys.stderr)
-        return 2
+        return 0 if argv else 2
     for t in load_transcript(argv[0]):
         print(f"{t.idx}\t{t.speaker or '—'}\t{t.text}")
     return 0
