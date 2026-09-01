@@ -9,9 +9,9 @@ allowed-tools: Bash, Read, Write, Agent, mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "7.0.0"
+  version: "7.1.1"
   created_at: "2026-03-18"
-  updated_at: "2026-07-27"
+  updated_at: "2026-08-30"
   tags: "web, http, html, extraction, korean, fetch, scrape, markdown, json, defuddle, cli, coverage, ssrf, security, css-selector, encoding, euc-kr, cp949, cookie, waf, tls, static"
 ---
 
@@ -81,6 +81,33 @@ Windows:
 py -3 "$env:SKILL_DIR\scripts\fetch_html.py" --url "URL" --output page.html
 py -3 "$env:SKILL_DIR\scripts\extract_content.py" page.html --format markdown
 ```
+
+### 추출 레코드 (Fetch → Records) — v7.1.0
+
+목록 페이지·RSS 를 **요약하지 말고 먼저 행 단위 레코드**로 뽑는다(출처 URL + 원문 발췌). 선별·요약은
+그 레코드 위에서만 한다 — 결과가 이상할 때 "못 읽음 / 잘못 요약 / 지어냄"을 가를 수 있고, 다음 회차
+레코드와 URL·해시로 diff 가 된다(hyve #1600).
+
+```bash
+# 목록 페이지 → 레코드 (봉투 재료는 fetch_html 의 stderr 값을 넘긴다)
+python3 "$SKILL_DIR/scripts/fetch_html.py" --url "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218" --output list.html
+python3 "$SKILL_DIR/scripts/extract_records.py" list.html --url "https://www.fss.or.kr/fss/bbs/B0000188/list.do?menuNo=200218" \
+  --status 200 --fetched-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --format json     # 또는 --format csv
+
+# RSS/Atom 도 같은 명령 (자동 감지)
+python3 "$SKILL_DIR/scripts/extract_records.py" feed.xml --url "https://www.insnews.co.kr/rss/allArticle.xml"
+```
+
+출력 `{"page": 봉투, "records": [...], "stats": {...}}`. 행 = `source_url · link_raw · title · published · excerpt ·
+page_final_url · page_fetched_at`. 계약: ① `excerpt` 는 원문 그대로이며 **페이지 텍스트의 부분문자열임을
+코드가 검증**(아니면 `rejected_excerpt` 로 계수·제외) ② 날짜·링크가 없으면 빈 값 — 지어내지 않는다
+(`javascript:` 링크는 `source_url=null` + `link_raw`) ③ 날짜 달린 목록이 없으면 레코드 0건 + 봉투
+(`stats.reason=no_dated_list`) — 내비게이션을 목록으로 오인하지 않기 위함. 이 스크립트는 HTTP 를 하지 않는다.
+
+**페이지 봉투(provenance)** — `extract_content --format json` 의 `provenance` 객체와 markdown 프론트매터
+(`fetched_at`·`status`·`content_hash`)에도 같은 봉투가 실린다: `requested_url · final_url · status ·
+fetched_at · encoding · fetch_phase · waf_profile · content_hash(sha256 of HTML) · extractor_version`.
+파일·stdin 입력이면 fetch 사실이 없으므로 `status/fetched_at/encoding` 은 null.
 
 ### 동적 페이지 (JavaScript 렌더링) — v7.0.0에서 제거됨
 
@@ -169,6 +196,17 @@ HTTP 백엔드: curl_cffi 단일 경로. 기본 --impersonate safari.
   이며 exit 1 로 종결(브라우저로 가도 무익) — 429 는 백오프 후 재시도. extract_content 가 이
   신호를 읽어 자동으로 exit 4 를 surface 한다(에이전트가 프로즈를 추측할 필요 없음).
 ```
+
+### extract_records.py
+
+목록 HTML·RSS/Atom → 항목 레코드(JSON/CSV). 옵션: `--url`(상대 링크 해석·봉투) `--final-url` `--status`
+`--fetched-at` `--encoding` `--fetch-phase` `--format json|csv` `--max-excerpt 300` `--min-title 8` `--output`.
+exit 0 정상(0건 포함) · 1 입력/피드 파싱 오류. 상세는 위 "추출 레코드" 절.
+
+### provenance.py
+
+페이지 봉투 조립 공용 모듈(`build_provenance`·`provenance_from_fetch_extra`·`EXTRACTOR_VERSION`).
+extract_content·extract_records 가 공유 — 두 표면의 봉투 키가 갈리지 않게 한다.
 
 ### extract_content.py
 ```

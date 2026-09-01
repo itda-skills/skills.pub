@@ -583,13 +583,21 @@ def _effective_row_span(cell: ET.Element) -> int:
 
 
 def _run_text(run: ET.Element) -> str:
-    # Go encoding/xml assigns repeated <t> matches to the same string field;
-    # the last direct child wins. Nested control elements such as
-    # <lineBreak/> are skipped while their surrounding CharData is kept.
-    text = ""
-    for child in _children(run, "t"):
-        text = "".join(child.itertext())
-    return text
+    """run 의 직계 <t> 를 **전부 이어붙인다** (#1536 ①).
+
+    구 구현은 `text = ...` 로 덮어써 **마지막 <t> 만** 남겼다. 삭제된 Go 구현의
+    `encoding/xml` 이 반복 필드를 마지막 값으로 덮어쓰던 동작을 그대로 옮긴 것인데,
+    그건 이식할 계약이 아니라 **버그였다**.
+
+    하이퍼링크·필드·각주 같은 제어 요소는 run 안에서 <t> 를 여러 조각으로 쪼갠다.
+    그래서 그런 요소가 든 문단은 **앞부분 텍스트를 통째로 잃었다.** 실측(#1535):
+
+        원문 <t> 3개 : '※ 건설산업지식정보 시스템('  'www.kiscon.net)'  ' 건설업체 정보조회 결과'
+        구 산출      :                                                  ' 건설업체 정보조회 결과'
+
+    <lineBreak/> 같은 중첩 제어 요소는 itertext() 가 주변 CharData 만 남기고 건너뛴다.
+    """
+    return "".join("".join(child.itertext()) for child in _children(run, "t"))
 
 
 def _is_section_file(name: str) -> bool:

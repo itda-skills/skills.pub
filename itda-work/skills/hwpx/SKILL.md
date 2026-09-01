@@ -15,10 +15,10 @@ argument-hint: "<hwp/hwpx 파일 경로 또는 보고서 마크다운 경로>"
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   tags: "hwp, hwpx, document, convert, markdown, html, template, fill, report, government"
-  version: "1.0.1"
+  version: "1.0.3"
   category: "document"
   created_at: "2026-07-28"
-  updated_at: "2026-07-28"
+  updated_at: "2026-08-21"
   status: "experimental"
   recommended: true
 ---
@@ -93,7 +93,7 @@ python3 "${SKILL_DIR}/scripts/fill_hwpx.py" .itda-skills/양식.hwpx -o .itda-sk
 - 검증: 치환 후 XML 정합성은 스크립트가 자체 확인합니다. 내용 확인이 필요하면
   결과 파일을 **읽기 경로로 다시 열어** 값이 들어갔는지 교차 검증하세요.
 - 한계: 텍스트 치환 전용입니다. 표 행 추가·이미지 삽입·서식 변경은 지원하지 않습니다.
-  (누름틀/필드 기반 채움·반복행 발행은 hyve `hwp_app` 도구 영역 — 이 스킬은 무의존 단독 동작이 원칙)
+  (누름틀/필드 기반 채움·반복행 발행은 hyve `hwp` MCP 도메인 영역 — 이 스킬은 무의존 단독 동작이 원칙)
 
 ## 서식 생성 — 마크다운 → 정부 서식 HWPX
 

@@ -8,7 +8,6 @@ IGM 클로드 과정 수강생을 위한 공공기관 게시판·포털 수집 �
 | `customs-notice` | 관세청 공지사항 | 서버렌더 HTML + Chrome UA (기본 WebFetch 는 차단됨) |
 | `fss-docs` | 금융감독원 공통업무자료 | 서버렌더 HTML (첨부파일명·담당부서 포함) |
 | `bai-notice` | 감사원 통합공지 | 내부 JSON API 직접 호출 (SPA — 서버측 검색·날짜 필터) |
-| `kacem-tender` | 군인공제회 KACEM 입찰 공고 | 수집 + hwpx/pdf 핵심 필드 추출 (구 itda-mmaa) |
 | `mmaa-welfare` | 군인공제회 복지포털 스냅샷 Q&A | 복지 본문 깊은 수집 + 출처·수집일 명시 답변 (구 welfare-portal) |
 | `airport-airline-stats` | 인천공항 항공사별 운항·여객·화물 월별 통계 | 공개 웹 통계 수집 (구 itda-airport) |
 

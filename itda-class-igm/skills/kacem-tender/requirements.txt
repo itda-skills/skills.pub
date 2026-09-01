@@ -1,5 +1,0 @@
-requests>=2.31,<3
-beautifulsoup4>=4.12,<5
-lxml>=5.0,<6
-# pdfplumber: PDF 텍스트 추출 폴백 (pdftotext 미설치 시 사용)
-pdfplumber>=0.10,<1

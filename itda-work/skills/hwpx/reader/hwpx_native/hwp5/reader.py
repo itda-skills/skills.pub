@@ -36,6 +36,32 @@ HWPTAG_SHAPE_COMPONENT_PICTURE = HWPTAG_BEGIN + 69
 CTRL_TYPE_GSO = 0x67736F20
 HWPU_TO_MM = 25.4 / 7200.0
 
+# HWP5 FileHeader 플래그 (한/글 문서 파일 형식 5.0)
+HWP5_FLAG_COMPRESSED = 0x01
+HWP5_FLAG_ENCRYPTED = 0x02
+HWP5_FLAG_DISTRIBUTION = 0x04
+
+
+def check_readable_flags(flags: int) -> None:
+    """본문을 읽을 수 없는 문서를 **명시 에러**로 거른다 (#1536 ③).
+
+    ⚠️ 배포용 보호(0x04)를 빠뜨리면 조용히 빈 문서가 나온다. 그런 문서는 본문이
+    `BodyText` 가 아니라 **`ViewText` 에 암호화**되어 있어, `BodyText` 만 읽으면
+    문단 0개 → 3바이트 산출 + 종료코드 0 이 된다. 호출자가 길이를 재지 않으면
+    "변환 성공" 으로 집계되며, 이 클래스는 **호출자 쪽에서 구조적으로 못 잡는다**.
+
+    Raises:
+        ValueError: 암호화 또는 배포용 보호가 걸린 문서일 때
+    """
+    if flags & HWP5_FLAG_ENCRYPTED:
+        raise ValueError("hwp: encrypted HWP5 file (flags & 0x02)")
+    if flags & HWP5_FLAG_DISTRIBUTION:
+        raise ValueError(
+            "hwp: distribution-protected HWP5 file (flags & 0x04) — "
+            "body text is stored encrypted in ViewText, not BodyText; "
+            "extracting it would silently produce an empty document"
+        )
+
 
 @dataclass(slots=True)
 class Record:
@@ -205,8 +231,7 @@ class HWP5File:
         self.file_header = self._parse_file_header()
         if not self.file_header.signature.startswith(b"HWP Document File"):
             raise ValueError("not a valid HWP5 file")
-        if self.file_header.flags & 0x02:
-            raise ValueError("hwp: encrypted HWP5 file (flags & 0x02)")
+        check_readable_flags(self.file_header.flags)
         self.doc_info_tables: DocInfoTables | None = None
         self.body_text_sections: list[bytes] = []
         self._parse_doc_info()

@@ -12,6 +12,7 @@ hyve MCP 소비 스킬은 [hyve](https://hyve.pub) 가 설치·가동돼 있고 
 | [`web-automation`](skills/web-automation/SKILL.md) | hyve `web_browse` MCP로 웹 자동화(로그인 세션·폼 입력·클릭 탐색·대량 수집·차단 사이트 우회)를 할 때의 **액션 조합 레시피 정본**. 코드를 실행하지 않는 순수 가이드 스킬로, 사이트 특화 스킬(coupang·naver-place 등)이 공통 호출 패턴으로 참조합니다. | hyve 프리셋 `web` |
 | [`pptx-diff`](skills/pptx-diff/SKILL.md) | hyve `office_read` MCP의 `diff` 액션으로 PPTX 두 버전(git 리비전 또는 별도 파일)의 슬라이드·도형·텍스트 변경을 비교하고 한국어로 요약합니다. | hyve 프리셋 `office` (Experimental 옵트인 필요) |
 | [`changelog`](skills/changelog/SKILL.md) | Orca(onorca.dev)·Claude Code·Codex CLI 의 최근 릴리즈를 수집해 버전별 한국어 요약 HTML 로 만들고 Orca 내장 브라우저 탭으로 엽니다. 동작 변경·되돌림을 최상단에 표면화하고 원문 전량을 보존합니다. | Orca IDE + `gh` CLI 인증 |
+| [`hangul-pron`](skills/hangul-pron/SKILL.md) | 영어 문장을 한글로 소리 나는 대로 적고, 한국어 화자가 약한 **R·F/V·Th** 에 기호(ˇ ˚ ˜)를 얹습니다. 결정론적이며 기호 재현율 100%. 미등록어는 CMUdict G2P 로 처리해 홀드아웃 평가 기준 표기 정확도 51.0%. | Node.js 18+ |
 
 ## 왜 별도 플러그인인가
 

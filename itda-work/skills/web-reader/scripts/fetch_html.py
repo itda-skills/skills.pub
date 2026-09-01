@@ -415,12 +415,14 @@ def _result_from_response(
     challenge: object | None = None,
     profile_used: str | None = None,
 ) -> dict[str, object]:
+    import hashlib as _hl
     result: dict[str, object] = {
         "content": decoded,
         "encoding": detected_encoding,
         "status_code": int(getattr(response, "status_code", 0) or 0),
         "url": str(getattr(response, "url", "")),
         "size": len(content_bytes),
+        "content_sha256": _hl.sha256(content_bytes).hexdigest(),  # 봉투 content_hash 의 raw bytes 근거 (v7.1.0)
     }
     if trace is not None:
         result["trace"] = [attempt.to_dict() for attempt in trace]

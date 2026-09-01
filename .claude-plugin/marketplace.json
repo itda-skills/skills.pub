@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "8.53.1",
+    "version": "8.54.5",
     "language": "ko"
   },
   "plugins": [
@@ -84,6 +84,11 @@
       "name": "itda-class-igm",
       "source": "./itda-class-igm",
       "description": "공공기관 게시판·포털 수집 스킬팩 — 관세청·금융감독원·감사원·군인공제회·인천공항"
+    },
+    {
+      "name": "itda-tax",
+      "source": "./itda-tax",
+      "description": "한국 세금 공개 스킬팩 — 국세법령정보시스템 검색(법령·세법해석례·판례/결정례·상담사례)"
     }
   ]
 }

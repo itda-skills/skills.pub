@@ -23,6 +23,7 @@
 | 스킬 | 설명 | 환경 |
 |------|------|:----:|
 | **itda-web-reader** | 웹페이지 읽기·요약·추출 (한국어 사이트, WAF 차단 정적 페이지 포함) | 🌐 |
+| **itda-web-scout** | 정보원 정찰 — 어디에·어떻게 꺼내는지 실측해 등급·플레이북·프롬프트 팩으로 남김 (web-reader 기반) | 🔭 |
 | **itda-web-search** | 여러 검색엔진(Tavily·Serper·Perplexity·Naver·Exa)으로 웹 검색 → 정규화 결과 목록 (조회 전용, 키 보유 엔진만 auto 선택) | 🌐 🔑 |
 | **itda-blog-reader** | 네이버 블로그 글 목록·본문·댓글 트리·블로그 내 검색 (로그인 없이, 공개 포스트 전용) | 🌐 |
 | **itda-email** | Naver/Gmail/Daum/iCloud/커스텀 SMTP로 이메일 전송, IMAP 수신 (iCloud는 STARTTLS 587 분기) | 🌐 🔑 |

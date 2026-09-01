@@ -398,6 +398,8 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8")
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8")
+    if hasattr(sys.stdin, "reconfigure"):  # 파이프 입력도 UTF-8 (Windows cp1252 디코드로 해시·본문이 깨진다)
+        sys.stdin.reconfigure(encoding="utf-8")
 
     # @MX:NOTE: [AUTO] 사이트 패턴 우선 → 일반 fallback → 진단 에러 — REQ-5, REQ-6, REQ-7.
     # CLI 표면은 안정적 유지: 새 인자는 옵션으로만 추가, 기존 호출 호환.
@@ -570,6 +572,7 @@ def main() -> None:
     # 최종 URL 추적 (redirect 후 final URL)
     final_url: str | None = None
     fetch_pipeline_result = None  # fetch_pipeline.FetchResult or None
+    fallback_fetch_extra: dict[str, Any] | None = None  # fetch_html 직접 호출 폴백 경로의 봉투 재료
 
     # Read input
     try:
@@ -631,6 +634,13 @@ def main() -> None:
                     sys.exit(1)
                 html = str(fetch_result["content"])
                 final_url = str(fetch_result.get("url") or args.url)
+                fallback_fetch_extra = {
+                    "status_code": fetch_result.get("status_code"),
+                    "content_sha256": fetch_result.get("content_sha256"),
+                    "encoding": fetch_result.get("encoding"),
+                    "waf_profile": fetch_result.get("waf_profile"),
+                    "fetch_phase": "static",
+                }
         elif args.input:
             with open(args.input, encoding="utf-8") as f:
                 html = f.read()
@@ -694,6 +704,21 @@ def main() -> None:
     if final_url is None and args.url:
         final_url = args.url
 
+    # 페이지 봉투(provenance) — v7.1.0 (#1600 T0). 기존 키는 불변, `provenance` 객체만 추가.
+    _prov = _load_module("provenance")
+    if fetch_pipeline_result is not None:
+        provenance = _prov.provenance_from_fetch_extra(
+            html, args.url, final_url or args.url, dict(getattr(fetch_pipeline_result, "extra", {}) or {})
+        )
+        if not provenance.get("fetch_phase") or provenance["fetch_phase"] == "static":
+            provenance["fetch_phase"] = getattr(fetch_pipeline_result, "fetch_method", "static") or "static"
+    elif fallback_fetch_extra is not None:
+        provenance = _prov.provenance_from_fetch_extra(html, args.url, final_url or args.url, fallback_fetch_extra)
+        provenance["fetched_at"] = _prov.now_utc_iso()
+    else:
+        # 파일·stdin 입력: fetch 사실이 없으므로 status/fetched_at/encoding 은 null (지어내지 않는다)
+        provenance = _prov.build_provenance(html, requested_url=args.url or None, fetch_phase="input")
+
     if args.format == "json":
         output_data = {
             "content": content,
@@ -708,6 +733,7 @@ def main() -> None:
             "domain": metadata.get("domain", "") or "",
             "wordCount": result["word_count"],
             "parseTime": result["parse_time_ms"],
+            "provenance": provenance,
         }
         output = json.dumps(output_data, ensure_ascii=False, indent=2)
     elif args.format == "markdown":
@@ -720,6 +746,12 @@ def main() -> None:
             frontmatter_lines.append(f"date: {_yaml_str(metadata['published'])}")
         if final_url:
             frontmatter_lines.append(f"url: {final_url}")
+        # 봉투 축 (v7.1.0) — 값이 있는 것만 싣는다 (파일 입력은 fetched_at/status 부재)
+        if provenance.get("fetched_at"):
+            frontmatter_lines.append(f"fetched_at: {provenance['fetched_at']}")
+        if provenance.get("status") is not None:
+            frontmatter_lines.append(f"status: {provenance['status']}")
+        frontmatter_lines.append(f"content_hash: {provenance['content_hash']}")
         frontmatter_lines.append("---")
         output = "\n".join(frontmatter_lines) + "\n\n" + content
     else:

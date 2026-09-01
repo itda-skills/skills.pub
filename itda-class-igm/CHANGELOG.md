@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0] - 2026-08-21
+
+### Removed
+
+- **kacem-tender 스킬 제거 (#1535, 마스터 결정)** — 결정론 스크래핑 파이프라인으로 유지하기에 적합하지 않은 use case 로 판정. 첨부의 형식·파일명 규칙이 발주처마다 제각각이라 규칙을 계속 덧붙여야 하고(하루 실측에서 결함 5종 발견), 남은 미변환 11건은 전부 규칙으로 못 푸는 것(배포용 보호 문서·스캔 PDF·구형 xls·이미지 공정표)이었다. 이 영역은 **LLM 에이전트의 브라우저 자동화 + 문서 판독**이 더 적합하며, hyve 공개 이후에는 hwp/xlsx 변환 표면을 hyve 가 제공하므로 파이썬 중복 구현을 유지할 이유도 사라진다.
+
+  제거 직전까지의 실측·교정 이력은 이슈 #1535 와 커밋 31b90261·c8c94fec·b852c7e9 에 남아 있다. 특히 독립 근거 대조 검증 하네스(`scripts/verify.py` — hwpx section XML · hwp5 PrvText · xlsx OOXML 직접 파싱)는 재사용 가치가 있어 커밋으로 보존했다.
+
+  스킬 5종(customs-notice · fss-docs · bai-notice · mmaa-welfare · airport-airline-stats)은 그대로 유지된다.
+
 ## [0.4.0] - 2026-07-27
 
 ### Changed

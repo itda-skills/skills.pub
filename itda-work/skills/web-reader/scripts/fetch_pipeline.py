@@ -212,8 +212,32 @@ def _do_static_fetch(
         quality_score=verdict.quality_score,
         meaningful_tag_count=verdict.meaningful_tag_count,
         fallback_reason="",
-        extra={"headers": fetch_result.get("headers", {})},
+        extra={
+            "headers": fetch_result.get("headers", {}),
+            # 봉투(provenance) 재료 — extract_content 가 JSON `provenance` 로 싣는다 (v7.1.0, #1600 T0).
+            # fetch_html 결과에 이미 있던 값을 버리지 않고 전달하는 것이 골자.
+            "status_code": fetch_result.get("status_code"),
+            "content_sha256": fetch_result.get("content_sha256"),
+            "encoding": fetch_result.get("encoding"),
+            "waf_profile": fetch_result.get("waf_profile"),
+            "fetch_phase": _last_trace_phase(fetch_result) or "static",
+            "fetched_at": _utc_now_iso(),
+        },
     )
+
+
+def _last_trace_phase(fetch_result: dict) -> str | None:
+    trace = fetch_result.get("trace")
+    if isinstance(trace, list) and trace:
+        last = trace[-1]
+        if isinstance(last, dict) and last.get("phase"):
+            return str(last["phase"])
+    return None
+
+
+def _utc_now_iso() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 # ---------------------------------------------------------------------------

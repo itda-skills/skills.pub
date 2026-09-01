@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 97개 스킬 / 19개 팩.
+총 100개 스킬 / 20개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 |
 |--------|-----------|-----------|------------|----|
@@ -23,7 +23,6 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | bai-notice | 감사원 통합공지 게시판을 내부 JSON API로 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "감사원 공지 확인해줘", "감사원 통합공지 최근 10건 보여줘", "감사원에서 채용 공고 찾아줘" | itda-class-igm |
 | customs-notice | 관세청 공지사항 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "관세청 공지 확인해줘", "관세청 공지사항 최근 10건 보여줘", "관세청에서 원산지 관련 공지 찾아줘" | itda-class-igm |
 | fss-docs | 금융감독원 공통업무자료 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "금감원 업무자료 확인해줘", "금융감독원 공통업무자료 이번 주 것만 보여줘", "금감원에서 사모펀드 자료 찾아줘" | itda-class-igm |
-| kacem-tender | 군인공제회(KACEM) 입찰 공고를 수집하고 첨부(hwp·hwpx·pdf)에서 사업개요·사업비를 추출해 표·JSON으로 정리하는 스킬입니다. | 없음 | "군인공제회 최근 공고 받아줘", "공고 사업비랑 사업개요 정리해줘", "이 hwp에서 발주처랑 공급가액 뽑아줘" | itda-class-igm |
 | mmaa-welfare | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(축하금·위로금)·회원콘도·제휴복지 안내를 출처 URL·수집일과 함께 답합니다. | 없음 | "출산축하금 얼마?", "군인공제회 콘도 예약", "제휴 할인 알려줘" | itda-class-igm |
 | hour-slice | 하고 싶은 업무 개선은 큰데 "오늘 1시간 안에 뭘 만들 수 있지?"가 막막한 사람을 위해, 문제를 ~1시간 안에 눈에 보이는 결과가 나오는 한 조각으로 잘라… | 없음 | "오늘 1시간 안에 뭘 만들 수 있지?", "이거 너무 큰데 뭐부터 해볼까", "1시간 안에 만들 수 있는 걸로 줄여줘" | itda-coach |
 | miniskill-forge | 매번 같은 작업에 긴 프롬프트를 다시 쓰고 사람마다·날마다 결과가 달라지는 반복 업무를, Claude Cowork에서 한 마디로 부르는 재사용 미니스킬(SKIL… | 없음 | "이거 매번 자동으로 했으면", "내 반복 업무를 스킬로 만들어줘", "맨날 같은 프롬프트 다시 쓰기 싫어" | itda-coach |
@@ -44,7 +43,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | coupang | 쿠팡 상품 검색·리뷰·가격·유사상품·평판을 조회하는 스킬입니다. | 없음 | "방울토마토 검색해줘", "에어팟 프로 리뷰 모아줘", "이 상품 가격 알려줘" | itda-egg |
 | font-guide | 문서(docx/pptx/pdf)에 어울리는 무료 한글 폰트를 추천하고 자동 설치해주는 스킬입니다. | 없음 | "PPT용 폰트 추천해줘", "보고서에 어울리는 폰트 알려줘", "Pretendard 설치해줘" | itda-egg |
 | naver-place | 네이버 지도에서 식당·상점을 검색하고 리뷰를 모아주는 스킬입니다. | 없음 | "네이버 지도에서 대전 칼국수 검색해줘", "이 가게 리뷰 모아줘", "placeId 1288902633 리뷰 수집해줘" | itda-egg |
-| parcel-tracker | Track Korean parcel deliveries by waybill number over plain HTTP (no browser, stdlib only… | 없음 | "택배 조회해줘", "한진택배 537444594341 어디쯤이야", "운송장번호로 배송 상태 확인해줘" | itda-egg |
+| parcel-tracker | Track Korean parcel deliveries by waybill number over plain HTTP (no browser, stdlib only… | 없음 | "택배 조회해줘", "한진택배 537444594341 어디쯤이야", "CJ대한통운 운송장 조회해줘" | itda-egg |
 | stt | 음성 파일(WAV·MP3·FLAC)을 텍스트로 변환하고, 회의록·통화 녹음은 화자 분리 (누가 언제 말했는지)까지 해주는 스킬입니다. | 없음 | "이 음성 파일 텍스트로 변환해줘", "회의 녹음 화자별로 정리해줘", "통화 녹음 받아쓰기 해줘" | itda-egg |
 | dart | 금융감독원 DART 전자공시 API로 기업 정보를 수집하는 스킬입니다. | DART_API_KEY | "삼성전자 재무제표 조회해줘", "경쟁사 직원수 알려줘", "사업보고서 비교해줘" | itda-gov |
 | ecos | 한국은행 ECOS API로 거시경제 지표를 조회하는 스킬입니다. | ECOS_API_KEY | "GDP 추이 알려줘", "금리 환율 정리해줘", "100대 경제지표 확인해줘" | itda-gov |
@@ -53,8 +52,10 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | kosis | 통계청 KOSIS 국가통계포털 API로 공식 통계를 검색·탐색·조회하는 스킬입니다. | KOSIS_API_KEY | "인구 통계 알려줘", "KOSIS 통계표 검색해줘", "이 통계표 분류·항목 코드 찾아줘" | itda-gov |
 | harness | 하네스를 구성합니다. | 없음 | "하네스 구성해줘", "하네스 구축해줘", "하네스 설계 도와줘" | itda-harness |
 | changelog | Orca(onorca.dev)·Claude Code·Codex CLI 의 최근 릴리즈를 모아 버전별 한국어 요약으로 만들고 Orca 내장 브라우저 탭으로 연다. | 없음 | "orca 업데이트 뭐 바뀌었어", "claude code 새 버전 뭐가 달라졌나", "codex cli 최근 릴리즈 요약" | itda-hyve |
+| hangul-pron | 영어 문장·중국어 병음·일본어 가나를 한글로 소리 나는 대로 적어 준다 — "레츠 겥 드레ˇ스드", "{워=3}먼 {츠=1#} {판=4o} 빠", "{고=v}항… | 없음 | "레츠 겥 드레ˇ스드", "{워=3}먼 {츠=1#} {판=4o} 빠", "{고=v}항 오 타{베=v}요ー" | itda-hyve |
 | orca-coach | Orca(온오르카) 기능 활용 코치. | 없음 | "orca로 뭘 할 수 있어?", "이 작업에 orca 기능 뭐 쓰면 좋을까?", "orca 활용 아이디어 줘" | itda-hyve |
 | pptx-diff | PPTX 발표자료 두 버전의 차이를 슬라이드·도형·텍스트 단위로 비교해 한국어로 요약하는 스킬입니다. | 없음 | "이 pptx 두 버전 비교해줘", "덱 뭐가 바뀌었어?", "발표자료 개정본 리뷰해줘" | itda-hyve |
+| u-library | 대전공공도서관(u-library.kr)의 대출현황·대출연장·소장자료 검색과 한밭도서관 희망도서 신청을 aside 브라우저 자동화로 수행한다. | 없음 | "빌린 책 언제까지야", "도서관 대출 연장해줘", "반납일 알려줘" | itda-hyve |
 | web-automation | hyve web_browse MCP로 웹 자동화(로그인 세션·폼 입력·클릭 탐색·대량 수집·차단 사이트 우회)를 할 때 올바른 액션 조합을 안내하는 레시피 스킬… | 없음 | "이 사이트 로그인해서 데이터 모아줘", "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘" | itda-hyve |
 | imagegen | 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성하는 스킬입니다. | 없음 | "블로그 히어로 이미지 만들어줘", "슬라이드 배경 비주얼", "쇼츠용 세로 삽화" | itda-media |
 | pixel-art | 이미지 파일을 픽셀 아트(도트 그림)로 변환하는 스킬입니다. | 없음 | "이 이미지 픽셀아트로 만들어줘", "도트 그림으로", "8비트 스타일로" | itda-media |
@@ -76,6 +77,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | market-events | 코스피/코스닥 사이드카·서킷브레이커(CB) 발동을 빠르게 감지하는 스킬입니다 (PoC). | KIS_APP_KEY, KIS_APP_SECRET | "오늘 사이드카 발동했어?", "서킷브레이커 걸렸는지 확인해줘", "시장조치 감시 시작해줘" | itda-stocks |
 | stock-us | 미국 증시 분석·시황 아티클 작성 스킬입니다. | 없음 | "오늘 미국 증시 프리마켓 현황 알려줘", "NVDA 기술적 분석해줘", "이 PDF 시황 자료로 블로그 글 써줘" | itda-stocks |
 | surge-data | ETF 급등 감지를 위한 데이터 수집 스킬입니다. | KIS_ACCOUNT_NUMBER, KIS_APP_KEY, KIS_APP_SECRET | "지금 ETF 시장 스냅샷 수집해줘", "야간 미국 ETF 변동 데이터 가져와줘", "나스닥 지수·VIX·환율 매크로 지표 조회해줘" | itda-stocks |
+| taxlaw | 국세법령정보시스템(taxlaw.nts.go.kr)에서 세법 법령·세법해석례(예규)·판례/결정례·상담사례를 검색하고 전문(全文)을 조회하는 스킬입니다. | 없음 | "양도소득세 예규 찾아줘", "부가가치세 판례 검색해줘", "국세기본법 제18조 보여줘" | itda-tax |
 | web-automation | WEHAGO(더존 SmartA)·HOMETAX(국세청 홈택스) 세무 포털을 hyve web_browse MCP로 자동화·수집할 때의 사이트 특화 노하우·레시피… | 없음 | "위하고 분개장 수집해줘", "수임처 회계 들어가서 장부 뽑아줘", "홈택스 사업자 상태 조회해줘" | itda-taxhero |
 | eatery-trend | 여행지·동네의 '지금 뜨는' 맛집과 음식 트렌드를 검색량 surge로 탐지하는 스킬입니다. | NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, NAVER_SEARCHAD_ACCESS_KEY, NAVER_SEARCHAD_CUSTOMER_ID, NAVER_SEARCHAD_SECRET_KEY | "제주 요즘 뜨는 맛집", "성수에서 트렌디한 국밥", "지금 핫한 디저트 뭐야" | itda-travel |
 | flight-search | Google Flights 공개 검색으로 항공권을 조회·비교하는 스킬입니다. | 없음 | "인천에서 도쿄 6월 26일 항공권 찾아줘", "ICN-NRT 다음 달 최저가 언제야?", "9월에 7일 일정 왕복으로 제일 싼 출발일은?" | itda-travel |
@@ -104,6 +106,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | task-brief | 모호한 일상 요청을 에이전트에 던지기 전, 작업 범위·검증 방법·완료 정의 3요소를 채운 브리프 한 장으로 다듬는 스킬입니다. | 없음 | "작업 브리프 짜줘", "이 요청 다듬어줘", "브리프로 정리해줘" | itda-work |
 | weather-here | 현재 위치 또는 지정 지역의 날씨를 한국어로 빠르게 조회하는 스킬입니다. | 없음 | "날씨 알려줘", "지금 여기 날씨 어때", "부산 날씨 알려줘" | itda-work |
 | web-reader | WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·WAF 차단 정적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다. | 없음 | "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "403 뜨는 페이지 가져와줘" | itda-work |
+| web-scout | 정보원 정찰 스킬 — "이 정보가 어느 사이트 어디에 있고 어떻게 꺼내야 싸게 되는가"를 실측해 기억합니다. | 없음 | "이 정보가 어느 사이트 어디에 있고 어떻게 꺼내야 싸게 되는가", "이 사이트들 뉴스 어디서 어떻게 읽나 정리해줘", "정보원 등급표 만들어줘" | itda-work |
 | web-search | 여러 검색엔진으로 웹을 한 번에 검색해 정규화된 결과 목록(제목·URL·발췌)을 돌려주는 스킬입니다. | EXA_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "파이썬 입문 자료 검색해줘", "AI 규제 관련 최신 기사 찾아줘", "경쟁사 가격 정책 정보 모아줘" | itda-work |
 | work-find | 비개발자 Cowork 사용자가 AI로 풀 업무를 함께 찾고 구체화하는 인터뷰 스킬입니다. | 없음 | "업무 찾기 도와줘", "자동화 아이디어가 없어요", "Cowork로 뭘 해볼까" | itda-work |
 | work-pilot | 작성된 제안서·과제 신청서(또는 아이디어)를 Claude Cowork 안에서 실제로 돌아가는 파일럿으로 만드는 스킬입니다. | 없음 | "Cowork 가능 / 수동 브릿지 / 시스템 연동(IT 과제)", "신청서 다음 뭘 해야 해?", "이거 실제로 만들어보자" | itda-work |
@@ -126,7 +129,6 @@ airport-airline-stats → itda-class-igm/skills/airport-airline-stats/
 bai-notice            → itda-class-igm/skills/bai-notice/
 customs-notice        → itda-class-igm/skills/customs-notice/
 fss-docs              → itda-class-igm/skills/fss-docs/
-kacem-tender          → itda-class-igm/skills/kacem-tender/
 mmaa-welfare          → itda-class-igm/skills/mmaa-welfare/
 hour-slice            → itda-coach/skills/hour-slice/
 miniskill-forge       → itda-coach/skills/miniskill-forge/
@@ -156,8 +158,10 @@ g2b                   → itda-gov/skills/g2b/
 kosis                 → itda-gov/skills/kosis/
 harness               → itda-harness/skills/harness/
 changelog             → itda-hyve/skills/changelog/
+hangul-pron           → itda-hyve/skills/hangul-pron/
 orca-coach            → itda-hyve/skills/orca-coach/
 pptx-diff             → itda-hyve/skills/pptx-diff/
+u-library             → itda-hyve/skills/u-library/
 web-automation        → itda-hyve/skills/web-automation/
 imagegen              → itda-media/skills/imagegen/
 pixel-art             → itda-media/skills/pixel-art/
@@ -179,6 +183,7 @@ kis-strategy          → itda-stocks/skills/kis-strategy/
 market-events         → itda-stocks/skills/market-events/
 stock-us              → itda-stocks/skills/stock-us/
 surge-data            → itda-stocks/skills/surge-data/
+taxlaw                → itda-tax/skills/taxlaw/
 web-automation        → itda-taxhero/skills/web-automation/
 eatery-trend          → itda-travel/skills/eatery-trend/
 flight-search         → itda-travel/skills/flight-search/
@@ -207,6 +212,7 @@ pptx-design           → itda-work/skills/pptx-design/
 task-brief            → itda-work/skills/task-brief/
 weather-here          → itda-work/skills/weather-here/
 web-reader            → itda-work/skills/web-reader/
+web-scout             → itda-work/skills/web-scout/
 web-search            → itda-work/skills/web-search/
 work-find             → itda-work/skills/work-find/
 work-pilot            → itda-work/skills/work-pilot/

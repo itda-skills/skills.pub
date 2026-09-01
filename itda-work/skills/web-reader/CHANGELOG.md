@@ -1,5 +1,21 @@
 # Changelog — itda-web-reader
 
+## [7.1.1] — 2026-08-30 (이슈 #1600 S8 실측)
+
+### Fixed
+
+- `extract_records --js-link`: 식별자가 `href` 가 아니라 `onclick`(공시실 `goDetail('id')` 폼 POST) 에 있는 링크도 패턴 대조(href+onclick). GET 변형 `disclosureDataView.do?boardIdx=` 실측 성립.
+- `extract_records`: `YYYY-MM` 만 있는 목록의 날짜를 월까지 인식(일은 지어내지 않음) · 제목이 링크가 아닌 카드형 목록(보험연구원 CEO Brief — `<p>` 제목 + "요약보기/다운로드" 링크)을 위한 **날짜 달린 컨테이너 폴백**(`group_signature: container_fallback`). 앵커 기반 목록이 없을 때만 발동.
+
+## [7.1.0] — 2026-08-30 (이슈 #1600 T0)
+
+### Added
+
+- **페이지 봉투(provenance)** — `extract_content --format json` 에 `provenance` 객체(`requested_url·final_url·status·fetched_at·encoding·fetch_phase·waf_profile·content_hash·extractor_version`) 추가, markdown 프론트매터에 `fetched_at`·`status`·`content_hash` 추가. 기존 키 불변. `fetch_pipeline.FetchResult.extra` 가 fetch_html 결과(status·encoding·waf_profile·trace phase)를 버리지 않고 전달한다. 공용 조립 모듈 `scripts/provenance.py` 신설.
+- **`scripts/extract_records.py`** — 목록 페이지·RSS/Atom 1장 → 항목 레코드(출처 URL·제목·게시일·원문 발췌·봉투 참조). 발췌는 페이지 텍스트의 부분문자열임을 코드로 검증(변조 시 거부), 날짜·링크 부재는 빈 값(지어내지 않음), 날짜 달린 목록이 없으면 0건 + 봉투. HTTP 없음(fetch_html 재사용).
+- 구현 리뷰(gpt-5.6-sol, 2026-08-30) 반영: 봉투 `content_hash` 는 **원 응답 bytes 의 sha256**(`fetch_html` 결과 `content_sha256`)이 정본이고 파일·stdin 입력만 UTF-8 재인코딩 해시 — `hash_basis` 필드로 구분(EUC-KR 등 비UTF-8 에서 두 값이 다르다). `extract_records --js-link/--js-link-template` 로 플레이북 실측 패턴에 의한 `javascript:` 링크 해소(패턴 없이는 지어내지 않고 `stats.records_without_url` 로 신호). `stats.records_with_excerpt` 추가. CLI 호출부 뮤테이션·URL 경로 봉투·Atom·목록 감지 합성 fixture 테스트 보강.
+- 근거: 수집 산출을 "요약"이 아니라 "검증 가능한 추출 레코드"로 먼저 세우고 사용자 검증 후 가공하는 2단 구조(마스터 결정 2026-08-30, hyve #1600). fixture 는 보험 정보원 L1 preflight 실측본 5종(`tests/fixtures/records/`).
+
 ## [7.0.0] — 2026-07-27 (이슈 #1298)
 
 ### Removed
