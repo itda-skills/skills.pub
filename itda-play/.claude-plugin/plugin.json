@@ -1,0 +1,26 @@
+{
+  "name": "itda-play",
+  "description": "놀이 스킬팩 — 아이·가족과 함께 만들고 노는 것들: papercraft 전개도 PDF(상자 조합 캐릭터·블록·로봇)를 시작으로 종이 공작·보드게임 소품·색칠 도안 등 인쇄해서 노는 스킬을 모은다.",
+  "version": "8.58.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "Apache-2.0",
+  "keywords": [
+    "play",
+    "놀이",
+    "papercraft",
+    "종이접기",
+    "페이퍼크래프트",
+    "paper toy",
+    "kids",
+    "아이",
+    "craft",
+    "공작",
+    "minecraft",
+    "printable"
+  ]
+}

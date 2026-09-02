@@ -1,0 +1,244 @@
+{
+ "title": "ROBOT",
+ "title_ko": "꼬마 로봇",
+ "difficulty": "쉬운",
+ "scale": {
+  "target_height_mm": 100,
+  "height_units": 20
+ },
+ "tab_mm": 6,
+ "px_per_unit": 2,
+ "palettes": {
+  "steel": [
+   "#9AA4AE",
+   "#8E98A2",
+   "#A6B0BA"
+  ],
+  "dark": [
+   "#4A5560",
+   "#3F4952"
+  ],
+  "red": [
+   "#D9473B"
+  ]
+ },
+ "textures": {
+  "face": {
+   "noise": "steel",
+   "seed": 1,
+   "rect": [
+    [
+     3,
+     2,
+     6,
+     5,
+     "#1E2A38"
+    ],
+    [
+     3,
+     10,
+     6,
+     13,
+     "#1E2A38"
+    ],
+    [
+     9,
+     4,
+     10,
+     11,
+     "dark"
+    ]
+   ],
+   "paint": [
+    [
+     4,
+     3,
+     "#7FE0FF"
+    ],
+    [
+     4,
+     11,
+     "#7FE0FF"
+    ],
+    [
+     9,
+     5,
+     "#D9473B"
+    ],
+    [
+     9,
+     7,
+     "#D9473B"
+    ],
+    [
+     9,
+     9,
+     "#D9473B"
+    ]
+   ]
+  },
+  "chest": {
+   "noise": "steel",
+   "seed": 2,
+   "rect": [
+    [
+     2,
+     2,
+     5,
+     13,
+     "dark"
+    ],
+    [
+     8,
+     3,
+     8,
+     12,
+     "#D9473B"
+    ],
+    [
+     11,
+     6,
+     12,
+     9,
+     "#F2C94C"
+    ]
+   ],
+   "paint": [
+    [
+     3,
+     3,
+     "#7FE0FF"
+    ],
+    [
+     3,
+     5,
+     "#7FE0FF"
+    ],
+    [
+     3,
+     7,
+     "#7FE0FF"
+    ]
+   ]
+  },
+  "limb": {
+   "noise": "steel",
+   "seed": 3,
+   "rows": [
+    [
+     0,
+     0,
+     "dark"
+    ],
+    [
+     15,
+     15,
+     "dark"
+    ]
+   ]
+  },
+  "foot": {
+   "noise": "dark",
+   "seed": 4
+  }
+ },
+ "parts": [
+  {
+   "id": "head",
+   "label": "머리",
+   "size": [
+    8,
+    6,
+    8
+   ],
+   "faces": {
+    "front": "face",
+    "sides": "steel",
+    "top": "dark"
+   },
+   "open": "bottom"
+  },
+  {
+   "id": "body",
+   "label": "몸통",
+   "size": [
+    8,
+    8,
+    5
+   ],
+   "faces": {
+    "front": "chest",
+    "sides": "steel",
+    "top": "steel",
+    "bottom": "dark"
+   },
+   "close": "tuck"
+  },
+  {
+   "id": "arm",
+   "labels": [
+    "왼팔",
+    "오른팔"
+   ],
+   "count": 2,
+   "size": [
+    3,
+    8,
+    3
+   ],
+   "faces": {
+    "sides": "limb",
+    "top": "dark",
+    "bottom": "dark"
+   }
+  },
+  {
+   "id": "leg",
+   "labels": [
+    "왼다리",
+    "오른다리"
+   ],
+   "count": 2,
+   "size": [
+    3,
+    6,
+    4
+   ],
+   "faces": {
+    "sides": "limb",
+    "bottom": "foot"
+   },
+   "open": "top"
+  },
+  {
+   "id": "antenna",
+   "type": "flat",
+   "labels": [
+    "안테나(앞)",
+    "안테나(뒤)"
+   ],
+   "count": 2,
+   "px_mm": 2.5,
+   "tab": "bottom",
+   "pixels": [
+    ".RRR.",
+    "RRRRR",
+    ".RRR.",
+    "..D..",
+    "..D..",
+    "..D..",
+    "..D.."
+   ],
+   "key": {
+    "R": "#D9473B",
+    "D": "#4A5560"
+   }
+  }
+ ],
+ "assembly": [
+  "조립 순서: 머리 → 몸통 → 팔 → 다리 → 안테나",
+  "· 머리(8×6×8)를 몸통(8×8×5) 윗면 중앙에 붙입니다. 머리가 몸통보다 앞뒤로 조금 튀어나오는 게 정상입니다.",
+  "· 팔은 몸통 양옆 맨 위, 다리 2개는 몸통 바닥에 나란히 (다리 폭 3+3=6 < 몸통 폭 8, 가운데 맞춤).",
+  "· 안테나는 두 장을 등 맞대어 붙이고 날개를 머리 윗면 가운데에 세워 붙입니다."
+ ]
+}

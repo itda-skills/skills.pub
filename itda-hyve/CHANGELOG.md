@@ -6,6 +6,7 @@
 
 ### Added
 
+- `web-automation` v0.4.9 — REPL 전환 안내 1절 (#1633 Phase 1): `web` 프리셋이 `web_browse.repl` 단일 도구로 갈아타는 중이고, 이 문서의 22 액션은 `web-legacy` 프리셋(`web_browse_legacy` 도메인)에서 그대로 성립함을 명시. REPL 계약 2건(값은 명시 `return` 만·console 은 봉투로 회수) 예고. 전면 재작성은 Phase 4.
 - `web-automation` v0.4.8 — description `[책임 경계]` 슬롯 + `## 이 스킬을 쓰지 않을 때` 표 파일럿 (#1620): 동명 스킬 `itda-taxhero:web-automation` 과의 경계(사이트 무관 정본 ↔ 세무 포털 특화)를 상호 지목.
 
 ### Fixed

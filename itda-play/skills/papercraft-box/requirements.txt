@@ -1,0 +1,3 @@
+# papercraft-box 의존성
+reportlab>=4.0        # PDF 생성(필수). TrueType(glyf) 폰트만 지원 — CFF 폰트는 fontpick 이 건너뛴다.
+PyMuPDF>=1.23.0       # verify(기하 검증)·--preview(PNG) 용. 없으면 build 만 되고 verify 는 생략된다.

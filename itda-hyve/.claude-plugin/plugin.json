@@ -1,7 +1,7 @@
 {
   "name": "itda-hyve",
   "description": "하이브 데스크톱 스택(hyve 앱·개발 데스크톱 도구) 전제 스킬 모음. 웹 자동화 레시피(web-automation)·PPTX 버전 비교(pptx-diff)·개발도구 릴리즈 요약(changelog)·Orca 기능 활용 코치(orca-coach)·대전공공도서관 대출/검색(u-library)·영어→한글 발음 표기(hangul-pron)·음원 수집과 태깅/아트워크/가사(music-dl).",
-  "version": "8.57.0",
+  "version": "8.58.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

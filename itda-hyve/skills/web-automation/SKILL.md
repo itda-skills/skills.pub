@@ -13,10 +13,10 @@ allowed-tools: Read, Write, Bash, mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.4.8"
+  version: "0.4.9"
   status: "stable"
   created_at: "2026-06-11"
-  updated_at: "2026-09-01"
+  updated_at: "2026-09-02"
   tags: "web, automation, browser, session, login, form, scrape, harvest, extract, mcp, hyve, web-browse, recipe, webview, token-diet, webmail, mail"
 ---
 
@@ -29,6 +29,26 @@ hyve `web_browse` MCP 도구로 웹 자동화를 수행할 때의 **액션 조�
 
 > 호출 표기: `web_browse` `액션명` `{파라미터}` — 실제로는 hyve 통합 도구
 > (`hyve(domain="web_browse", action="...", params="{...}")`) 경유입니다.
+
+## ⚠️ 전환 중 — `web` 프리셋은 `web_browse.repl` 단일 도구로 갈아타는 중입니다 (#1633, Phase 1)
+
+이 문서가 설명하는 **22 액션 레시피는 `web-legacy` 프리셋에서 그대로 성립합니다.** 도메인 이름만
+`web_browse_legacy` 로 바뀌었고 액션·파라미터·의미는 불변입니다.
+
+| 프리셋 | 도메인 | 표면 |
+|---|---|---|
+| `web-legacy`(`/mcp/web-legacy`) | `web_browse_legacy` | **이 문서의 22 액션** — 계속 쓸 수 있습니다 |
+| `web`(`/mcp/web`) | `web_browse` | `repl` **1개**(JS REPL) — 전환 목적지 |
+
+- **지금 해야 할 일**: 이 문서의 레시피를 쓰려면 클라이언트를 **`web-legacy` 프리셋으로 등록**하세요
+  (설정 > MCP 탭). `web` 프리셋으로 등록된 클라이언트에서 22 액션을 부르면 조용히 실패하지 않고
+  `domain_not_in_preset` + `correct_preset: "web-legacy"` 로 어느 엔드포인트를 써야 하는지 알려 줍니다.
+- **REPL 계약(전환 목적지)** — 지금 알아 둘 두 가지:
+  - **값은 명시 `return` 만** 돌아옵니다. 마지막 식의 값이 자동으로 반환되지 않습니다.
+  - **`console.log` 는 봉투(envelope)로 회수**됩니다 — 출력이 사라지지 않지만, 값을 받고 싶으면
+    `console.log` 가 아니라 `return` 을 쓰세요.
+- 전면 재작성(REPL 레시피 정본화)은 **Phase 4** 입니다. 그때까지 이 문서가 레거시 표면의 정본입니다.
+- 설계 정본: `docs/specs/SPEC-WEB-BROWSE-REPL-001/spec.md`(hyve 저장소).
 
 ## 0. 전제 — hyve 커넥터 가용성 확인 (필수 선결)
 

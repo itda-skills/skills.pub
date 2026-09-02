@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 101개 스킬 / 20개 팩.
+총 102개 스킬 / 21개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 | 책임 경계 |
 |--------|-----------|-----------|------------|----|-----------|
@@ -62,6 +62,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | imagegen | 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성하는 스킬입니다. | 없음 | "블로그 히어로 이미지 만들어줘", "슬라이드 배경 비주얼", "쇼츠용 세로 삽화" | itda-media | — |
 | pixel-art | 이미지 파일을 픽셀 아트(도트 그림)로 변환하는 스킬입니다. | 없음 | "이 이미지 픽셀아트로 만들어줘", "도트 그림으로", "8비트 스타일로" | itda-media | — |
 | cloudflare-tunnel | 포트포워딩 없이 Cloudflare Tunnel로 내 서비스(원격 데스크톱·SSH·웹)를 안전하게 노출/접근하도록 셋업하는 스킬입니다. | CLOUDFLARE_API_TOKEN | "집 윈도우에 RDP 터널 깔아줘", "cloudflare tunnel로 ssh 열어줘", "터널 라우트에 access 걸어줘" | itda-ops | — |
+| papercraft-box | 마인크래프트 캐릭터·블록·포털, 로봇, 동물, 자동차처럼 "상자 조합"으로 표현되는 주제를 A4 에 인쇄해 오리고 접어 조립하는 papercraft PDF 도안… | 없음 | "상자 조합", "페이퍼크래프트 만들어줘", "종이접기 도안" | itda-play | 상자 조합 papercraft 전개도 PDF 전담 — 도트 그림 변환은 itda-media:pixel-art, 새 그림 생성은 itda-media:imagegen. |
 | court-auction | 대법원 법원경매정보(courtauction.go.kr)의 부동산 매각공고·사건·물건을 조회하는 스킬입니다. | 없음 | "오늘 서울중앙지법 경매 공고 보여줘", "2024타경100001 사건 진행상황 알려줘", "강남 아파트 5억 이하 유찰 1회 물건 찾아줘" | itda-realty | — |
 | realty-deals | 국토교통부 부동산 실거래 12개 유형을 단일 인터페이스로 수집하는 스킬입니다. | KO_DATA_API_KEY | "최근 6개월 강남구 아파트 실거래 전부 받아줘", "분당 연립다세대 매매 2025년 데이터 CSV로 줘", "강서구 오피스텔 전월세 조회해줘" | itda-realty | 본 스킬은 국토교통부 실거래 raw 수집 전담 — 가격지수·평균/중위 파생 통계는 itda-realty:realty-price-stats, 미분양·인허가·청약은 itda-realty:realty-supply. |
 | realty-jeonse-gap | 매매와 전월세 실거래를 단지·전용면적 기준으로 조인해 전세가율과 갭 투자 후보를 스크리닝하는 스킬입니다. | KO_DATA_API_KEY | "강남구 아파트 전세가율 80% 넘는 단지 찾아줘", "분당 연립다세대 갭 3천만 이하 목록 뽑아줘", "전세가율 임계값 스크리닝 해줘" | itda-realty | — |
@@ -169,6 +170,7 @@ web-automation        → itda-hyve/skills/web-automation/
 imagegen              → itda-media/skills/imagegen/
 pixel-art             → itda-media/skills/pixel-art/
 cloudflare-tunnel     → itda-ops/skills/cloudflare-tunnel/
+papercraft-box        → itda-play/skills/papercraft-box/
 court-auction         → itda-realty/skills/court-auction/
 realty-deals          → itda-realty/skills/realty-deals/
 realty-jeonse-gap     → itda-realty/skills/realty-jeonse-gap/
