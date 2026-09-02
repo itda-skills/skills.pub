@@ -31,12 +31,16 @@ metadata:
 SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/web-scout}"
 [ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/web-scout' 2>/dev/null | head -1)
 # 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
-uv pip install --system -r "$SKILL_DIR/requirements.txt" -r "$SKILL_DIR/../web-reader/requirements.txt"
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # 정문(형제 web-reader 몫까지 함께 건다)
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt" -r "$SKILL_DIR/../web-reader/requirements.txt"
 ```
 
 ```powershell
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\web-scout"  # 미설정이면 SKILL.md 위치 절대경로 사용
+py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 형제 스킬 **web-reader 가 같은 플러그인에 있어야 한다**(HTTP·추출 레코드는 그쪽 스크립트를 재사용한다 — 복제 금지).
 

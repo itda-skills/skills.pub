@@ -33,8 +33,12 @@ metadata:
 SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/papercraft-box}"
 [ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/papercraft-box' 2>/dev/null | head -1)
 # 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
-python3 -c "import reportlab" 2>/dev/null || pip install -q -r "$SKILL_DIR/requirements.txt"
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # 정문
+# Windows: py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만. 관리형(PEP 668)이면 정문이 `--user --break-system-packages` 를 스스로 고른다.
 
 한글 폰트는 스크립트가 알아서 고릅니다 — 시스템 TrueType 한글 폰트(Linux 나눔고딕·macOS AppleGothic·Windows 맑은고딕)가 있으면 그것을, 없으면 동봉 `assets/fonts/NanumGothic-Regular.ttf` 를 씁니다(어느 것을 썼는지 stderr 한 줄). Cowork 의 Noto Sans CJK `.ttc` 와 macOS AppleSDGothicNeo 는 CFF 아웃라인이라 reportlab 이 못 쓰므로 건너뜁니다.
 

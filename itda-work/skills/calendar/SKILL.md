@@ -38,6 +38,18 @@ servers (Fastmail, Nextcloud, mailbox.org, Posteo, Zoho, …) are supported via
 
 ---
 
+## 설치
+
+```bash
+SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/calendar}"
+[ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/calendar' 2>/dev/null | head -1)
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # caldav·icalendar — 정문
+# Windows: py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
+```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
+
 ## Credentials
 
 자격증명의 **권장 저장 위치는 작업 폴더 루트의 `.env` 파일**이다 — 작업 폴더(Cowork 연결 폴더 / Claude Code 프로젝트 루트, 연결한 폴더가 여러 개면 아무 폴더나) 루트에 `.env`를 두면 스킬이 자동 탐색한다. 파일명 별칭 `.env.txt`·`env.txt`·`환경변수.txt` 도 동일하게 탐색된다. 셸 환경변수나 `~/.claude/settings.json` 의 `env` 로 설정해 두어도 로더가 자동으로 찾아 쓴다. 보조로 Claude Desktop의 "Claude 지침"(설정 → 일반) 또는 Claude Code의 프로젝트 `CLAUDE.md`에 선언하면 Claude가 읽어 실행 시 환경변수로 주입하나, 대화 컨텍스트에 값이 노출되므로 `.env`를 권장한다. (저장 위치 권장과 별개로 **런타임 조회 우선순위**는 환경변수가 `.env`보다 앞선다 — 개발자는 셸 환경변수로 오버라이드할 수 있다.)

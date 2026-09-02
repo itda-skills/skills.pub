@@ -74,15 +74,19 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/xlsx-design}"
 [ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/xlsx-design' 2>/dev/null | head -1)
 # 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 
-# macOS/Linux
-python3 -m pip install -r "$SKILL_DIR/requirements.txt"   # openpyxl(필수)·PyMuPDF(렌더)·PyYAML
+# macOS/Linux — 정문(기본: openpyxl·PyYAML · `--all` 로 PyMuPDF·Pillow 까지)
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
 ```
 
 ```powershell
 # Windows
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\xlsx-design"  # 미설정이면 SKILL.md 위치 절대경로 사용
-py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"     # + pywin32(Excel COM 렌더)
+py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"   # pywin32 는 마커로 Windows 에서만 설치된다
+# 수동 폴백: py -3 -m pip install --user -r "$env:SKILL_DIR\requirements.txt"
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 - **생성**(관문3)은 `openpyxl` 만으로 충분(Office·LibreOffice 불필요).
 - **검증 렌더**(관문4)는 Windows=Excel COM / 그 외=LibreOffice. 없어도 HARD GATE(빈문서·토큰·한글폰트)는 정상 판정, 렌더 의존 검사만 생략(`render_unavailable` advisory).

@@ -54,12 +54,13 @@ $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\web-reader"  # 미설정이면 
 ```
 
 ```bash
-# 필수 의존성 (Playwright/Chromium 불필요)
-python3 -m pip install curl_cffi PyYAML beautifulsoup4 markdownify
-# Windows: py -3 -m pip install curl_cffi PyYAML beautifulsoup4 markdownify
+# 의존성 설치 (Playwright/Chromium 불필요) — 정문
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
+# Windows: py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+# 수동 폴백(정문이 못 돌 때): python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
 ```
 
-> uv 사용자는 `uv pip install curl_cffi PyYAML beautifulsoup4 markdownify`(venv 권장) 도 가능하다. uv 가 없으면 사용자에게 설치를 요청한다(에이전트가 `curl | sh` 를 실행하지 않는다).
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 ## 추천 워크플로우 (Fetch → Extract)
 

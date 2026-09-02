@@ -131,13 +131,17 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/data-verify}"
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\data-verify"  # 미설정이면 SKILL.md 위치 절대경로 사용
 ```
 ```bash
-# macOS/Linux
-python3 -m pip install -r "$SKILL_DIR/scripts/requirements.txt"
+# macOS/Linux — 정문
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/scripts/requirements.txt"
 python3 "$SKILL_DIR/scripts/verify.py" <파일.xlsx> --config config.json
-# Windows
-py -3 -m pip install -r "$env:SKILL_DIR\scripts\requirements.txt"
+# Windows — 정문
+py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
 py -3 "$env:SKILL_DIR\scripts\verify.py" <파일.xlsx> --config config.json
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
+
 **실시간 지적 경로(Windows, office_audit MCP)**: hyve 가동 + 설정 > MCP 탭에서 **office 프리셋** 등록
 (`/mcp/office`). 에이전트가 `office_audit.verify` 도구를 호출한다(Windows + Microsoft Office 필요).
 

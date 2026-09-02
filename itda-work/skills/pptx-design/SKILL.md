@@ -49,15 +49,19 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/pptx-design}"
 [ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/pptx-design' 2>/dev/null | head -1)
 # 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
 
-# macOS/Linux
-python3 -m pip install -r "$SKILL_DIR/requirements.txt"   # python-pptx, matplotlib, Pillow, numpy (필수) · pytesseract (선택)
+# macOS/Linux — 정문(기본: 생성·검증 필수 의존 · `--all` 로 pytesseract 까지)
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
 ```
 
 ```powershell
 # Windows (보조 — 생성만, 검증 렌더는 미지원 환경 多)
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\pptx-design"  # 미설정이면 SKILL.md 위치 절대경로 사용
-py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"
+py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+# 수동 폴백: py -3 -m pip install --user -r "$env:SKILL_DIR\requirements.txt"
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 - **생성**(관문3)은 위 Python 패키지만으로 충분합니다(Office·LibreOffice 불필요).
 - **검증·미리보기**(관문4)는 LibreOffice(`soffice`)와 `pdftoppm`(poppler)이 PATH에 있어야 **렌더 미리보기·OCR·이미지 기반 빈슬라이드 검사**가 동작합니다. macOS: `brew install --cask libreoffice && brew install poppler`. **없어도 HARD GATE(지오메트리·콘텐츠)는 정상 판정**되고, 렌더 의존 검사만 생략되며 `render_unavailable` advisory로 표면화됩니다(#621). 다만 시각 미리보기가 없으니 검증 환경엔 설치를 권장합니다.
@@ -192,7 +196,7 @@ py -3 "$env:SKILL_DIR\scripts\verify.py" <생성.pptx> --tokens tokens.txt --ko 
 
 | 상황 | 대응 |
 |---|---|
-| `python-pptx`/`matplotlib`/`Pillow` 미설치 | `requirements.txt`로 설치 안내(macOS/Linux `python3 -m pip`, Windows `py -3 -m pip`) |
+| `python-pptx`/`matplotlib`/`Pillow` 미설치 | 정문 `"$SKILL_DIR/scripts/install_skill_deps.py"` 로 설치 안내(macOS/Linux `python3`, Windows `py -3`) |
 | `soffice`/`pdftoppm` 미발견(검증 렌더 실패) | 생성은 가능함을 알리고, 검증/미리보기는 LibreOffice·poppler 설치 후 재실행 안내. 실행 가능한 검증과 공백을 분리 보고 |
 | OCR 미동작 | `pytesseract`+`tesseract`(kor+eng) 미설치 시 advisory 층만 스킵(하드게이트 무관) |
 | 한글 tofu/세리프 폴백 | `set_run_font`에 한글 폰트명 지정 여부 확인 + 혼합 run 한글 폰트 통일. `kr_font_name()` 사용 |

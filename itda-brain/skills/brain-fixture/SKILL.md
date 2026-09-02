@@ -63,6 +63,16 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/brain-fixture}"
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\brain-fixture"  # 미설정이면 SKILL.md 위치 절대경로 사용
 ```
 
+### 관문0-b — 의존성 설치 (처음 한 번)
+
+```bash
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # 정문
+# Windows: py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
+```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
+
 ### 관문1 — 입력 수집
 
 두 경로 중 하나로 시작한다.

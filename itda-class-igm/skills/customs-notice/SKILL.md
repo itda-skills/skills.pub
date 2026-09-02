@@ -34,15 +34,18 @@ metadata:
 SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/customs-notice}"
 [ -n "$SKILL_DIR" ] || SKILL_DIR=$(find /sessions/*/mnt/.remote-plugins -type d -path '*/skills/customs-notice' 2>/dev/null | head -1)
 # 둘 다 아니면(저장소 체크아웃 등) 이 SKILL.md 가 있는 디렉토리 절대경로를 그대로 사용
-pip install -q -r "$SKILL_DIR/requirements.txt" 2>/dev/null || pip install -q requests beautifulsoup4 lxml openpyxl
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # 정문
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
 ```
 
 Windows(PowerShell):
 
 ```powershell
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\customs-notice"  # 미설정이면 SKILL.md 위치 절대경로 사용
-py -3 -m pip install -q requests beautifulsoup4 lxml openpyxl
+py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 ## 사용법
 

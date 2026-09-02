@@ -53,8 +53,12 @@ $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\hwpx"  # 미설정이면 SKILL.
 의존성 (읽기: Pillow·olefile / 생성 이미지: Pillow / 채우기: 표준 라이브러리만):
 
 ```bash
-python3 -m pip install -r "${SKILL_DIR}/requirements.txt"
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # 정문
+# Windows: py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 입력 파일은 항상 쓰기 가능한 작업 디렉토리(`.itda-skills/`)로 복사한 뒤 처리합니다.
 Cowork 업로드 경로는 read-only 일 수 있고, 채우기는 원본 보존이 원칙입니다.

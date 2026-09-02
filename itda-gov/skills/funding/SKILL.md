@@ -53,7 +53,7 @@ Windows(PowerShell):
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\funding"  # 미설정이면 SKILL.md 위치 절대경로 사용
 ```
 
-권장 의존(선택): `pip install -r "$SKILL_DIR/requirements.txt"` — `curl_cffi` 가 TLS 지문 차단을 피한다.
+권장 의존(선택): 정문 `python3 "$SKILL_DIR/scripts/install_skill_deps.py" --all`(선택 의존이라 `--all`, Windows `py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py" --all`, 수동 폴백 `python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"`) — `curl_cffi` 가 TLS 지문 차단을 피한다.
 **없어도 동작한다**(urllib 경로, stderr 에 1회 고지).
 
 ## 환경 변수

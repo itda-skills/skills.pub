@@ -476,12 +476,13 @@ web-reader의 `fetch_html.py`를 subprocess로 호출합니다. blog-reader 자�
 비표준 배치에서는 `ITDA_BLOG_READER_FETCH_HTML` 로 절대 경로를 지정합니다.
 
 ```bash
-# web-reader 의존성 설치 (필요 시) — 형제 스킬 디렉토리 기준
-python3 -m pip install -r "$SKILL_DIR/../web-reader/requirements.txt"
-# Windows: py -3 -m pip install -r "$env:SKILL_DIR\..\web-reader\requirements.txt"
+# 의존성 설치 — 정문(형제 web-reader 의 행을 이 스킬 deps.json 이 싣고 있다)
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
+# Windows: py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/../web-reader/requirements.txt"
 ```
 
-> uv 사용자는 `uv pip install -r "$SKILL_DIR/../web-reader/requirements.txt"`(venv 권장) 도 가능하다.
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 ---
 

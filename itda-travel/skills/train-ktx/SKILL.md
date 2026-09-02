@@ -66,12 +66,16 @@ SRT는 2026-09-01부로 폐지되고 KTX로 통합됐습니다. **9월 1일 이�
 그것과 같은 것을 가리킨다(둘이 갈리면 `tests/test_install_guide.py` 가 RED 로 잡는다).
 
 ```bash
-# macOS/Linux
-python3 -m pip install korail2-ncard pycryptodome
+# macOS/Linux — 정문(korail2-ncard + pycryptodome>=3.20.0 하한을 함께 건다)
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
 
 # Windows
-py -3 -m pip install korail2-ncard pycryptodome
+py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만. 아래는 정문이 하는 판단을 손으로 할 때의 안내다.
 
 > **위 명령이 `externally-managed-environment` 로 막히면** — homebrew·pyenv 등
 > PEP 668 관리형 인터프리터입니다(흔한 기본값이며 `--user` 만 붙여도 막힙니다).

@@ -337,10 +337,12 @@ python3 "$SKILL_DIR/scripts/daiso.py" products 수납박스 --format markdown --
 ```
 
 ```bash
-# AES 인증 기능(inventory·display-location)을 쓸 때만 설치
-python3 -m pip install cryptography
+# AES 인증 기능(inventory·display-location)을 쓸 때만 설치 — 정문
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
+# Windows: py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user cryptography
 ```
 
-> uv 사용자는 `uv pip install cryptography`(venv 권장) 도 가능합니다.
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 자세한 엔드포인트·인증 알고리즘은 [`references/api-endpoints.md`](references/api-endpoints.md)에 정리되어 있습니다.

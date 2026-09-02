@@ -53,14 +53,15 @@ Google Flights 공개 검색으로 **항공권을 조회·비교**합니다(예�
 `fast-flights` 가 필요합니다. 처음 한 번 설치하세요.
 
 ```bash
-# macOS/Linux
-python3 -m pip install fast-flights==2.2
+# macOS/Linux — 정문(핀 fast-flights==2.2 를 그대로 건다)
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"   # fast-flights==2.2
 
-# Windows
-py -3 -m pip install fast-flights==2.2
+# Windows — 정문
+py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
 ```
 
-> uv 사용자는 `uv pip install fast-flights==2.2`(venv 권장) 도 가능합니다.
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 미설치 시 스킬이 fail-loud 로 설치 방법을 안내합니다(크래시 아님). 직접
 조회(common)는 추가 브라우저 없이 동작합니다.

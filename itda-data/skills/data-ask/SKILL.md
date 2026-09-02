@@ -127,7 +127,7 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/data-ask}"
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\data-ask"  # 미설정이면 SKILL.md 위치 절대경로 사용
 ```
 
-`pip install -r "$SKILL_DIR/requirements.txt"` (duckdb, Windows 는 `-r "$env:SKILL_DIR\requirements.txt"`). 위 모듈들은 CLI 엔트리 없이 임포트하므로 **모듈 실행 전 `cd "$SKILL_DIR/scripts"`** 한다(Windows: `cd "$env:SKILL_DIR\scripts"`). cp949(한국 엑셀) 파일을 읽으려면 duckdb 코어 `encodings` 확장이 필요하다 — 최초 1회 온라인에서 `INSTALL encodings;` 한 뒤로는 오프라인에서 `LOAD encodings` 만으로 동작한다(`safe_exec` 가 cp949 일 때 자동 LOAD). 그 외 stdlib. macOS/Linux `python3`, Windows `py -3`.
+설치 정문 `python3 "$SKILL_DIR/scripts/install_skill_deps.py"`(Windows `py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"`) — duckdb 를 이 환경에 맞는 pip 인자로 설치한다(`--all` 이면 statsmodels 까지). 수동 폴백 `python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"`. 위 모듈들은 CLI 엔트리 없이 임포트하므로 **모듈 실행 전 `cd "$SKILL_DIR/scripts"`** 한다(Windows: `cd "$env:SKILL_DIR\scripts"`). cp949(한국 엑셀) 파일을 읽으려면 duckdb 코어 `encodings` 확장이 필요하다 — 최초 1회 온라인에서 `INSTALL encodings;` 한 뒤로는 오프라인에서 `LOAD encodings` 만으로 동작한다(`safe_exec` 가 cp949 일 때 자동 LOAD). 그 외 stdlib. macOS/Linux `python3`, Windows `py -3`.
 
 ## 스크립트 모듈
 | 모듈 | 역할 |

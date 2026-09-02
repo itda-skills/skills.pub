@@ -45,14 +45,17 @@ $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\mmaa-welfare"  # 미설정이�
 재수집(`--refresh`) 시에만 의존성을 설치합니다:
 
 ```bash
-# macOS/Linux (재수집 시에만)
-python3 -m pip install -r "$SKILL_DIR/requirements.txt"
+# macOS/Linux (재수집 시에만) — 정문
+python3 "$SKILL_DIR/scripts/install_skill_deps.py"
+# 수동 폴백: python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"
 ```
 
 ```powershell
-# Windows (재수집 시에만)
-py -3 -m pip install -r "$env:SKILL_DIR\requirements.txt"
+# Windows (재수집 시에만) — 정문
+py -3 "$env:SKILL_DIR\scripts\install_skill_deps.py"
 ```
+
+> 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만.
 
 ## 사용법 — 질문 답변 (기본)
 
