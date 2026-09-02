@@ -6,7 +6,7 @@
     python3 fuel_price.py --region 인천 --product 경유
     python3 fuel_price.py --term week --periods 8 --detail
     python3 fuel_price.py --term month --end 2026-07        # 특정 시점(과거) 조회
-    python3 fuel_price.py --json
+    python3 fuel_price.py --format table                    # 사람용 요약+표 (기본은 compact JSON)
     python3 fuel_price.py --source api --term day           # OPINET_API_KEY 있을 때만
 
 출력은 결정론적(같은 응답 → 같은 문자열)이며 stdout 만 쓴다. 에러는 한국어로 stderr, exit 1.
@@ -76,6 +76,8 @@ class Briefing:
         d = asdict(self)
         d["series"] = [{"period": l, "price": p} for l, p in self.series]
         d["summary"] = self.summary_line()
+        d["detail_table"] = self.detail_table()
+        d["source_note"] = SOURCE_NOTE
         # itda-gov 규약: stdout JSON 은 compact — pretty-print 금지 (#438, dart test_response_compact_guard 가 팩 전체 스캔)
         return json.dumps(d, ensure_ascii=False, separators=(",", ":"))
 
@@ -120,8 +122,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--periods", type=int, default=3, help="가져올 기간 수(기본 3 — 전기 대비 계산용)")
     p.add_argument("--end", default=None,
                    help="조회 종료 시점 — 일간 YYYY-MM-DD, 주간·월간 YYYY-MM (기본: 오피넷 최신. 예: 2026-07 → 7월 평균)")
-    p.add_argument("--detail", action="store_true", help="기간별 표 출력")
-    p.add_argument("--json", action="store_true", help="JSON 출력(요약 포함)")
+    p.add_argument("--format", choices=["json", "table"], default="json",
+                   help="json(기본, compact — LLM·후처리용, summary 문자열 포함) | table(사람용 요약+표)")
+    p.add_argument("--detail", action="store_true", help="(table 형식) 기간별 표 포함 — --format table 을 함축")
+    p.add_argument("--json", action="store_true", help="(구식 별칭) --format json 과 동일")
     p.add_argument("--source", choices=["web", "api"], default="web",
                    help="web(기본, 키 불요) | api(OPINET_API_KEY 필요 — day 만, 최근 7일)")
     p.add_argument("--api-key", default=None, help="오피넷 API 키(--source api). 미지정 시 OPINET_API_KEY")
@@ -160,13 +164,15 @@ def run(argv: list[str] | None = None) -> int:
         print(f"오류: {e}", file=sys.stderr)
         return 1
 
-    if args.json:
+    fmt = args.format
+    if args.detail and not args.json:
+        fmt = "table"
+    if fmt == "json":
         print(b.to_json())
         return 0
     print(b.summary_line())
-    if args.detail:
-        print()
-        print(b.detail_table())
+    print()
+    print(b.detail_table())
     print(SOURCE_NOTE)
     return 0
 

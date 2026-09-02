@@ -1,5 +1,11 @@
 # Changelog — itda-gov
 
+## [5.5.0] - 2026-09-02 (이슈 #1632 후속)
+
+### Changed
+
+- **`fuel-price` v0.3.0 — 기본 출력 compact JSON**(팩 관례 정합): `--format json|table`, 표시용 `summary`·`detail_table`·`source_note` 동봉.
+
 ## [5.4.0] - 2026-09-02 (이슈 #1632 후속)
 
 ### Changed

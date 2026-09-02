@@ -1,5 +1,13 @@
 # Changelog — itda-fuel-price
 
+## [0.3.0] — 2026-09-02 (이슈 #1632 후속, 마스터 지시)
+
+### Changed
+
+- **기본 출력을 compact JSON 으로 반전**(itda-gov 팩 관례 — dart·ecos 와 정합): `--format json|table` 신설, 기본 `json`.
+  LLM 파싱·후속 계산이 안전하도록 정형 필드에 더해 표시용 완성 문자열 `summary`·`detail_table`·`source_note` 를 동봉
+  — 에이전트가 숫자를 다시 타이핑하지 않고 그대로 표시한다(전사 오류 방지). `--json`(별칭)·`--detail`(table 함축) 존치.
+
 ## [0.2.0] — 2026-09-02 (이슈 #1632 후속, 마스터 결정)
 
 ### Changed

@@ -1,7 +1,7 @@
 {
   "name": "itda-tax",
   "description": "한국 세금 공개 스킬팩 — 국세법령정보시스템(taxlaw.nts.go.kr) 법령·세법해석례·판례/결정례·상담사례 검색과 전문 조회. 세금 계산·세율·홈택스 공개데이터 스킬을 순차 추가.",
-  "version": "8.56.0",
+  "version": "8.57.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

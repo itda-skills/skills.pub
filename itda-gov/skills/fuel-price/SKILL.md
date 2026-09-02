@@ -9,12 +9,12 @@ description: >
 license: Apache-2.0
 compatibility: Claude Code & Cowork
 user-invocable: true
-argument-hint: "[지역] [제품] [--term day|week|month] [--end YYYY-MM(-DD)] [--detail|--json]"
+argument-hint: "[지역] [제품] [--term day|week|month] [--end YYYY-MM(-DD)] [--format json|table]"
 allowed-tools: Read, Bash(python3:*), mcp__workspace__bash
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
-  version: "0.2.0"
+  version: "0.3.0"
   created_at: "2026-09-02"
   updated_at: "2026-09-02"
   tags: "fuel-price, opinet, gasoline, diesel, oil-price, korea, keyless"
@@ -48,11 +48,11 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/fuel-price}"
 | 기간 단위 | `--term` | `month` | `day`(일간) · `week`(주간) · `month`(월간) |
 | 기간 수 | `--periods` | `3` | 전기 대비 계산용 — 추세를 보려면 6~12 |
 | 종료 시점 | `--end` | 최신 | 특정 시점 조회 — 일간 `YYYY-MM-DD`, 주간·월간 `YYYY-MM` (예: "7월 평균" → `--term month --end 2026-07`). 오피넷 최신 시점 이후는 거부 |
-| 출력 | `--detail` / `--json` | 요약 1줄 | 기간별 표 / compact JSON |
+| 출력 | `--format` | `json` | `json`(기본, compact — 필드+`summary`·`detail_table` 문자열 동봉) / `table`(사람용 텍스트) |
 
 - "오늘·어제·현재 기름값"이면 `--term day`(오피넷은 전일까지 확정 통계 — "오늘" 값은 새벽에 갱신된 **전일자**가 최신이다. 출력의 기간 라벨이 기준일이니 그대로 보여준다).
-- "월평균·이달 평균"이면 `--term month`, "추세"면 `--term week --periods 8 --detail`.
-- 지난 특정 날/달을 물으면 `--end`. 두 시점 비교("6월 대비 8월")는 `--end 2026-08 --periods 3 --detail`.
+- "월평균·이달 평균"이면 `--term month`, "추세"면 `--term week --periods 8`.
+- 지난 특정 날/달을 물으면 `--end`. 두 시점 비교("6월 대비 8월")는 `--end 2026-08 --periods 3`.
 - **유류비 단가·공지문을 요구받으면**: 조회 결과(기준가)를 주고, 단가는 회사 규정 산식(예: 기준가 ÷ 연비 × 보정계수)으로
   에이전트가 대화에서 계산해 준다 — 스킬 스크립트의 몫이 아니다. 연비 등 규정값은 사용자에게 묻고 지어내지 않는다.
 
@@ -64,7 +64,7 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/fuel-price}"
 ```bash
 # macOS/Linux
 python3 "$SKILL_DIR/scripts/fuel_price.py" [--region 인천] [--product 경유] [--term month] [--periods 3] \
-    [--end 2026-07] [--detail] [--json]
+    [--end 2026-07] [--format json|table]
 
 # Windows
 py -3 "$env:SKILL_DIR\scripts\fuel_price.py" --region 서울 --product 휘발유 --term day
@@ -74,15 +74,17 @@ Windows 에서 `SKILL_DIR` 확정: `$env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\sk
 표준 라이브러리만 쓰므로 추가 설치가 없다(Python 3.10+).
 
 예:
-- `python3 "$SKILL_DIR/scripts/fuel_price.py"` — 전국 휘발유 월간 3개월, 요약 1줄
-- `python3 "$SKILL_DIR/scripts/fuel_price.py" --region 서울 --term day --periods 7 --detail` — 서울 최근 7일
+- `python3 "$SKILL_DIR/scripts/fuel_price.py"` — 전국 휘발유 월간 3개월 (compact JSON)
+- `python3 "$SKILL_DIR/scripts/fuel_price.py" --region 서울 --term day --periods 7` — 서울 최근 7일
 - `python3 "$SKILL_DIR/scripts/fuel_price.py" --term month --end 2026-07 --region 부산` — 지난 7월 부산 월평균
 - `python3 "$SKILL_DIR/scripts/fuel_price.py" --term day --source api` — `OPINET_API_KEY` 가 있을 때만
 
 ### Step 4: Display
 
-스크립트 stdout 을 **그대로** 보여준다(수치·출처 문구를 고쳐 쓰지 않는다). 표·요약을 사용자가 다른 형식으로 원하면
-**숫자·기준일·출처는 보존**한 채 재배열만 한다.
+기본 출력은 **compact JSON**(itda-gov 팩 관례) — 필드(`series`·`latest_price`…)와 함께 표시용 완성 문자열
+`summary`·`detail_table`·`source_note` 가 동봉된다. 사용자에게 보여줄 때는 **`summary`(+필요 시 `detail_table`)
+문자열을 그대로** 쓰고 숫자를 다시 타이핑하지 않는다(전사 오류 방지). 후속 계산(단가·비교)은 JSON 필드로 한다.
+`source_note`(출처)는 항상 함께 표시한다. 사람이 직접 읽을 원문이 필요하면 `--format table`.
 
 ### Error Handling
 
