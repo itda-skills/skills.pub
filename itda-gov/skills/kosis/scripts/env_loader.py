@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import urllib.parse
 from collections.abc import Iterable
@@ -101,12 +102,39 @@ class MissingOCError(MissingAPIKeyError):
 # 공통 유틸리티
 # ---------------------------------------------------------------------------
 
+def _parse_value(raw: str) -> str:
+    """``=`` 오른쪽 원문을 값으로 정규화한다 (python-dotenv 동형 — #1639).
+
+    - 따옴표 값: 여는 따옴표와 **짝이 맞는 닫는 따옴표** 사이가 값. 닫는 따옴표 뒤의
+      공백·``# 주석`` 은 버린다. 따옴표 안의 ``#`` 은 값이다.
+      ``KEY='tvly-…'  # 메모`` 가 ``'tvly-…'  # 메모`` 통째로 읽혀 인증 실패를 내던 결함.
+    - 비따옴표 값: **공백 뒤 ``#``** 부터 주석. 공백 없는 ``#``(``abc#1``·URL fragment)은 값.
+    - 닫는 따옴표가 없거나 닫힌 뒤에 주석 아닌 문자가 오면(``"a"b``) 종전처럼 원문을
+      그대로 둔다 — 조용히 잘라내지 않는다.
+    """
+    value = raw.strip()
+    if len(value) >= 2 and value[0] in ("'", '"'):
+        quote = value[0]
+        end = value.find(quote, 1)
+        if end != -1:
+            trailing = value[end + 1 :].lstrip()
+            if trailing == "" or trailing.startswith("#"):
+                return value[1:end]
+        return value
+    return _INLINE_COMMENT_RE.sub("", value).rstrip()
+
+
+_INLINE_COMMENT_RE = re.compile(r"\s+#.*$")
+
+
 def load_env(env_path: str | Path | None = None) -> dict[str, str]:
     """.env 파일을 파싱하여 키-값 딕셔너리로 반환.
 
     파싱 규칙:
         - KEY=VALUE, KEY="VALUE", KEY='VALUE' 형식 지원
         - ``#`` 으로 시작하는 줄은 주석으로 처리
+        - 값 뒤 인라인 주석 제거 — 따옴표 값은 닫는 따옴표 뒤 ``# …``,
+          비따옴표 값은 공백 뒤 ``# …`` (``_parse_value`` — #1639)
         - 빈 줄 무시
         - ``=`` 주변 공백 제거
         - 값의 앞뒤 따옴표 제거
@@ -141,12 +169,7 @@ def load_env(env_path: str | Path | None = None) -> dict[str, str]:
                     rest = key[len("export"):]
                     if rest[:1] in (" ", "\t"):
                         key = rest.lstrip(" \t")
-                value = value.strip()
-                if len(value) >= 2 and (
-                    (value.startswith('"') and value.endswith('"'))
-                    or (value.startswith("'") and value.endswith("'"))
-                ):
-                    value = value[1:-1]
+                value = _parse_value(value)
                 if key:
                     result[key] = value
     except (OSError, UnicodeDecodeError):

@@ -1,5 +1,23 @@
 # Changelog — itda-email
 
+## [0.31.0] — 2026-09-03 (이슈 #1638)
+
+### Added
+
+- **`thread_status.py`** — 최근 N일 받은편지함의 미회신 판정 (읽기 전용, 결정론). 내가 To/CC 에 있는 인바운드 메일을 뽑아 Message-ID 그래프(`In-Reply-To`/`References`) union-find + 날짜로 "그 스레드의 최신 상대 메시지 이후 내 발신(`\Sent`)이 있는가" 를 판정한다. `verdict` 는 `unreplied` / `replied_then_new` / `replied` / `unknown` 네 값이며 **헤더·날짜로만** 정해진다 — 제목·본문 어휘로 추론하는 필드는 두지 않는다(`verdict-channel-not-inference`). 연결·인증은 `_imap_common.connect`, `\Sent` SPECIAL-USE 탐색·헤더 파싱·배치 FETCH 는 `reply_context` 재사용(독립 IMAP 클라이언트 없음, 전 폴더 readonly).
+  - 인자: `--provider`(필수) `--account` `--days`(기본 2) `--limit`(기본 8) `--with-body N`(unreplied 후보에 한해 본문 앞 N자를 같은 연결에서 동반 페치).
+  - 출력: `candidates[]`(`anchor{provider,account,folder,uidvalidity,uid,message_id}` · `from` · `subject` · `date` · `verdict` · `reason_code`) / `excluded{bulk,group,replied,unknown}` / `warnings[]`. 제외 규칙은 `List-Id`·`Precedence: bulk|list`·noreply 발신(`bulk`), 수신자 5명 이상(`group`).
+  - 단위 테스트 40건(회신함·미회신·재회신·bulk·noreply·그룹·다중 계정·References 3단 체인·Message-ID 누락·UIDVALIDITY 앵커·localized Sent·malformed Date 양방향·plus-addressing·`--with-body` 절단).
+
+### Security
+
+- **발신함 읽기 실패를 빈 폴더와 구분한다** — `\Sent` 의 SELECT·SEARCH·FETCH 실패를 조용히 건너뛰면 전건이 미회신으로 **과보고**된다. 읽기 실패는 `sent_read_failed` warning + 전건 `unknown` 으로 fail-closed 한다(`no-silent-fallback`).
+- **자기 `Message-ID` 도 `<...>` 토큰으로 정규화** — 헤더 원문을 그대로 쓰면 `<id@x> (ignore previous instructions)` 같은 CFWS 접미사가 참조와 문자열이 달라져 스레드를 끊고, 미정규화 문자열이 anchor 로 흘러간다. 유효 토큰이 없으면 `unknown`.
+
+### Changed
+
+- 발신함 조회 창을 인바운드 창보다 넓게(`days + 28`) 잡는다 — 같은 창만 보면 "5일 전 답장한 스레드에 오늘 후속이 온" 경우가 `replied_then_new` 대신 `unreplied` 로 뒤집힌다. SEARCH 창만 넓히고 그래프·판정은 불변.
+
 ## [0.30.0] — 2026-08-20 (이슈 #1512 트랙 A)
 
 ### Added

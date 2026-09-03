@@ -3,6 +3,35 @@
 All notable changes to the `calendar` skill are documented here.
 This skill follows the itda-skills SPEC workflow (SPEC-CALENDAR-001).
 
+## [0.4.1] — 2026-09-03 (이슈 #1638 라이브)
+
+### Fixed
+- `caldav_client.connect` 가 전송 세션의 **HTTP/3(QUIC) 을 항상 끈다**(`disable_http3`). iCloud 가 `alt-svc: h3=":443"` 로 QUIC 승격을 유도하는데, UDP GSO 를 지원하지 않는 Claude Cowork 샌드박스에서 `sendmsg()` 가 `OSError: Errno 5` 로 결정론적으로 실패했다(같은 서버에 curl 은 성공). 재시도로는 못 고치는 클래스라 `niquests.Session(disable_http3=True)` 로 세션을 교체해 HTTP/2 이하로 고정한다. requests 폴백 세션이면 no-op.
+
+## [0.4.0] — 2026-09-03 (이슈 #1638)
+
+아침 브리핑(`itda-work:morning-brief`)이 소비할 두 축을 채운다 — **주최자 판정**과 **네이버 반복 일정의 오늘·내일 노출**. 둘 다 없으면 브리핑이 조용히 틀린다(내가 주최한 회의를 못 고르고, 과거 시작 반복이 통째로 빠진다).
+
+### Added
+
+- **`organizer` 필드** — `normalize_event` 출력에 VEVENT `ORGANIZER` 주소를 싣는다. `mailto:` 접두 제거(대소문자 무관)·트림·소문자화하고 없으면 `null`. 정규화는 `event_model.normalize_mailto()` 가 **비교 키의 단일 정의**로 export 되어, 소비자가 계정 주소를 같은 규칙으로 정규화해 "내가 주최자인가"를 판정한다(규칙 복제 금지). `CN=` 은 파라미터라 무시되고 **대리 발송자(`SENT-BY`)는 미지원** — ORGANIZER 주소 자체만 본다. 참석자 목록(`ATTENDEE`)은 범위 밖.
+  - **보안**: organizer 도 `sanitize_fn` 경로를 탄다(sanitize → 정규화 순). 정상 주소는 ASCII 라 sanitize 가 항등이라 비교 키가 손상되지 않고, 인젝션이 실린 값만 `[FILTERED]` 로 접혀 계정 주소와 불일치한다(오작동 방향이 오포함이 아니라 누락 = fail-safe). `--no-sanitize` 는 종전대로 원문.
+
+### Fixed
+
+- **네이버 objects 경로가 `list_events --expand` 를 무시하던 결함** [P1] — 서버 REPORT 가 안 먹는 프로바이더는 objects 열거 폴백을 타는데, 그 경로가 RRULE 마스터만 돌려주고 `--expand` 를 통째로 버렸다. **시작일이 과거인 주간·일간 반복이 오늘·내일 조회에서 전부 빠진다**(마스터의 `start` 가 과거라 날짜 분류에서 탈락). `event_model.expand_recurrences()` 로 창 안 회차를 클라이언트 전개한다 — 판정은 `free_slots.rrule_occurrences` **공유**(EXDATE 반영, 폭주 RRULE 상한 1000). 회차는 **마스터 UID 를 유지**하고 신설 `recurrence_start` 로 구분한다. 창 안에 회차가 없는 마스터는 목록에서 빠진다(없는 일정을 보여주지 않는다). **search 경로(iCloud/custom)는 동작 불변** — 게이트가 `args.expand and via_objects` 라 서버 expand 에 그대로 위임한다.
+  - **RECURRENCE-ID 오버라이드는 미반영**(기존 `free_slots` 한계와 동일, 문서화). 전개 실패는 마스터 1건 보수 폴백 + **stderr 경고**로 표면화한다(무음 금지 — stdout JSON 은 오염하지 않는다).
+  - 회귀 봉인: 단위(전개·종일 shape·창 밖 드롭·실패 폴백) + **배선**(objects 전개·`--expand` 미지정 현행 유지·search 경로 위임·stderr 경고). 뮤테이션 4종(전개 제거·배선 게이트 off·`via_objects` 조건 제거·창 밖 마스터 잔존) 전건 RED 실측.
+
+### Changed
+
+- **`recurrence_start` 필드 신설** — 모든 정규화 이벤트에 균일하게 실린다(마스터·단발은 `null`). 소비자가 shape 분기 없이 회차를 구분할 수 있다.
+
+### Verified
+
+- 단위/배포형 **139 passed, 0 skipped** (+11: organizer 9 · 전개 단위 6 · 배선 5 — 기존 119 대비).
+- 실계정 라이브(네이버 objects 경로 반복 일정 노출)는 **미검증** — 네트워크 접근 없이 작업했다. 합성 RRULE 픽스처와 배선 테스트로만 봉인했으므로, 라이브 확인은 별도로 남는다.
+
 ## [0.3.0] — 2026-08-20 (이슈 #1514)
 
 Google Calendar MCP 커넥터 벤치마킹에서 확인된 세 갭을 채운다 — 빈 시간 제안·텍스트 검색·uid 단건 상세. 겹침 계산을 LLM 암산에서 결정론 코드로 옮기는 것이 핵심이다.

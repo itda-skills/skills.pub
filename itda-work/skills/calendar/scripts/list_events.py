@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from caldav_client import get_calendars_fast, search_events  # noqa: E402
 from cli_common import classify_error, emit, emit_error, resolve_provider_or_exit  # noqa: E402
 from event_model import (DEFAULT_TZ, event_matches_query,  # noqa: E402
-                         normalize_event, parse_dt)
+                         expand_recurrences, normalize_event, parse_dt)
 from email_security import sanitize_for_llm  # noqa: E402
 
 
@@ -71,22 +71,41 @@ def main() -> None:
         except Exception:  # noqa: BLE001
             return c, []
 
+    # objects 경로(네이버)는 서버가 expand 를 안 해 준다 — RRULE 마스터만 온다.
+    # --expand 를 무시하면 시작일이 과거인 주간·일간 반복이 오늘·내일 창에서
+    # 통째로 빠지므로 클라이언트 전개한다(#1638 C2). search 경로(iCloud)는
+    # 서버가 expand 를 처리하므로 동작 불변.
+    client_expand = args.expand and via_objects
+    expand_failures: list = []
+
     results = []
     if cals:
         with ThreadPoolExecutor(max_workers=min(8, len(cals))) as pool:
             for c, events in pool.map(_fetch, cals):
                 for ev in events:
+                    comp = ev.icalendar_component
                     nd = normalize_event(
-                        ev.icalendar_component,
+                        comp,
                         sanitize_fn=san,
                         url=str(ev.url),
                         etag=getattr(ev, "etag", None),
                     )
                     nd["calendar"] = c["name"]
-                    # sanitize 이후 텍스트 기준 매칭 — 화면 표시와 필터가 일치
-                    if args.query and not event_matches_query(nd, args.query):
-                        continue
-                    results.append(nd)
+                    items = (expand_recurrences(nd, comp, start, end, tz,
+                                                failures=expand_failures)
+                             if client_expand else [nd])
+                    for item in items:
+                        # sanitize 이후 텍스트 기준 매칭 — 화면 표시와 필터가 일치
+                        if args.query and not event_matches_query(item, args.query):
+                            continue
+                        results.append(item)
+
+    if expand_failures:
+        # 전개 실패는 마스터 1건으로 보수 폴백된다 — 이후 회차가 목록에서 새므로
+        # 무음이면 안 된다. stdout 은 JSON 전용이라 stderr 로만 낸다.
+        uids = ", ".join(str(f.get("uid")) for f in expand_failures[:5])
+        print(f"warning: 반복 일정 {len(expand_failures)}건 전개 실패 — "
+              f"마스터 1건만 표시됨 (uid: {uids})", file=sys.stderr)
 
     results.sort(key=lambda x: (x.get("start") or ""))
     emit(results)

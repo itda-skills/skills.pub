@@ -12,14 +12,51 @@ from datetime import date, datetime, timezone
 import caldav
 
 
+def disable_http3(client: caldav.DAVClient) -> bool:
+    """DAVClient 의 전송 세션에서 HTTP/3(QUIC) 을 끈다. 실제로 껐으면 True.
+
+    caldav>=3 은 `niquests` 를 쓰고, `DAVClient.__init__` 이 `niquests.Session(multiplexed=…)`
+    을 직접 만들며 HTTP/3 를 끌 인자를 주지 않는다. iCloud(`caldav.icloud.com`)는 응답에
+    `alt-svc: h3=":443"` 을 실어 niquests 가 다음 요청부터 QUIC(UDP) 로 승격하는데, UDP GSO
+    를 지원하지 않는 샌드박스(Claude Cowork 실측 2026-09-03 — `sendmsg()` `OSError: Errno 5`
+    가 결정론적으로 재현, 같은 서버에 curl 은 성공)에서는 그 승격이 매번 죽는다. 재시도로는
+    못 고치는 클래스라 세션을 `disable_http3=True` 로 다시 만들어 HTTP/2 이하로 고정한다.
+
+    DAVClient 는 헤더·auth·verify 를 세션이 아니라 자기 속성(`self.headers`·`self.auth`·
+    `self.ssl_verify_cert`)에 들고 요청마다 넘기므로 세션 교체는 상태를 잃지 않는다.
+    `multiplexed` 는 원 세션 값을 그대로 잇는다. niquests 가 아닌 세션(requests 폴백)이면
+    아무것도 하지 않는다 — 그쪽은 애초에 HTTP/3 를 시도하지 않는다.
+    """
+    session = getattr(client, "session", None)
+    if session is None:
+        return False
+    try:
+        import niquests
+    except ImportError:  # requests 폴백 — HTTP/3 없음
+        return False
+    if not isinstance(session, niquests.Session):
+        return False
+    client.session = niquests.Session(
+        multiplexed=bool(getattr(session, "multiplexed", False)),
+        disable_http3=True,
+    )
+    return True
+
+
 def connect(provider_cfg: dict, timeout: int = 30) -> caldav.DAVClient:
-    """Create a DAVClient (no network I/O until a request is made)."""
-    return caldav.DAVClient(
+    """Create a DAVClient (no network I/O until a request is made).
+
+    HTTP/3 는 항상 끈다(`disable_http3` 참조) — iCloud 의 alt-svc 승격이 UDP GSO 없는
+    샌드박스에서 결정론적으로 실패한다.
+    """
+    client = caldav.DAVClient(
         url=provider_cfg["caldav_url"],
         username=provider_cfg["login"],
         password=provider_cfg["password"],
         timeout=timeout,
     )
+    disable_http3(client)
+    return client
 
 
 def get_principal(client: caldav.DAVClient):

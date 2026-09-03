@@ -4,16 +4,17 @@ description: >
   네이버·Gmail·다음/카카오·아이클라우드·커스텀 SMTP/IMAP에서 멀티 계정으로 메일을 보내고 받는 스킬입니다.
   "메일 보내줘", "받은편지함 확인해줘", "아이클라우드 메일 읽어줘", "이 메일에 회신하게 맥락 모아줘"처럼 말하면 됩니다.
   피싱 감지(SPF/DKIM/DMARC)와 증분 페치를 내장하고, 회신 시 스레드·관련 메일 맥락을 결정론적으로 모아 줍니다.
+  [책임 경계] 본 스킬은 메일 읽기·발송·초안·미회신 판정 전담 — 아침 브리핑 페이지(오늘 일정+미회신 요청 한 장)는 itda-work:morning-brief, 일정 조회·추가는 itda-work:calendar.
 license: Apache-2.0
 compatibility: "Claude Code & Cowork. Python 3.10+. No external dependencies."
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.30.0"
+  version: "0.31.0"
   created_at: "2026-03-18"
-  updated_at: "2026-08-20"
-  tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references, move, spam, junk, trash, expunge, flag, seen, flagged, folder-create, folder-rename, folder-delete, special-use, uidplus"
+  updated_at: "2026-09-03"
+  tags: "email, smtp, imap, naver, gmail, google, daum, kakao, phishing, spf, dkim, dmarc, folder, imap-list, incremental, since-last-run, uid, uidvalidity, multi-account, icloud, me.com, mac.com, apple, multipart, mime, attachments, html, reply, reply-context, thread, in-reply-to, references, move, spam, junk, trash, expunge, flag, seen, flagged, folder-create, folder-rename, folder-delete, special-use, uidplus, thread-status, unreplied, follow-up, morning-brief"
 ---
 
 # email
@@ -281,6 +282,41 @@ Arguments:
 
 > **토큰 전략**: 탐색(IMAP IO)은 토큰 0, Claude가 읽는 건 budget 내 묶음 하나뿐. `read_email.py`를 여러 번 호출해 본문을 쌓는 방식 대비 토큰을 크게 절감한다.
 
+### Thread Status — 미회신 판정 (읽기 전용)
+
+최근 N일 받은편지함에서 **내가 To/CC 에 있는 인바운드 메일**을 뽑아, Message-ID 그래프(`In-Reply-To`/`References`) + 날짜로 "그 스레드의 최신 상대 메시지 이후 내 발신(`\Sent`)이 있는가"를 판정한다. 아침 브리핑처럼 "아직 답 못 한 메일"이 필요할 때 쓴다. 메일을 읽거나 표시하지 않는다(전 폴더 readonly).
+
+```bash
+python3 "$SKILL_DIR/scripts/thread_status.py" --provider naver --days 2
+python3 "$SKILL_DIR/scripts/thread_status.py" --provider icloud --account work --days 3 --limit 5 --with-body 500
+# Windows: py -3 "$env:SKILL_DIR\scripts\thread_status.py" --provider naver --days 2
+```
+
+Arguments:
+- `--provider` / `--account`: 다른 스크립트와 동일 (`--provider` 필수)
+- `--days`: 받은편지함 조회 창, 기본 2
+- `--limit`: 후보 최대 수, 기본 8 (최신순)
+- `--with-body N`: `unreplied` 후보에 한해 본문 앞 N자를 **같은 연결에서** 함께 싣는다
+
+판정(`verdict`)은 네 값이고 **헤더 그래프·날짜로만** 정해진다 — 제목·본문 어휘로 추론하는 필드는 없다:
+
+| verdict | 뜻 |
+|---|---|
+| `unreplied` | 그 스레드에 내 발신이 없다 |
+| `replied_then_new` | 내가 답한 뒤 상대 메시지가 또 왔다 |
+| `replied` | 최신 상대 메시지 뒤에 내 발신이 있다 (후보에서 제외) |
+| `unknown` | Message-ID 부재 등으로 판정 불가 (fail-closed, 제외) |
+
+출력 JSON: `status` / `schema_version` / `provider` / `account` / `days` / `candidates[]`(`anchor{provider,account,folder,uidvalidity,uid,message_id}` · `from` · `subject` · `date` · `verdict` · `reason_code` · `--with-body` 일 때 `body`) / `excluded{bulk,group,replied,unknown}` / `warnings[]`. 문자열은 다른 스크립트와 같은 sanitize 를 거친다.
+
+제외 규칙: `List-Id`·`Precedence: bulk|list`·`noreply` 계열 발신자는 `bulk`, 수신자(To+CC) 5명 이상은 `group`.
+
+**알려진 한계**
+- **alias 미지원** — 내 주소는 프로바이더 설정의 계정 주소 1개뿐이다(설정에 alias 목록의 출처가 없다). 별칭으로만 받은 메일은 후보 모집단 밖이라 `excluded` 에도 세지 않는다. Bcc 수신분·자기 발신분도 같다.
+- `\Sent` SPECIAL-USE 폴더를 **못 찾거나 끝까지 못 읽으면** 회신 여부를 잴 수 없으므로 **전건 `unknown`** + `warnings`(`sent_folder_not_found` / `sent_read_failed`)로 표면화한다. 읽기 실패를 빈 폴더로 접으면 그 순간 전건이 미회신으로 과보고된다.
+- 발신함은 인바운드보다 **넓은 창**(`days + 28`)으로 검색한다 — 며칠 전 답장한 스레드에 오늘 후속이 와도 `replied_then_new` 로 잡힌다.
+- 같은 스레드에 창 안 인바운드가 여러 건이면 각각 후보로 나온다(스레드 접기 없음 — 판정은 스레드 단위라 값이 갈리지는 않는다).
+
 ### List Folders
 
 폴더 목록을 메시지 수와 함께 조회. `read_email.py --folder`에 쓸 정확한 이름 확인용.
@@ -419,6 +455,14 @@ Custom provider도 동일 패턴 (`SMTP_HOST_COMPANY` 등 + `--account company`)
 inbox-triager 는 **트리아지 전용**(발송·초안·삭제·서버 상태 변경 금지)이다. 회신·발송은 반드시 본 대화에서 이 스킬의 발송 절차(사용자 확인 포함)로 진행한다. 서브에이전트가 없는 환경에서는 본 컨텍스트에서 동일 절차로 진행하되 본문 페치를 최소화한다.
 
 ---
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| "아침 브리핑 보여줘", 오늘 일정과 미회신 요청을 한 장 HTML 로 | itda-work:morning-brief |
+| 일정 조회·추가·빈 시간 찾기 | itda-work:calendar |
+| 마크다운 보고서를 HTML 문서로 | itda-work:html-report |
 
 ## Trigger Keywords
 

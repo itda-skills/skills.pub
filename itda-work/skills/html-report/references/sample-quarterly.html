@@ -9,34 +9,41 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
 <style>
 :root{
-  --bg:#F4F6FA; --paper:#FFFFFF; --ink:#0E1B2E;
-  --accent:#1E4FBF; --accent-d:#143A8F; --accent-soft:#6E93DE;
-  --pos:#1F7A4D; --neg:#C23B2B; --warn:#9A6206;
-  --g100:#E8ECF3; --g300:#C9D2E0; --g500:#6B7A90; --g700:#2C3A4E;
-  --gl:#E8ECF3; --tint:#EEF2FA; --line:#DDE3ED;
-  --hero-bg:#0E1B2E; --hero-ink:#FFFFFF; --hero-sub:#A9B8CE;
-  --sans:"Pretendard",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  /* ── 팔레트 축 = samsung-sds (references/styles/README.md 프리셋 표 값) ── */
+  --bg:#FFFFFF; --paper:#FFFFFF; --tint:#EEF2FB; --ink:#14181F;
+  --accent:#1428A0; --accent-2:#5B8DEF; --line:#D5DBE8;
+  --pos:#0E7C4A; --neg:#C0392B; --warn:#9A6206;
+  --g500:#5C6470;
+  /* 파생 규칙 */
+  --g100:var(--tint); --g300:var(--line);
+  --g700:color-mix(in srgb, var(--ink) 80%, var(--bg));
+  --accent-d:color-mix(in srgb, var(--accent) 85%, #000);
+  --gl:var(--line);
+  /* 차트 뉴트럴 — 2계열 대비의 비액센트 계열(팔레트 토큰에서만 파생) */
+  --chart-neu:var(--g300); --chart-neu2:var(--g500); --chart-txt:#FFFFFF;
+  --sans:"Pretendard",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --display:"Helvetica Neue",var(--sans);   /* 라틴·숫자 전용 — 한글은 Pretendard 로 떨어진다 */
   --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#0D1420; --paper:#16202F; --ink:#E7EDF5;
-    --accent:#6C9BFF; --accent-d:#9CBCFF; --accent-soft:#40639F;
+    --bg:#0F1218; --paper:#171B24; --tint:#1E2430; --ink:#E7EAF0;
+    --accent:color-mix(in srgb,#1428A0 65%,#FFFFFF);
+    --accent-2:color-mix(in srgb,#5B8DEF 65%,#FFFFFF);
+    --line:#2A3140; --g500:#98A2B3;
     --pos:#4CC38A; --neg:#F0776A; --warn:#E0A030;
-    --g100:#1E2A3C; --g300:#33445C; --g500:#93A3BB; --g700:#C6D2E2;
-    --gl:#26344A; --tint:#1B2839; --line:#2A374B;
-    --hero-bg:#0A101A; --hero-ink:#F2F6FC; --hero-sub:#8FA2BD;
+    --chart-neu:var(--g500); --chart-neu2:var(--g700); --chart-txt:var(--bg);
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0D1420; --paper:#16202F; --ink:#E7EDF5;
-  --accent:#6C9BFF; --accent-d:#9CBCFF; --accent-soft:#40639F;
+  --bg:#0F1218; --paper:#171B24; --tint:#1E2430; --ink:#E7EAF0;
+  --accent:color-mix(in srgb,#1428A0 65%,#FFFFFF);
+  --accent-2:color-mix(in srgb,#5B8DEF 65%,#FFFFFF);
+  --line:#2A3140; --g500:#98A2B3;
   --pos:#4CC38A; --neg:#F0776A; --warn:#E0A030;
-  --g100:#1E2A3C; --g300:#33445C; --g500:#93A3BB; --g700:#C6D2E2;
-  --gl:#26344A; --tint:#1B2839; --line:#2A374B;
-  --hero-bg:#0A101A; --hero-ink:#F2F6FC; --hero-sub:#8FA2BD;
+  --chart-neu:var(--g500); --chart-neu2:var(--g700); --chart-txt:var(--bg);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -46,31 +53,40 @@ body{
   font-size:15px; line-height:1.7; word-break:keep-all; text-wrap:pretty;
   -webkit-font-smoothing:antialiased;
 }
-h1,h2,h3{line-height:1.25; letter-spacing:-0.02em; margin:0}
+h1,h2,h3{line-height:1.25; margin:0}          /* 한글 헤딩 음수 자간 금지 */
 a{color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:3px}
+.num-t{font-variant-numeric:tabular-nums}
 
-/* ── 토글 ─────────────────────────── */
+/* ── 토글 (그림자 허용 예외) ───────── */
 .theme-toggle{
   position:fixed; top:16px; right:16px; z-index:60;
   display:inline-flex; align-items:center; gap:6px;
   background:var(--paper); color:var(--ink); border:1px solid var(--line);
   border-radius:999px; padding:8px 14px; font:inherit; font-size:12px;
-  cursor:pointer; box-shadow:0 2px 10px rgba(14,27,46,.10);
+  cursor:pointer; box-shadow:0 2px 10px rgba(20,24,31,.10);
 }
 .theme-toggle:hover{border-color:var(--accent)}
 .tt-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:block}
 
-/* ── 히어로 ───────────────────────── */
-.hero{background:var(--hero-bg); color:var(--hero-ink); padding:72px 24px 48px; border-bottom:3px solid var(--accent)}
+/* ── 히어로 — 밝은 배경 + 상단 4px 액센트 룰 ── */
+.hero{
+  background:var(--bg); color:var(--ink);
+  padding:56px 24px 32px;
+  border-top:4px solid var(--accent);
+  border-bottom:1px solid var(--line);
+}
 .hero-in{max-width:1040px; margin:0 auto}
-.eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--hero-sub); font-family:var(--mono); margin:0 0 16px}
-.hero h1{font-size:clamp(28px,5vw,44px); max-width:18ch}
-.hero .sub{color:var(--hero-sub); font-size:17px; margin:16px 0 0; max-width:56ch}
-.meta-row{display:flex; flex-wrap:wrap; gap:0 32px; margin-top:32px; padding-top:24px; border-top:1px solid rgba(255,255,255,.16)}
-.meta-row div{min-width:120px; padding:6px 0}
-.meta-k{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--hero-sub)}
-.meta-v{display:block; font-size:14px; color:var(--hero-ink); font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px; font-weight:600; letter-spacing:.04em; color:var(--g500); margin:0 0 14px}
+.hero h1{font-family:var(--display); font-size:clamp(32px,5.5vw,52px); font-weight:700; max-width:20ch}
+.hero .sub{color:var(--g700); font-size:17px; margin:16px 0 0; max-width:58ch}
+.meta-row{
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px 24px;
+  margin-top:28px; padding-top:20px; border-top:1px solid var(--line);
+}
+.meta-k{display:block; font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--g500)}
+.meta-v{display:block; font-size:14px; color:var(--ink); font-variant-numeric:tabular-nums}
+@media (max-width:700px){ .meta-row{grid-template-columns:repeat(2,minmax(0,1fr))} }
 
 /* ── 골격 ─────────────────────────── */
 .shell{max-width:1320px; margin:0 auto; padding:0 20px}
@@ -80,29 +96,31 @@ a{color:var(--accent)}
 nav.toc{display:none}
 @media (min-width:1100px){
   nav.toc{display:block; position:sticky; top:0; align-self:start; max-height:100vh; overflow-y:auto; padding:48px 0 40px}
-  .toc-t{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--g500); margin:0 0 12px; font-family:var(--mono)}
+  .toc-t{font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--g500); margin:0 0 12px}
   .toc ol{list-style:none; margin:0; padding:0}
   .toc li{margin:0}
   .toc a{display:block; padding:6px 0 6px 12px; border-left:2px solid var(--line); color:var(--g500); text-decoration:none; font-size:13px; transition:color .15s,border-color .15s}
   .toc a:hover{color:var(--ink)}
   .toc a.on{color:var(--accent); border-left-color:var(--accent); font-weight:600}
-  .toc .num{font-family:var(--mono); font-size:11px; margin-right:6px; opacity:.7}
+  .toc .num{font-size:11px; font-weight:600; margin-right:6px; opacity:.75}
 }
-main{padding:48px 0 24px; min-width:0}
+main{padding:40px 0 24px; min-width:0}
 .prose{max-width:760px}
-section{margin-bottom:72px; scroll-margin-top:24px}
+section{margin-bottom:72px; padding-top:32px; border-top:1px solid var(--line); scroll-margin-top:24px}
+section:first-of-type{border-top:0; padding-top:8px}
 .sec-head{margin-bottom:24px}
-.sec-num{font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.08em; display:block; margin-bottom:8px}
-h2{font-size:30px; margin-bottom:8px}
+.sec-num{font-size:13px; font-weight:700; color:var(--accent); letter-spacing:.04em; display:block; margin-bottom:8px}
+h2{font-size:28px; max-width:22ch}
 h3{font-size:19px; margin:32px 0 12px}
 .lead{color:var(--g700); font-size:16px; max-width:760px; margin:8px 0 0}
 p{margin:0 0 16px; max-width:760px}
-.hr{height:1px; background:var(--line); border:0; margin:48px 0}
 
-/* ── 카드/콜아웃 ──────────────────── */
-.card{background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:24px}
-.callout{background:var(--tint); border-left:4px solid var(--accent); border-radius:0 8px 8px 0; padding:16px 20px; margin:24px 0; max-width:860px}
-.callout .cl-l{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; font-family:var(--mono); color:var(--accent); margin-bottom:6px}
+/* ── 카드는 KPI·콜아웃·결정 카드에만 ── */
+.callout{
+  background:var(--tint); border-left:3px solid var(--accent);
+  border-radius:0 6px 6px 0; padding:16px 20px; margin:24px 0; max-width:860px;
+}
+.callout .cl-l{display:block; font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--accent); margin-bottom:6px}
 .callout p{margin:0}
 .callout.warn{border-left-color:var(--neg)}
 .callout.warn .cl-l{color:var(--neg)}
@@ -111,115 +129,131 @@ p{margin:0 0 16px; max-width:760px}
 .callout.pos{border-left-color:var(--pos)}
 .callout.pos .cl-l{color:var(--pos)}
 
-/* ── KPI ──────────────────────────── */
-.kpi-strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:12px; margin:24px 0}
-.kpi{background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:16px}
-.kpi .k{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--g500); display:block; margin-bottom:8px}
-.kpi .v{font-size:30px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; letter-spacing:-0.02em; display:block; line-height:1.15}
-.kpi .u{font-size:14px; font-weight:500; color:var(--g700); margin-left:2px}
-.kpi .d{font-size:12px; font-variant-numeric:tabular-nums; margin-top:8px; display:block}
+/* ── KPI — 6개 = 3열 2행(열 수를 명시한다) ── */
+.kpi-strip{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:24px 0}
+@media (max-width:820px){ .kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:460px){ .kpi-strip{grid-template-columns:minmax(0,1fr)} }
+.kpi{background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:16px 18px}
+.kpi .k{font-size:12px; font-weight:600; letter-spacing:.04em; color:var(--g500); display:block; margin-bottom:8px}
+.kpi .v{
+  font-family:var(--display); font-size:32px; font-weight:700; color:var(--ink);
+  font-variant-numeric:tabular-nums; letter-spacing:-0.01em; display:block; line-height:1.15;
+}
+.kpi .u{font-family:var(--sans); font-size:14px; font-weight:500; color:var(--g700); margin-left:3px; letter-spacing:normal}
+.kpi .d{font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; margin-top:8px; display:block}
 .up{color:var(--pos)} .down{color:var(--neg)} .flat{color:var(--g500)}
 .kpi .n{display:block; font-size:11px; color:var(--g500); margin-top:4px}
+.sub-note{color:var(--g500); font-weight:400}
 
-/* ── 표 ───────────────────────────── */
-.tw{overflow-x:auto; margin:24px 0; border:1px solid var(--line); border-radius:10px; background:var(--paper)}
+/* ── 표 — 헤어라인 패널(보더 박스 없음) ── */
+.tw{overflow-x:auto; margin:24px 0; border-top:1px solid var(--line); background:transparent}
 table{width:100%; border-collapse:collapse; font-size:14px; min-width:520px}
-caption{caption-side:top; text-align:left; font-size:12px; color:var(--g500); padding:12px 16px 0}
-th,td{padding:10px 14px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle}
-thead th{background:var(--g100); font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--g700); font-weight:700; white-space:nowrap; position:sticky; top:0; z-index:1}
+caption{caption-side:top; text-align:left; font-size:12px; font-weight:600; letter-spacing:.04em; color:var(--g500); padding:12px 0 10px}
+th,td{padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle}
+th:first-child,td:first-child{padding-left:0}
+thead th{
+  background:var(--bg); font-size:12px; font-weight:600; letter-spacing:.04em;
+  color:var(--g700); white-space:nowrap; border-bottom:2px solid var(--ink);
+  position:sticky; top:0; z-index:1;
+}
 td.n,th.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
-tbody tr:last-child td{border-bottom:0}
-tr.sub td{border-top:2px solid var(--g300); font-weight:600}
-tr.tot td{background:var(--tint); font-weight:700; border-top:2px solid var(--accent)}
-.zebra tbody tr:nth-child(odd){background:color-mix(in srgb,var(--g100) 45%,transparent)}
+tbody tr:last-child td,tbody tr:last-child th{border-bottom:0}
+tr.sub > *{border-top:2px solid var(--g300); font-weight:600}
+tr.tot > *{background:var(--tint); font-weight:700; border-top:2px solid var(--accent)}
+tr.tot > th:first-child,tr.tot > td:first-child{padding-left:12px}
+.zebra tbody tr:nth-child(odd) > *{background:color-mix(in srgb,var(--tint) 45%,transparent)}
+.zebra tbody tr.tot > *{background:var(--tint)}
 .mono{font-family:var(--mono); font-size:12.5px}
 /* 셀 내 미니 시각화 */
 .spark{display:inline-block; vertical-align:middle; height:8px; border-radius:2px; background:var(--accent); min-width:2px}
-.spark.mut{background:var(--g300)}
-.pbar{position:relative; height:8px; width:88px; background:var(--g100); border-radius:2px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:8px}
+.spark.mut{background:var(--chart-neu)}
+.pbar{position:relative; height:8px; width:88px; background:var(--tint); border-radius:2px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:8px}
 .pbar i{position:absolute; inset:0 auto 0 0; background:var(--accent); display:block}
 .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:baseline}
 .dot.hi{background:var(--neg)} .dot.mid{background:var(--warn)} .dot.lo{background:var(--g500)}
-.badge{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; border:1px solid var(--line); background:var(--g100); color:var(--g700); white-space:nowrap}
+.badge{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; border:1px solid var(--line); background:var(--tint); color:var(--g700); white-space:nowrap}
 .badge.hi{background:color-mix(in srgb,var(--neg) 14%,transparent); border-color:color-mix(in srgb,var(--neg) 40%,transparent); color:var(--neg)}
 .badge.mid{background:color-mix(in srgb,var(--warn) 16%,transparent); border-color:color-mix(in srgb,var(--warn) 42%,transparent); color:var(--warn)}
 .badge.lo{color:var(--g500)}
 .badge.go{background:color-mix(in srgb,var(--accent) 12%,transparent); border-color:color-mix(in srgb,var(--accent) 38%,transparent); color:var(--accent)}
 .badge.pos{background:color-mix(in srgb,var(--pos) 14%,transparent); border-color:color-mix(in srgb,var(--pos) 40%,transparent); color:var(--pos)}
 
-/* ── 차트 ─────────────────────────── */
-figure{margin:24px 0; background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:20px}
+/* ── 차트 — 헤어라인 패널 ─────────── */
+figure{margin:32px 0; padding-top:16px; border-top:1px solid var(--line); background:transparent}
 figure svg{width:100%; height:auto; display:block}
 figcaption{font-size:13px; color:var(--g700); margin-top:12px; padding-top:12px; border-top:1px solid var(--line); max-width:70ch}
 .fig-t{font-size:15px; font-weight:700; margin:0 0 4px}
-.fig-u{font-size:11.5px; color:var(--g500); font-family:var(--mono); margin:0 0 12px}
+.fig-u{font-size:12px; font-weight:600; letter-spacing:.04em; color:var(--g500); margin:0 0 12px}
 svg .gl{stroke:var(--gl); stroke-width:1}
 svg .axl{fill:var(--g500)}
 svg .vl{fill:var(--g700)}
 svg .b1{fill:var(--accent)}
-svg .b2{fill:var(--accent-soft)}
-svg .bmut{fill:var(--g300)}
-svg .track{fill:var(--g100)}
+svg .b2{fill:var(--chart-neu)}
+svg .bmut{fill:var(--chart-neu)}
+svg .track{fill:var(--tint)}
 svg .tick{stroke:var(--ink); stroke-width:2.5}
 svg .axis{stroke:var(--g300); stroke-width:1}
-svg .line1{stroke:var(--accent); fill:none; stroke-width:2.5}
 svg .cellA{fill:color-mix(in srgb,var(--neg) 13%,transparent)}
 svg .cellB{fill:color-mix(in srgb,var(--warn) 12%,transparent)}
-svg .cellC{fill:var(--g100)}
-svg .cellline{stroke:var(--paper); stroke-width:2; fill:none}
+svg .cellC{fill:var(--tint)}
+svg .cellline{stroke:var(--bg); stroke-width:2; fill:none}
 svg .rhi{fill:var(--neg)} svg .rmid{fill:var(--warn)} svg .rlo{fill:var(--g500)}
-svg .rtxt{fill:#fff; font-weight:700}
+svg .rtxt{fill:var(--chart-txt); font-weight:700}
 .legend{display:flex; flex-wrap:wrap; gap:8px 20px; margin:0 0 4px; padding:0; list-style:none; font-size:12px; color:var(--g700)}
 .legend li{display:flex; align-items:center; gap:7px}
-.sw{width:12px; height:12px; border-radius:3px; display:block}
+.sw{width:12px; height:12px; border-radius:2px; display:block}
+.sw.s-acc{background:var(--accent)}
+.sw.s-acc2{background:var(--accent-2)}
+.sw.s-neu{background:var(--chart-neu)}
+.sw.s-neu2{background:var(--chart-neu2)}
 .donut-wrap{display:flex; flex-wrap:wrap; gap:24px; align-items:center}
 .donut-wrap svg{max-width:230px}
 .dlist{list-style:none; margin:0; padding:0; min-width:250px; flex:1}
 .dlist li{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13.5px}
 .dlist li:last-child{border-bottom:0}
 .dlist .nm{flex:1}
-.dlist .pv{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--g700)}
+.dlist .pv{font-variant-numeric:tabular-nums; font-size:13px; color:var(--g700)}
 .dlist .pc{font-variant-numeric:tabular-nums; font-weight:700; min-width:52px; text-align:right}
 
-/* ── 타임라인 ─────────────────────── */
-.tl{list-style:none; margin:24px 0; padding:0 0 0 26px; border-left:2px solid var(--line); max-width:860px}
-.tl li{position:relative; margin-bottom:20px}
-.tl li::before{content:""; position:absolute; left:-33px; top:6px; width:12px; height:12px; border-radius:50%; background:var(--paper); border:2.5px solid var(--g300)}
+/* ── 타임라인 — 카드 없이 점+선 ──── */
+.tl{list-style:none; margin:24px 0; padding:0 0 0 26px; border-left:1px solid var(--line); max-width:860px}
+.tl li{position:relative; margin-bottom:24px}
+.tl li::before{content:""; position:absolute; left:-31px; top:7px; width:10px; height:10px; border-radius:50%; background:var(--paper); border:2px solid var(--line)}
 .tl li.act::before{border-color:var(--accent); background:var(--accent)}
 .tl li.neg::before{border-color:var(--warn)}
-.tl-card{background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:14px 18px}
+.tl-card{background:transparent; border:0; padding:0}
 .tl-top{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:4px}
 .tl-d{font-family:var(--mono); font-size:12px; color:var(--accent); font-weight:700}
-.tl-h{font-size:15.5px; font-weight:700; flex:1; min-width:180px}
-.tl-n{font-size:13px; color:var(--g700); margin:0}
+.tl-h{font-size:15px; font-weight:700; flex:1; min-width:180px}
+.tl-n{font-size:13.5px; color:var(--g700); margin:0}
 
-/* ── 결정 카드 ────────────────────── */
+/* ── 결정 카드 (카드 허용) ────────── */
 .dec{list-style:none; margin:24px 0; padding:0; display:grid; gap:12px}
-.dec li{display:flex; gap:16px; background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:0 8px 8px 0; padding:16px 20px}
-.dec .no{font-family:var(--mono); font-size:20px; font-weight:700; color:var(--accent); line-height:1.2}
+.dec li{display:flex; gap:16px; background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:0 6px 6px 0; padding:16px 20px}
+.dec .no{font-family:var(--display); font-size:20px; font-weight:700; color:var(--accent); line-height:1.2}
 .dec h3{margin:0 0 4px; font-size:15.5px}
 .dec p{margin:0; font-size:13.5px; color:var(--g700)}
 
-/* ── 부록 ─────────────────────────── */
-details{background:var(--paper); border:1px solid var(--line); border-radius:10px; margin:12px 0; overflow:hidden}
-summary{padding:14px 20px; cursor:pointer; font-weight:700; font-size:15px; list-style:none; display:flex; align-items:center; gap:10px}
+/* ── 부록 — 헤어라인 ──────────────── */
+details{background:transparent; border:0; border-top:1px solid var(--line); border-radius:0; margin:0}
+summary{padding:14px 0; cursor:pointer; font-weight:700; font-size:15px; list-style:none; display:flex; align-items:center; gap:10px}
 summary::-webkit-details-marker{display:none}
-summary::before{content:"+"; font-family:var(--mono); color:var(--accent); font-weight:700}
-details[open] summary::before{content:"−"}
-summary:hover{background:var(--tint)}
-.det-body{padding:0 20px 16px}
-.det-body .tw{margin-top:8px}
+summary::before{content:"+"; color:var(--accent); font-weight:700}
+details[open] summary::before{content:"\2212"}
+summary:hover{color:var(--accent)}
+.det-body{padding:0 0 16px}
+.det-body .tw{margin-top:0}
 
 /* ── 푸터 ─────────────────────────── */
-footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32px}
+footer{border-top:1px solid var(--line); background:var(--bg); margin-top:32px}
 .foot-in{max-width:1320px; margin:0 auto; padding:32px 40px; font-size:12px; color:var(--g500)}
 .foot-in dl{display:flex; flex-wrap:wrap; gap:4px 40px; margin:0 0 16px}
-.foot-in dt{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--g500)}
+.foot-in dt{font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--g500)}
 .foot-in dd{margin:0 0 8px; color:var(--g700); font-size:12.5px}
 .foot-in .disc{border-top:1px solid var(--line); padding-top:14px; margin:0; max-width:none}
 
 @media (max-width:600px){
-  .hero{padding:56px 20px 36px}
+  .hero{padding:44px 20px 28px}
   h2{font-size:24px}
   .foot-in{padding:28px 20px}
   main{padding:32px 0 16px}
@@ -231,21 +265,21 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
 @media print{
   :root{
     color-scheme:light;
-    --bg:#fff; --paper:#fff; --ink:#0E1B2E; --accent:#1E4FBF; --accent-d:#143A8F;
-    --accent-soft:#6E93DE; --pos:#1F7A4D; --neg:#C23B2B; --warn:#9A6206;
-    --g100:#E8ECF3; --g300:#C9D2E0; --g500:#5D6B80; --g700:#2C3A4E;
-    --gl:#E8ECF3; --tint:#F2F5FB; --line:#CFD7E4; --hero-bg:#0E1B2E; --hero-ink:#fff; --hero-sub:#B6C3D6;
+    --bg:#FFFFFF; --paper:#FFFFFF; --tint:#EEF2FB; --ink:#14181F;
+    --accent:#1428A0; --accent-2:#5B8DEF; --line:#D5DBE8;
+    --pos:#0E7C4A; --neg:#C0392B; --warn:#9A6206; --g500:#5C6470;
+    --chart-neu:#D5DBE8; --chart-neu2:#5C6470; --chart-txt:#FFFFFF;
   }
   body{background:#fff; font-size:10.5pt}
   nav.toc,.theme-toggle,.no-print{display:none !important}
   .shell{display:block; max-width:none; padding:0}
-  .hero{padding:0 0 20pt; border-bottom-width:2pt}
+  .hero{padding:0 0 16pt; border-top-width:3pt}
   main{padding:16pt 0 0}
   section,figure,table,.kpi-strip,.tl li,.dec li,.callout{break-inside:avoid}
   h2,h3,.sec-head{break-after:avoid}
   .tw{overflow:visible; break-inside:auto}
   thead th{position:static}
-  details{display:block; border:1px solid var(--line)}
+  details{display:block}
   details > *{display:block}
   .det-body{display:block !important}
   a{color:inherit; text-decoration:none}
@@ -261,7 +295,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
 
 <header class="hero">
   <div class="hero-in">
-    <p class="eyebrow">QUARTERLY BUSINESS REVIEW · HW-BR-2026-Q2</p>
+    <p class="eyebrow">Quarterly Business Review · <span class="mono">HW-BR-2026-Q2</span></p>
     <h1>한울로보틱스 2026년 2분기 경영 현황 보고</h1>
     <p class="sub">매출 187.4억원(전분기 대비 +12.3%) 성장에도 원가 압박으로 영업이익률은 11.8%로 하락. HL-40 양산 안정화와 북미 파트너십 체결이 3분기 최대 과제.</p>
     <div class="meta-row">
@@ -330,37 +364,37 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
     <div class="kpi">
       <span class="k">매출액</span>
       <span class="v">187.4<span class="u">억원</span></span>
-      <span class="d up">▲ +12.3% <span style="color:var(--g500)">전분기 대비</span></span>
+      <span class="d up">▲ +12.3% <span class="sub-note">전분기 대비</span></span>
       <span class="n">1분기 166.9억원</span>
     </div>
     <div class="kpi">
       <span class="k">영업이익</span>
       <span class="v">22.1<span class="u">억원</span></span>
-      <span class="d down">▼ −6.8% <span style="color:var(--g500)">전분기 대비</span></span>
+      <span class="d down">▼ −6.8% <span class="sub-note">전분기 대비</span></span>
       <span class="n">1분기 23.7억원</span>
     </div>
     <div class="kpi">
       <span class="k">영업이익률</span>
       <span class="v">11.8<span class="u">%</span></span>
-      <span class="d down">▼ −2.4%p <span style="color:var(--g500)">전분기 대비</span></span>
+      <span class="d down">▼ −2.4%p <span class="sub-note">전분기 대비</span></span>
       <span class="n">연간 목표 14.0%</span>
     </div>
     <div class="kpi">
       <span class="k">신규 수주</span>
       <span class="v">214.0<span class="u">억원</span></span>
-      <span class="d up">▲ +12.9% <span style="color:var(--g500)">전분기 대비</span></span>
+      <span class="d up">▲ +12.9% <span class="sub-note">전분기 대비</span></span>
       <span class="n">1분기 189.5억원</span>
     </div>
     <div class="kpi">
       <span class="k">수주 잔고</span>
       <span class="v">468.2<span class="u">억원</span></span>
-      <span class="d up">▲ +6.0% <span style="color:var(--g500)">전분기 대비</span></span>
+      <span class="d up">▲ +6.0% <span class="sub-note">전분기 대비</span></span>
       <span class="n">1분기 441.6억원</span>
     </div>
     <div class="kpi">
       <span class="k">임직원 수</span>
       <span class="v">342<span class="u">명</span></span>
-      <span class="d up">▲ +24명 <span style="color:var(--g500)">전분기 대비</span></span>
+      <span class="d up">▲ +24명 <span class="sub-note">전분기 대비</span></span>
       <span class="n">연말 목표 380명</span>
     </div>
   </div>
@@ -421,7 +455,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
   <figure>
     <p class="fig-t">연간 목표 대비 상반기 진척률</p>
     <p class="fig-u">단위: % · 검정 눈금 = 반기 경과 기준선 50%</p>
-    <svg viewBox="0 0 720 200" role="img" aria-labelledby="c1t c1d">
+    <svg viewBox="0 0 720 200" role="img" aria-label="연간 목표 대비 진척률 불릿 차트" aria-describedby="c1d">
       <title id="c1t">연간 목표 대비 진척률 불릿 차트</title>
       <desc id="c1d">매출 46.8%, 영업이익 39.5%, 신규 수주 48.1%로 세 지표 모두 반기 경과 기준선 50%에 미달한다.</desc>
       <g font-family="Pretendard, system-ui, sans-serif" font-size="12.5">
@@ -442,14 +476,14 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
       <line class="tick" x1="390" y1="76" x2="390" y2="108"/>
       <line class="tick" x1="390" y1="128" x2="390" y2="160"/>
       <!-- 값 라벨 -->
-      <g font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="11.5" class="vl" font-weight="700">
+      <g font-family="Pretendard, system-ui, sans-serif" font-size="11" class="vl" font-weight="600">
         <text x="398" y="45">46.8%</text>
         <text x="343.4" y="97">39.5%</text>
         <text x="398" y="149">48.1%</text>
       </g>
       <!-- 축 -->
       <line class="axis" x1="130" y1="168" x2="650" y2="168"/>
-      <g font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="10.5" class="axl" text-anchor="middle">
+      <g font-family="Helvetica Neue, Pretendard, system-ui, sans-serif" font-size="10.5" class="axl" text-anchor="middle">
         <text x="130" y="186">0</text>
         <text x="260" y="186">25</text>
         <text x="390" y="186">50</text>
@@ -472,11 +506,11 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
   <figure>
     <p class="fig-t">월별 매출·신규 수주 추이 (2026-01 ~ 2026-06)</p>
     <ul class="legend" aria-hidden="true">
-      <li><span class="sw" style="background:var(--accent)"></span>매출</li>
-      <li><span class="sw" style="background:var(--accent-soft)"></span>신규 수주</li>
+      <li><span class="sw s-acc"></span>매출</li>
+      <li><span class="sw s-neu"></span>신규 수주</li>
     </ul>
     <p class="fig-u">단위: 억원</p>
-    <svg viewBox="0 0 760 300" role="img" aria-labelledby="c2t c2d">
+    <svg viewBox="0 0 760 300" role="img" aria-label="월별 매출 및 신규 수주 그룹 막대 차트" aria-describedby="c2d">
       <title id="c2t">월별 매출 및 신규 수주 그룹 막대 차트</title>
       <desc id="c2d">매출은 1월 51.2억원에서 6월 67.6억원으로, 신규 수주는 58.3억원에서 80.4억원으로 증가했다. 매 월 신규 수주가 매출을 상회한다.</desc>
       <!-- 그리드 -->
@@ -485,7 +519,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
       <line class="gl" x1="64" y1="96.7" x2="724" y2="96.7"/>
       <line class="gl" x1="64" y1="20" x2="724" y2="20"/>
       <!-- Y축 라벨 -->
-      <g font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="10.5" class="axl" text-anchor="end">
+      <g font-family="Helvetica Neue, Pretendard, system-ui, sans-serif" font-size="10.5" class="axl" text-anchor="end">
         <text x="54" y="254">0</text>
         <text x="54" y="177.3">30</text>
         <text x="54" y="100.7">60</text>
@@ -501,7 +535,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
         <rect class="b1" x="634" y="77.3"  width="32" height="172.7"/><rect class="b2" x="672" y="44.5"  width="32" height="205.5"/>
       </g>
       <!-- 값 라벨 -->
-      <g font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="10.5" class="vl" text-anchor="middle">
+      <g font-family="Pretendard, system-ui, sans-serif" font-size="11" class="vl" font-weight="600" text-anchor="middle">
         <text x="100" y="113">51.2</text><text x="138" y="95">58.3</text>
         <text x="210" y="104">54.8</text><text x="248" y="86">61.7</text>
         <text x="320" y="88">60.9</text><text x="358" y="66">69.5</text>
@@ -539,7 +573,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
   <figure>
     <p class="fig-t">사업부별 2분기 매출</p>
     <p class="fig-u">단위: 억원 · 내림차순 · 최대 사업부 강조</p>
-    <svg viewBox="0 0 720 250" role="img" aria-labelledby="c3t c3d">
+    <svg viewBox="0 0 720 250" role="img" aria-label="사업부별 매출 수평 막대 차트" aria-describedby="c3d">
       <title id="c3t">사업부별 매출 수평 막대 차트</title>
       <desc id="c3d">물류로봇 94.6억원, 협동로봇 52.3억원, AMR 솔루션 28.7억원, 유지보수 서비스 11.8억원 순이다.</desc>
       <!-- 세로 그리드 -->
@@ -560,7 +594,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
       <rect class="bmut" x="118" y="122" width="137.8" height="26" rx="2"/>
       <rect class="bmut" x="118" y="168" width="56.6"  height="26" rx="2"/>
       <!-- 값 라벨 -->
-      <g font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="11.5" class="vl" font-weight="700">
+      <g font-family="Pretendard, system-ui, sans-serif" font-size="11" class="vl" font-weight="600">
         <text x="580.1" y="48">94.6</text>
         <text x="377.0" y="94">52.3</text>
         <text x="263.8" y="140">28.7</text>
@@ -568,7 +602,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
       </g>
       <!-- X축 -->
       <line class="axis" x1="118" y1="200" x2="640" y2="200"/>
-      <g font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="10.5" class="axl" text-anchor="middle">
+      <g font-family="Helvetica Neue, Pretendard, system-ui, sans-serif" font-size="10.5" class="axl" text-anchor="middle">
         <text x="118" y="218">0</text>
         <text x="238" y="218">25</text>
         <text x="358" y="218">50</text>
@@ -584,23 +618,23 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
     <p class="fig-t">사업부별 매출 구성비</p>
     <p class="fig-u">단위: % · 합계 100.0% (187.4억원)</p>
     <div class="donut-wrap">
-      <svg viewBox="0 0 240 240" role="img" aria-labelledby="c4t c4d">
+      <svg viewBox="0 0 240 240" role="img" aria-label="사업부별 매출 구성비 도넛 차트" aria-describedby="c4d">
         <title id="c4t">사업부별 매출 구성비 도넛 차트</title>
         <desc id="c4d">물류로봇 50.5퍼센트, 협동로봇 27.9퍼센트, AMR 솔루션 15.3퍼센트, 유지보수 서비스 6.3퍼센트.</desc>
         <g transform="rotate(-90 120 120)" fill="none" stroke-width="30">
           <circle cx="120" cy="120" r="70" stroke="var(--accent)"      stroke-dasharray="222.11 217.71" stroke-dashoffset="0"/>
-          <circle cx="120" cy="120" r="70" stroke="var(--accent-soft)" stroke-dasharray="122.71 317.11" stroke-dashoffset="-222.11"/>
-          <circle cx="120" cy="120" r="70" stroke="var(--g300)"        stroke-dasharray="67.29 372.53"  stroke-dashoffset="-344.82"/>
-          <circle cx="120" cy="120" r="70" stroke="var(--g500)"        stroke-dasharray="27.71 412.11"  stroke-dashoffset="-412.11"/>
+          <circle cx="120" cy="120" r="70" stroke="var(--accent-2)" stroke-dasharray="122.71 317.11" stroke-dashoffset="-222.11"/>
+          <circle cx="120" cy="120" r="70" stroke="var(--chart-neu)"        stroke-dasharray="67.29 372.53"  stroke-dashoffset="-344.82"/>
+          <circle cx="120" cy="120" r="70" stroke="var(--chart-neu2)"        stroke-dasharray="27.71 412.11"  stroke-dashoffset="-412.11"/>
         </g>
-        <text x="120" y="114" text-anchor="middle" font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="26" font-weight="700" class="vl">187.4</text>
+        <text x="120" y="114" text-anchor="middle" font-family="Helvetica Neue, Pretendard, system-ui, sans-serif" font-size="26" font-weight="700" class="vl">187.4</text>
         <text x="120" y="136" text-anchor="middle" font-family="Pretendard, system-ui, sans-serif" font-size="11.5" class="axl">억원 · 2분기 매출</text>
       </svg>
       <ul class="dlist">
-        <li><span class="sw" style="background:var(--accent)"></span><span class="nm">물류로봇</span><span class="pv">94.6억원</span><span class="pc">50.5%</span></li>
-        <li><span class="sw" style="background:var(--accent-soft)"></span><span class="nm">협동로봇</span><span class="pv">52.3억원</span><span class="pc">27.9%</span></li>
-        <li><span class="sw" style="background:var(--g300)"></span><span class="nm">AMR 솔루션</span><span class="pv">28.7억원</span><span class="pc">15.3%</span></li>
-        <li><span class="sw" style="background:var(--g500)"></span><span class="nm">유지보수 서비스</span><span class="pv">11.8억원</span><span class="pc">6.3%</span></li>
+        <li><span class="sw s-acc"></span><span class="nm">물류로봇</span><span class="pv">94.6억원</span><span class="pc">50.5%</span></li>
+        <li><span class="sw s-acc2"></span><span class="nm">협동로봇</span><span class="pv">52.3억원</span><span class="pc">27.9%</span></li>
+        <li><span class="sw s-neu"></span><span class="nm">AMR 솔루션</span><span class="pv">28.7억원</span><span class="pc">15.3%</span></li>
+        <li><span class="sw s-neu2"></span><span class="nm">유지보수 서비스</span><span class="pv">11.8억원</span><span class="pc">6.3%</span></li>
       </ul>
     </div>
     <figcaption>물류로봇·협동로봇 두 사업부가 매출의 <strong>78.4%</strong>를 차지해, HL-40(물류로봇) 양산 안정화가 전사 실적에 직결되는 구조다.</figcaption>
@@ -845,7 +879,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
   <figure>
     <p class="fig-t">리스크 매트릭스 — 심각도 × 확률</p>
     <p class="fig-u">R1~R5 = 아래 표 리스크 번호 · 점 색상 = 심각도 등급</p>
-    <svg viewBox="0 0 580 400" role="img" aria-labelledby="c5t c5d">
+    <svg viewBox="0 0 580 400" role="img" aria-label="심각도와 확률 2축 리스크 매트릭스" aria-describedby="c5d">
       <title id="c5t">심각도와 확률 2축 리스크 매트릭스</title>
       <desc id="c5d">서보모터 단가 상승은 심각도 높음 확률 높음, 북미 계약 지연은 심각도 높음 확률 중간, HL-40 초기 필드 불량은 심각도 중간 확률 중간, 경쟁사 저가 공세는 심각도 중간 확률 높음, 핵심 SW 인력 이탈은 심각도 낮음 확률 중간에 위치한다.</desc>
       <!-- 셀 배경 -->
@@ -1025,11 +1059,11 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
   <figure>
     <p class="fig-t">운전자본 회전일수 개선</p>
     <ul class="legend" aria-hidden="true">
-      <li><span class="sw" style="background:var(--g300)"></span>1분기</li>
-      <li><span class="sw" style="background:var(--accent)"></span>2분기</li>
+      <li><span class="sw s-neu"></span>1분기</li>
+      <li><span class="sw s-acc"></span>2분기</li>
     </ul>
     <p class="fig-u">단위: 일 · 값이 작을수록 개선</p>
-    <svg viewBox="0 0 720 200" role="img" aria-labelledby="c6t c6d">
+    <svg viewBox="0 0 720 200" role="img" aria-label="운전자본 회전일수 전분기 대비 비교 막대 차트" aria-describedby="c6d">
       <title id="c6t">운전자본 회전일수 전분기 대비 비교 막대 차트</title>
       <desc id="c6d">DSO는 78일에서 72일로 6일, 재고자산 회전일수는 66일에서 61일로 5일 단축됐다.</desc>
       <!-- 세로 그리드 -->
@@ -1048,7 +1082,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
       <rect class="b1"   x="170" y="48" width="345.6" height="18" rx="2"/>
       <rect class="bmut" x="170" y="92" width="316.8" height="18" rx="2"/>
       <rect class="b1"   x="170" y="116" width="292.8" height="18" rx="2"/>
-      <g font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="11" class="vl">
+      <g font-family="Pretendard, system-ui, sans-serif" font-size="11" font-weight="600" class="vl">
         <text x="552" y="38">78일 (1Q)</text>
         <text x="523" y="62" font-weight="700">72일 (2Q)</text>
         <text x="494" y="106">66일 (1Q)</text>
@@ -1056,7 +1090,7 @@ footer{border-top:1px solid var(--line); background:var(--paper); margin-top:32p
       </g>
       <!-- X축 -->
       <line class="axis" x1="170" y1="152" x2="650" y2="152"/>
-      <g font-family="JetBrains Mono, ui-monospace, SF Mono, Menlo, monospace" font-size="10.5" class="axl" text-anchor="middle">
+      <g font-family="Helvetica Neue, Pretendard, system-ui, sans-serif" font-size="10.5" class="axl" text-anchor="middle">
         <text x="170" y="170">0</text>
         <text x="290" y="170">25</text>
         <text x="410" y="170">50</text>

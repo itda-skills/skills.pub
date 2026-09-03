@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 102개 스킬 / 21개 팩.
+총 103개 스킬 / 21개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 | 책임 경계 |
 |--------|-----------|-----------|------------|----|-----------|
@@ -90,19 +90,20 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | biz-redact | 업무 문서의 영업기밀(거래처명·프로젝트코드·담당자·단가 등)을 외부 AI에 넣기 전 로컬에서 결정론적으로 마스킹하고, AI 산출물의 토큰을 원값으로 되돌리는 왕… | 없음 | "이 견적서 마스킹해서 검토해줘", "거래처명 가리고 원가절감안 분석해줘", "AI가 돌려준 검토서 원래 이름으로 복원해줘" | itda-work | — |
 | blog-reader | 네이버 블로그의 글 목록·본문·댓글 트리·블로그 내 검색·전역 키워드 검색을 로그인 없이 읽는 스킬입니다. | 없음 | "네이버 블로그 글 가져와줘", "블로그 본문이랑 댓글 보여줘", "이 블로그 최근 7일 글 보여줘" | itda-work | 본 스킬은 네이버 블로그(blog.naver.com) 전담 — 그 밖의 한국 웹페이지·EUC-KR·WAF 정적 페이지는 itda-work:web-reader, 범용 키워드 검색은 itda-work:web-search. |
 | blog-seo | 네이버 SearchAd API로 블로그 SEO용 블루키워드를 발굴하는 스킬입니다. | NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, NAVER_SEARCHAD_ACCESS_KEY, NAVER_SEARCHAD_CUSTOMER_ID, NAVER_SEARCHAD_SECRET_KEY | "블루키워드 찾아줘", "경쟁 적은 키워드 분석해줘", "블로그 키워드 포화지수 확인해줘" | itda-work | — |
-| calendar | 아이클라우드·네이버(및 커스텀 CalDAV) 캘린더에서 일정을 조회·검색·추가·수정·삭제하고 빈 시간을 찾아주는 스킬입니다. | ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "내일 3시 회의 추가해줘", "이번 주 일정 보여줘", "다음 주에 1시간 빈 시간 찾아줘" | itda-work | — |
+| calendar | 아이클라우드·네이버(및 커스텀 CalDAV) 캘린더에서 일정을 조회·검색·추가·수정·삭제하고 빈 시간을 찾아주는 스킬입니다. | ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "내일 3시 회의 추가해줘", "이번 주 일정 보여줘", "다음 주에 1시간 빈 시간 찾아줘" | itda-work | 본 스킬은 일정 CRUD·빈 시간 탐색 전담 — 아침 브리핑 페이지(오늘 일정+미회신 메일 한 장)는 itda-work:morning-brief, 메일 읽기·발송은 itda-work:email. |
 | design-core | 브랜드 디자인을 고르고(getdesign 표준 DESIGN.md 카탈로그 차용), 만들고(한국·자사 브랜드 저작), 검증·조회해 웹·PPTX·DOCX·XLSX… | 없음 | "스포티파이 톤으로 디자인 골라줘", "우리 브랜드 디자인 시스템 정의해줘", "이 DESIGN.md 검증해줘" | itda-work | — |
 | docx-design | 콘텐츠 마크다운과 수치 데이터로 디자인된 Word 문서(.docx)를 크로스플랫폼(macOS/Linux/Windows, Office 불필요)으로 신규 생성하는… | 없음 | "NovaTech 연차보고서 docx로 만들어줘", "이 프리셋으로 워드 보고서 디자인해줘", "md 내용으로 디자인된 워드 문서 생성" | itda-work | — |
 | draft-post | 블로그·보고서·기획서·보도자료·뉴스레터를 도메인 맞춤 인터뷰로 초안 작성하는 스킬입니다. | 없음 | "블로그 글 써줘", "보고서 초안 작성해줘", "기획서 만들어줘" | itda-work | 본 스킬은 초안 생성 전담(AI 흔적 사전의 정본: itda-work:human-tone) — 이미 작성된 글의 AI 흔적 제거·문체 후처리는 itda-work:human-tone 이 맡고, 본 스킬은 발행·송부를 하지 않습니다. |
-| email | 네이버·Gmail·다음/카카오·아이클라우드·커스텀 SMTP/IMAP에서 멀티 계정으로 메일을 보내고 받는 스킬입니다. | DAUM_APP_PASSWORD, DAUM_EMAIL, GOOGLE_APP_PASSWORD, GOOGLE_EMAIL, ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "메일 보내줘", "받은편지함 확인해줘", "아이클라우드 메일 읽어줘" | itda-work | — |
+| email | 네이버·Gmail·다음/카카오·아이클라우드·커스텀 SMTP/IMAP에서 멀티 계정으로 메일을 보내고 받는 스킬입니다. | DAUM_APP_PASSWORD, DAUM_EMAIL, GOOGLE_APP_PASSWORD, GOOGLE_EMAIL, ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "메일 보내줘", "받은편지함 확인해줘", "아이클라우드 메일 읽어줘" | itda-work | 본 스킬은 메일 읽기·발송·초안·미회신 판정 전담 — 아침 브리핑 페이지(오늘 일정+미회신 요청 한 장)는 itda-work:morning-brief, 일정 조회·추가는 itda-work:calendar. |
 | exchange-rate | 원화 기준 일별·월 평균 기준 환율을 조회하는 스킬입니다. | 없음 | "오늘 달러 환율 알려줘", "이번 달 엔화 평균 환율 보여줘", "EUR 환율 조회해줘" | itda-work | — |
 | ground-check | 1차 출처 강제 인용과 독립 검증으로 환각·hedge 표현을 절차로 차단하는 리서치 스킬입니다. | 없음 | "팩트체크해서 보고서 써줘", "출처 확인해서 정리해줘", "1차 소스만 써서 정리해줘" | itda-work | — |
-| html-report | 마크다운 보고서·분석 결과·회의 정리를 연차보고서 수준의 단일 파일 HTML 문서로 렌더링하는 스킬입니다. | 없음 | "이 보고서 HTML 파일로 만들어줘", "주간 현황 보고서를 하나의 HTML로 렌더해줘", "재무제표를 HTML 보고서로 변환해줘" | itda-work | — |
+| html-report | 마크다운 보고서·분석 결과·회의 정리를 연차보고서 수준의 단일 파일 HTML 문서로 렌더링하는 스킬입니다. | 없음 | "이 보고서 HTML 파일로 만들어줘", "컨설팅 보고서 스타일로 전략 검토 문서 만들어줘", "공공기관 제출용 개조식 보고서 HTML로" | itda-work | 본 스킬은 보고서형 HTML 렌더 전담 — 아침 브리핑 페이지는 itda-work:morning-brief. |
 | human-tone | 이미 작성된 한국어 사무 글(보고서·메일·기획서·공지)에서 AI 흔적을 걷어내는 후처리 스킬입니다. | 없음 | "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘" | itda-work | 본 스킬은 완성된 글의 후처리 검수 전담(AI 흔적 사전 가드 정본) — itda-work:draft-post 는 처음부터 초안을 쓰는 생성 단계이며, 같은 글에 두 스킬을 겹쳐 적용하지 않습니다. |
 | hwpx | 한글 HWP·HWPX 문서 스킬입니다. | 없음 | "이 HWP 파일 읽어줘", "이 한글 양식 채워줘", "정부 보고서 서식 hwpx로 만들어줘" | itda-work | — |
 | imagekit | 이미지 조회·리사이즈·여백 크롭·DPI 변경·포맷 변환·회전을 단일 CLI로 처리하는 스킬입니다. | 없음 | "이미지 크기 줄여줘", "여백 크롭해줘", "PNG를 JPG로 변환해줘" | itda-work | — |
 | investigate | 경쟁 가설과 반증 실험으로 근본 원인을 체계적으로 조사하는 스킬입니다. | 없음 | "왜 이렇게 느리지?", "이 에러 원인이 뭐야?", "원인 분석해줘" | itda-work | — |
 | market-scan | 외부 시장·산업 자료를 찾아 의사결정용으로 구조화하는 시장조사 스킬입니다. | DART_API_KEY, ECOS_API_KEY, EXA_API_KEY, KOSIS_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "OO 시장 조사해줘", "시장 규모랑 경쟁사 알려줘", "신사업 진입할 만한지 분석해줘" | itda-work | — |
+| morning-brief | 오늘 일정과 미회신 메일을 모아 아침 브리핑 HTML 한 장을 그리는 스킬입니다(calendar·email 소스). | 없음 | "아침 브리핑 만들어줘", "/morning-brief", "Sections: 환율" | itda-work | 본 스킬은 아침 브리핑 페이지 전담 — itda-work:calendar 는 일정, itda-work:email 은 메일, itda-work:html-report 는 보고서 HTML. |
 | pdf-context-refinery | PDF를 LLM 컨텍스트·지식베이스용 구조화 마크다운으로 정제하는 스킬입니다. | 없음 | "PDF를 마크다운으로 변환해줘", "이 교재를 지식베이스로 만들어줘", "PDF OCR 정리해줘" | itda-work | — |
 | pptx-design | 콘텐츠 마크다운과 수치 데이터로 16:9 PPTX 발표자료를 크로스플랫폼(macOS/Linux, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "삼성전자 주가전망 ppt 만들어줘", "이 DESIGN.md로 발표자료 디자인해줘", "md 내용으로 슬라이드 덱 생성" | itda-work | — |
 | task-brief | 모호한 일상 요청을 에이전트에 던지기 전, 작업 범위·검증 방법·완료 정의 3요소를 채운 브리프 한 장으로 다듬는 스킬입니다. | 없음 | "작업 브리프 짜줘", "이 요청 다듬어줘", "브리프로 정리해줘" | itda-work | — |
@@ -211,6 +212,7 @@ hwpx                  → itda-work/skills/hwpx/
 imagekit              → itda-work/skills/imagekit/
 investigate           → itda-work/skills/investigate/
 market-scan           → itda-work/skills/market-scan/
+morning-brief         → itda-work/skills/morning-brief/
 pdf-context-refinery  → itda-work/skills/pdf-context-refinery/
 pptx-design           → itda-work/skills/pptx-design/
 task-brief            → itda-work/skills/task-brief/

@@ -5,15 +5,16 @@ description: >
   빈 시간을 찾아주는 스킬입니다. "내일 3시 회의 추가해줘", "이번 주 일정 보여줘",
   "다음 주에 1시간 빈 시간 찾아줘", "OO 프로젝트 회의 다 찾아줘", "그 약속 취소해줘"처럼
   말하면 됩니다. 반복 일정·알림·시간대(KST)와 ETag 동시성, 삭제 확인 게이트를 지원합니다.
+  [책임 경계] 본 스킬은 일정 CRUD·빈 시간 탐색 전담 — 아침 브리핑 페이지(오늘 일정+미회신 메일 한 장)는 itda-work:morning-brief, 메일 읽기·발송은 itda-work:email.
 license: Apache-2.0
 compatibility: "Claude Code & Cowork. Python 3.10+. Requires caldav, icalendar (python3 -m pip install caldav icalendar)."
 metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "domain"
   recommended: true
-  version: "0.3.0"
+  version: "0.4.1"
   created_at: "2026-06-01"
-  updated_at: "2026-08-20"
+  updated_at: "2026-09-03"
   tags: "calendar, caldav, icloud, apple, naver, event, schedule, recurrence, rrule, valarm, alarm, reminder, timezone, etag, ical, icalendar, multi-account, custom-caldav, free-slots, availability, search"
 ---
 
@@ -111,7 +112,7 @@ python3 "$SKILL_DIR/scripts/list_events.py" --provider icloud --query "프로젝
 
 Arguments: `--provider`/`--account`, `--calendar`(name 또는 id, 생략 시 전체 캘린더), `--from`/`--to`(ISO date/datetime, 기본 now~+7d), `--query`(텍스트 필터 — SUMMARY/DESCRIPTION/LOCATION 대상, 대소문자 무시 substring, 클라이언트 측·sanitize 후 매칭), `--expand`(반복 전개), `--refresh`(디스커버리 캐시 무시·재탐색), `--no-sanitize`(원문, LLM 비권장).
 
-출력은 이벤트 객체 배열. `uid`·`summary`·`start`·`end`·`all_day`·`location`·`description`·`rrule`·`alarms`·`status`·`url`·`etag`·`calendar`. **SUMMARY/DESCRIPTION/LOCATION은 기본 sanitize**(프롬프트 인젝션 방어).
+출력은 이벤트 객체 배열. `uid`·`summary`·`start`·`end`·`all_day`·`location`·`description`·`organizer`·`rrule`·`recurrence_start`·`alarms`·`status`·`url`·`etag`·`calendar`. **SUMMARY/DESCRIPTION/LOCATION은 기본 sanitize**(프롬프트 인젝션 방어). `organizer`는 ORGANIZER 주소를 `mailto:` 제거·소문자·트림한 값(없으면 `null`) — 참석자 목록·대리 발송자(SENT-BY)는 미제공. `recurrence_start`는 `--expand` 로 전개된 반복 회차의 시작(마스터·단발은 `null`) — **회차도 마스터 UID 를 그대로 쓰므로** uid 로 수정/삭제하면 시리즈 전체가 대상이다(단일 회차 삭제는 `delete_event.py --occurrence`).
 
 ### Get Event (uid 단건 상세)
 
@@ -209,6 +210,14 @@ python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강�
 
 ---
 
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| "아침 브리핑 보여줘", 하루의 모양과 미회신 요청을 한 장 HTML 로 | itda-work:morning-brief |
+| 메일 읽기·발송·회신 초안 | itda-work:email |
+| 마크다운 보고서를 HTML 문서로 | itda-work:html-report |
+
 ## Exit Codes
 
 | Code | Meaning |
@@ -226,7 +235,7 @@ python3 "$SKILL_DIR/scripts/delete_event.py" --provider icloud --calendar "강�
 - **VTODO(미리알림)·참석자 초대·타인 free/busy는 범위 밖**이다(CalDAV 제약). 이벤트(VEVENT)에 집중한다. **내 빈 시간**은 `find_free_slots.py`가 클라이언트 측 계산으로 제공한다(서버 free-busy REPORT 비의존).
 - **`--query`는 클라이언트 측 필터**다(CalDAV 텍스트 검색 REPORT 비의존 — 서버 편차 회피). 조회 범위(`--from`/`--to`) 안에서만 검색되므로, 과거 일정 검색은 기간을 명시한다.
 - **iCloud**: `event_by_uid`(UID REPORT)를 `412`로 거부 → uid 조회는 이벤트 열거 매칭(`find_event_by_uid`). 호스트 샤딩(`p{NN}-caldav.icloud.com`)을 동적으로 추종.
-- **Naver**: `comp-filter`+`time-range` REPORT가 빈 결과를 주므로, 조회는 **objects 열거 후 클라이언트 측 시간범위 필터**로 폴백한다. 수정 PUT에 `200 OK`를 반환해 `ev.save()` 대신 **직접 PUT**으로 처리하며, **ETag를 제공하지 않아 동시성 가드는 best-effort**(read-modify-write 의존)다. 캘린더 생성(`make_calendar`)은 미지원이고, **`list_events --expand` 반복 전개도 미지원**(objects 경로는 반복 일정의 마스터 이벤트만 반환 — iCloud/custom만 전개). 단 `find_free_slots.py`는 RRULE 마스터를 **자체 클라이언트 전개**하므로 네이버에서도 반복 일정을 busy로 정확히 반영한다(라이브 검증됨).
+- **Naver**: `comp-filter`+`time-range` REPORT가 빈 결과를 주므로, 조회는 **objects 열거 후 클라이언트 측 시간범위 필터**로 폴백한다. 수정 PUT에 `200 OK`를 반환해 `ev.save()` 대신 **직접 PUT**으로 처리하며, **ETag를 제공하지 않아 동시성 가드는 best-effort**(read-modify-write 의존)다. 캘린더 생성(`make_calendar`)은 미지원이다. **`list_events --expand` 는 objects 경로에서 클라이언트 전개로 성립한다**(v0.4.0) — 서버가 마스터만 주므로 `find_free_slots.py` 와 같은 판정(`free_slots.rrule_occurrences`, EXDATE 반영)으로 창 안 회차를 펼친다. 시작일이 과거인 주간·일간 반복이 오늘·내일 조회에서 통째로 빠지던 결함이 이것이다. **RECURRENCE-ID 오버라이드(회차 개별 이동·수정)는 미반영** — 마스터 규칙 기준으로 전개하므로 옮겨진 회차는 원래 자리에 표시된다. 전개 실패(비표준 RRULE 등)는 마스터 1건으로 보수 폴백하고 **stderr 에 경고**를 낸다(stdout JSON 은 오염되지 않는다).
 - 시작시간만 옮기면(`--start`만, `--end` 생략) 기존 일정 길이를 유지해 종료시간도 함께 이동한다(모순 방지).
 - 이벤트가 매우 많은 캘린더에서는 uid 조회·수정/삭제가 느릴 수 있다.
 
