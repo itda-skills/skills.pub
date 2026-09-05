@@ -1,5 +1,18 @@
 # Changelog — itda-work/pptx-shrink
 
+## [0.2.0] — 2026-09-05 (이슈 #1646 — 마스터 제안)
+
+### Added
+
+- `report` 가 **품질 90/80/70 × 해상도 원본/220/150ppi** 를 전부 실측해 조합별 결과 크기 표(`tiers_after_mb`)를 낸다.
+  "예상" 표기를 "실측" 으로 정정(원래도 실제 인코딩이었다).
+- 표시 크기 파서 `display_sizes`: 슬라이드·레이아웃·마스터 `<p:pic>` 의 `a:ext`(그룹 ext/chExt 스케일 반영) → 미디어별 최대
+  표시 인치. `downsample_candidates`·`downsample_gain_pct`·`downsample_recommended`(5% 이상) 로 축소 이득을 보고.
+- `shrink --downsample-ppi {220|150}`(기본 꺼짐): 표시 크기보다 픽셀이 큰 이미지만 LANCZOS 축소 후 JPEG. 슬라이드 XML 무접촉.
+- SKILL.md 관문 2 가 **품질 · 해상도 축소 · 저장 방식** 셋을 한 번에 확인. GUIDE 에 "품질은 어떻게 고르나" 절 신설,
+  "PowerPoint 그림 압축" 절을 실측 표(A/L/H: JPEG 뒤 축소 이득 0.2MB 수준)로 교체.
+- 테스트 +7(그룹 스케일·미상·다중 사용, target_px, 조합 단조성, 축소 픽셀·verify, 확대 배치 제외, CLI, 실물 픽스처).
+
 ## [0.1.1] — 2026-09-05 (이슈 #1645 2차 — 테스트 보강)
 
 ### Added
