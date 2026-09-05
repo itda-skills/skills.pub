@@ -1,0 +1,24 @@
+{
+  "name": "itda-evidence-verify",
+  "description": "검증 스킬팩 — 남의 주장·원인·시장 자료·회의 기록·문서 버전을 믿기 전에 근거로 검증한다: 1차 출처 강제(ground-check)·경쟁 가설 반증(investigate)·시장조사(market-scan)·회의 신뢰성 검수(meeting-reliability)·PPTX 버전 비교(pptx-diff).",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "verification",
+    "research",
+    "investigation",
+    "market",
+    "meeting",
+    "diff",
+    "검증",
+    "조사",
+    "시장조사",
+    "회의록"
+  ]
+}

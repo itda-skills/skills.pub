@@ -1,0 +1,138 @@
+{
+ "title": "NETHER PORTAL",
+ "title_ko": "네더 포털",
+ "difficulty": "보통",
+ "unit_mm": 20,
+ "height_units": 5,
+ "tab_mm": 6,
+ "px_per_unit": 16,
+ "palettes": {
+  "obsidian": [
+   "#170F24",
+   "#1F1430",
+   "#120D1C",
+   "#26193B"
+  ],
+  "portal": [
+   "#8C33BF",
+   "#9E47D1",
+   "#7A26AD",
+   "#B366E0",
+   "#661F99"
+  ]
+ },
+ "textures": {
+  "ob": {
+   "noise": "obsidian",
+   "seed": 1
+  },
+  "portal": {
+   "noise": "portal",
+   "seed": 9
+  }
+ },
+ "parts": [
+  {
+   "id": "pillar",
+   "labels": [
+    "왼쪽 기둥",
+    "오른쪽 기둥"
+   ],
+   "count": 2,
+   "size": [
+    1,
+    5,
+    1
+   ],
+   "faces": {
+    "all": "ob"
+   },
+   "seed_shift": true
+  },
+  {
+   "id": "bar",
+   "labels": [
+    "위 가로대",
+    "아래 가로대"
+   ],
+   "count": 2,
+   "size": [
+    2,
+    1,
+    1
+   ],
+   "faces": {
+    "all": "ob"
+   },
+   "seed_shift": true
+  },
+  {
+   "id": "portal",
+   "type": "sheet",
+   "label": "포털 시트 (2×3 블록)",
+   "size": [
+    2,
+    3
+   ],
+   "texture": "portal",
+   "tabs": [
+    "left",
+    "right",
+    "top",
+    "bottom"
+   ]
+  }
+ ],
+ "assembly": [
+  "조립 순서: 기둥 2개 → 가로대 2개 → 포털 시트",
+  "1) 기둥·가로대 상자 4개를 만듭니다. 2) 가로대를 두 기둥 사이 맨 위·맨 아래에 끼워 붙여 ㅁ자 틀을 만듭니다 (가로대 길이 = 기둥 사이 간격).",
+  "3) 보라색 포털 시트의 좌우 날개를 기둥 안쪽 면에, 위아래 날개를 가로대 안쪽 면에 붙입니다. 양면으로 하려면 시트를 한 장 더 인쇄해 등 맞대어 붙이세요.",
+  "4) 세우려면 아래 가로대 뒤쪽에 두꺼운 종이 받침을 붙이세요."
+ ],
+ "layout": [
+  {
+   "id": "pillar",
+   "at_u": [
+    0,
+    0,
+    0
+   ],
+   "i": 0
+  },
+  {
+   "id": "pillar",
+   "at_u": [
+    3,
+    0,
+    0
+   ],
+   "i": 1
+  },
+  {
+   "id": "bar",
+   "at_u": [
+    1,
+    0,
+    0
+   ],
+   "i": 0
+  },
+  {
+   "id": "bar",
+   "at_u": [
+    1,
+    0,
+    4
+   ],
+   "i": 1
+  },
+  {
+   "id": "portal",
+   "at_u": [
+    1,
+    0.5,
+    1
+   ]
+  }
+ ]
+}

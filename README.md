@@ -8,10 +8,10 @@ Claude Code · Claude Cowork에서 대한민국 직장인·공공업무·투자�
 
 ```
 /plugin marketplace add itda-skills/skills.pub
-/plugin install itda-work@itda-skills/skills.pub
+/plugin install itda-content-create@itda-skills/skills.pub   # 예시 — 팩 목록은 아래
 ```
 
-현재 publish 대상 플러그인의 정본은 `release-skills.yml` 의 `PLUGINS` 다(`itda-work`·`itda-gov`·`itda-class-igm`·`itda-data`·`itda-tax` 등 — 목록은 워크플로 파일이 진실 소스, 이 문장은 예시).
+공개 팩 15종(2026-09 재정비, hyve #1648): itda-content-create · itda-privacy-gate · itda-day-organize · itda-web-collect · itda-evidence-verify · itda-work-coach · itda-data-analysis · itda-knowledge-build · itda-gov-collect · itda-cs-analysis · itda-realty-data · itda-travel-plan · itda-family-play · itda-dev-support · itda-org-mmaa. 정본은 `release-skills.yml` 의 `PLUGINS`(워크플로 파일이 진실 소스). 구 이름(itda-work·itda-gov 등)은 폐기됐고 별칭이 없다.
 
 ## 개발 저장소
 

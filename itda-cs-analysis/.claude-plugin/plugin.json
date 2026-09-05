@@ -1,0 +1,23 @@
+{
+  "name": "itda-cs-analysis",
+  "description": "CS 텍스트 분석 스킬팩 — 상담·문의 텍스트를 측면 감정(ABSA)·인텐트·라벨 일치도(κ) 로 구조화한다. closed-set 고정 JSON 계약. 입구 비식별은 itda-privacy-gate:pii-redact.",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "cs",
+    "sentiment",
+    "absa",
+    "intent",
+    "iaa",
+    "kappa",
+    "상담",
+    "감정분석",
+    "인텐트"
+  ]
+}

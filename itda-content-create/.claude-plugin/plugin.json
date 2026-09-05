@@ -1,0 +1,26 @@
+{
+  "name": "itda-content-create",
+  "description": "업무 콘텐츠 산출 스킬팩 — 초안(draft-post)·문체(human-tone)·SEO 키워드·디자인 토큰(design-core)·Word/PPTX/Excel/HTML/한글 문서 렌더·이미지 생성·가공을 한 파이프라인으로. 디자인 토큰 일관성·품질 하한·자기검증 게이트.",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "content",
+    "document",
+    "design",
+    "docx",
+    "pptx",
+    "xlsx",
+    "hwpx",
+    "html",
+    "image",
+    "문서",
+    "보고서",
+    "콘텐츠"
+  ]
+}

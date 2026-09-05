@@ -1,0 +1,23 @@
+{
+  "name": "itda-data-analysis",
+  "description": "내 데이터 정리·계산·검산 스킬팩 — 분석 내비게이터(data-compass) + CSV 정돈(data-prep) + 실제 계산 질문(data-ask) + 수식 감사(data-audit) + 수치 검수(data-verify). 눈대중 금지·보고 전용.",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "data",
+    "csv",
+    "excel",
+    "analysis",
+    "audit",
+    "verify",
+    "데이터",
+    "분석",
+    "검수"
+  ]
+}

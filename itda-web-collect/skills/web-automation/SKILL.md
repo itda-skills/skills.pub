@@ -1,0 +1,472 @@
+---
+name: web-automation
+description: >
+  hyve web_browse MCP로 웹 자동화(로그인 세션·폼 입력·클릭 탐색·대량 수집·차단 사이트 우회)를
+  할 때 올바른 액션 조합을 안내하는 레시피 스킬입니다. "이 사이트 로그인해서 데이터 모아줘",
+  "폼 채워서 검색해줘", "무한스크롤 전부 수집해줘"처럼 말하면 됩니다.
+  에이전트가 web_browse 액션 조합을 고를 때의 정본 가이드입니다.
+  [책임 경계] 본 스킬은 사이트 무관 web_browse 액션 조합의 정본 — 위하고·홈택스 세무 포털 특화 레시피는 itda-taxhero:web-automation, 정적 페이지 단건 읽기는 itda-web-collect:web-reader.
+license: MIT
+compatibility: Claude Code & Cowork (hyve MCP 필요)
+user-invocable: true
+allowed-tools: Read, Write, Bash, mcp__workspace__bash
+metadata:
+  author: "스킬.잇다 <dev@itda.work>"
+  category: "domain"
+  version: "0.4.10"
+  status: "stable"
+  created_at: "2026-06-11"
+  updated_at: "2026-09-03"
+  tags: "web, automation, browser, session, login, form, scrape, harvest, extract, mcp, hyve, web-browse, recipe, webview, token-diet, webmail, mail"
+---
+
+# web-automation
+
+hyve `web_browse` MCP 도구로 웹 자동화를 수행할 때의 **액션 조합 레시피 정본**.
+이 스킬 자체는 코드를 실행하지 않습니다 — 에이전트(Claude)가 어떤 작업 유형에 어떤 액션을
+어떤 순서로 호출해야 하는지를 정의합니다. 사이트 특화 스킬(coupang 등)은 사이트 로직만 갖고,
+공통 호출 패턴은 이 스킬을 따릅니다.
+
+> 호출 표기: `web_browse` `액션명` `{파라미터}` — 실제로는 hyve 통합 도구
+> (`hyve(domain="web_browse", action="...", params="{...}")`) 경유입니다.
+
+## ⚠️ 전환 중 — `web` 프리셋은 `web_browse.repl` 단일 도구로 갈아타는 중입니다 (#1633, Phase 2 착지)
+
+이 문서가 설명하는 **22 액션 레시피는 `web-legacy` 프리셋에서 그대로 성립합니다.** 도메인 이름만
+`web_browse_legacy` 로 바뀌었고 액션·파라미터·의미는 불변입니다.
+
+| 프리셋 | 도메인 | 표면 |
+|---|---|---|
+| `web-legacy`(`/mcp/web-legacy`) | `web_browse_legacy` | **이 문서의 22 액션** — 계속 쓸 수 있습니다 |
+| `web`(`/mcp/web`) | `web_browse` | `repl` **1개**(JS REPL) — 전환 목적지 |
+
+- **지금 해야 할 일**: 이 문서의 레시피를 쓰려면 클라이언트를 **`web-legacy` 프리셋으로 등록**하세요
+  (설정 > MCP 탭). `web` 프리셋으로 등록된 클라이언트에서 22 액션을 부르면 조용히 실패하지 않고
+  `domain_not_in_preset` + `correct_preset: "web-legacy"` 로 어느 엔드포인트를 써야 하는지 알려 줍니다.
+- **REPL 계약(전환 목적지)** — 지금 알아 둘 두 가지:
+  - **값은 명시 `return` 만** 돌아옵니다. 마지막 식의 값이 자동으로 반환되지 않습니다.
+  - **`console.log` 는 봉투(envelope)로 회수**됩니다 — 출력이 사라지지 않지만, 값을 받고 싶으면
+    `console.log` 가 아니라 `return` 을 쓰세요.
+- **ref 액션 계약(Phase 2 착지 — CEF 전용)** — `web` 프리셋에서 요소를 조작할 때 알아 둘 셋:
+  - **refs 는 `e1`·`f1e1` 형태입니다.** `f<n>` 접두는 same-origin iframe 안이라는 뜻이고,
+    `page.locator(ref).click()`/`.fill(value)` 은 그 토큰만으로 요소에 닿습니다(셀렉터를 주지 않습니다 —
+    적대 페이지가 `id`·`data-testid` 를 복제해도 원 요소를 때리는 보증이 여기서 나옵니다).
+  - **가림은 조용히 우회되지 않습니다.** 다른 요소에 덮인 버튼을 누르면 실패하고
+    `e.code === "hit_target_obscured"` 와 `blocker{role,name,frame}` 이 무엇이 가렸는지 말합니다.
+    정말 눌러야 하면 `page.locator(ref).click({mode:'dom'})` 로 **명시 우회**하세요(결과에 `degraded:"dom"`
+    이 붙습니다). 그 밖의 판정: `not_actionable` · `ref_stale` · `ref_ambiguous` ·
+    `hit_target_cross_origin` · `unsupported_engine` · `utility_context_lost`.
+  - **엔진 능력은 호출 전에 판별합니다.** `session.info().engine_capabilities` 가
+    `{utility_world, registry_ref, actionability, settle}` 를 돌려줍니다. Windows(WebView2)는
+    `registry_ref:false` 라 ref 액션이 `unsupported_engine` 으로 떨어집니다 — 그때는 이 문서의
+    레거시 selector 레시피를 쓰세요.
+- 전면 재작성(REPL 레시피 정본화)은 **Phase 4** 입니다. 그때까지 이 문서가 레거시 표면의 정본입니다.
+- 설계 정본: `docs/specs/SPEC-WEB-BROWSE-REPL-001/spec.md`(hyve 저장소).
+
+## 0. 전제 — hyve 커넥터 가용성 확인 (필수 선결)
+
+작업 전, 현재 세션에 hyve MCP 도구(`hyve` 통합 도구의 `web_browse` 도메인)가 노출됐는지
+확인합니다(`ToolSearch` 로 "web_browse" 또는 "hyve" 검색). **없으면 아래를 사용자에게 안내하고 중단**합니다:
+
+> 이 스킬은 hyve `web_browse` MCP 가 필요합니다. hyve 를 MCP 커넥터로 등록하세요:
+>
+> - 호스트(데스크톱)에서 hyve 트레이 앱(`hyve serve`)을 켜고, **hyve 설정 > MCP 탭**에서
+>   **웹(web) 프리셋**을 사용 중인 클라이언트(Claude Code·Claude Desktop/Cowork·Codex)에 등록합니다.
+> - `hyve mcp stdio` 직접 등록은 **개발·검증 전용**입니다 — 유저 온보딩에 안내하지 않습니다.
+>
+> 등록 후 다시 시도하세요.
+
+**최초 사용 시 동의(EULA)**: 첫 액션이 EULA 미동의로 거부되면 사용자에게 자동화 책임 동의를
+확인받고 `web_browse` `consent.grant` `{type:"eula"}` 를 호출합니다. 현재 동의 상태는
+`consent.list` 로 조회합니다. (사이트별 도메인 동의는 폐지되어 더 이상 요구되지 않습니다.)
+
+## 0.05 백엔드 엔진 (#1106 — 단일 엔진 OS-WebView)
+
+`web_browse` 세션의 백엔드는 **OS-WebView**(macOS WKWebView / Windows WebView2, hyve 셸 헬퍼)
+**단일 엔진**입니다. 과거의 Chrome 백엔드(Bun sidecar + Playwright + StealthPlugin)와 그 opt-in
+경로(`engine="chrome"` 파라미터 · `HYVE_BROWSE_CHROME` 환경변수 · `mode=attach` · `mode=shared`)는
+**#1106 에서 전량 제거**됐습니다.
+
+- `session.new` 은 이제 **manual 세션만** 지원합니다 — `mode` 를 지정하지 않으면 OS-WebView 창이 열립니다.
+- `mode=attach` / `mode=shared` 는 `unsupported_mode` 에러입니다(조용한 Chrome 폴백 없음 — no-silent-fallback).
+- OS-WebView 백엔드는 **`profile_id` 별 격리 데이터스토어**로 세션 간 쿠키·로그인을 지속합니다(#1113 배선 완료 — browserwin 도메인). macOS 는 default=`WKWebsiteDataStore.default()` / named(`profile_id≠default`)=`WKWebsiteDataStore(forIdentifier:)`(macOS 14+ 전용), Windows 는 WebView2 `ProfileName` 입니다. **상이 `profile_id` 세션은 서로 격리된 채 동시 공존**하므로 수임처별·계정별 병행 자동화가 가능합니다(다계정 격리).
+
+선언적 액션 계약(snapshot/navigate/interact/type/observe/extract/fetch/harvest 등)은 그대로이므로,
+레시피는 엔진을 의식할 필요가 없습니다. (외부 MCP 계약 표면은 #1106 전후로 불변입니다.)
+
+## 0.1 브라우저 프로필 정책
+
+hyve `web_browse` 세션은 `profile_id` 로 **세션 격리 스토어**(쿠키·로그인)를 고릅니다.
+로그인 상태를 모든 작업에서 재사용하려면 공통 default 프로필 하나를 그대로 쓰고, **계정
+격리가 필요한 다계정 작업에만** 별도 `profile_id` 를 만듭니다(수임처별·계정별 병행, #1113).
+
+- 기본값: `profile_id:"default"` (미지정 시 default 로 추론)
+- 전역 override: `HYVE_WEB_BROWSE_PROFILE_ID`
+- 일반 세션은 `session.new {profile_id:"default", ...}`로 시작합니다.
+
+**저장 위치·격리 메커니즘 (#1106 Chrome 제거 · #1113 격리 배선):**
+
+- 세션 데이터는 Chrome `user-data-dir`(과거의 `chrome-data` 디렉터리)가 아니라 **WebKit/WebView2
+  앱 컨테이너의 격리 데이터스토어**에 저장됩니다 — macOS 는 default=`WKWebsiteDataStore.default()`,
+  named(`profile_id≠default`)=`WKWebsiteDataStore(forIdentifier:)`(macOS 14+ 전용), Windows 는
+  WebView2 `ProfileName`. 과거의 `--user-data-dir`/`--profile-directory` 온디스크 레이아웃과
+  `browser-profiles/<id>` 복사 경로는 **Chrome 백엔드와 함께 제거**됐습니다(#1106 이후 소비자 0).
+- `profile_id` 가 다르면 스토어가 격리됩니다 — 쿠키·로그인이 서로 섞이지 않습니다.
+
+**동시성 (#1118 — profile lock 제거):**
+
+- **상이 `profile_id` 세션은 동시 공존**합니다 — 격리 스토어라 다계정 병행이 안전합니다.
+- **같은 `profile_id` 로 `session.new` 를 재호출하면 새 세션(새 창)이 생성**됩니다. 과거의
+  `profile_locked` 거부·직렬화는 제거됐습니다(#1118). 같은 프로필의 여러 창은 같은 영속
+  스토어를 공유합니다.
+
+**프로필 관리 (`profiles` / `profile.delete`, #1120):**
+
+프로필 스토어는 격리 데이터스토어(쿠키·로그인) **실체**이므로 목록·삭제 액션을 제공합니다.
+(#1119 로 잠시 제거됐던 두 액션이 WebKit/WebView2 격리 스토어 실체로 부활 — 마스터 결정
+#1120. macOS 14+ 전용, 미만 버전은 명시 `unsupported` 응답.)
+
+- **`profiles`** — named 프로필 목록. Go 레지스트리(`<hyve appdir>/web-profiles.json`, 생성된
+  `profile_id` 기록)와 OS 격리 스토어 열거를 **대조**해 반환합니다. 활성 세션이 사용 중인
+  프로필은 **in-use** 로 표시합니다. 레지스트리에 없는 스토어(수동/과거 잔재)는 **orphan** 으로
+  분류해 스토어 식별자(**UUID = `store_id`**)로 노출합니다.
+- **`profile.delete`** — 프로필의 **실데이터(쿠키·로그인)를 삭제**합니다 — macOS
+  `removeDataStoreForIdentifier:`, Windows WebView2 프로필 삭제. 되돌릴 수 없습니다: 같은
+  `profile_id` 를 다시 쓰면 **빈 스토어가 재생성**되어 로그인이 사라집니다("프로필 삭제"는 세션
+  종료가 아니라 진짜 데이터 삭제입니다). 거부 계약:
+  - 활성 세션이 그 프로필을 사용 중이면 **`profile_in_use`** 로 거부합니다.
+  - 삭제 진행 중 같은 프로필로 `session.new` 하면 **`profile_deleting`** 으로 거부합니다
+    (#1118 동형 가드 부활).
+  - `""`·`default`·ephemeral 프로필은 **삭제 불가**(명시 거부) — `default` 는 named 스토어가
+    아닙니다. orphan 은 `store_id`(UUID) 직접 지정으로 삭제합니다.
+- CLI `hyve web profiles` / `hyve web profile delete` parity 가 개발·검증용으로 복원됩니다
+  (cross-process 한계 유지 — 유저향 정본은 위 web_browse 액션, cowork-mcp-only).
+
+이 정책의 목적은 한 번 로그인한 쿠키·인증 상태를 재사용하되(default), 계정 격리가 필요한
+다계정 작업은 `profile_id` 로 분리해 **병행**하는 것입니다. 평소 작업 후에는 `session.close` 로
+세션만 닫습니다 — 프로필 스토어는 유지되어 재로그인이 불필요합니다. 로그인·쿠키를 **완전히
+비우려면**(계정 정리·기기 반납 등) `profile.delete` 로 스토어 자체를 지웁니다.
+
+## 1. 작업 유형 → 레시피 선택
+
+| 작업 유형 | 레시피 | 핵심 액션 |
+|---|---|---|
+| 페이지 1개 읽기 (정적/JS 렌더) | R1 단발 읽기 | `session.new`→`navigate`→`snapshot` (세션 필수) |
+| 클릭·입력하며 여러 스텝 진행 | R2 멀티스텝 상호작용 | `session.new`→`snapshot`→`interact`/`type` |
+| 페이지에서 구조화 데이터 뽑기 | R3 데이터 추출 | SPA=`observe{network}` API원본 우선 / DOM=`extract` |
+| 목록/무한스크롤 전 항목 수집 | R4 대량 수집 | `harvest` + `output_path` |
+| 로그인 필요·봇 차단 사이트 | R5 로그인 세션 | `session.new(profile_id)`→로그인/takeover/secret→`fetch` |
+| 웹 전용 메일(IMAP 부재) 확인·발송 | R6 웹메일 | 영속 프로필+takeover→`fetch`/`extract` |
+
+읽기 전용 + 마크다운 변환이 목적이면 이 스킬 대신 **web-reader** 스킬이 우선입니다
+(curl 기반이 더 가볍습니다). web-reader 가 실패하는 동적/차단 페이지가 이 스킬의 영역입니다.
+
+## 2. 토큰 절약 원칙 (모든 레시피 공통)
+
+웹 자동화 비용의 대부분은 **페이지 관측(snapshot)** 입니다. 다음을 기본값으로 합니다:
+
+1. **조작 대상만 필요하면** `snapshot` `{mode:"a11y", interactive_only:true}` — 전체 트리 생략,
+   클릭/입력 가능한 refs 만 반환 (-54~60%).
+2. **같은 페이지 재관측은** `snapshot` `{mode:"a11y", diff:true}` — 직전 관측 대비 변경 노드만
+   (-98% 이상). 응답의 `diff_baseline:"full"` 은 "기준 없음(첫 관측/페이지 전환)"이므로 전체가 온 것.
+3. **텍스트만 필요하면** `mode:"text"` 가 최저 비용. 전체 HTML(`mode:"html"`)은 정형 파싱이
+   필요할 때만.
+4. **full a11y(`interactive_only` 없이)는 링크 밀집 페이지에서 클라이언트 응답 한도를 초과해
+   도구 결과가 거부될 수 있습니다.** 기본적으로 쓰지 않습니다.
+5. **대량 데이터는 컨텍스트로 받지 않습니다** — R4 의 `output_path` 로 서버 저장하거나,
+   R3 의 `omit_items`/`aggregate` 로 요약만 받습니다.
+
+## 3. 레시피
+
+### R1 — 단발 읽기 (세션 기반)
+
+```text
+a. web_browse session.new {}                                  # → session_id (OS-WebView 세션)
+b. web_browse navigate {session_id, url:"https://..."}        # wait_until: load(기본)|domcontentloaded|networkidle
+c. web_browse snapshot {session_id, mode:"text"}              # 본문 텍스트  (또는 mode:"html" 정형 파싱용)
+d. web_browse session.close {session_id}
+```
+
+- ⚠️ **#1106**: 세션 없는 1회성 `snapshot {url:...}`(one-shot render)은 Chrome 백엔드 제거와
+  함께 제거됐습니다 — `snapshot` 은 이제 `session_id` 가 필수입니다. 단발 읽기도 세션을 열고
+  navigate 후 snapshot 합니다(위). 여러 페이지를 읽으면 세션을 재사용합니다(b·c 반복).
+- ⚠️ 과거 안내문의 `render` 액션은 **deprecated** 입니다 — `snapshot` 을 씁니다.
+- 정적 페이지의 순수 읽기·마크다운 변환은 **web-reader**(curl 기반)가 더 가볍습니다 — 아래
+  안내 참조. R1(OS-WebView 세션)은 JS 렌더·동적 페이지가 필요할 때 씁니다.
+
+### R2 — 멀티스텝 상호작용 (폼·탐색·탭)
+
+```text
+a. web_browse session.new {profile_id:"default"}                # → session_id (idle 5분, long_lived:true 면 30분)
+b. web_browse navigate {session_id, url:"https://..."}
+c. web_browse snapshot {session_id, mode:"a11y", interactive_only:true}   # 조작 대상 refs 확보
+d. web_browse interact {session_id, type:"click", selector_ref:"e12"}     # ref 로 클릭
+   web_browse type {session_id, selector_ref:"e5", text:"검색어", mode:"fill"}
+   web_browse wait {session_id, condition:"selector_visible", selector:".results"}
+e. web_browse snapshot {session_id, mode:"a11y", diff:true}    # 재관측은 diff
+f. (d~e 반복)
+g. web_browse session.close {session_id}
+```
+
+- `interact` `type`: `click`/`hover`/`select_option`/`press_key`/`file_upload`/`scroll`/`dom_click` 지원.
+  `drag`/`fill_form` 은 아직 `not_implemented` 응답이 정상입니다(우회 루프 금지 — 다른 수단으로 분해).
+- **무한스크롤 `interact{type:"scroll"}`**: `container_selectors` 미지정 시 실제 스크롤러를
+  자동 탐지합니다(#575). **리스트 자신은 스크롤되지 않고 부모/외부 요소가 스크롤하는 구조**
+  (react-infinite-scroll-component — 예: WEHAGO 수임처 전체목록 553건)에서, 리스트 셀렉터
+  (`.infinite-scroll-component` 등)를 주면 `final_scroll_top:0` 으로 초기 ~20건에 멈춥니다 —
+  그 요소는 `overflow:visible`(자체 스크롤 없음)이기 때문입니다. **실제 스크롤 컨테이너**를 주거나
+  (WEHAGO 정답: `container_selectors:[".scrolling",".main3"]`) 무인자 자동탐지에 맡깁니다.
+  `no_data_timeout_ms`(기본 5000)는 느린 AJAX 다음 배치 대기 상한입니다.
+- `type` 액션 `mode`: `fill`(한 번에 입력, 기본)|`sequential`(타이핑 시뮬레이션).
+- 요소 지정은 snapshot 이 준 `selector_ref`(예: `"e12"`) 우선 — self-healing 경로가 selector 변화를 흡수합니다.
+- 연속 조작은 `batch_interact` `{session_id, commands:[...], stop_on_error:true}` 로 묶으면 왕복이 줄어듭니다.
+- 탭: `tabs` `{session_id, op:"create|list|switch|close", url?, tab_id?}`.
+- **클릭이 새 창(window.open)을 열면** — 구 `expect_new_tab`(#456)은 Chrome 백엔드 제거(#1106)에 따라 **폐지**됐습니다(#1466).
+  현행 OS-WebView 엔진에서 web_browse MCP 표면에는 새창으로 전환하는 액션이 없습니다 — 클릭 후에도 `snapshot`/`interact` 는
+  부모 창에서 동작합니다. 새창(팝업) 진입이 필요한 자동화(예: ERP 수임처 "회계" → 더존 SmartA 새 창)는 hyve 레시피의
+  새창 진입 계약(`open_window`)이 담당합니다.
+- 페이지 상태 진단: `observe` `{session_id, type:"console|network|actionable"}`. **시각 캡처**는 `observe {type:"screenshot", mode:"viewport(기본)|full|element", output_path?}`(#217) — a11y 가 못 보는 캡차·canvas·레이아웃을 PNG 로 떠 옵니다. `output_path` 미지정 시 MCP image 로 직접 반환(모델이 봄), 지정 시 디스크 저장 + `bytes_written` 만(토큰 미경유, whitelist 경로). ⚠️ `mode:"full"` 은 무거운 SPA 에서 타임아웃 가능(#445) → `viewport` 권장.
+- **모달이 후속 클릭을 가로막으면** 세션을 `session.new {auto_dismiss_dialogs:true}` 로 시작합니다(#450).
+  서버사이드 워처가 세션 수명 동안 visible 모달(프로모·공지 LUXDialog 스택, "오늘 하루 보지 않기" 류)의
+  닫기·X 버튼을 직접 DOM 클릭으로 비파괴 자동 dismiss 합니다 — **확인/수락/설정/동의/결제/재설정 등 액션
+  버튼은 절대 누르지 않습니다.** 표준 `interact{click}`(마우스 클릭)이 `success` 를 반환해도 안 닫히는
+  스택 모달(한국 ERP/공공웹 LUXDialog)에 특히 유효합니다. 사이트별 닫기 버튼이 기본 범용 셋에 없으면
+  `dialog_selectors`/`dialog_close_texts` 로 보강합니다(추가일 뿐, 비파괴 하드 가드는 우회 불가).
+- **명시적으로 특정 요소를 직접 클릭해야 하면** `interact {session_id, type:"dom_click", selector, visible_only?, all?}`(#449) —
+  요소의 click 핸들러를 `el.click()` 로 **직접 발화**해 Playwright pointer hit-testing(오버레이·z-index 가림)을 우회합니다.
+  표준 `interact{click}` 이 오버레이에 가려 30s 타임아웃하는 요소에 씁니다. `visible_only`(기본 true)는 `rect>0` 요소만,
+  `all:true` 는 visible 매칭을 **일괄** 클릭(스택 모달 한 번에) — `clicked_count`/`matched_count` 를 반환합니다.
+  **auto_dismiss_dialogs(#450)와의 차이**: #450 은 세션 내내 도는 **자동·수동적** 워처로 비파괴 닫기 버튼만 누릅니다(ambient 모달).
+  dom_click 은 **에이전트가 지금 이 selector 를** 누르는 **명시·능동** 프리미티브로, 모달이 아닌 가려진 버튼이나 워처 범용셋이
+  못 잡는 특정 요소에 직접 씁니다(둘은 상보 — ambient 자동 정리는 #450, 표적 직접 클릭은 #449). 임의 JS 미수신(고정 `el.click()`).
+
+### R3 — 데이터 추출 (API 원본 우선 · snapshot 전사 금지)
+
+⚠️ **SPA(WEHAGO·HOMETAX 등)에서는 API 원본 캡처가 1순위입니다.** 이런 사이트는 API 응답에
+**풍부한 원본**이 오는데 DOM 엔 **일부만**, 그것도 표시용으로 가공(태그·포맷·반올림·라벨화)됩니다.
+DOM `extract`/`snapshot` 파싱은 **필드 손실 + 변질**이라 데이터 수집의 정본이 될 수 없습니다.
+실측(2026-06-25): WEHAGO 수임처 목록 API(`taxagent/com/Tmain` 의 `grp1[]`)는 **66필드** 원본인데
+DOM 추출은 **2필드**(상호·사업자번호)만, 상호조차 `"[태그] 상호"` 가공값이었습니다(64필드 97% 손실).
+
+**수집 우선순위:**
+1. **API 원본 (1순위)** — `observe{network}` 로 XHR 응답 body 를 그대로 캡처. cross-origin
+   API(`api.wehago.com` ↔ 앱 도메인)는 same-origin `fetch`(R5b) 불가 → `observe` 가 정본 경로.
+2. **DOM `extract` (보조)** — API 가 없거나(순수 서버렌더 HTML) 표시값만으로 충분할 때만.
+
+**API 원본 캡처 레시피 (`observe{network}` drain):**
+```text
+a. web_browse observe {session_id, type:"network"}                  # 캡처 enable (대상 XHR 발생 전에)
+b. (navigate/scroll/click 으로 대상 XHR 발생 — 무한스크롤이면 interact{scroll} 로 페이지네이션 트리거)
+c. web_browse observe {session_id, type:"network", drain:true,
+                       url_pattern:"taxagent/com/Tmain", max_body_chars:8000000}
+   → {drained, total_captured, matched_count, responses:[{url, status, body}]}   # body = API 원본 JSON
+d. body 를 스크립트로 파싱 (grp1[] 등 원본 필드 전체 — 가공 없는 raw)
+```
+- `url_pattern` 은 substring 매칭. `clear`(기본 true)는 drain 후 버퍼 비움(`false` 면 보존해 재조회).
+- 페이지네이션 XHR 은 스크롤마다 발생 → **충분히 스크롤(R4)한 뒤 drain** 하면 전 페이지 원본 확보.
+- enable 은 대상 XHR 이 발생하기 **전에** 호출해야 버퍼에 잡힙니다(navigate 전/직후).
+
+**DOM `extract` (보조):**
+페이지에서 구조화 데이터를 뽑을 때 snapshot 을 읽어 모델이 전사하지 않습니다 —
+서버사이드 `extract` 가 selector 기반으로 추출합니다:
+
+```text
+# 단일 객체
+web_browse extract {session_id, schema:{title:"string", price:"number"},
+                    selectors:{title:"h1", price:".price"}}
+
+# 리스트 (반복 항목 — 각 selector 는 item 에 상대적)
+web_browse extract {session_id, item_selector:".search-result",
+                    schema:{name:"string", price:"string"},
+                    selectors:{name:".title", price:".price"},
+                    where:{...}, sort_by:"name", limit:20, omit_items:false}
+```
+
+- 리스트 모드 후처리(서버사이드): `where`(eq/contains/matches/gt 등)·`sort_by`/`order`·
+  `limit`/`offset`·`aggregate`(sum/avg/min/max/count)·`group_by`·`omit_items`(요약만).
+- 집계·건수만 필요하면 `omit_items:true` 로 항목 전송을 생략합니다.
+- ⚠️ **추출값은 요소의 텍스트(또는 input 류의 입력값)뿐입니다** — `a@href` 같은 attribute
+  추출 문법은 없습니다. 링크 URL 수집이 필요하면 `snapshot` `{mode:"html"}` 후 스크립트 파싱으로.
+
+### R4 — 대량 수집 (1-call + 컨텍스트 우회)
+
+무한스크롤/목록 페이지의 전 항목은 `harvest` 1-call 로 (navigate→scroll→리스트 추출):
+
+```text
+web_browse harvest {url:"https://...", scroll:true,
+                    item_selector:".feed-item",
+                    schema:{title:"string", summary:"string"},
+                    selectors:{title:".tit", summary:".desc"},
+                    output_path:"/tmp/harvest.json", overwrite:true}
+```
+
+- `output_path` 지정 시 결과를 서버가 파일로 저장하고 응답에서 items 를 생략합니다 —
+  대량 결과를 모델 컨텍스트에 싣지 않는 표준 경로. 이후 분석은 파일을 읽는 스크립트로.
+- R3 과 동일한 `where`/`sort_by`/`aggregate`/`group_by`/`omit_items` 후처리를 지원합니다.
+- 읽기 수집 전용입니다(로그인 폼 제출 같은 상호작용은 R2).
+
+### R5 — 로그인·차단 사이트 (명시 입력 / takeover resume / 워밍업)
+
+`type` 액션은 password field 를 포함한 모든 입력 필드에 동일하게 동작합니다. `navigate` 와
+`snapshot` 도 로그인 URL·password field 를 이유로 자동 `takeover_required` 를 만들지 않습니다.
+따라서 로그인 자동화는 호출자가 사이트 허가·계정 소유·추가 인증 부재를 확인한 뒤 R2의
+`type`/`interact` 시퀀스로 명시 구성합니다.
+
+**R5a — takeover resume (호환 — 기존 pending 세션 또는 명시 takeover 경로):**
+
+```text
+a. (기존 pending 세션 또는 명시 takeover 경로에서) → {error_code:"takeover_required",
+   headed:true, session_id:동일, resume_action:"takeover.resume"} 수신
+b. ⚠️ 세션을 닫지 않는다 — hyve 가 이미 같은 session_id 를 visible 브라우저 창으로 전환했고,
+   그 창이 사용자의 인증 창이다.
+c. 사용자 안내: "화면에 브라우저 창이 떴습니다. 직접 로그인해 주세요. 완료되면 알려주세요."
+d. 사용자 완료 후: web_browse takeover.resume {session_id}
+   → 아직 로그인 페이지면 다시 takeover_required(재안내), 벗어났으면 {status:"resumed"}
+e. 같은 session_id 로 일반 액션(snapshot/extract/fetch 등) 계속.
+```
+
+**R5b — 봇 차단 사이트 워밍업 (OS-WebView 헤디드 세션):**
+
+봇 차단(Akamai 등)이 valid 세션 쿠키(예: `_abck`)를 요구하는 사이트는, 사용자가 헤디드
+OS-WebView 창에서 **직접 로그인·브라우징해 쿠키를 워밍업**한 뒤 같은 세션으로 내부 API 를 fetch 합니다.
+
+```text
+a. web_browse session.new {headless:false}   # → 헤디드 OS-WebView 창(화면에 보임 — 사람 개입용) + session_id
+b. (사용자) 그 창에서 로그인 + 잠깐 브라우징 → valid 세션 쿠키 생성 (자격증명 입력은 사용자 수동)
+c. web_browse fetch {session_id, path:"/api/내부경로?q=...", response_type:"json"}  # same-origin XHR
+d. web_browse session.close {session_id}   # 로그인은 profile_id 데이터스토어에 영속 → 재사용 가능(§0.05)
+```
+
+- `fetch` 는 임의 JS 실행이 아니라 path·method·body·credentials·headers 스키마의 same-origin
+  XHR 입니다 — document 요청(navigate)이 차단되는 사이트에서 내부 API 를 받는 표준 경로.
+- 워밍업(a~b)은 세션당 한 번, 여러 조회는 c 만 반복합니다. 실사용 예: **coupang** 스킬.
+  ⚠️ coupang(Akamai)은 OS-WebView 지문의 통과가 아직 **라이브 사람 워밍업으로 미검증**입니다(#1106).
+- `mode=attach`·`mode=shared`(외부·공유 Chrome 전제)는 **#1106 에서 제거**됐습니다 — `unsupported_mode` 에러.
+- `takeover.resume` 은 기존 `takeover_required` pending 세션 복구용 호환 액션입니다(R5a).
+
+**R5c — 비밀 주입 (`secret` — 에이전트가 값을 안 보는 자동 로그인, SPEC-WEB-BROWSE-SECRET-INJECT-001):**
+
+비밀번호를 자동 입력하되 **에이전트가 값을 다루지 않는** 보안 경로입니다. 에이전트는 비밀
+*이름* 만 넘기고, hyve 서버가 allowlist + 도메인 바인딩을 검증한 뒤 값을 해석해 주입합니다
+(값은 요청·응답·로그에 미노출). takeover 가 불가한 headless(예: phantom 데몬) 자동 로그인의 정본.
+
+```text
+a. 사용자 사전 설정(1회) — hyve 설정 > 계정 (에이전트 미접근):
+   WEHAGO 계정(아이디·비밀번호)을 등록하고 해당 provider 의 디폴트 계정으로 지정.
+   → 시크릿 이름 account:wehago:username / account:wehago:password 가 그 디폴트 계정을 가리킵니다.
+b. web_browse session.new {profile_id:"default"}
+   web_browse navigate {session_id, url:"https://로그인URL/"}
+c. web_browse type {session_id, selector_ref:"e_id", secret:"account:wehago:username", mode:"fill"}
+   web_browse type {session_id, selector_ref:"e_pw", secret:"account:wehago:password", mode:"fill"}
+   web_browse interact {session_id, type:"click", selector_ref:"e_login"}
+d. 영속 프로필이라 이후 세션은 쿠키 재사용(재로그인 불요).
+```
+
+지원 이름은 계정 시크릿 4종 고정입니다 — WEHAGO `account:wehago:username`·`account:wehago:password`,
+HOMETAX `account:hometax:cert_name`(인증서 CN)·`account:hometax:cert_password`(인증서 암호).
+각 이름의 사이트 도메인 바인딩은 내장 고정이라 env 로 바꿀 수 없습니다.
+
+- `secret` 은 `text` 와 상호배타(동시 지정 시 `secret_text_conflict`). fill 전용(sequential 미지원).
+- 미등재 이름 → `secret_not_allowlisted`(임의 비밀 주입·유출 차단). 도메인 불일치 →
+  `secret_domain_mismatch`(피싱/오사이트 비밀 주입 차단). 디폴트 계정·비밀 미등록 →
+  `secret_not_configured`(복구: 사용자에게 **설정 > 계정** 등록·디폴트 지정을 안내 — 에이전트가 값을 받지 않습니다).
+- 응답엔 `secret_used:true` 만, 값·길이 미노출.
+- ⚠️ 에이전트가 비밀 *값* 을 직접 `text` 로 넣는 것은 금지 — 반드시 `secret`(이름) 경로를 씁니다
+  (Claude 안전 규칙: 에이전트는 비밀번호 값을 필드에 직접 입력하지 않음).
+
+### R6 — 웹메일 (IMAP 부재 웹 전용 메일)
+
+**적용 판별이 먼저입니다** — IMAP/SMTP 를 지원하는 메일(Naver·Gmail·Daum/Kakao·iCloud 등)은
+**email 스킬이 항상 우선**입니다(프로토콜이 더 빠르고 안정적이며 열람해도 읽음 상태를 바꾸지
+않습니다). R6 은 프로토콜을 열지 않는 웹 전용 메일(사내 그룹웨어·공제회 등, 외부 포워딩까지
+막힌 경우)에만 적용합니다.
+
+```text
+a. web_browse session.new {profile_id:"default", long_lived:true}
+   # 영속 프로필 — 쿠키/로그인이 세션 간 유지
+b. web_browse navigate {session_id, url:"https://웹메일주소/"}
+   → 로그인 페이지면 허가된 사이트에 한해 R2 type/interact 로 로그인하거나 사용자가 직접 인증
+c. (probe — 사이트당 최초 1회) 목록·본문 화면을 열어 가며 web_browse observe {session_id,
+   type:"network"} 로 내부 XHR(JSON) 엔드포인트를 식별해 박제합니다. 이후 조회는 DOM 관측
+   대신 d 의 fetch 가 1차.
+d. 목록: web_browse fetch {session_id, path:"/박제한목록API?...", response_type:"json"}
+   (fetch 불가 사이트) web_browse extract {session_id, item_selector:"...",
+     schema:{sender:"string", subject:"string", date:"string", unread:"string"}, selectors:{...}}
+e. 본문: 사용자가 명시 요청한 메일만 엽니다 — 웹메일은 열람 즉시 '읽음' 처리될 수 있음을 먼저 고지.
+f. 발송: R2 폼 입력 후 전송 클릭 직전, 수신자·제목·본문 요지를 사용자에게 확인받습니다 (발송은 불가역).
+g. web_browse session.close {session_id}    # 프로필은 유지되고 세션만 해제
+```
+
+- password field 입력은 기술적으로 허용됩니다. 사이트 소유자 허가·테스트 계정·우회 없는 단순 인증
+  경로까지 SPEC 으로 고정된 단일 사이트 특화 스킬에서만 자동 로그인으로 사용합니다
+  (예: `SPEC-KACEM-WEBMAIL-001`).
+- 목록은 provider 무관 `{sender, subject, date, unread}` 스키마로 정제해 보고합니다.
+- **속도의 본질은 박제입니다** — 매 실행 snapshot 으로 요소를 추론(탐색식)하면 일반 브라우저
+  조작과 다를 게 없습니다. probe 에서 확정한 XHR path·selector 를 사이트 특화 스킬(coupang
+  패턴, §5)에 고정하면 이후 실행은 b→d 의 결정론 호출만 남습니다.
+- 메일 본문·수집 결과는 PII 입니다 — `output_path` 등 임시 파일은 후처리 직후 삭제합니다.
+
+## 4. 함정 (실측 기반)
+
+| 함정 | 회피 |
+|---|---|
+| `render` 액션 사용 | deprecated — `snapshot` 사용 (#141 에서 stale 안내 실증) |
+| **SPA(WEHAGO·HOMETAX) 데이터를 DOM `extract`/`snapshot` 으로 수집** | API 가공·필드 손실(변질). `observe{network}` 로 API 원본 body 캡처가 1순위(R3) — 실측 WEHAGO Tmain `grp1[]` 66필드 vs DOM 2필드 |
+| 클릭으로 페이지 전환 직후 snapshot 이 빈 트리/실패 | `wait` `{condition:"page_loaded"}` 또는 짧은 `{condition:"timeout"}` 후 재관측 |
+| 모달이 클릭을 가려 `interact{click}` 이 30s 타임아웃(스택 LUXDialog 등) | 자동: `session.new {auto_dismiss_dialogs:true}` 워처(#450, ambient 비파괴 닫기). 명시: `interact {type:"dom_click", selector, all:true}`(#449) — 지금 이 selector 를 `el.click()` 직발로 일괄 닫기(워처 범용셋이 못 잡거나 표적 지정 시) |
+| 오버레이/z-index 에 가려 표준 `interact{click}` 이 안 먹는 비-모달 버튼 | `interact {type:"dom_click", selector}`(#449) — pointer hit-testing 우회로 핸들러 직발. `visible_only`(기본 true)·`all`(기본 false)·`clicked_count` 반환. 임의 JS 미수신(고정 `el.click()`) |
+| 클릭이 새 창(window.open)을 열어 후속 관측이 부모 창에 남음 | 구 `expect_new_tab`(#456)은 폐지(#1466 — Chrome 백엔드 제거 #1106 후 생산자 0). web_browse MCP 표면에는 새창 전환 액션이 없다 — 새창 진입 자동화(더존 SmartA 류)는 hyve 레시피의 `open_window` 계약으로 수행 |
+| full a11y 로 링크 밀집 페이지 관측 | 응답 한도 초과로 도구 결과 거부 가능 — `interactive_only:true` 기본 |
+| 같은 페이지를 매 스텝 full 재관측 | `diff:true` — 무변경이면 수백 바이트로 끝 |
+| `not_implemented` 응답에 우회 루프 | `interact` 의 `drag`/`fill_form` 만 미구현이 정상 — 작업을 다른 액션으로 분해하거나 보고 (`observe(screenshot)` 은 #217 로 실구현됨) |
+| 허가 없는 로그인 폼 자동 입력 | `type` 은 password field 도 입력 가능하다. 자동 로그인은 계정 소유·사이트 허가·추가 인증/봇 방어 우회 없음이 확인된 경우에만 수행하고, 불확실하면 사용자 직접 인증(takeover) 또는 사용자 워밍업(R5b)으로 전환 |
+| 목적별 브라우저 프로필 남발 | 기본 `profile_id:"default"` 로 로그인 재사용 — 사이트·provider별 profile_id 남발은 재사용성 저하. 별도 profile_id 는 **계정 격리가 필요한 다계정 병행**에만(#1113, 상이 profile_id 동시 공존) |
+| 대량 항목을 컨텍스트로 수신 | `harvest`+`output_path` 또는 `extract`+`omit_items`/`aggregate` |
+| 무한스크롤이 초기 N건(예: 20)에서 멈춤·`final_scroll_top:0` | 리스트가 `overflow:visible`(자체 스크롤 없음)이고 부모/외부 요소가 스크롤하는 구조(react-infinite-scroll-component). `container_selectors`에 실제 스크롤러 명시(WEHAGO: `[".scrolling",".main3"]`) — #575 자동탐지로 무인자도 동작 |
+| 세션 방치 | 기본 idle 5분 자동 해제. 장기 작업은 `long_lived:true`, 끝나면 `session.close` |
+| IMAP 지원 메일을 웹으로 자동화 | email 스킬이 항상 우선 — R6 은 IMAP 부재 웹 전용 메일에만 |
+| 웹메일 발송을 확인 없이 진행 | 발송은 불가역 — 전송 클릭 직전 수신자·제목 사용자 확인(R6-f) |
+
+## 4.1 디버그 플레이북 — 증상 → 관측 → 원인 → 처방 (WEHAGO 분개장 자가치유 실측, #433/#597)
+
+라이브 자동화가 깨질 때 쓰는 진단 표다. ⚠️ **관측 먼저** — 코드를 고치기 전에 상태를 관측한다(`page_url`·`observe{network}` 버퍼의 matched/total·`snapshot` refs·interact `success`/`matched_text`). 추측 패치 금지(`.claude/rules/itda/skills/browser-automation-explore-first.md`). 자가치유 drift-check 의 골든은 **거짓 성공(false green)을 흘리지 않아야** 한다.
+
+| 증상 | 먼저 관측 | 원인 | 처방 |
+|---|---|---|---|
+| `observe{network}` enable 크래시(`url_pattern undefined`) | enable 호출 인자 | url_pattern 을 required 로 파싱(G11) | url_pattern 은 선택 — 미지정=전체. 단 non-string 은 fail-fast(`optionalStringStrict`) |
+| API 응답 `matched 0` 인데 조회/클릭은 success | enable 의 활성 page vs 캡처 page | 캡처가 활성 탭(새 창)이 아닌 opener(메인)에 비결정 바인딩(G12, page-scoped) | 새 창 후 `tab_list`+`tab_switch`+`snapshot.page_url==target` **확정 루프**(로그 아닌 assert). 근본은 #593 |
+| `drain matched 0` 인데 `total>0` | drain 을 즉시 했는가 | drain 은 대기 없이 버퍼만 보고, 캡처 핸들러는 `response.text()` await 후 push(race) | trigger 후 `matched>=1` 까지 **폴링** |
+| drain 에 url_pattern 주면 캡처가 빔 | enable/drain 의 url_pattern | Go `observe(drain)` 가 drain 시 enable 재호출 → 필터 재설정 | enable 부터 **동일 url_pattern** 통일 |
+| 클릭 `success` 인데 화면 무변화/오동작 | `matched_text`·`match_stage` | text contains 가 안내문 오매칭(예: 메뉴 name 이 `"분개장과거데이터보기 제공"`) | a11y name exact ref, 없으면 contains+렌더 폴링 + `matched_text` 검증 |
+| 버튼 클릭이 아예 안 됨 | `snapshot` 의 실제 refs 덤프 | CSS(`...:first-child`)가 그 버튼이 아님 | a11y `name` ref + 렌더 폴링(추론 말고 실측) |
+| 성공 종료인데 세션 누수 | — | `main()` 내부 `process.exit(0)` 이 `finally` 정리 스킵 | `main()` return 후 exit, 실패만 catch 에서 `exit(1)` |
+| 필수 단계 실패가 묻혀 뒤 단계서 오진 | 각 호출 `success`/`isError` | 호출부가 본문 `success:false` 무시(envelope error 만 봄) | `callRequired`: `success:false`/`isError`/non-zero exit 즉시 throw |
+| 골든 통과인데 내용이 깨짐(null·빈값) | 행별 키·값 | 첫 행 키 **존재만** 검사 | 전 행(상한) + 식별 키 **non-null/non-empty** 검사 |
+| sabk0113 가 이번 클릭의 응답이 아님 | 응답 status·url·timestamp | 버퍼 첫 응답 맹신(이전 조회 잔재 가능) | 클릭 시각 기록 → `status 2xx`+`URL exact`+`ts>=clickAt`+골든 통과 응답만 채택 |
+| 이미 로그인된 세션서 로그인 click 실패 | navigate 후 로그인 폼 존재 | `#/login`→`#/main` 리다이렉트(폼 없음) | 로그인 블록은 **idempotent optional**, 로그인 성공은 후속 단계(예: 전체탭)로 간접 검증 |
+
+## 5. 다른 스킬과의 관계
+
+- **web-reader** — 읽기 전용 페치(마크다운 변환)는 web-reader 가 1차. 거기서 실패하는
+  동적/차단/상호작용 케이스가 이 스킬.
+- **email**(itda-day-organize) — IMAP/SMTP 지원 메일 송수신의 정본. R6(웹메일)은 프로토콜이 막힌
+  웹 전용 메일에만 적용합니다.
+- **coupang**(itda-egg) — R5 패턴의 사이트 특화 구현. 사이트 스킬은 path 구성·정제만 갖고
+  호출 패턴은 본 레시피를 따릅니다.
+- **hyve 레시피**(process⟷replay⟷golden, SPEC-WEB-RECIPE-CONSOLE-001) — hyve **자사 표면
+  전용**(셸 콘솔·개발 CLI·drift 모니터, MCP 비노출)의 결정론 재생 자산입니다. 외부 에이전트에
+  줄 web_browse 능력은 레시피가 아니라 **본 스킬 + 사이트 특화 스킬**로 만듭니다(마스터 결정
+  2026-07-06, hyve#921).
+- 신규 사이트 특화 스킬을 만들 때 — 공통 레시피를 복붙하지 말고 본 스킬을 참조하세요.
+  hyve 액션이 진화하면 이 파일이 같은 저장소 commit 에서 함께 갱신됩니다.
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 위하고·홈택스 세무 포털 자동화 | itda-taxhero:web-automation |
+| 정적 페이지 단건 페치·추출(JS 불요) | itda-web-collect:web-reader |
+| 네이버 블로그 글·댓글 | itda-web-collect:blog-reader |
+| IMAP/SMTP 가 열린 메일 | itda-day-organize:email |
+| 쿠팡 등 사이트 특화 조회 | itda-egg:coupang 등 사이트 스킬(호출 패턴은 본 스킬) |
+

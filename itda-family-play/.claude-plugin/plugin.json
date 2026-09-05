@@ -1,0 +1,22 @@
+{
+  "name": "itda-family-play",
+  "description": "아이·가족 놀이 스킬팩 — 상자 조합 캐릭터·로봇 papercraft 전개도 PDF(papercraft-box)와 이미지 픽셀 아트 변환(pixel-art). 업무 산출물이 아니라 놀이.",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "Apache-2.0",
+  "keywords": [
+    "play",
+    "kids",
+    "papercraft",
+    "pixel art",
+    "craft",
+    "놀이",
+    "아이",
+    "공작"
+  ]
+}

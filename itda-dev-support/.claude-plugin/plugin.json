@@ -1,0 +1,22 @@
+{
+  "name": "itda-dev-support",
+  "description": "개발 환경 지원 스킬팩 — Cloudflare Tunnel 노출(cloudflare-tunnel), 에이전트·스킬 하네스 설계(harness), 개발도구 릴리즈 요약(changelog), Orca 활용 코칭(orca-coach).",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "developer",
+    "tunnel",
+    "cloudflare",
+    "harness",
+    "changelog",
+    "orca",
+    "개발",
+    "하네스"
+  ]
+}

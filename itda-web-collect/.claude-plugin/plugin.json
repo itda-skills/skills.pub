@@ -1,0 +1,23 @@
+{
+  "name": "itda-web-collect",
+  "description": "웹 수집 스킬팩 — 다중 엔진 검색 → 정적 fetch(EUC-KR·WAF 폴백) → 정보원 정찰 → hyve 브라우저 자동화 순 사다리로, 가장 싼 경로부터 웹 정보를 가져온다.",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "MIT",
+  "keywords": [
+    "web",
+    "search",
+    "reader",
+    "scout",
+    "blog",
+    "automation",
+    "웹",
+    "검색",
+    "수집"
+  ]
+}

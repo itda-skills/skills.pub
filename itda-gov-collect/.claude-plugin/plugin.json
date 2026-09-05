@@ -1,0 +1,27 @@
+{
+  "name": "itda-gov-collect",
+  "description": "공공 정보 수집 스킬팩 — 정부·공공기관 공식 API(DART·ECOS·KOSIS·G2B·오피넷·인천공항)와 게시판(감사원·관세청·금감원)·지원사업 공고·국세법령정보(taxlaw)에서 공개 정보를 수집·판정한다.",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "Apache-2.0",
+  "keywords": [
+    "government",
+    "public data",
+    "api",
+    "dart",
+    "ecos",
+    "kosis",
+    "g2b",
+    "notice",
+    "tax law",
+    "공공데이터",
+    "정부",
+    "공시",
+    "통계"
+  ]
+}

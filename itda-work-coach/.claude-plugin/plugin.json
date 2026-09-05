@@ -1,0 +1,23 @@
+{
+  "name": "itda-work-coach",
+  "description": "업무 코칭 스킬팩 — 비개발자가 AI 로 풀 업무를 찾고(work-find) 4분면으로 구조화하고(work-redesign) 계획·제안서·파일럿·1시간 조각·미니스킬로 굳히는 코칭 여정. 인터뷰로 정량화한 뒤에만 양식을 채운다.",
+  "version": "9.0.0",
+  "author": {
+    "name": "스킬.잇다",
+    "url": "https://github.com/itda-skills"
+  },
+  "homepage": "https://github.com/itda-skills/skills.pub",
+  "repository": "https://github.com/itda-skills/skills.pub",
+  "license": "Apache-2.0",
+  "keywords": [
+    "coach",
+    "work",
+    "plan",
+    "proposal",
+    "pilot",
+    "interview",
+    "코칭",
+    "업무",
+    "계획"
+  ]
+}
