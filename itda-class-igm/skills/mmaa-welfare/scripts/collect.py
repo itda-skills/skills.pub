@@ -43,7 +43,14 @@ CATEGORY_CODES = {
     "_categoryview08": "기타",
 }
 BOARD_CODE = "_welfareboard01"  # 특별할인소식
-LOGIN_MARKERS = ("webLogin.do", "로그인이 필요")
+# 회원 전용 페이지의 정적 HTML 은 본문 대신 최상위 <script> 에 무조건 리다이렉트를 싣는다:
+#   alert("로그인 후 이용 가능합니다."); location.href='/web/contents/webLogin.do'
+# 공개 페이지에도 같은 문자열이 ajax 오류 콜백·onclick 속성 안에 들어 있으므로(#1643 실측),
+# "스크립트 본문이 alert → location.href 두 문장뿐" 인 형태만 로그인 벽으로 판정한다.
+LOGIN_REDIRECT_RE = re.compile(
+    r"^alert\([\"'][^\"']*[\"']\)\s*;?\s*"
+    r"(?:window\.|top\.)?location\.href\s*=\s*[\"'][^\"']*webLogin\.do[^\"']*[\"']\s*;?$"
+)
 # 본문에서 제거할 잡음 셀렉터 (GNB·검색·SNS 공유 등)
 NOISE_SELECTORS = [
     "header", "footer", "nav", "script", "style", "noscript",
@@ -133,7 +140,9 @@ class Collector:
     def extract_content(self, html: str) -> tuple[str, str]:
         """(title, 본문 텍스트) 추출. 실패 시 ('', '')."""
         soup = BeautifulSoup(html, "html.parser")
-        container = soup.select_one("section#container") or soup.select_one("div.content")
+        # div.content 폴백 금지 — 그 요소는 GNB 메뉴라 셸 페이지에서 37자 메뉴 문자열을
+        # 본문으로 위장시켰다(#1643). 본문 컨테이너가 없으면 빈 본문이다.
+        container = soup.select_one("section#container")
         if container is None:
             return "", ""
         for sel in NOISE_SELECTORS:
@@ -154,11 +163,28 @@ class Collector:
         text = re.sub(r"[ \t]{2,}", " ", text)
         return title, text.strip()
 
+    @staticmethod
+    def has_login_redirect(html: str) -> bool:
+        """최상위 <script> 가 로그인 리다이렉트 두 문장뿐인 셸인지 판정(전문 대상).
+
+        종전 판정은 html[:4000] + len(html) < 8000 조건이라 176KB 셸을 못 잡았고, 그 셸의
+        GNB 문자열(37자)이 본문으로 계수됐다(#1643 — 22페이지 오분류).
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        for script in soup.find_all("script"):
+            if script.get("src"):
+                continue
+            body = script.get_text()
+            body = re.sub(r"//\s*<!\[CDATA\[|//\s*\]\]>|<!--|-->", " ", body)
+            body = re.sub(r"\s+", " ", body).strip()
+            if body and LOGIN_REDIRECT_RE.match(body):
+                return True
+        return False
+
     def is_login_wall(self, html: str, url: str) -> bool:
         if "webLogin.do" in url:
             return True
-        head = html[:4000]
-        return any(m in head for m in LOGIN_MARKERS) and "location" in head.lower() and len(html) < 8000
+        return self.has_login_redirect(html)
 
     # ---------- 페이지 저장 ----------
 
@@ -167,6 +193,8 @@ class Collector:
         auth = self.is_login_wall(html, url) or (len(text) < 80 and any(
             k in url for k in ("Open.do", "Inquiry.do", "Apply.do", "Reservation")
         ))
+        if not auth and not text:
+            log(f"  ! 본문 컨테이너 없음(빈 본문으로 기록): {url}")
         record = {
             "url": url,
             "breadcrumb": breadcrumb,

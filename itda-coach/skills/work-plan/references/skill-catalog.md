@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 103개 스킬 / 21개 팩.
+총 104개 스킬 / 21개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 | 책임 경계 |
 |--------|-----------|-----------|------------|----|-----------|
@@ -23,7 +23,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | bai-notice | 감사원 통합공지 게시판을 내부 JSON API로 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "감사원 공지 확인해줘", "감사원 통합공지 최근 10건 보여줘", "감사원에서 채용 공고 찾아줘" | itda-class-igm | — |
 | customs-notice | 관세청 공지사항 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "관세청 공지 확인해줘", "관세청 공지사항 최근 10건 보여줘", "관세청에서 원산지 관련 공지 찾아줘" | itda-class-igm | — |
 | fss-docs | 금융감독원 공통업무자료 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "금감원 업무자료 확인해줘", "금융감독원 공통업무자료 이번 주 것만 보여줘", "금감원에서 사모펀드 자료 찾아줘" | itda-class-igm | — |
-| mmaa-welfare | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(축하금·위로금)·회원콘도·제휴복지 안내를 출처 URL·수집일과 함께 답합니다. | 없음 | "출산축하금 얼마?", "군인공제회 콘도 예약", "제휴 할인 알려줘" | itda-class-igm | — |
+| mmaa-welfare | 군인공제회 복지포털 스냅샷 Q&A — 복지부조(신규가입·출산 축하금, 재해위로금, 축하기념품)· 회원콘도 이용안내·유익한 정보(취업·창업·시니어)를 출처 URL… | 없음 | "출산축하금 얼마?", "군인공제회 콘도 이용 조건", "재해위로금 대상" | itda-class-igm | — |
 | hour-slice | 하고 싶은 업무 개선은 큰데 "오늘 1시간 안에 뭘 만들 수 있지?"가 막막한 사람을 위해, 문제를 ~1시간 안에 눈에 보이는 결과가 나오는 한 조각으로 잘라… | 없음 | "오늘 1시간 안에 뭘 만들 수 있지?", "이거 너무 큰데 뭐부터 해볼까", "1시간 안에 만들 수 있는 걸로 줄여줘" | itda-coach | — |
 | miniskill-forge | 매번 같은 작업에 긴 프롬프트를 다시 쓰고 사람마다·날마다 결과가 달라지는 반복 업무를, Claude Cowork에서 한 마디로 부르는 재사용 미니스킬(SKIL… | 없음 | "이거 매번 자동으로 했으면", "내 반복 업무를 스킬로 만들어줘", "맨날 같은 프롬프트 다시 쓰기 싫어" | itda-coach | — |
 | stakeholder-map | 프로젝트 이해관계자별로 역할·요청할 것·받을 것·소통 방식과, 그 사람이 일을 시작하기 전에 알아야 할 선행 전달물(톤·형식·분량·필수 문구 같은 제약 조건)을… | 없음 | "이해관계자 정리해줘", "협업 지도 만들어줘", "누구한테 뭘 먼저 넘겨야 하지" | itda-coach | — |
@@ -106,6 +106,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | morning-brief | 오늘 일정과 미회신 메일을 모아 아침 브리핑 HTML 한 장을 그리는 스킬입니다(calendar·email 소스). | 없음 | "아침 브리핑 만들어줘", "/morning-brief", "Sections: 환율" | itda-work | 본 스킬은 아침 브리핑 페이지 전담 — itda-work:calendar 는 일정, itda-work:email 은 메일, itda-work:html-report 는 보고서 HTML. |
 | pdf-context-refinery | PDF를 LLM 컨텍스트·지식베이스용 구조화 마크다운으로 정제하는 스킬입니다. | 없음 | "PDF를 마크다운으로 변환해줘", "이 교재를 지식베이스로 만들어줘", "PDF OCR 정리해줘" | itda-work | — |
 | pptx-design | 콘텐츠 마크다운과 수치 데이터로 16:9 PPTX 발표자료를 크로스플랫폼(macOS/Linux, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "삼성전자 주가전망 ppt 만들어줘", "이 DESIGN.md로 발표자료 디자인해줘", "md 내용으로 슬라이드 덱 생성" | itda-work | — |
+| pptx-shrink | 기존 PPTX 파일의 용량을 줄이는 스킬입니다. | 없음 | "이 ppt 용량 줄여줘", "발표자료가 커서 메일로 못 보내", "pptx 압축해줘" | itda-work | 본 스킬은 기존 pptx 용량 축소 전담 — itda-work:imagekit 은 낱개 이미지, itda-work:pptx-design 은 덱 신규 생성, itda-hyve:pptx-diff 는 버전 비교. |
 | task-brief | 모호한 일상 요청을 에이전트에 던지기 전, 작업 범위·검증 방법·완료 정의 3요소를 채운 브리프 한 장으로 다듬는 스킬입니다. | 없음 | "작업 브리프 짜줘", "이 요청 다듬어줘", "브리프로 정리해줘" | itda-work | — |
 | weather-here | 현재 위치 또는 지정 지역의 날씨를 한국어로 빠르게 조회하는 스킬입니다. | 없음 | "날씨 알려줘", "지금 여기 날씨 어때", "부산 날씨 알려줘" | itda-work | — |
 | web-reader | WebFetch가 못 다루는 한국 웹페이지(EUC-KR/CP949·쿠키 인증·WAF 차단 정적 페이지)를 마크다운·JSON으로 가져오는 폴백 스킬입니다. | 없음 | "이 한국 사이트 읽어줘", "EUC-KR 페이지 가져와줘", "403 뜨는 페이지 가져와줘" | itda-work | 본 스킬은 정적 페이지 단건 페치·추출 전담 — 네이버 블로그는 itda-work:blog-reader, 키워드 검색은 itda-work:web-search, JS 렌더·로그인·차단 우회는 itda-hyve:web-automation. |
@@ -215,6 +216,7 @@ market-scan           → itda-work/skills/market-scan/
 morning-brief         → itda-work/skills/morning-brief/
 pdf-context-refinery  → itda-work/skills/pdf-context-refinery/
 pptx-design           → itda-work/skills/pptx-design/
+pptx-shrink           → itda-work/skills/pptx-shrink/
 task-brief            → itda-work/skills/task-brief/
 weather-here          → itda-work/skills/weather-here/
 web-reader            → itda-work/skills/web-reader/

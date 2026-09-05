@@ -7,6 +7,10 @@
 
 ### Added
 
+- `pptx-shrink` v0.1.1 — 테스트 보강 (#1645 2차): hyve-training E 덱 기반 **실물 구조 픽스처**(원문·픽셀 합성 치환, 0.67MB, PNG 최소) + 실물 테스트 7종·가장자리 7종, `verify` 마스터·레이아웃 그림 대조, `report` URL 잔여 이름 미디어 계수 정정.
+
+- `pptx-shrink` v0.1.0 — **스킬 신설** (#1645): 기존 pptx 의 스크린샷 PNG 를 해상도 유지 JPEG 로 재인코딩해 용량 축소(hyve-training IGM 12덱 212→57MB 실측 승격). `report` 진단 · `shrink`(기본 새 파일, `--in-place` 는 `--backup`/`--no-backup` 명시 필수 — 원본 백업 확인 게이트) · `verify.py`(슬라이드·텍스트·노트·그림 수·rels 참조 자동 대조, 실패 시 산출 폐기). GUIDE 에 "왜 pptx 가 커지는가"(레티나 PNG 스크린샷·표시 크기 무관 원본 보존·복붙 사본) + 실측 표. 플러그인 3.13.0.
+
 - `agents/ground-verifier.md` — 공통 감사자 계약(AUDIT_SCHEMA, #1621) 정합: `tools: Read, Grep, Glob, Write, WebSearch, WebFetch, mcp__workspace__web_fetch, ToolSearch` 명시(읽기 전용 허용목록 — `Skill` 제외, web-reader 폴백은 본 세션 몫), 최종 텍스트를 `verdict`·`findings`·`recomputed`·`unverifiable` JSON 으로 고정(검증표 파일 릴레이·템플릿 1:1 정합 불변). `ground-check` v0.11.1 §Task 2 정합.
 
 - `human-tone` v2.1.1 · `draft-post` v1.2.7 · `blog-reader` v0.12.2 · `web-reader` v7.1.2 · `web-search` v0.1.7 — description `[책임 경계]` 슬롯 + 본문 `## 이 스킬을 쓰지 않을 때` 표 파일럿 (#1620, `skill-creator-validation.md` §description 슬롯 규약). human-tone↔draft-post 는 AI 흔적 사전의 **정본을 human-tone `ai-tell-taxonomy.md` 로 선언**하고, draft-post `_anti-ai-korean.md` 의 `~를 통해` 무조건 금지를 정본(A-2 S2, #1619)에 맞춰 남발 억제로 정합. blog-reader↔web-reader 상호 지목.

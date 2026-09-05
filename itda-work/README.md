@@ -35,6 +35,7 @@
 |------|------|:----:|
 | **itda-pdf-context-refinery** | PDF를 LLM 컨텍스트용 마크다운으로 정제 (OCR 정리, 테이블 복원, 한국어 띄어쓰기) | 📦 🔧 |
 | **itda-hwpx** | 한글 문서 통합 — 읽기(→MD/HTML)·양식 채우기(서식 유지)·정부 서식 생성 | 📦 |
+| **itda-pptx-shrink** | 기존 PPTX 용량 축소 — 스크린샷 PNG 를 해상도 유지 JPEG 로 재인코딩, 무손실 자동 검증, 원본 백업 확인 (실측 62.7→12.2MB) | 📦 |
 
 ### 투자·경제
 
@@ -82,6 +83,7 @@
 | itda-email | — | 메일 서비스별 앱 비밀번호 | — |
 | itda-imagekit | `Pillow` | — | — |
 | itda-hwpx | `Pillow`, `olefile` | — | — |
+| itda-pptx-shrink | `Pillow` | — | — |
 | itda-exchange-rate | — | — | — |
 | itda-blog-seo | — | — | 네이버 데이터 조회 |
 | itda-draft-post | — | — | — |
@@ -184,6 +186,19 @@ Naver/Gmail/Daum·Kakao/커스텀 SMTP로 **이메일을 전송하고 IMAP으로
 - `set-dpi` — JPEG EXIF / PNG pHYs DPI 메타데이터 변경
 - `convert` — PNG↔JPEG 포맷 변환 (투명도 자동 처리)
 - `rotate` — 90/180/270도 회전, 수평/수직 반전
+
+**필요 패키지:** `Pillow`
+
+### itda-pptx-shrink — PPTX 용량 축소
+
+기존 발표자료의 **스크린샷·사진 PNG 를 해상도 그대로 JPEG 로 재인코딩**해 파일 크기를 줄입니다. zip 을 직접 조작해 텍스트·노트·마스터·애니메이션은 바이트 그대로 남습니다(hyve-training 12덱 212→57MB, 73% 감소 실측).
+
+**주요 기능:**
+
+- `report` — 무엇 때문에 큰지 진단(미디어 비중·상위 이미지·해상도·투명 여부·예상 절감), 파일을 쓰지 않음
+- `shrink` — 기본은 새 파일(`<이름>-shrunk.pptx`). 원본 교체는 `--in-place` + **`--backup`/`--no-backup` 명시 필수**(백업 여부를 사용자에게 확인)
+- `verify` — 슬라이드 수·텍스트·발표자 노트·그림 수·참조 실재 자동 대조, 불일치면 산출 폐기
+- 투명 PNG·300KB 미만·JPEG 가 더 커지는 이미지는 유지. 해상도는 낮추지 않음
 
 **필요 패키지:** `Pillow`
 
