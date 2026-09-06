@@ -123,7 +123,7 @@ class MarkdownWriter:
         for row in table.rows:
             rendered_row = []
             for cell in row.cells:
-                rendered_row.append(_escape_pipe_cell(self._render_blocks(cell.children, 1).strip()))
+                rendered_row.append(_escape_pipe_cell(self._render_cell(cell.children)))
             all_rows.append(rendered_row)
         out.write(_row_to_gfm(all_rows[0]))
         out.write(_row_to_gfm(["---"] * len(all_rows[0])))
@@ -142,7 +142,7 @@ class MarkdownWriter:
                 out.write("<tbody>\n")
             out.write("<tr>\n")
             for cell in row.cells:
-                txt = self._render_blocks(cell.children, 1).strip()
+                txt = self._render_cell(cell.children).replace("\n", "<br>")
                 attrs = ""
                 if cell.col_span > 1:
                     attrs += f' colspan="{cell.col_span}"'
@@ -156,6 +156,28 @@ class MarkdownWriter:
         if use_header:
             out.write("</tbody>\n")
         out.write("</table>\n\n")
+
+    def _render_cell(self, blocks: list[docir.Block]) -> str:
+        """표 셀 안의 블록을 **문단 경계를 살려** 한 줄 문자열로 만든다 (#1651 R1).
+
+        구 구현은 셀 문단을 depth>0 경로로 써서 구분자 없이 이어 붙였다 —
+        `브라더 공기관` + `기본 보고서 양식` 이 `브라더 공기관기본 보고서 양식` 이
+        됐고, 목차 표는 `Ⅰ. 개요 1Ⅱ. 추진배경 2…` 로 뭉쳤다. 문단 사이는 개행으로
+        두고, GFM 표는 `_escape_pipe_cell` 이 `<br>` 로, HTML 표는 호출부가 `<br>` 로 바꾼다.
+        """
+        parts: list[str] = []
+        for block in blocks:
+            if isinstance(block, docir.Paragraph):
+                inline = render_inlines(block.children).strip()
+                if inline:
+                    parts.append(inline)
+            elif isinstance(block, docir.Heading):
+                parts.append(render_inlines(block.children).strip())
+            else:
+                rendered = self._render_blocks([block], 1).strip()
+                if rendered:
+                    parts.append(rendered)
+        return "\n".join(parts)
 
     def _render_blocks(self, blocks: list[docir.Block], depth: int) -> str:
         out = StringIO()

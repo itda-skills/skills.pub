@@ -9,6 +9,7 @@ from importlib import resources
 from pathlib import PurePosixPath
 
 from .image import ImageDependencyError, render_report_image
+from .layouts import LAYOUTS
 from .models import DocSpec, ReportBlock, ReportImage, ReportItem, ReportTable
 from .profile import MIME_TYPE, VERSION_XML, ImageEntry, SpecProfile, xml_escape
 from .rawzip import RawZipWriter
@@ -42,10 +43,23 @@ class ReportTemplate:
         except KeyError as exc:
             raise HWPXReportError(f'hwpx report: style "{name}" is missing in template "{self.id}"') from exc
 
+    @property
+    def layout(self) -> str:
+        return str(self.manifest.get("layout", "") or "report")
+
+    @property
+    def max_level(self) -> int:
+        """항목 계층 상한. manifest `max_level` 이 없으면 종전 계약(□/❍ 2단)."""
+        try:
+            value = int(self.manifest.get("max_level", 2))
+        except (TypeError, ValueError):
+            value = 2
+        return max(1, min(value, 4))
+
 
 def build_report(template_id: str, spec: DocSpec) -> bytes:
     tmpl = load_report_template(template_id)
-    validate_report_spec(spec)
+    validate_report_spec(spec, tmpl.max_level)
     section, images = build_report_section_xml(tmpl, spec)
     data = package_report_hwpx(tmpl, section.encode(), spec, images)
     result = validate_archive(data)
@@ -102,8 +116,13 @@ def load_report_template(template_id: str) -> ReportTemplate:
 
 
 def validate_report_template(tmpl: ReportTemplate) -> None:
+    if tmpl.layout != "report" and tmpl.layout not in LAYOUTS:
+        raise HWPXReportError(f'hwpx report: template "{tmpl.id}" declares unknown layout "{tmpl.layout}"')
     for name in ("heading", "heading_spacer", "body_box", "blank"):
         tmpl.style(name)
+    if tmpl.layout in LAYOUTS:
+        for level in range(1, tmpl.max_level + 1):
+            tmpl.style(f"level{level}")
     ids = collect_report_header_ids(tmpl.header)
     for name, style in tmpl.styles.items():
         if style.charPrIDRef and style.charPrIDRef not in ids["charPr"]:
@@ -126,25 +145,25 @@ def collect_report_header_ids(header: bytes) -> dict[str, set[str]]:
     return ids
 
 
-def validate_report_spec(spec: DocSpec) -> None:
+def validate_report_spec(spec: DocSpec, max_level: int = 2) -> None:
     for si, section in enumerate(spec.sections):
         for ii, item in enumerate(section.items):
-            validate_report_item(item, f"sections[{si}].items[{ii}]")
+            validate_report_item(item, f"sections[{si}].items[{ii}]", max_level)
         for ti, table in enumerate(section.tables):
             validate_report_table(table, f"sections[{si}].tables[{ti}]")
         for bi, block in enumerate(section.blocks):
             path = f"sections[{si}].blocks[{bi}]"
-            validate_report_block(block, path)
+            validate_report_block(block, path, max_level)
     for ti, table in enumerate(spec.tables):
         validate_report_table(table, f"tables[{ti}]")
 
 
-def validate_report_block(block: ReportBlock, path: str) -> None:
+def validate_report_block(block: ReportBlock, path: str, max_level: int = 2) -> None:
     set_count = sum(value is not None for value in (block.item, block.table, block.image))
     if set_count > 1:
         raise HWPXReportError(f"hwpx report: {path} must set exactly one of item/table/image")
     if block.item is not None:
-        validate_report_item(block.item, f"{path}.item")
+        validate_report_item(block.item, f"{path}.item", max_level)
     elif block.table is not None:
         validate_report_table(block.table, f"{path}.table")
     elif block.image is not None:
@@ -158,9 +177,11 @@ def validate_report_image(image: ReportImage, path: str) -> None:
         raise HWPXReportError(f"hwpx report: {path}.src is required")
 
 
-def validate_report_item(item: ReportItem, path: str) -> None:
-    if item.level not in (1, 2):
-        raise HWPXReportError(f"hwpx report: {path}.level must be 1 or 2")
+def validate_report_item(item: ReportItem, path: str, max_level: int = 2) -> None:
+    if item.kind not in ("item", "prose"):
+        raise HWPXReportError(f'hwpx report: {path}.kind must be item or prose, got "{item.kind}"')
+    if not 1 <= item.level <= max_level:
+        raise HWPXReportError(f"hwpx report: {path}.level must be between 1 and {max_level}")
     if not item.text.strip():
         raise HWPXReportError(f"hwpx report: {path}.text is required")
 
@@ -198,8 +219,11 @@ def validate_report_table(table: ReportTable, path: str) -> None:
 
 
 def build_report_section_xml(tmpl: ReportTemplate, spec: DocSpec) -> tuple[str, list[ImageEntry]]:
-    section = replace_report_placeholders(tmpl.section, spec)
-    body, images = build_report_body_xml(tmpl, spec)
+    section = replace_report_placeholders(tmpl.section, spec) if tmpl.manifest.get("placeholders") else tmpl.section
+    if tmpl.layout in LAYOUTS:
+        body, images = LAYOUTS[tmpl.layout](tmpl, spec, _render_table, _render_image)
+    else:
+        body, images = build_report_body_xml(tmpl, spec)
     if not body:
         return section, images
     close_idx = section.rfind("</hs:sec>")
@@ -326,6 +350,8 @@ def append_report_paragraph(ctx: WriteContext, style: ReportStyle, text: str) ->
 
 def format_report_item_text(item: ReportItem) -> str:
     text = item.text.strip()
+    if item.kind == "prose":
+        return text  # 서술 문단은 기호 없이(보도자료 리드문·인용문 — #1652 D-5)
     if item.level == 1:
         return text if text.startswith("□") else "□ " + text
     if item.level == 2:
@@ -366,6 +392,9 @@ def build_report_preview_text(spec: DocSpec) -> bytes:
         else:
             for item in section.items:
                 lines.append(format_report_item_text(item))
+    for attachment in spec.attachments:
+        if attachment.strip():
+            lines.append("붙임 " + attachment.strip())
     text = "\n".join(lines).strip() or "Document"
     return (text + "\n").encode()
 

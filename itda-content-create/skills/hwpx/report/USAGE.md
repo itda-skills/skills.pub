@@ -96,6 +96,38 @@ py -3 -m hwpx_report convert .itda-skills\spec.json -o .itda-skills\report.hwpx 
 
 ---
 
+## 조판(layout)과 템플릿 — 2026-09 (#1651)
+
+템플릿 manifest 의 `layout` 이 본문 조립 방식을 정한다. 매퍼 `--layout` 과 엔진 `--template` 은 같은 이름을 쓴다.
+
+| layout / template | 용도 | 항목 계층 | 절 제목 | 표 | 특이 사항 |
+|---|---|---|---|---|---|
+| `ai-report` (권장) | 행안부 AI 친화적 보고서 원칙(2026-08-24) | 3단 `○` `-` `·`(또는 `item_markers: outline` → `가.` `1)` `가)`) | `1.`(또는 `section_numbering: roman` → `Ⅰ.`) 굵은 평문 | 위에 `< 표 N. 제목 >`, 제목 없으면 경고 | 산문 문단 보존, 제목 박스·섹션바 없음, 메타 줄 `보고유형 / 날짜 / 부서 담당자` |
+| `official-letter` | 기안문(공문) | 4단 `1.` `가.` `1)` `가)` 자동 번호(형제 1개면 기호 생략) | 절 제목이 있으면 1단계 항목으로 승격 | 표 뒤에 끝나면 `  끝.` 별도 줄 | 수신·(경유)·제목·붙임·`끝.`·발신명의·시행 정보, 날짜 `2026. 9. 6.` |
+| `briefing` | 표지·목차·섹션바 내부보고서(장식형) | 4단 `□` `○` `―` `※` | 로마숫자 섹션바(1×3 표) | 종전 | 표지(기관명·제목·작성일)·목차 자동, 페이지 나눔 2회 |
+| `press-release` | 보도자료 | 2단 `□` `❍` + **산문 문단 보존**(리드문·인용) | 종전 | 표 지원(v1.2.0) | `--layout press-release` = report 조판 + 산문 보존 |
+| `report` → `gov-report` | 종전 계약(구 개조식) | 2단 `□` `❍`(산문은 □ 로 변환·경고) | 종전 | 종전 | 변경 없음(회귀 골든 불변) |
+
+front-matter / `--field` 로 주는 값 (한글 키 별칭 포함):
+
+| 키 | 별칭 | 쓰는 조판 |
+|---|---|---|
+| `org` | 기관명·기관 | official-letter(상단 기관명) · briefing(표지) |
+| `receiver` / `via` / `sender` | 수신 / 경유 / 발신명의·발신 | official-letter |
+| `drafter` / `reviewer` / `approver` | 기안자·담당자 / 검토자 / 결재자 | official-letter(하단) · ai-report(메타 줄 담당자) |
+| `doc_no` / `address` / `phone` / `email` / `cooperator` / `disclosure` | 문서번호 / 주소 / 전화 / 전자우편·이메일 / 협조자 / 공개구분 | official-letter(시행 정보·하단). 기안자·검토자·결재권자는 **직위 성명**으로 주면 용어 없이 그대로 실린다 |
+| `report_type` | 보고유형·보고 유형 | ai-report(메타 줄, 예: 서면보고) |
+| `attachments` | 붙임 (`\|` 로 구분) | official-letter(붙임 목록 + 끝.) · briefing(목차 [붙 임]) |
+| `item_markers` / `section_numbering` | — | ai-report(`symbol`\|`outline` / `digit`\|`roman`) |
+
+`--max-level` 은 layout 기본값(report·press-release 2 · ai-report 3 · 그 외 4)을 덮어쓴다.
+
+**ai-report 표·그림 제목 규칙(v1.2.0)** — 표·그림 **바로 위** 줄의 `< 제목 >`(또는 `표 1. 제목`)을 제목으로 붙인다. 번호는 등장 순서로
+엔진이 매기며 사용자가 쓴 번호는 벗기고 어긋나면 경고한다(`표준 …`처럼 낱말이 "표"로 시작해도 번호 표기로 오인하지 않는다).
+이미지는 `![제목](경로)` 의 대체텍스트를 제목으로 쓰고, 제목·대체텍스트가 둘 다 없으면 경고한다. 절 번호는 전부 사용자가 쓴 경우만
+유지하고 일부만 쓰면 전부 자동으로 다시 매긴다. `item_markers: outline` 은 절 번호 축에 따라 시작점이 달라진다
+(`digit` → `가. 1) 가)`, `roman` → `1. 가. 1)`). 사용자가 `□ ○ ― ※` 기호를 직접 쓴 줄은 그 기호의 계층으로 들어간다. 규격 근거: [references/document-style-rules.md](references/document-style-rules.md).
+
 ## 마크다운 작성 규약
 
 엔진 입력은 **개조식(□/❍)** 정부 보고서입니다. 마크다운을 다음 규약으로 작성하면 의도대로 변환됩니다.

@@ -37,6 +37,7 @@ class ReportTable:
     rich_rows: list[list[ReportCell]] = field(default_factory=list)
     col_widths: list[int] = field(default_factory=list)
     summary: list[str] = field(default_factory=list)
+    caption: str = ""  # 표 위에 두는 제목(AI 친화 원칙 — 표·그림은 상단에 제목·번호)
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "ReportTable":
@@ -52,6 +53,7 @@ class ReportTable:
             rich_rows=rich_rows,
             col_widths=[int(x) for x in data.get("col_widths", []) or []],
             summary=[str(x) for x in data.get("summary", []) or []],
+            caption=str(data.get("caption", "") or ""),
         )
 
 
@@ -59,20 +61,23 @@ class ReportTable:
 class ReportImage:
     src: str = ""
     alt: str = ""
+    caption: str = ""
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "ReportImage":
-        return cls(src=str(data.get("src", "")), alt=str(data.get("alt", "")))
+        return cls(src=str(data.get("src", "")), alt=str(data.get("alt", "")), caption=str(data.get("caption", "") or ""))
 
 
 @dataclass
 class ReportItem:
     level: int = 0
     text: str = ""
+    kind: str = "item"  # item(항목기호 붙음) | prose(서술 문단 — ai-report 조판만 구분)
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "ReportItem":
-        return cls(level=int(data.get("level", 0)), text=str(data.get("text", "")))
+        kind = str(data.get("kind", "item") or "item")
+        return cls(level=int(data.get("level", 0)), text=str(data.get("text", "")), kind=kind)
 
 
 @dataclass
@@ -114,6 +119,9 @@ class DocSpec:
     dept: str = ""
     sections: list[ReportSection] = field(default_factory=list)
     tables: list[ReportTable] = field(default_factory=list)
+    # 템플릿별 추가 필드(기안문의 수신·발신명의·기안자…, 표지의 기관명). 키는 manifest `fields` 가 정의.
+    fields: dict[str, str] = field(default_factory=dict)
+    attachments: list[str] = field(default_factory=list)
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "DocSpec":
@@ -129,4 +137,6 @@ class DocSpec:
             dept=str(data.get("dept", "")),
             sections=[ReportSection.from_json(section) for section in data.get("sections", []) or []],
             tables=[ReportTable.from_json(table) for table in data.get("tables", []) or []],
+            fields={str(k): str(v) for k, v in (data.get("fields", {}) or {}).items()},
+            attachments=[str(x) for x in data.get("attachments", []) or []],
         )

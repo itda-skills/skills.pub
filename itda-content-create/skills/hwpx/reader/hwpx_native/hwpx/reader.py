@@ -67,6 +67,7 @@ class _CharPr:
 
 @dataclass(slots=True)
 class _ParaProperty:
+    alignment: str = ""  # header paraPr <align horizontal> — 셀 정렬(좌/우)이 역변환에 남아야 왕복 검증이 된다(#1652 D-6)
     line_spacing_percent: float = 0.0
     space_before_hwp: int = 0
     space_after_hwp: int = 0
@@ -271,9 +272,54 @@ def _paragraph_to_blocks(
                     inlines = []
                 blocks.append(image)
 
+        for shape in _drawing_shapes(run):
+            shape_blocks = _drawing_text_blocks(
+                shape, style_map, char_pr_map, para_properties_map, bin_index
+            )
+            if shape_blocks:
+                if inlines:
+                    blocks.append(_new_paragraph_block(inlines, props))
+                    inlines = []
+                blocks.extend(shape_blocks)
+
     if not inlines:
         return blocks
     blocks.append(_build_text_block(paragraph, inlines, style_map, props))
+    return blocks
+
+
+# 글상자·도형 안 텍스트를 담는 그리기 개체 (#1651 R2).
+# 정부 서식의 제목 박스(titleShape)는 <hp:rect><hp:drawText><hp:subList><hp:p> 구조라,
+# run 직계 <t>·<tbl>·<pic> 만 보던 구 구현은 **문서 제목을 통째로 잃었다** — 우리
+# 생성 엔진의 산출을 우리 리더가 못 읽어 "생성 후 읽기 교차검증" 이 제목 축에서 공허했다.
+_DRAWING_SHAPE_NAMES = frozenset(
+    {"rect", "ellipse", "arc", "polygon", "curve", "connectLine", "container", "textart"}
+)
+
+
+def _drawing_shapes(element: ET.Element) -> list[ET.Element]:
+    return [child for child in list(element) if _local_name(child.tag) in _DRAWING_SHAPE_NAMES]
+
+
+def _drawing_text_blocks(
+    shape: ET.Element,
+    style_map: dict[str, int],
+    char_pr_map: dict[str, _CharPr],
+    para_properties_map: dict[str, _ParaProperty],
+    bin_index: dict[str, _BinItem],
+) -> list[docir.Block]:
+    """도형의 drawText 문단을 블록으로 변환한다. container 는 자식 도형을 재귀한다."""
+    blocks: list[docir.Block] = []
+    draw_text = _first_child(shape, "drawText")
+    if draw_text is not None:
+        sub_list = _first_child(draw_text, "subList")
+        paragraphs = _children(sub_list, "p") if sub_list is not None else _children(draw_text, "p")
+        for para in paragraphs:
+            blocks.extend(
+                _paragraph_to_blocks(para, style_map, char_pr_map, para_properties_map, bin_index)
+            )
+    for child in _drawing_shapes(shape):
+        blocks.extend(_drawing_text_blocks(child, style_map, char_pr_map, para_properties_map, bin_index))
     return blocks
 
 
@@ -348,9 +394,16 @@ def _resolve_picture(picture: ET.Element, bin_index: dict[str, _BinItem]) -> doc
     item = bin_index.get(ref)
     if item is None or not item.data:
         return None
-    img_dim = _first_child(picture, "imgDim")
-    width = _to_int(img_dim.attrib.get("dimwidth", "0")) if img_dim is not None else 0
-    height = _to_int(img_dim.attrib.get("dimheight", "0")) if img_dim is not None else 0
+    # 배치 크기(hp:sz/curSz — 본문 폭에 맞춘 축소 반영)가 있으면 그것을, 없으면 원본 치수(imgDim)를 쓴다(#1652 D7).
+    img_dim = None
+    for name in ("sz", "curSz", "imgDim"):  # Element 진리값(`or`)은 deprecated — 명시 None 검사
+        img_dim = _first_child(picture, name)
+        if img_dim is not None:
+            break
+    # imgDim 은 HWPUNIT(1/7200 inch). md <img width> 는 픽셀이라 96dpi 로 환산한다 (#1652 D-2 —
+    # 구 구현은 단위를 그대로 실어 480px 이미지가 36000px 로 선언됐다). hwp5 리더의 hwp_unit_to_pixel 과 같은 식.
+    width = _hwp_unit_to_px(_to_int(img_dim.attrib.get("width") or img_dim.attrib.get("dimwidth", "0"))) if img_dim is not None else 0
+    height = _hwp_unit_to_px(_to_int(img_dim.attrib.get("height") or img_dim.attrib.get("dimheight", "0"))) if img_dim is not None else 0
     return docir.Image(
         data=item.data,
         format=_image_format(item),
@@ -383,6 +436,7 @@ def _resolve_paragraph_props(
     para_pr_id_ref = paragraph.attrib.get("paraPrIDRef", "")
     if para_pr_id_ref and para_pr_id_ref in para_properties_map:
         resolved = para_properties_map[para_pr_id_ref]
+        props.alignment = resolved.alignment
         props.left_indent_mm = _hwp_unit_to_mm(resolved.left_indent_hwp)
         props.right_indent_mm = _hwp_unit_to_mm(resolved.right_indent_hwp)
         props.first_line_indent_mm = _hwp_unit_to_mm(resolved.first_line_indent_hwp)
@@ -411,6 +465,11 @@ def _resolve_paragraph_props(
 
 def _parse_para_property(para_pr: ET.Element) -> _ParaProperty:
     prop = _ParaProperty()
+    align = _first_child(para_pr, "align")
+    if align is not None:
+        horizontal = align.attrib.get("horizontal", "").lower()
+        if horizontal in ("left", "right", "center"):
+            prop.alignment = horizontal
     margin = _resolve_para_margin(_first_child(para_pr, "margin"), _first_child(para_pr, "switch"))
     if margin is not None:
         prop.space_before_hwp = _para_value_or_zero(_first_child(margin, "prev"))
@@ -648,6 +707,10 @@ def _to_float(value: object) -> float:
 
 def _to_bool(value: str) -> bool:
     return value.lower() in {"1", "true", "yes"}
+
+
+def _hwp_unit_to_px(value: int) -> int:
+    return int(round(value * 96 / 7200)) if value > 0 else 0
 
 
 def _hwp_unit_to_mm(value: int) -> float:

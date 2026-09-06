@@ -80,6 +80,28 @@ _EMPHASIS_TOKENS = [
 _DELIMS_ONLY = "*_ \t"
 
 
+# 사용자가 항목기호를 직접 타이핑한 줄(`□ …`·`○ …`·`❍ …`·`― …`·`※ …`). 구 매퍼는 이를 일반 문단으로 보고
+# level 1 로 접어 `□ ※ …` 이중 기호·계층 붕괴가 났다(#1652 D-4). 기호는 벗기고 기호가 뜻하는 계층으로 넣는다.
+_MARKER_LINE = re.compile(r"^(\s*)([□❍○―※•·-])\s+(.+)$")
+_MARKER_LEVEL = {"□": 1, "❍": 2, "○": 2, "―": 3, "-": 3, "•": 3, "·": 3, "※": 4}
+
+_CAPTION_NUMBER_PREFIX = re.compile(r"^(표|그림)\s*(\d+)\s*[.:]\s*")
+
+
+def _check_caption_number(kind: str, caption: str, position: int, notes: list[str]) -> str:
+    """사용자가 `표 7.` 처럼 번호를 썼으면 벗긴다 — 번호는 등장 순서로 엔진이 매긴다(#1652 D2). 어긋나면 경고."""
+    m = _CAPTION_NUMBER_PREFIX.match(caption)
+    if not m:
+        return caption
+    if m.group(1) != kind or int(m.group(2)) != position:
+        notes.append(f"'< {caption} >' 의 번호는 무시되고 등장 순서({kind} {position})로 매겨집니다 — 제목만 쓰세요.")
+    return caption[m.end():].strip()
+
+
+# keep_prose 모드에서 표·그림 제목으로 해석하는 줄: `< 제목 >` 또는 `표 1. 제목` / `그림 2: 제목`
+_CAPTION_LINE = re.compile(r"^(<.+>|(표|그림)\s*\d+\s*[.:].*)$")
+
+
 def _mask_code_spans(text: str, *, keep_markers: bool = False) -> tuple[str, dict[str, str]]:
     """코드 스팬을 NUL placeholder 로 치환해 (masked_text, restore_map) 를 반환한다.
 
@@ -342,10 +364,20 @@ def convert_markdown(
     report_date: str | None = None,
     dept: str | None = None,
     base_dir: str | None = None,
+    max_level: int = 2,
+    fields: dict[str, str] | None = None,
+    number_sections: bool = True,
+    keep_prose: bool = False,
 ) -> tuple[dict, list[str]]:
     """마크다운 보고서를 DocSpec dict 로 변환한다. (docspec, warnings) 를 반환한다.
 
     `base_dir` 는 이미지 상대 경로 해석 기준 디렉터리(미지정 시 현재 작업 디렉터리).
+    `max_level` 은 항목 계층 상한(기본 2 = □/❍ 종전 계약; 기안문·내부보고서 템플릿은 4).
+    `fields` 는 템플릿 추가 필드(수신·발신명의·기관명…)이며 front-matter 의 미지 키가 합쳐진다.
+    `number_sections=False` 면 최상위 `1.` 번호를 섹션 제목으로 승격하지 않고 1단계 항목으로 둔다
+    (기안문 — 본문이 곧 번호 항목이라 섹션이 없다).
+    `keep_prose=True` 면 일반 문단을 □ 항목으로 바꾸지 않고 서술 문단(kind=prose)으로 보존하며,
+    표 바로 위의 `< 제목 >` / `표 N. 제목` 줄은 표 제목(caption)으로 붙인다(AI 친화 원칙).
     """
     warnings: list[str] = []
     text = _strip_forbidden_control_chars(text)
@@ -355,6 +387,20 @@ def convert_markdown(
     fm_title = _field(fm, "title", "제목")
     fm_date = _field(fm, "report_date", "date", "보고일", "일자")
     fm_dept = _field(fm, "dept", "department", "부서", "부서명")
+    known_keys = {"title", "제목", "report_date", "date", "보고일", "일자", "dept", "department", "부서", "부서명",
+                  "attachments", "붙임"}
+    fm_attachments = _field(fm, "attachments", "붙임")
+    attachments = [a.strip() for a in (fm_attachments or "").split("|") if a.strip()]
+    field_alias = {"기관": "org", "기관명": "org", "수신": "receiver", "경유": "via", "발신명의": "sender",
+                   "발신": "sender", "기안자": "drafter", "담당자": "drafter", "보고유형": "report_type", "보고 유형": "report_type", "검토자": "reviewer", "결재자": "approver",
+                   "문서번호": "doc_no", "협조자": "cooperator", "공개구분": "disclosure", "공개 구분": "disclosure", "결재권자": "approver", "주소": "address", "전화": "phone", "전자우편": "email", "이메일": "email"}
+    resolved_fields: dict[str, str] = {}
+    for key, value in fm.items():
+        if key in known_keys or not value.strip():
+            continue
+        resolved_fields[field_alias.get(key, key)] = value.strip()
+    resolved_fields.update({k: v for k, v in (fields or {}).items() if v.strip()})
+    max_level = max(1, min(int(max_level), 4))
     # 인자/front-matter 로 이미 정해진 제목(있으면 첫 H1 은 제목 후보가 되지 못한다).
     external_title = title or fm_title
 
@@ -368,6 +414,11 @@ def convert_markdown(
     in_fence = False
     remote_image_seen = False
     pending_table: list[str] = []
+    pending_caption: str | None = None  # keep_prose 모드: 표·그림 위 `< 제목 >` 줄
+    tables_without_caption = 0
+    images_without_caption = 0
+    caption_counts = {"표": 0, "그림": 0}
+    caption_number_mismatch: list[str] = []
     # 현재 리스트 런의 들여쓰기 경로(스택). clamp 경고를 들여쓰기 단위(2칸/4칸)와
     # 무관하게 "리스트 깊이"로 판정하기 위한 것 — level 자체는 absolute(0=L1/그외 L2)를 유지한다.
     list_indents: list[int] = []
@@ -414,6 +465,14 @@ def convert_markdown(
         image: dict = {"src": src}
         if alt:
             image["alt"] = alt
+        if keep_prose:
+            nonlocal pending_caption, images_without_caption
+            caption_counts["그림"] += 1
+            if pending_caption:
+                image["caption"] = _check_caption_number("그림", pending_caption, caption_counts["그림"], caption_number_mismatch)
+                pending_caption = None
+            elif not alt:
+                images_without_caption += 1
         ensure_section().setdefault("__order", []).append(("image", image))
 
     def flush_table() -> None:
@@ -487,6 +546,14 @@ def convert_markdown(
         if any_format:
             table_obj["rich_rows"] = rich_rows
         table_obj["col_widths"] = col_widths
+        if keep_prose:
+            nonlocal pending_caption, tables_without_caption
+            caption_counts["표"] += 1
+            if pending_caption:
+                table_obj["caption"] = _check_caption_number("표", pending_caption, caption_counts["표"], caption_number_mismatch)
+                pending_caption = None
+            else:
+                tables_without_caption += 1
         sec = ensure_section()
         sec.setdefault("tables", []).append(table_obj)
         sec.setdefault("__order", []).append(("table", table_obj))
@@ -563,9 +630,10 @@ def convert_markdown(
         if bullet:
             indent = _expand_indent(bullet.group(1))
             text_item = strip_inline(bullet.group(3))
-            level = 1 if indent == 0 else 2
-            if note_list_depth(indent) >= 3 and not deep_nest_warned:
-                warnings.append("3단계 이상 중첩 항목을 level 2 로 clamp 했습니다(깊은 중첩은 비목표).")
+            depth = note_list_depth(indent)
+            level = (1 if indent == 0 else 2) if max_level <= 2 else min(depth, max_level)
+            if depth > max_level and not deep_nest_warned:
+                warnings.append(f"{max_level + 1}단계 이상 중첩 항목을 level {max_level} 로 clamp 했습니다 — 접힌 항목은 상위 항목의 **형제 번호**를 받아 종속 관계가 사라집니다. 문장을 합치거나 절을 나누세요.")
                 deep_nest_warned = True
             if text_item:
                 append_item(level, text_item)
@@ -575,11 +643,13 @@ def convert_markdown(
         if indented_ordered:
             indent = _expand_indent(indented_ordered.group(1))
             text_item = strip_inline(indented_ordered.group(3))
-            if note_list_depth(indent) >= 3 and not deep_nest_warned:
-                warnings.append("3단계 이상 중첩 항목을 level 2 로 clamp 했습니다(깊은 중첩은 비목표).")
+            depth = note_list_depth(indent)
+            level = 2 if max_level <= 2 else min(depth, max_level)
+            if depth > max_level and not deep_nest_warned:
+                warnings.append(f"{max_level + 1}단계 이상 중첩 항목을 level {max_level} 로 clamp 했습니다 — 접힌 항목은 상위 항목의 **형제 번호**를 받아 종속 관계가 사라집니다. 문장을 합치거나 절을 나누세요.")
                 deep_nest_warned = True
             if text_item:
-                append_item(2, text_item)
+                append_item(level, text_item)
             continue
 
         top_ordered = _TOP_ORDERED.match(raw)
@@ -587,7 +657,7 @@ def convert_markdown(
             text_item = strip_inline(top_ordered.group(2))
             # ATX(`#`/`##`) 섹션 내부의 최상위 번호는 순서 목록 항목(level 1)으로 본다.
             # ATX 섹션이 아닐 때만(순수 번호 섹션 문서) 새 섹션 제목으로 승격한다.
-            if current is not None and current_is_atx:
+            if (current is not None and current_is_atx) or not number_sections:
                 note_list_depth(0)  # 최상위 번호 항목 = 리스트 1단계
                 if text_item:
                     append_item(1, text_item)
@@ -596,10 +666,27 @@ def convert_markdown(
                 start_section(f"{top_ordered.group(1)}. {text_item}", is_atx=False)
             continue
 
-        # 그 외 일반 문단 → 개조식 level 1 item 변환.
+        marker = _MARKER_LINE.match(raw)
+        if marker and marker.group(2) != "-":
+            # 기호를 직접 쓴 항목: 기호가 뜻하는 계층(상한 max_level)으로 — 엔진이 조판별 기호를 다시 붙인다.
+            reset_list_depth()
+            text_item = strip_inline(marker.group(3))
+            if text_item:
+                append_item(min(_MARKER_LEVEL[marker.group(2)], max_level), text_item)
+            continue
+
+        # 그 외 일반 문단 → 개조식 level 1 item 변환(기본) / 서술 문단 보존(keep_prose).
         reset_list_depth()
         prose = strip_inline(raw.strip())
-        if prose:
+        if prose and keep_prose:
+            if _CAPTION_LINE.match(prose):
+                pending_caption = prose.strip("<>").strip()
+            else:
+                sec = ensure_section()
+                item = {"level": 1, "text": prose, "kind": "prose"}
+                sec["items"].append(item)
+                sec.setdefault("__order", []).append(("item", item))
+        elif prose:
             prose_count += 1
             append_item(1, prose)
 
@@ -608,6 +695,20 @@ def convert_markdown(
 
     if prose_count:
         warnings.append(f"{prose_count}개 일반 문단을 □ 항목으로 변환했습니다(개조식 보고서 기준).")
+    if images_without_caption:
+        warnings.append(
+            f"그림 {images_without_caption}개에 제목이 없어 '< 그림 N >' 로만 표기됩니다 — 이미지 바로 위 줄에 "
+            "'< 제목 >' 을 두거나 ![제목](경로) 의 대체텍스트를 채우세요(AI 친화 원칙: 표·그림은 상단에 제목·번호)."
+        )
+    for note in caption_number_mismatch:
+        warnings.append(note)
+    if tables_without_caption:
+        warnings.append(
+            f"표 {tables_without_caption}개에 제목이 없어 '< 표 N >' 로만 표기됩니다 — 표 바로 위 줄에 "
+            "'< 제목 >' 을 두세요(AI 친화 원칙: 표·그림은 상단에 제목·번호)."
+        )
+    if pending_caption:
+        warnings.append(f"표·그림 제목 줄 '< {pending_caption} >' 뒤에 표나 이미지가 없어 버렸습니다.")
     if remote_image_seen:
         warnings.append(
             "원격 URL 이미지(http/https/data)는 1차 비목표라 제외했습니다 —"
@@ -654,18 +755,27 @@ def convert_markdown(
             "보고일(report_date)이 지정되지 않았습니다 — 엔진이 생성 시점의 오늘 날짜로 채웁니다."
             " front-matter(report_date) 또는 --date 로 지정하세요."
         )
-    if not resolved_dept:
+    if not resolved_dept and number_sections and max_level <= 2:
+        # 부서 머리글은 report(gov-report·press-release) 조판에만 있다.
         warnings.append(
             "부서(dept)가 지정되지 않았습니다 — 머리글에 템플릿 기본 '부서명' 자리표시자가 남습니다."
             " front-matter(dept) 또는 --dept 로 지정하세요."
         )
 
+    if not number_sections and not resolved_fields.get("sender"):
+        warnings.append("발신명의(sender)가 없습니다 — 기안문은 발신명의(기관장 등)를 front-matter `발신명의:` 로 지정하세요. 없으면 그 줄이 생략됩니다.")
+    if resolved_date and (not number_sections or keep_prose) and not re.match(r"^\s*(\d{2,4})\s*[.\-]\s*(\d{1,2})\s*[.\-]\s*(\d{1,2})\s*\.?\s*$", resolved_date):
+        warnings.append(f"보고일 '{resolved_date}' 을 날짜로 해석하지 못해 원문 그대로 싣습니다 — `2026-09-10` 또는 `2026. 9. 10.` 형식을 쓰세요(공문서 날짜 표기 규정).")
     docspec: dict = {"title": resolved_title}
     if resolved_date:
         docspec["report_date"] = resolved_date
     if resolved_dept:
         docspec["dept"] = resolved_dept
     docspec["sections"] = sections
+    if resolved_fields:
+        docspec["fields"] = resolved_fields
+    if attachments:
+        docspec["attachments"] = attachments
     return docspec, warnings
 
 
@@ -678,7 +788,20 @@ def _main(argv: list[str]) -> int:
     parser.add_argument("--title", help="보고서 제목(front-matter/H1 보다 우선)")
     parser.add_argument("--date", dest="report_date", help="보고 일자(front-matter 보다 우선)")
     parser.add_argument("--dept", help="부서명(front-matter 보다 우선)")
+    parser.add_argument("--layout", choices=("report", "press-release", "official-letter", "briefing", "ai-report"), default="report",
+                        help="대상 템플릿 조판 — 항목 계층 상한·번호 섹션 승격 여부를 함께 정한다")
+    parser.add_argument("--max-level", type=int, help="항목 계층 상한(1~4). 미지정 시 layout 기본값(report 2, 그 외 4)")
+    parser.add_argument("--field", action="append", metavar="KEY=VALUE",
+                        help="템플릿 추가 필드(org·receiver·via·sender·drafter·reviewer·approver·doc_no·address·phone·email). 반복 가능")
     args = parser.parse_args(argv)
+    if args.max_level is None:
+        args.max_level = {"report": 2, "press-release": 2, "ai-report": 3}.get(args.layout, 4)
+    cli_fields: dict[str, str] = {}
+    for item in args.field or []:
+        if "=" not in item:
+            parser.error(f"--field 형식은 KEY=VALUE 입니다: {item!r}")
+        key, _, value = item.partition("=")
+        cli_fields[key.strip()] = value
 
     if args.input == "-":
         text = sys.stdin.read()
@@ -695,6 +818,10 @@ def _main(argv: list[str]) -> int:
         report_date=args.report_date,
         dept=args.dept,
         base_dir=base_dir,
+        max_level=args.max_level,
+        fields=cli_fields,
+        number_sections=(args.layout != "official-letter"),
+        keep_prose=(args.layout in ("ai-report", "press-release")),  # 보도자료 리드문·인용문은 산문(#1652 D-5)
     )
 
     payload = json.dumps(docspec, ensure_ascii=False, indent=2) + "\n"

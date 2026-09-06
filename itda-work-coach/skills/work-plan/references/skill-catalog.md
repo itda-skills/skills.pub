@@ -19,7 +19,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | draft-post | 블로그·보고서·기획서·보도자료·뉴스레터를 도메인 맞춤 인터뷰로 초안 작성하는 스킬입니다. | 없음 | "블로그 글 써줘", "보고서 초안 작성해줘", "기획서 만들어줘" | itda-content-create | 본 스킬은 초안 생성 전담(AI 흔적 사전의 정본: itda-content-create:human-tone) — 이미 작성된 글의 AI 흔적 제거·문체 후처리는 itda-content-create:human-tone 이 맡고, 본 스킬은 발행·송부를 하지 않습니다. |
 | html-report | 마크다운 보고서·분석 결과·회의 정리를 연차보고서 수준의 단일 파일 HTML 문서로 렌더링하는 스킬입니다. | 없음 | "이 보고서 HTML 파일로 만들어줘", "컨설팅 보고서 스타일로 전략 검토 문서 만들어줘", "공공기관 제출용 개조식 보고서 HTML로" | itda-content-create | 본 스킬은 보고서형 HTML 렌더 전담 — 아침 브리핑 페이지는 itda-day-organize:morning-brief. |
 | human-tone | 이미 작성된 한국어 사무 글(보고서·메일·기획서·공지)에서 AI 흔적을 걷어내는 후처리 스킬입니다. | 없음 | "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘" | itda-content-create | 본 스킬은 완성된 글의 후처리 검수 전담(AI 흔적 사전 가드 정본) — itda-content-create:draft-post 는 처음부터 초안을 쓰는 생성 단계이며, 같은 글에 두 스킬을 겹쳐 적용하지 않습니다. |
-| hwpx | 한글 HWP·HWPX 문서 스킬입니다. | 없음 | "이 HWP 파일 읽어줘", "이 한글 양식 채워줘", "정부 보고서 서식 hwpx로 만들어줘" | itda-content-create | — |
+| hwpx | 한글 HWP·HWPX 문서 스킬입니다. | 없음 | "이 HWP 파일 읽어줘", "이 한글 양식 채워줘", "한글 보고서 만들어줘" | itda-content-create | — |
 | imagegen | 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성하는 스킬입니다. | 없음 | "블로그 히어로 이미지 만들어줘", "슬라이드 배경 비주얼", "쇼츠용 세로 삽화" | itda-content-create | — |
 | imagekit | 이미지 조회·리사이즈·여백 크롭·DPI 변경·포맷 변환·회전을 단일 CLI로 처리하는 스킬입니다. | 없음 | "이미지 크기 줄여줘", "여백 크롭해줘", "PNG를 JPG로 변환해줘" | itda-content-create | — |
 | pptx-design | 콘텐츠 마크다운과 수치 데이터로 16:9 PPTX 발표자료를 크로스플랫폼(macOS/Linux, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "삼성전자 주가전망 ppt 만들어줘", "이 DESIGN.md로 발표자료 디자인해줘", "md 내용으로 슬라이드 덱 생성" | itda-content-create | — |
