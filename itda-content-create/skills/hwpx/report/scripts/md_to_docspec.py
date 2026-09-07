@@ -85,6 +85,12 @@ _DELIMS_ONLY = "*_ \t"
 _MARKER_LINE = re.compile(r"^(\s*)([□❍○―※•·-])\s+(.+)$")
 _MARKER_LEVEL = {"□": 1, "❍": 2, "○": 2, "―": 3, "-": 3, "•": 3, "·": 3, "※": 4}
 
+# 기안문 소스에 사용자가 규정 항목기호를 직접 쓴 줄(`가. …`·`1) …`·`가) …`). 종전에는 `가. 일시` 가 최상위 항목으로
+# 들어가 `3. 가. 일시` 이중 번호가 났다(#1653 v1.3 샘플 실측). 기호를 벗기고 그 기호의 계층(2·3·4단)으로 넣는다 —
+# 엔진이 규정 기호를 다시 붙인다. official-letter(number_sections=False) 에서만 적용한다.
+_LETTER_MARKER_LINE = re.compile(r"^\s*(?:([가-힣])\.|(\d+)\)|([가-힣])\))\s+(.+)$")
+_LETTER_HANGUL_ORDER = "가나다라마바사아자차카타파하"
+
 _CAPTION_NUMBER_PREFIX = re.compile(r"^(표|그림)\s*(\d+)\s*[.:]\s*")
 
 
@@ -666,6 +672,16 @@ def convert_markdown(
                 start_section(f"{top_ordered.group(1)}. {text_item}", is_atx=False)
             continue
 
+        if not number_sections:
+            letter_marker = _LETTER_MARKER_LINE.match(raw)
+            g_hangul, g_digit, g_hangul_paren = (letter_marker.group(1), letter_marker.group(2), letter_marker.group(3)) if letter_marker else (None, None, None)
+            if (g_hangul and g_hangul in _LETTER_HANGUL_ORDER) or g_digit or (g_hangul_paren and g_hangul_paren in _LETTER_HANGUL_ORDER):
+                level = 2 if g_hangul else 3 if g_digit else 4
+                text_item = strip_inline(letter_marker.group(4))
+                if text_item:
+                    append_item(min(level, max_level), text_item)
+                continue
+
         marker = _MARKER_LINE.match(raw)
         if marker and marker.group(2) != "-":
             # 기호를 직접 쓴 항목: 기호가 뜻하는 계층(상한 max_level)으로 — 엔진이 조판별 기호를 다시 붙인다.
@@ -693,7 +709,9 @@ def convert_markdown(
     if pending_table:
         flush_table()
 
-    if prose_count:
+    if prose_count and not number_sections:
+        warnings.append(f"{prose_count}개 일반 문단을 번호 항목(1. 2. …)으로 변환했습니다(기안문 기준 — 본문은 항목으로 씁니다).")
+    elif prose_count:
         warnings.append(f"{prose_count}개 일반 문단을 □ 항목으로 변환했습니다(개조식 보고서 기준).")
     if images_without_caption:
         warnings.append(

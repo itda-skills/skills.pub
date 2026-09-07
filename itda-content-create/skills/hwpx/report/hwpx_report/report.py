@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import date, datetime
 from importlib import resources
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 from .image import ImageDependencyError, render_report_image
 from .layouts import LAYOUTS
@@ -29,6 +29,19 @@ class ReportStyle:
     borderFillIDRef: str = ""
 
 
+# 템플릿 리소스 경로 계약 — `tables/<id>.xml` 처럼 단순 이름 세그먼트만 (슬래시·역슬래시·'.'·'..' 금지).
+# DocSpec table.template 은 사용자 입력이라, 이것이 없으면 '../../escape' 로 프로파일 루트 밖 XML 을 읽는다(Codex R2 F7).
+RESOURCE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def check_resource_segment(name: str) -> bool:
+    return bool(name) and name not in (".", "..") and bool(RESOURCE_SEGMENT_RE.match(name))
+
+
+# 템플릿 디렉토리 계약 — 내장 템플릿과 사용자 프로파일(derive_profile.py 산출)이 같은 파일 집합을 갖는다.
+TEMPLATE_REQUIRED_FILES = ("manifest.json", "style-map.json", "header.xml", "section0.skel.xml")
+
+
 @dataclass
 class ReportTemplate:
     id: str
@@ -36,6 +49,32 @@ class ReportTemplate:
     section: str
     manifest: dict
     styles: dict[str, ReportStyle]
+    # 리소스(tables/*.xml) 루트. None 이면 패키지 내장 템플릿(assets/templates/<id>/)이고,
+    # 커스텀 템플릿 디렉토리(--template-dir)면 그 디렉토리다 — 표 템플릿 읽기가 여기를 경유한다.
+    root: Path | None = None
+
+    def read_resource(self, rel: str) -> bytes:
+        """템플릿 상대 경로(`tables/basic.xml`)의 바이트. 없으면 FileNotFoundError(경로 포함).
+
+        경로 이탈은 FileNotFoundError 가 아니라 HWPXReportError 다 — 호출부가 FileNotFoundError 를
+        기본 템플릿 폴백으로 삼키므로, 거부가 조용한 폴백으로 위장되면 안 된다."""
+        if "\\" in rel or not all(check_resource_segment(seg) for seg in rel.split("/")):
+            raise HWPXReportError(f'hwpx report: invalid template resource path "{rel}" in template "{self.id}"')
+        if self.root is not None:
+            root = self.root.resolve()
+            target = (root / rel).resolve()
+            if target != root and root not in target.parents:
+                raise HWPXReportError(
+                    f'hwpx report: template resource "{rel}" escapes template root "{root}"'
+                )
+            if not target.is_file():
+                raise FileNotFoundError(f"open {self.root / rel}: file does not exist")
+            return target.read_bytes()
+        base = resources.files("hwpx_report").joinpath("assets", "templates", self.id)
+        try:
+            return base.joinpath(rel).read_bytes()
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f"open templates/{self.id}/{rel}: file does not exist") from exc
 
     def style(self, name: str) -> ReportStyle:
         try:
@@ -57,8 +96,22 @@ class ReportTemplate:
         return max(1, min(value, 4))
 
 
-def build_report(template_id: str, spec: DocSpec) -> bytes:
-    tmpl = load_report_template(template_id)
+def resolve_report_template(template: "str | Path | ReportTemplate") -> ReportTemplate:
+    """템플릿 인자 해석 정문.
+
+    **Path 는 언제나 디렉토리 로더**로 간다 — 문자열로 넘기면 '경로 구분자 없고 내장 id 가 실재하면 내장'
+    규칙을 타서, 프로파일 디렉토리 이름이 `ai-report`·`gov-report` 면 사용자 프로파일이 조용히 무시된다
+    (Claude R2 C-F2). `--template-dir`·compare 는 반드시 Path 로 넘긴다.
+    """
+    if isinstance(template, ReportTemplate):
+        return template
+    if isinstance(template, Path):
+        return load_report_template_dir(template)
+    return load_report_template(template)
+
+
+def build_report(template_id: "str | Path | ReportTemplate", spec: DocSpec) -> bytes:
+    tmpl = resolve_report_template(template_id)
     validate_report_spec(spec, tmpl.max_level)
     section, images = build_report_section_xml(tmpl, spec)
     data = package_report_hwpx(tmpl, section.encode(), spec, images)
@@ -72,20 +125,38 @@ def build_report(template_id: str, spec: DocSpec) -> bytes:
     return data
 
 
-def write_report_file(template_id: str, spec: DocSpec, output_path: str) -> None:
+def write_report_file(template_id: "str | Path | ReportTemplate", spec: DocSpec, output_path: str) -> None:
     if not output_path.strip():
         raise HWPXReportError("hwpx report: output path is required")
-    from pathlib import Path
-
     Path(output_path).write_bytes(build_report(template_id, spec))
 
 
 def load_report_template(template_id: str) -> ReportTemplate:
-    template_id = template_id.strip() or "gov-report"
-    clean = str(PurePosixPath(template_id))
-    if clean != template_id or template_id.startswith(".") or "/" in template_id or "\\" in template_id:
-        raise HWPXReportError(f'hwpx report: invalid template id "{template_id}"')
+    """내장 템플릿 id 또는 **실존하는 템플릿 디렉토리 경로**를 받는다.
 
+    구분 규칙: 경로 구분자가 없고 내장 템플릿이 실재하면 내장, 그 외에 실존 디렉토리면 커스텀 디렉토리
+    (`derive_profile.py analyze` 산출 프로파일). 둘 다 아니면 종전 오류(잘못된 id / 파일 없음).
+    """
+    template_id = template_id.strip() or "gov-report"
+    if "/" in template_id or "\\" in template_id:
+        return load_report_template_dir(template_id)  # 경로 구분자가 있으면 디렉토리 의미(없으면 "not found")
+    if not template_id.startswith(".") and _builtin_template_exists(template_id):
+        return _load_builtin_template(template_id)
+    if Path(template_id).is_dir():
+        return load_report_template_dir(template_id)
+    if template_id.startswith(".") or str(PurePosixPath(template_id)) != template_id:
+        raise HWPXReportError(f'hwpx report: invalid template id "{template_id}"')
+    return _load_builtin_template(template_id)
+
+
+def _builtin_template_exists(template_id: str) -> bool:
+    try:
+        return resources.files("hwpx_report").joinpath("assets", "templates", template_id, "manifest.json").is_file()
+    except (OSError, ValueError):
+        return False
+
+
+def _load_builtin_template(template_id: str) -> ReportTemplate:
     base = resources.files("hwpx_report").joinpath("assets", "templates", template_id)
 
     def read_bytes(name: str) -> bytes:
@@ -94,14 +165,59 @@ def load_report_template(template_id: str) -> ReportTemplate:
         except FileNotFoundError as exc:
             raise HWPXReportError(f"hwpx report: load {template_id}/{name}: {exc}") from exc
 
+    return _build_template(template_id, read_bytes, root=None)
+
+
+def load_report_template_dir(path: str | Path) -> ReportTemplate:
+    """커스텀 템플릿 디렉토리(프로파일) 로더 — 실존·디렉토리·필수 파일·manifest id = 디렉토리명 을 검사한다."""
+    root = Path(path)
+    if not root.exists():
+        raise HWPXReportError(f'hwpx report: template directory not found: "{root}"')
+    if not root.is_dir():
+        raise HWPXReportError(f'hwpx report: template path is not a directory: "{root}"')
+    # 심볼릭 링크 루트는 기본 거부 — 링크 이름과 대상 이름이 달라 "manifest id = 준 디렉토리명" 계약이
+    # 링크 대상 이름으로 우회된다(Codex R2 F7). 필요하면 실제 디렉토리 경로를 직접 지정하라.
+    if root.is_symlink():
+        raise HWPXReportError(
+            f'hwpx report: template directory must not be a symbolic link: "{root}" '
+            "(policy: pass the real directory path)"
+        )
+    missing = [name for name in TEMPLATE_REQUIRED_FILES if not (root / name).is_file()]
+    if missing:
+        raise HWPXReportError(
+            f'hwpx report: template directory "{root}" is missing required files: ' + ", ".join(missing)
+        )
+    # manifest id 는 **사용자가 준 경로의 basename**(resolve 전)과 대조한다 — resolve 하면 링크·상대경로가
+    # 다른 이름으로 통과한다.
+    template_id = root.name
+    if not template_id:
+        raise HWPXReportError(f'hwpx report: template directory needs a name: "{path}"')
+
+    def read_bytes(name: str) -> bytes:
+        try:
+            return (root / name).read_bytes()
+        except OSError as exc:
+            raise HWPXReportError(f"hwpx report: load {root / name}: {exc}") from exc
+
+    return _build_template(template_id, read_bytes, root=root.resolve(), require_manifest_id=True)
+
+
+def _build_template(template_id: str, read_bytes, *, root: Path | None, require_manifest_id: bool = False) -> ReportTemplate:
     header = read_bytes("header.xml")
     section = read_bytes("section0.skel.xml").decode()
-    manifest = json.loads(read_bytes("manifest.json").decode())
+    try:
+        manifest = json.loads(read_bytes("manifest.json").decode())
+        raw_styles = json.loads(read_bytes("style-map.json").decode())
+    except json.JSONDecodeError as exc:
+        raise HWPXReportError(f'hwpx report: template "{template_id}" has invalid JSON: {exc}') from exc
+    if not isinstance(manifest, dict) or not isinstance(raw_styles, dict):
+        raise HWPXReportError(f'hwpx report: template "{template_id}" manifest/style-map must be JSON objects')
+    if require_manifest_id and not manifest.get("id"):
+        raise HWPXReportError(f'hwpx report: template "{template_id}" manifest.json must declare "id"')
     if manifest.get("id") and manifest["id"] != template_id:
         raise HWPXReportError(
             f'hwpx report: manifest id "{manifest["id"]}" does not match template id "{template_id}"'
         )
-    raw_styles = json.loads(read_bytes("style-map.json").decode())
     styles = {
         name: ReportStyle(
             charPrIDRef=str(data.get("charPrIDRef", "")),
@@ -110,7 +226,7 @@ def load_report_template(template_id: str) -> ReportTemplate:
         )
         for name, data in raw_styles.items()
     }
-    tmpl = ReportTemplate(template_id, header, section, manifest, styles)
+    tmpl = ReportTemplate(template_id, header, section, manifest, styles, root=root)
     validate_report_template(tmpl)
     return tmpl
 
@@ -124,6 +240,16 @@ def validate_report_template(tmpl: ReportTemplate) -> None:
         for level in range(1, tmpl.max_level + 1):
             tmpl.style(f"level{level}")
     ids = collect_report_header_ids(tmpl.header)
+    # 언어별 fontRef 실재 검사 — font id 공간은 언어별이라 hangul id 를 7개 언어에 복사하면
+    # 존재하지 않는 참조가 생긴다(Codex R2 F5). style-map 이 가리키는 charPr 만 본다.
+    bad_fonts = collect_report_missing_font_refs(
+        tmpl.header, {st.charPrIDRef for st in tmpl.styles.values() if st.charPrIDRef}
+    )
+    if bad_fonts:
+        shown = ", ".join(f"charPr {cid} {lang}={fid}" for cid, lang, fid in bad_fonts[:6])
+        raise HWPXReportError(
+            f'hwpx report: template "{tmpl.id}" references missing fontRef ids ({len(bad_fonts)}): {shown}'
+        )
     for name, style in tmpl.styles.items():
         if style.charPrIDRef and style.charPrIDRef not in ids["charPr"]:
             raise HWPXReportError(f'hwpx report: style "{name}" references missing charPrIDRef {style.charPrIDRef}')
@@ -135,9 +261,51 @@ def validate_report_template(tmpl: ReportTemplate) -> None:
             )
 
 
+FONT_REF_LANGS = ("hangul", "latin", "hanja", "japanese", "other", "symbol", "user")
+
+
+def collect_report_missing_font_refs(header: bytes, char_ids: set[str]) -> list[tuple[str, str, str]]:
+    """`char_ids` 가 가리키는 charPr 의 fontRef 중 그 **언어의 fontface 에 없는** (charPr id, 언어, font id) 목록."""
+    try:
+        root = ET.fromstring(header)
+    except ET.ParseError as exc:
+        raise HWPXReportError(f"hwpx report: header.xml is not well-formed: {exc}") from exc
+    faces: dict[str, set[str]] = {}
+    for el in root.iter():
+        if _local_name(el.tag) != "fontface":
+            continue
+        lang = (el.attrib.get("lang") or "").lower()
+        block = faces.setdefault(lang, set())
+        for font in el:
+            if _local_name(font.tag) == "font" and font.attrib.get("id"):
+                block.add(font.attrib["id"])
+    if not faces:
+        return []  # fontface 선언이 없는 header — 검사 대상이 아니다
+    missing: list[tuple[str, str, str]] = []
+    for el in root.iter():
+        if _local_name(el.tag) != "charPr":
+            continue
+        cid = el.attrib.get("id", "")
+        if cid not in char_ids:
+            continue
+        for ref in el:
+            if _local_name(ref.tag) != "fontRef":
+                continue
+            for lang in FONT_REF_LANGS:
+                fid = ref.attrib.get(lang)
+                if fid is None or lang not in faces:
+                    continue
+                if fid not in faces[lang]:
+                    missing.append((cid, lang, fid))
+    return missing
+
+
 def collect_report_header_ids(header: bytes) -> dict[str, set[str]]:
     ids = {"charPr": set(), "paraPr": set(), "borderFill": set()}
-    root = ET.fromstring(header)
+    try:
+        root = ET.fromstring(header)
+    except ET.ParseError as exc:
+        raise HWPXReportError(f"hwpx report: header.xml is not well-formed: {exc}") from exc
     for el in root.iter():
         local = _local_name(el.tag)
         if local in ids and el.attrib.get("id"):

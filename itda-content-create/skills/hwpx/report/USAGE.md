@@ -90,6 +90,11 @@ $env:PYTHONPATH = "$env:SKILL_DIR;$env:PYTHONPATH"
 py -3 -m hwpx_report convert .itda-skills\spec.json -o .itda-skills\report.hwpx --template gov-report
 ```
 
+- `--template <내장 id>` 대신 `--template-dir <프로파일 디렉토리>` 를 주면 [참고 서식 프로파일](#참고-서식-프로파일-derive_profilepy)로
+  생성한다(둘을 함께 주면 argparse 가 exit 2 로 거부). `--template` 은 **내장 id 전용** — 경로 구분자·디렉토리를 주면 거부한다.
+  `--template-dir` 는 내장 id 우선 규칙을 타지 않고 그 디렉토리를 직접 로드하므로 프로파일 이름이 `ai-report` 여도 내장이 선택되지 않는다.
+  디렉토리 로더는 실존·필수 4파일·manifest `id` = **사용자가 준 경로의 basename**·언어별 fontRef 실재를 검사하고, 심볼릭 링크 루트는 거부한다.
+  DocSpec `table.template` 이름은 `[A-Za-z0-9_-]+` 만 허용하며(루트 밖 파일 접근 차단), 없는 표 템플릿은 `basic` 으로 대체하되 stderr 경고를 낸다.
 - 생성 성공 메시지(`보고서 HWPX 생성 완료: ...`)와 출력 경로를 사용자에게 보고합니다.
 - Cowork 환경(`CLAUDE_CODE_IS_COWORK=1`)에서는 `.hwpx` 를 `mnt/outputs/` 로 복사합니다.
 - 실패(exit code != 0) 시 stderr 를 그대로 전달합니다.
@@ -177,12 +182,48 @@ dept: 전략기획팀
 
 ---
 
+## 참고 서식 프로파일 (derive_profile.py) — 2026-09 (#1653)
+
+사용자가 준 **참고 `.hwpx`** 의 서식을 프로파일(템플릿 디렉토리)로 추출해 기존 조판이 그 서식으로 돌게 한다.
+1차 범위는 **단일 섹션 본문 스타일 근사** — 다중 section(첫 section 만)·머리말/꼬리말·마스터페이지·쪽번호·표지/결재란
+(짧은 표 + 페이지 나눔)·내장 글꼴은 **경고 후 본문 서식만** 채택한다.
+
+```bash
+# 추출 — 출력 디렉토리 이름이 곧 템플릿 id(--id 를 주면 디렉토리명과 같아야 한다)
+python3 "${SKILL_DIR}/scripts/derive_profile.py" analyze 참고.hwpx -o 우리서식 [--layout ai-report|report] [--strict]
+# 생성 — 위 2단계의 --template 대신
+python3 -m hwpx_report convert spec.json -o out.hwpx --template-dir 우리서식
+# 게이트 — 산출이 참고 서식을 실제로 실었는가(속성 대조). --ref 가 정본, 없으면 manifest 기대값(자기 오라클)으로만 대조
+python3 "${SKILL_DIR}/scripts/derive_profile.py" compare 우리서식 out.hwpx --ref 참고.hwpx
+```
+
+| 산출 | 내용 |
+|---|---|
+| `header.xml` | 참고 문서 것을 그대로(글꼴·charPr·paraPr·borderFill) + 합성 폴백 추가분. `secCnt=1` 로 정정 |
+| `manifest.source_section` | 본문 서식을 뽑은 섹션 — **최상위 텍스트 문단이 가장 많은 섹션**(표지가 section0 인 정부 문서에서 본문 섹션을 고른다). secPr 도 그 섹션 첫 문단 것 |
+| `style-map.json` | 층위별 **최빈 (paraPr, charPr)** — 최상위 문단을 마커(□ ○ ― ※ · ㅇ ◦ - ⇒ / Ⅰ. / 1. / 가. / 1) / 가))와 굵기·크기로 분류해 조판이 쓰는 스타일 이름 전부(ai-report 11종·report 6종 + 표 10종)에 대응 |
+| `section0.skel.xml` | 참고 첫 문단의 `secPr`(용지·여백·colPr) 보존. 첫 문단에 붙은 표·그림 개체는 `objects/` 로 분리(조판 미사용) |
+| `tables/basic.xml` | 데이터 표(행 ≥ 3·열 2~12·본문 안·글자 40자+) 하나에서 테두리·셀 서식 추출. 없으면 gov-report 표 구조 계량값을 참고 서식으로 합성 + 경고 |
+| `manifest.json` | `id`·`layout`·`derived_from{file, sha256[:12]}`·`fallback`(못 채워 합성한 스타일)·`warnings`·`body_width`·`profile`(기대 속성) |
+
+- **폴백은 조용하지 않다** — 못 찾은 스타일은 내장 ai-report/gov-report 계량값(크기·굵기·정렬·들여쓰기)을 **참고 문서 본문 글꼴로 합성**해
+  header 끝에 덧붙이고 stderr `경고:` + manifest `fallback` 에 남긴다. `--strict` 면 폴백·경고가 하나라도 있으면 exit 2.
+- **게이트는 속성 대조다** — `validate_report_template`·역변환 순서 일치는 추출이 no-op 이어도 통과하므로 게이트가 못 된다.
+  `compare` 는 산출 header/section 에서 실제 쓰인 스타일을 역참조해 글꼴 이름·height·bold·italic·align·left/intent/prev/next·줄간격 +
+  용지/여백 + 첫 표의 폭·머리글/본문 셀 테두리·채움·글꼴을 대조한다(JSON, exit 0 일치 / 2 불일치 / 1 오류; 쓰인 스타일이 0 이면 exit 2).
+  산출에서 쓰이지 않은 스타일도 style-map 값 자체를 기대값과 대조한다(`unused` 는 보고 필드). `fallback_styles` 는 참고 문서가 아니라 합성
+  내장값과 일치한 스타일 목록이며 `--strict` 면 비어 있지 않을 때 exit 2 — "무엇을 근사했는가" 를 게이트가 말한다.
+- **한계**: paraPr 이 줄마다 손조정된 문서는 "대표 서식" 이 원본과 다를 수 있다. 본문 전체가 표 안에 있는 문서는 최상위 텍스트 문단이 0 이라
+  전 스타일 폴백(경고로 표면화). 지원 layout 은 `ai-report`·`report` 두 종(`official-letter`·`briefing` 비지원). `compare` 는 첫 최상위 표만 대조.
+  한컴 실렌더는 사용자(또는 Parallels 한글)에서 확인하는 것이 정본이다.
+
 ## 비목표 (1차)
 
 - **복잡한 표** — 셀 병합·중첩 표·표 안 이미지는 비목표입니다. 정교한 표는 사용자 양식 + FILL/ANALYZE 경로를 쓰세요.
 - **이미지** — 단독 줄 `![alt](src)`(로컬/상대 경로)는 본문에 임베드합니다. 상대 경로는 입력 마크다운 파일 위치 기준으로 해석합니다. 큰 이미지는 본문 폭에 맞춰 비율 유지 축소(fit-to-page). 원격 URL(http/https/data)·셀 내 이미지·캡션 자동생성·리사이즈는 비목표(제외+경고). 텍스트에 섞인 이미지는 평문화. **신뢰 경계**: `src` 는 경로 격리 없이 그대로 읽어 임베드하므로(상대 경로 traversal·절대 경로 허용), 마크다운은 신뢰 가능한 출처여야 합니다(임의 로컬 파일 노출 방지).
 - **3단계 이상 중첩 / inline 서식** — 깊은 계층은 level 2 로 clamp, `**굵게**`·`[링크](url)`·`` `코드` `` 는 평문으로 strip.
-- **조직별 맞춤 서식 / 공문(수신·발신명의 고정 필드)** — 사용자가 자기 양식을 가져오는 경우입니다. 통합 hwpx 스킬의 채우기 경로(`../scripts/fill_hwpx.py`)를 쓰세요(별개 워크플로).
+- **조직별 맞춤 서식** — 사용자가 자기 양식을 가져오는 경우입니다. 빈칸·안내문 양식이면 통합 hwpx 스킬의 채우기 경로(`../scripts/fill_hwpx.py`),
+  참고 문서 + 새 내용이면 [참고 서식 프로파일](#참고-서식-프로파일-derive_profilepy)(단일 섹션 본문 근사 — 표지·결재란·머리말은 비목표)을 쓰세요.
 
 ---
 

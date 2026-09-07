@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import sys
 from dataclasses import dataclass
 from importlib import resources
 import xml.etree.ElementTree as ET
@@ -8,6 +10,8 @@ from .models import ReportCell, ReportRun, ReportTable
 from .profile import xml_escape
 
 DEFAULT_REPORT_TABLE_TEMPLATE = "basic"
+# 표 템플릿 이름은 단순 id — 슬래시·역슬래시·'.'/'..' 는 프로파일 루트 밖을 가리킨다(Codex R2 F7 · Claude R2 C-F7)
+TABLE_TEMPLATE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 @dataclass
@@ -48,7 +52,7 @@ class _CellFormatCharRefs:
 
 
 def render_report_table(ctx: object, table: ReportTable, tmpl: object) -> str:
-    table_tmpl = _load_report_table_template(tmpl.id, table.template)
+    table_tmpl = _load_report_table_template(tmpl, table.template)
     col_count = len(table.headers)
     row_count = len(table.rows) + 1
     widths = _resolve_report_table_widths(table_tmpl.width, col_count, table.col_widths)
@@ -81,27 +85,39 @@ def render_report_table(ctx: object, table: ReportTable, tmpl: object) -> str:
     return "".join(parts)
 
 
-def _load_report_table_template(template_id: str, table_template: str) -> _ReportTableTemplate:
+def _load_report_table_template(tmpl: object, table_template: str) -> _ReportTableTemplate:
     name = table_template.strip() or DEFAULT_REPORT_TABLE_TEMPLATE
     try:
-        return _read_report_table_template(template_id, name)
+        return _read_report_table_template(tmpl, name)
     except FileNotFoundError:
         if name == DEFAULT_REPORT_TABLE_TEMPLATE:
             raise
-        return _read_report_table_template(template_id, DEFAULT_REPORT_TABLE_TEMPLATE)
-
-
-def _read_report_table_template(template_id: str, name: str) -> _ReportTableTemplate:
-    rel = f"templates/{template_id}/tables/{name}.xml"
-    try:
-        data = (
-            resources.files("hwpx_report")
-            .joinpath("assets", rel)
-            .read_bytes()
+        # 조용한 폴백 금지 — 요청한 표 템플릿이 없다는 사실을 말한다(Claude R2 C-F7)
+        print(
+            f"경고: 표 템플릿 {name!r} 이(가) 없어 {DEFAULT_REPORT_TABLE_TEMPLATE!r} 로 대체합니다"
+            f" (템플릿 {getattr(tmpl, 'id', '')})",
+            file=sys.stderr,
         )
+        return _read_report_table_template(tmpl, DEFAULT_REPORT_TABLE_TEMPLATE)
+
+
+def _read_report_table_template(tmpl: object, name: str) -> _ReportTableTemplate:
+    """표 템플릿은 템플릿 객체의 리소스 루트(내장 assets 또는 --template-dir 디렉토리)에서 읽는다."""
+    template_id = str(getattr(tmpl, "id", ""))
+    # 표 템플릿 이름은 단순 id 다 — 슬래시·역슬래시·'.'/'..' 는 프로파일 루트 밖을 가리킨다(Codex R2 F7).
+    # 여기서 걸러야 아래 FileNotFoundError 폴백이 경로 이탈을 기본 템플릿으로 조용히 덮지 않는다.
+    if not TABLE_TEMPLATE_NAME_RE.match(name):
+        raise ValueError(f"hwpx report: invalid table template name {name!r} in template {template_id}")
+    rel = f"tables/{name}.xml"
+    reader = getattr(tmpl, "read_resource", None)
+    try:
+        if reader is not None:
+            data = reader(rel)
+        else:  # 리소스 루트가 없는 객체(테스트 더블) — 종전 내장 경로
+            data = resources.files("hwpx_report").joinpath("assets", f"templates/{template_id}/{rel}").read_bytes()
     except FileNotFoundError as exc:
         raise FileNotFoundError(
-            f"hwpx report: load table template {template_id}/{name}: open {rel}: file does not exist"
+            f"hwpx report: load table template {template_id}/{name}: {exc}"
         ) from exc
     try:
         root = ET.fromstring(data)

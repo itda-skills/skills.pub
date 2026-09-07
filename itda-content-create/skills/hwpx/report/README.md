@@ -27,3 +27,5 @@ python3 -m pytest tests   # Windows: py -3 -m pytest tests
 ## 조직별 맞춤 서식이 필요하면
 
 사용자가 자기 한글 양식을 가진 경우 범용 생성 대신 통합 hwpx 스킬의 채우기 경로(`scripts/fill_hwpx.py`)를 쓴다.
+참고 문서의 **서식만** 빌려 새 내용을 쓸 때는 `scripts/derive_profile.py analyze 참고.hwpx -o 프로파일/` 로 프로파일을 뽑고
+`python -m hwpx_report convert … --template-dir 프로파일/` 로 생성한 뒤 `derive_profile.py compare … --ref 참고.hwpx` 로 대조한다(USAGE.md §참고 서식 프로파일).

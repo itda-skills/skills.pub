@@ -13,11 +13,11 @@ allowed-tools: Read, Bash, Write, Glob, mcp__workspace__bash
 argument-hint: "[도메인/문서 프리셋 또는 스펙.json] [--rows N] [--xlsx-template 양식.xlsx] [--hwpx-template 양식.hwpx]"
 metadata:
   author: "Chinseok"
-  version: "0.1.0"
+  version: "0.1.1"
   category: "data-analysis"
   status: "experimental"
   created_at: "2026-09-05"
-  updated_at: "2026-09-05"
+  updated_at: "2026-09-06"
   tags: "synthetic-data, test-data, privacy, interview, preset, nursing-hospital, long-term-care, xlsx, hwpx, deterministic, korean"
 ---
 
@@ -77,7 +77,7 @@ SKILL_DIR="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/skills/synthetic-data}"
 $env:SKILL_DIR = "$env:CLAUDE_PLUGIN_ROOT\skills\synthetic-data"  # 미설정이면 SKILL.md 위치 절대경로 사용
 ```
 
-xlsx 산출에는 openpyxl 이 필요하다(없으면 xlsx 만 생략되고 csv·json·리포트는 나온다): `python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"`. Windows 는 `python3` 대신 `py -3`.
+xlsx 산출에는 openpyxl 이 필요하다(없으면 xlsx 만 생략되고 csv·json·리포트는 나온다): `python3 -m pip install --user -r "$SKILL_DIR/requirements.txt"`. Windows 는 `python3` 대신 `py -3` — 스크립트가 stdout/stderr 를 UTF-8 로 고정하므로 `-X utf8`·`PYTHONUTF8` 은 불요하고, 한글·공백이 든 경로(`C:\Users\…\바탕 화면\가상 데이터`)도 그대로 쓴다(Windows 11 + Python 3.13 실측, #1647).
 
 ### 명령
 

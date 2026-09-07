@@ -718,7 +718,19 @@ def cmd_fill_text(a) -> int:
     return 0
 
 
+def _force_utf8_stdio() -> None:
+    """stdout/stderr 를 UTF-8 로 고정한다 — Windows 는 파이프·파일 리다이렉트 시 cp949 라 '—'·'−'·'«' 가
+    UnicodeEncodeError 로 죽는다(#1647 Parallels 실측: show/validate/generate 가 산출은 만들고 rc=1).
+    산출물은 이미 전부 encoding="utf-8" 로 쓰므로 메시지 채널만 맞춘다. 대체 불가 문자는 '?' 로 두고 죽지 않는다."""
+    for s in (sys.stdout, sys.stderr):
+        try:
+            s.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main(argv=None) -> int:
+    _force_utf8_stdio()
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("presets")

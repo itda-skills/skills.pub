@@ -1,5 +1,9 @@
 # Changelog — itda-privacy-gate
 
+## [0.1.1] - 2026-09-06
+
+- **synthetic-data 0.1.1 (#1647)** — Windows cp949 stdout 크래시 수정(파이프 리다이렉트 시 `show`·`validate`·`generate` rc=1) + 사람 실측 픽스처.
+
 ## [0.1.0] - 2026-09-05
 
 - **팩 신설 (#1648 1단계)** — 플러그인 재정비 지도 v0.5 의 `itda-privacy-gate`. 목적 축은 "외부 AI 에 넣기 전 보호 게이트"(마스킹·복원·가상 데이터). pii-redact(itda-cs) 이관은 2단계.

@@ -1,5 +1,48 @@
 # Changelog — itda-hwpx
 
+## [1.3.0] — 2026-09-07 (#1653)
+
+jkf87/hwpx-skill(MIT) 대조 검토·Codex 적대 리뷰(`docs/research/hwpx-skill-review-jkf87/`)에서 실측된 공백을 닫았다 — 채우기가 조용히 놓치던 세 클래스
+(글꼴이 다른 run 분절·혼동문자·인라인 컨트롤), 빈 셀 채움 불가, 요청 서식이 내장 조판 밖이면 답이 없던 것. 채우기·프로파일 코어는 표준 라이브러리 단독을 유지한다.
+
+### Added
+
+- **채우기 문단 단위 매처**(`scripts/hwpxfill/` 패키지, `scripts/fill_hwpx.py` 는 진입점 유지) — run 경계·`charPrIDRef` 차이와 무관하게 문단 텍스트에서 키를 찾아
+  첫 조각에 값 전체를 두고 나머지 조각의 겹침만 지운다. 전각 공백은 공백 하나로 정규화하고 탭·줄바꿈·필드를 가로지르는 키는 절대 맞지 않는다(fail-closed).
+  치환 전후 컨트롤 태그 시퀀스 동일 자기검사.
+- `--check [--fix OUT.json] [--json]` 사전검증 — 키마다 ok / fixable(혼동문자·공백 차이, 교정안은 원문의 **대응 부분문자열**) / ctrl(나눔안) / multi / missing. 문제가 있으면 exit 2.
+  교정안이 겹치는 두 키는 collision(파일 미생성·exit 2). 접기는 결합 시퀀스 단위 NFC(NFD 한글도 잡는다).
+- `--residue 원본.hwpx [--keep 문구] [--json]` 잔재 대조 — 매핑 키 잔존·원본 **안내문 후보 문단**(`{{}}`·《》 마커 또는 `입력/작성/기재하세요`·`써 주세요`·○○·___ 같은 명령형·자리표시 문맥)·
+  키로 자른 세그먼트 잔존(마커·안내 어휘가 있는 것만)·**치환값 커버리지**(원본에 있던 키의 값이 결과에 없으면 value_missing)를 잡는다. 잔재가 있으면 exit 2.
+- `--dump` 를 문단 단위(`번호⇥위치⇥플래그⇥텍스트`, 표 좌표·`EMPTY`·`CTRL`)로. 미발견 경고가 `--check` 안내로.
+- **빈 칸 채움** — `--cell "표i rN cM=값"`(좌표, self-closing `<hp:t/>`·run 없는 셀도 채움), `--label "라벨=값"`(논리 그리드에서 오른쪽→아래 빈 셀, 병합·중첩 표·0/2+건 거부), `--tick 항목`(□→☑).
+- 옵트인 위생 `--strip-lineseg`(변경 문단의 줄 배치 캐시 제거)·`--refresh-preview`(미리보기 텍스트 재생성) — 한컴 실측 후 기본값 결정.
+- **참고 서식 프로파일** `report/scripts/derive_profile.py analyze 참고.hwpx -o 프로파일/ [--layout ai-report|report] [--strict]` — 본문 문단이 가장 많은 섹션 채택(`source_section`), header 재사용,
+  층위별 최빈 서식을 style-map 으로, secPr 보존 골격, 데이터 표 서식 추출, 폴백은 언어별 fontRef 를 보존해 합성 + 경고 + manifest 기록.
+  `compare 프로파일/ out.hwpx --ref 참고.hwpx` 속성 대조 게이트(글꼴·크기·굵기·정렬·들여쓰기·용지·여백·표, 미사용 스타일도 대조, `fallback_styles` 보고·`--strict` exit 2).
+- `python -m hwpx_report convert --template-dir 프로파일/` — 커스텀 템플릿 디렉토리 로더(`--template` 은 내장 id 전용·경로 거부, 필수 파일·id = 준 경로 basename·언어별 fontRef 실재 검사,
+  심볼릭 링크 루트 거부, `table.template` 이름 제한·루트 이탈 차단, 없는 표 템플릿은 경고 후 basic).
+- SKILL.md 라우팅 3분기(빈칸 양식 → 채우기 / 참고 문서 + 새 내용 → 프로파일 생성 / 파일 없음 → 내장 조판)와 입력 형태별 계약표(`.hwp`·PDF·구두 요청).
+- 기안문 매퍼: 소스에 직접 쓴 규정 항목기호(`가.`·`1)`·`가)`)를 그 계층으로 해석(종전 `3. 가. 일시` 이중 번호). 경고 문구를 조판별로("번호 항목으로 변환").
+- 샘플 카탈로그 `report/examples/cases/v13-samples/`(13종 + `run.sh` 일괄 재생성). **GUIDE.md 전면 재집필** — 기능 지도·읽기 옵션 전부·서식 5종(front-matter 전항)·채우기 4단계 전 기능·참고 서식·조합 시나리오·경고 사전·입력 형태별 약속·샘플 카탈로그, 지침은 `/hwpx …` 형식.
+
+### Changed
+
+- 채우기 매칭 계약이 `<hp:t>` 부분문자열에서 문단 단위로 바뀌었다. `merge_adjacent_runs` 폐기(테스트를 새 계약으로 갱신). `--dump` 출력 형식 변경.
+- sentinel 정책은 "텍스트를 나누는가" 로 정의한다 — 탭·줄바꿈·필드·책갈피·그림·표·미지 컨트롤은 나눈다(fail-closed), `colPr`·`secPr`·쪽 번호 같은 무텍스트 레이아웃 컨트롤은 나누지 않는다
+  (한컴이 셀 첫 run 에 넣는 `colPr` 를 접으면 실 양식의 `--label` 이 깨진다 — 2차 검수 시소 실측).
+- 혼동문자 접기 표(`scripts/hwpxfill/fold.py`)는 jkf87/hwpx-skill(MIT, 96a2633) `map_preflight.py:FOLD` 의 데이터성 상수를 차용해 확장했다(README 차용 출처). 알고리즘·코드는 독자 구현.
+
+### 검증
+
+- pytest 272 passed(신규 100). v1.3 샘플 13종 전건 생성·역변환·프로파일 대조 통과. 2차 적대 검수(Codex gpt-5.6-sol 10건 + Claude 렌즈 9건, 전건 수용) 반영 — 형제 컨트롤 fail-closed·내부 표 라벨 거부·값 커버리지·후보 규칙 축소·
+  fontRef 실재·미사용 스타일 대조·경로 격리·결합 NFC·collision·레이아웃 컨트롤 비분절·`--template-dir` 직접 로드·본문 섹션 채택·세그먼트 게이트.
+  뮤테이션 RED 실측 21종(문단 매처→`<hp:t>` 매처 / sentinel 제거 / `--fix` 문단 전체 / 라벨 span·내부 표 거부 제거 / 안내문 판정 무력화 / 값 커버리지 제거 /
+  compare 무력화·미사용 건너뜀 / 로더 디렉토리 무시·경로 검증 제거 / analyze no-op·section0 고정 / 여백 변조 등). 실 한컴 저장 픽스처(`large_table`·`multi_section_with_image`·
+  `mixed_content`·`multi_image_formats`) `--dump`·`--check`·채움·`--label`·`--residue`·analyze/compare 스모크.
+- 한컴오피스 HWP(macOS) 실측 2026-09-07: 실 한컴 저장본 채움 변형 4종(텍스트만 / +줄배치 캐시 제거 / +미리보기 갱신 / 둘 다) 전부 복구 경고 없이 원본과 동일 렌더 → 위생 옵션 기본 꺼짐 확정.
+  신청서 채움본·안내문 채움본·참고 서식 생성본·AI 친화 보고서·기안문 정상 렌더. 미수행: 한글 저장 → 재열기 축, Windows 한컴(구독 해지). 기록 `docs/research/hwpx-skill-review-jkf87/live/`.
+
 ## [1.2.0] — 2026-09-06 (#1652)
 
 서브에이전트 3기가 현업 시나리오 20종(AI 친화 보고서 6·기안문 6·표지형/구 개조식/보도자료/채우기/읽기 8)을 실제로 생성해

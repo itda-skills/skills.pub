@@ -31,3 +31,25 @@ PYTHONPATH="$SKILL_DIR/report" python3 -m hwpx_report convert spec.json -o out.h
 | others | read-01-with-image.md (+png) | 표+이미지 문서 읽기 md/html | gov-report → reader | "이 문서 HTML로, 서식 그대로" |
 
 실험 원문(경고·결함 추적 기록)은 저장소 `docs/research/hwpx-format-comparison-1651/experiments/` 에 있습니다. 거기서 지목된 결함은 v1.2.0 에서 교정됐습니다.
+
+## v1.3 샘플 (v13-samples/, #1653)
+
+`bash v13-samples/run.sh <출력 디렉토리>` 로 13종을 한 번에 다시 만든다(hwpx + 역변환 md + 경고 + `SUMMARY.md`). 환경변수 `PYTHON` 으로 인터프리터를 지정할 수 있다.
+
+| 파일 | 유형 | layout / template |
+|---|---|---|
+| 01-ai-outline-roman.md (+chart.png) | AI 친화 보고서 — `Ⅰ. 1. 가. 1)` 체계·산문·표·그림 | ai-report |
+| 02-ai-brief-memo.md | AI 친화 보고서 — 한 쪽 대면보고 | ai-report |
+| 03-ai-inspection-tables.md | AI 친화 보고서 — 표 3 결과보고 | ai-report |
+| 04-letter-external-full.md | 기안문 — 외부 수신·경유·협조자·공개구분·붙임 3·표로 끝남·`가. 1)` 직접 표기 | official-letter |
+| 05-letter-internal-approval.md | 기안문 — 내부결재·부분공개 | official-letter |
+| 06-press-release-table.md | 보도자료 — 리드문·표·인용 2 | press-release |
+| 07-briefing-attachments.md | 표지목차형 — 붙임 2 | briefing |
+| 08-gov-report-legacy.md | 구 개조식 통계표 | report / gov-report |
+| (09) | 01 을 실제 기관 보고서(`tests/reader/fixtures/inputs/multi_section_with_image.hwpx`) 서식으로 | derive_profile analyze → `--template-dir` → compare |
+| (10) | 02 를 08 산출의 서식으로(report 조판) | derive_profile analyze → `--template-dir` → compare |
+| 11-form-application.md | 빈칸 신청서 양식 → `--label`·`--cell`·`--tick` 채우기 → `--residue` | gov-report → fill_hwpx |
+| 12-form-guided.md + 12-form-guided-map.json | 안내문 양식 → `--check --fix`(혼동문자) → `--strict` 채움 → `--residue --keep` | ai-report → fill_hwpx |
+| (13) | 01 을 HTML 로 읽기 | reader |
+
+이 샘플을 만들며 잡은 결함: 기안문 소스의 `가.`·`1)`·`가)` 직접 표기가 이중 번호로 나가던 것(매퍼 교정), compare 가 표 셀 정렬을 서식으로 대조하던 것(제외).

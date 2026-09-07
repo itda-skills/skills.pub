@@ -19,7 +19,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | draft-post | 블로그·보고서·기획서·보도자료·뉴스레터를 도메인 맞춤 인터뷰로 초안 작성하는 스킬입니다. | 없음 | "블로그 글 써줘", "보고서 초안 작성해줘", "기획서 만들어줘" | itda-content-create | 본 스킬은 초안 생성 전담(AI 흔적 사전의 정본: itda-content-create:human-tone) — 이미 작성된 글의 AI 흔적 제거·문체 후처리는 itda-content-create:human-tone 이 맡고, 본 스킬은 발행·송부를 하지 않습니다. |
 | html-report | 마크다운 보고서·분석 결과·회의 정리를 연차보고서 수준의 단일 파일 HTML 문서로 렌더링하는 스킬입니다. | 없음 | "이 보고서 HTML 파일로 만들어줘", "컨설팅 보고서 스타일로 전략 검토 문서 만들어줘", "공공기관 제출용 개조식 보고서 HTML로" | itda-content-create | 본 스킬은 보고서형 HTML 렌더 전담 — 아침 브리핑 페이지는 itda-day-organize:morning-brief. |
 | human-tone | 이미 작성된 한국어 사무 글(보고서·메일·기획서·공지)에서 AI 흔적을 걷어내는 후처리 스킬입니다. | 없음 | "이 보고서 AI 같아", "메일 너무 딱딱해", "사람이 쓴 것처럼 고쳐줘" | itda-content-create | 본 스킬은 완성된 글의 후처리 검수 전담(AI 흔적 사전 가드 정본) — itda-content-create:draft-post 는 처음부터 초안을 쓰는 생성 단계이며, 같은 글에 두 스킬을 겹쳐 적용하지 않습니다. |
-| hwpx | 한글 HWP·HWPX 문서 스킬입니다. | 없음 | "이 HWP 파일 읽어줘", "이 한글 양식 채워줘", "한글 보고서 만들어줘" | itda-content-create | — |
+| hwpx | 한글 HWP·HWPX 문서 스킬입니다. | 없음 | "이 HWP 파일 읽어줘", "이 한글 양식 채워줘", "빈칸 채워줘" | itda-content-create | — |
 | imagegen | 발표자료·블로그·문서용 이미지/삽화를 품질 하한과 함께 생성하는 스킬입니다. | 없음 | "블로그 히어로 이미지 만들어줘", "슬라이드 배경 비주얼", "쇼츠용 세로 삽화" | itda-content-create | — |
 | imagekit | 이미지 조회·리사이즈·여백 크롭·DPI 변경·포맷 변환·회전을 단일 CLI로 처리하는 스킬입니다. | 없음 | "이미지 크기 줄여줘", "여백 크롭해줘", "PNG를 JPG로 변환해줘" | itda-content-create | — |
 | pptx-design | 콘텐츠 마크다운과 수치 데이터로 16:9 PPTX 발표자료를 크로스플랫폼(macOS/Linux, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "삼성전자 주가전망 ppt 만들어줘", "이 DESIGN.md로 발표자료 디자인해줘", "md 내용으로 슬라이드 덱 생성" | itda-content-create | — |
@@ -58,7 +58,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | market-scan | 외부 시장·산업 자료를 찾아 의사결정용으로 구조화하는 시장조사 스킬입니다. | DART_API_KEY, ECOS_API_KEY, EXA_API_KEY, KOSIS_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "OO 시장 조사해줘", "시장 규모랑 경쟁사 알려줘", "신사업 진입할 만한지 분석해줘" | itda-evidence-verify | — |
 | meeting-reliability | 회의 녹취·기록에서 "확인 / 확인 필요 / 예외"를 근거와 함께 정확히 가르는 신뢰성 검수 스킬입니다. | 없음 | "확인 / 확인 필요 / 예외", "이 녹취 결정사항 표로 정리해줘", "회의록 신뢰성 검수해줘" | itda-evidence-verify | — |
 | pptx-diff | PPTX 발표자료 두 버전의 차이를 슬라이드·도형·텍스트 단위로 비교해 한국어로 요약하는 스킬입니다. | 없음 | "이 pptx 두 버전 비교해줘", "덱 뭐가 바뀌었어?", "발표자료 개정본 리뷰해줘" | itda-evidence-verify | — |
-| papercraft-box | 마인크래프트 캐릭터·블록·포털, 로봇, 동물, 자동차처럼 "상자 조합"으로 표현되는 주제를 A4 에 인쇄해 오리고 접어 조립하는 papercraft PDF 도안… | 없음 | "상자 조합", "페이퍼크래프트 만들어줘", "종이접기 도안" | itda-family-play | 상자 조합 papercraft 전개도 PDF 전담 — 도트 그림 변환은 itda-family-play:pixel-art, 새 그림 생성은 itda-content-create:imagegen. |
+| papercraft-box | 마인크래프트 캐릭터·블록·아이템(검·곡괭이), 로봇, 동물처럼 상자 조합이나 픽셀 그림을 두껍게 세운 형태를 A4 에 인쇄해 오리고 접어 조립하는 papercr… | 없음 | "페이퍼크래프트 만들어줘", "크리퍼 papercraft pdf", "마인크래프트 다이아몬드 검 만들어줘" | itda-family-play | papercraft 전개도 PDF 전담 — 도트 그림 변환은 itda-family-play:pixel-art, 새 그림 생성은 itda-content-create:imagegen. |
 | pixel-art | 이미지 파일을 픽셀 아트(도트 그림)로 변환하는 스킬입니다. | 없음 | "이 이미지 픽셀아트로 만들어줘", "도트 그림으로", "8비트 스타일로" | itda-family-play | — |
 | airport-airline-stats | 인천공항 항공사별 월별 통계(운항·여객·화물)를 LLM-친화 JSON으로 조회하는 스킬입니다. | 없음 | "2025년 3월 인천공항 항공사별 통계 알려줘", "지난달 국제선 여객기 통계 뽑아줘", "T1 터미널 항공사별 운항 횟수 조회해줘" | itda-gov-collect | — |
 | bai-notice | 감사원 통합공지 게시판을 내부 JSON API로 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "감사원 공지 확인해줘", "감사원 통합공지 최근 10건 보여줘", "감사원에서 채용 공고 찾아줘" | itda-gov-collect | — |

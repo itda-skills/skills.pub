@@ -32,7 +32,16 @@ def _box_item(spec, part, at, i=0):
 def _flat_item(spec, part, at):
     key = {k: pc.hexcol(v) for k, v in part.get("key", {}).items()}
     grid = [[key.get(ch) if ch != "." else None for ch in row] for row in part["pixels"]]
-    return dict(kind="flat", at=tuple(at), grid=grid, cell=part["px_mm"])
+    return dict(kind="flat", at=tuple(at), grid=grid, cell=part["px_mm"], th=FLAT_THICKNESS_MM)
+
+
+def _prism_item(spec, part, at):
+    """prism 은 flat 과 같은 픽셀 판이되 두께가 스펙 값이다. 도면의 `rotate` 는 A4 배치용이라
+    3D 형상과 무관하다 — 완성품은 스프라이트가 놓인 방향 그대로다."""
+    key = {k: pc.hexcol(v) for k, v in part.get("key", {}).items()}
+    grid = [[key.get(ch) if ch != "." else None for ch in row] for row in part["pixels"]]
+    return dict(kind="flat", at=tuple(at), grid=grid,
+                cell=pc.prism_cell_mm(spec, part), th=pc.prism_thickness_mm(spec, part))
 
 
 def _sheet_item(spec, part, at):
@@ -52,6 +61,7 @@ def default_layout(spec):
         for i in range(cnt):
             out.append({"id": p["id"], "at": [x, 0, 0], "i": i})
             if kind == "box": x += p["size"][0] * u + u
+            elif kind == "prism": x += len(p["pixels"][0]) * pc.prism_cell_mm(spec, p) + u
             elif kind == "flat": x += len(p["pixels"][0]) * p["px_mm"] + u
             else: x += p["size"][0] * u + u
     return out
@@ -70,6 +80,7 @@ def layout_items(spec):
     for L in spec.get("layout") or default_layout(spec):
         p = parts[L["id"]]; kind = p.get("type", "box"); at = resolve_at(spec, L)
         if kind == "box": items.append(_box_item(spec, p, at, L.get("i", 0)))
+        elif kind == "prism": items.append(_prism_item(spec, p, at))
         elif kind == "flat": items.append(_flat_item(spec, p, at))
         elif kind == "sheet": items.append(_sheet_item(spec, p, at))
         else: raise ValueError(f"알 수 없는 type: {kind}")
@@ -104,7 +115,7 @@ def box_quads(quads, it):
 
 
 def flat_quads(quads, it):
-    tx, ty, tz = it["at"]; grid = it["grid"]; pm = it["cell"]; th = FLAT_THICKNESS_MM
+    tx, ty, tz = it["at"]; grid = it["grid"]; pm = it["cell"]; th = it.get("th", FLAT_THICKNESS_MM)
     rows, cols = len(grid), len(grid[0])
     _face(quads, (tx, ty, tz + rows * pm), (1, 0, 0), (0, 0, -1), grid, (0, -1, 0), pm)
     _face(quads, (tx + cols * pm, ty + th, tz + rows * pm), (-1, 0, 0), (0, 0, -1), [r[::-1] for r in grid], (0, 1, 0), pm)
