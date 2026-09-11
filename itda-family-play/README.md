@@ -31,8 +31,9 @@
 ### 한글 폰트
 
 PDF 의 한글은 스크립트가 시스템 TrueType 한글 폰트(Linux 나눔고딕 · macOS AppleGothic · Windows 맑은고딕)를
-먼저 찾고, 없으면 동봉 `NanumGothic-Regular.ttf`(OFL) 로 찍습니다. Cowork Linux 의 Noto Sans CJK `.ttc` 와
-macOS AppleSDGothicNeo 는 CFF 아웃라인이라 reportlab 이 쓰지 못해 건너뜁니다 — 동봉 폰트가 폴백으로 남아 있는 이유입니다.
+먼저 찾고, 없으면 `NanumGothic-Regular.ttf`(OFL)를 한 번 내려받아 `~/.cache/itda-skills/fonts/` 에 둡니다
+(sha256 검증, 이후 재사용). Cowork Linux 의 Noto Sans CJK `.ttc` 와 macOS AppleSDGothicNeo 는 CFF 아웃라인이라
+reportlab 이 쓰지 못해 건너뜁니다 — 폴백이 필요한 이유입니다. 폰트 파일은 저장소에 동봉하지 않습니다(#1660).
 
 ## 개발
 

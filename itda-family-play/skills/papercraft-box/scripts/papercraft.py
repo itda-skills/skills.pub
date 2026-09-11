@@ -35,7 +35,10 @@ if HERE not in sys.path:
 # ---------------------------------------------------------------- 색
 def hexcol(s):
     if isinstance(s, (list, tuple)): return tuple(s)
-    s = s.lstrip("#")
+    raw = s; s = s.lstrip("#")
+    if len(s) == 3: s = "".join(ch * 2 for ch in s)          # #EEE → #EEEEEE
+    if len(s) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in s):
+        raise ValueError(f"색 '{raw}' 은 #RRGGBB(또는 #RGB) 형식이어야 한다")
     return tuple(int(s[i:i + 2], 16) / 255 for i in (0, 2, 4))
 
 
@@ -146,6 +149,11 @@ class Pdf:
     def text(self, x, y, s, size=8, bold=False, color=(0, 0, 0), right=False):
         c = self.c; c.saveState(); c.setFillColorRGB(*color); c.setFont("FB" if bold else "F", size)
         (c.drawRightString if right else c.drawString)(self.X(x), self.Y(y), s); c.restoreState()
+
+    def circle(self, cx, cy, r, stroke=LINE, lw=0.4, fill=None):
+        c = self.c; c.saveState(); c.setStrokeColorRGB(*stroke); c.setLineWidth(lw)
+        if fill: c.setFillColorRGB(*fill)
+        c.circle(self.X(cx), self.Y(cy), r * MM, stroke=1, fill=1 if fill else 0); c.restoreState()
 
 
 # ---------------------------------------------------------------- 그리기 프리미티브
@@ -314,7 +322,153 @@ def draw_flat(pdf, x0, y0, part, label):
             if r == rows - 1 or not filled[r + 1][c]: pdf.line(X0, Y0 + px, X0 + px, Y0 + px, 0.4)
             if c == 0 or not filled[r][c - 1]: pdf.line(X0, Y0, X0, Y0 + px, 0.4)
             if c == cols - 1 or not filled[r][c + 1]: pdf.line(X0 + px, Y0, X0 + px, Y0 + px, 0.4)
+    # 결속 절개 — 외곽선 뒤에 그린다: 변에 걸친 슬릿(가장자리 홈)은 흰 채움이 그 자리 외곽선을 지워 홈이 열려 보인다
+    cut = flat_cutouts(part)
+    for cx, cy, d in cut["holes"]:
+        pdf.circle(x + cx, y + cy, d / 2)
+        a = d * 0.35                                      # 펀치·송곳 조준용 십자
+        pdf.line(x + cx - a, y + cy, x + cx + a, y + cy, 0.2, color=(0.45, 0.45, 0.45))
+        pdf.line(x + cx, y + cy - a, x + cx, y + cy + a, 0.2, color=(0.45, 0.45, 0.45))
+    for cx, cy, w, h in cut["slots"]:
+        # 슬롯은 부품 실루엣 안에서만 그린다(#1663 F05) — 채워진 칸마다 클립해 흰 채움·절단선을 넣으면
+        # 변에 걸친 홈은 열려 보이고, 부품 밖·이웃 부품 위로는 아무것도 나가지 않는다.
+        # 클립 대신 **잘린 형상 자체**를 그린다(#1663 N03) — 흰 채움은 칸과의 교집합 사각형, 절단선은 채워진 칸 안에 드는
+        # 구간만. PDF 의 도형 bbox 가 실제 가시 영역과 같아져 verify 가 클립 전 사각형으로 거짓 FAIL 을 내지 않는다.
+        sx0, sy0, sx1, sy1 = x + cx - w / 2, y + cy - h / 2, x + cx + w / 2, y + cy + h / 2
+        def cell_of(mx, my):
+            c, r = int(math.floor((mx - x) / px)), int(math.floor((my - y) / px))
+            return (r, c) if 0 <= r < rows and 0 <= c < cols and filled[r][c] else None
+        for r in range(rows):
+            for c in range(cols):
+                if not filled[r][c]: continue
+                X0, Y0 = x + c * px, y + r * px
+                ix0, iy0, ix1, iy1 = max(sx0, X0), max(sy0, Y0), min(sx1, X0 + px), min(sy1, Y0 + px)
+                if ix1 - ix0 <= 1e-6 or iy1 - iy0 <= 1e-6: continue
+                pdf.rect(ix0, iy0, ix1 - ix0, iy1 - iy0, (1, 1, 1))
+        eps = 1e-3
+        for (ax, ay, bx, by, probe_dx, probe_dy) in ((sx0, sy0, sx1, sy0, 0, eps), (sx0, sy1, sx1, sy1, 0, -eps),
+                                                     (sx0, sy0, sx0, sy1, eps, 0), (sx1, sy0, sx1, sy1, -eps, 0)):
+            horizontal = ay == by
+            lo, hi = (ax, bx) if horizontal else (ay, by)
+            n = max(1, int(math.ceil((hi - lo) / px)) + 2)
+            # 변을 칸 폭 단위로 쪼개 각 구간의 중점이 채워진 칸 안(변 안쪽으로 eps)인 것만 긋는다
+            bounds = sorted({lo, hi} | {x + k * px for k in range(cols + 1)} if horizontal else {lo, hi} | {y + k * px for k in range(rows + 1)})
+            for a, b in zip(bounds, bounds[1:]):
+                if a < lo - 1e-9 or b > hi + 1e-9 or b - a <= 1e-6: continue
+                m = (a + b) / 2
+                inside = cell_of(m + probe_dx, ay + probe_dy) if horizontal else cell_of(ax + probe_dx, m + probe_dy)
+                if inside is None: continue
+                if horizontal: pdf.line(a, ay, b, ay, 0.4)
+                else: pdf.line(ax, a, ax, b, 0.4)
     pdf.text(x, y0 + 2.2, label, 7.5, bold=True)
+
+
+# ---------------------------------------------------------------- 결속 절개(flat) · 끈(cords)
+HOLE_D_DEFAULT = 2.5      # 펀치 기본 지름(mm) — 낚싯줄·털실·얇은 고무줄이 지난다
+CORD_D_DEFAULT = 1.0      # 조감도의 끈 굵기(mm)
+CORD_COLOR_DEFAULT = "#E8E8E8"
+
+
+def flat_cutouts(part):
+    """flat 부품의 `holes`/`slots` 를 검증해 픽셀 격자 좌상단 기준 mm 로컬 좌표로 돌려준다.
+
+    - `holes: [{"at_px": [col,row], "d_mm": 2.5}]` — 펀치 구멍(원 절단선 + 조준 십자). 원 전체가 채워진 픽셀 안에
+      들어야 한다. 칸 좌표는 소수 허용(칸 (r,c) 의 중심 = [c+0.5, r+0.5]).
+    - `slots: [{"at_px": [col,row], "w_mm": w, "h_mm": h}]` — 직사각 절개(흰 채움 + 절단선). 중심은 채워진 픽셀 안에
+      있어야 하고, 변에 걸쳐도 된다(가장자리 홈 — 오늬·화살 받침).
+    빈 픽셀 위의 구멍은 뚫을 종이가 없다 — 조용히 넘기지 않고 에러다. 칸 단면(예: 8×8 화살대)이 지나는 구멍은
+    이 프리미티브가 아니라 `pixels` 의 `.` 한 칸으로 뚫는다.
+    """
+    px = float(part["px_mm"]); pix = part["pixels"]
+    rows, cols = len(pix), len(pix[0])
+    def num(v, what):
+        f = float(v)
+        if not math.isfinite(f): raise ValueError(f"부품 {part['id']}: {what} 이 유한한 수가 아니다({v})")
+        return f
+    def filled_at(mx, my):
+        c, r = int(math.floor(mx / px)), int(math.floor(my / px))
+        return 0 <= r < rows and 0 <= c < cols and pix[r][c] != "."
+    def circle_hits_empty(cx, cy, r):
+        """원이 빈 칸(또는 격자 밖)을 무는가 — 5점 표본이 아니라 **원 ↔ 사각형 정확 교차**로 판정한다(#1663 F04).
+        빈 칸 사각형에서 원 중심에 가장 가까운 점까지의 거리가 r 미만이면 문다. 격자 밖은 사방 1칸 테두리로 센다."""
+        for rr in range(-1, rows + 1):
+            for cc in range(-1, cols + 1):
+                if 0 <= rr < rows and 0 <= cc < cols and pix[rr][cc] != ".": continue
+                X0, Y0 = cc * px, rr * px
+                nx, ny = min(max(cx, X0), X0 + px), min(max(cy, Y0), Y0 + px)
+                if (nx - cx) ** 2 + (ny - cy) ** 2 < (r - 1e-6) ** 2: return True
+        return False
+    holes, slots = [], []
+    for k, h in enumerate(part.get("holes", [])):
+        cx, cy = (num(v, f"holes[{k}].at_px") * px for v in h["at_px"]); d = num(h.get("d_mm", HOLE_D_DEFAULT), f"holes[{k}].d_mm")
+        if d <= 0: raise ValueError(f"부품 {part['id']}: holes[{k}] 지름이 0 이하다")
+        if not filled_at(cx, cy) or circle_hits_empty(cx, cy, d / 2):
+            raise ValueError(f"부품 {part['id']}: holes[{k}] at_px={h['at_px']} d={d}mm 가 채워진 픽셀 안에 다 들어가지 않는다"
+                             f" — 뚫을 종이가 없는 자리다. 칸 중심([c+0.5, r+0.5])으로 옮기거나 지름을 줄여라")
+        holes.append((cx, cy, d))
+    for k, s in enumerate(part.get("slots", [])):
+        cx, cy = (num(v, f"slots[{k}].at_px") * px for v in s["at_px"]); w, hh = num(s["w_mm"], f"slots[{k}].w_mm"), num(s["h_mm"], f"slots[{k}].h_mm")
+        if w <= 0 or hh <= 0: raise ValueError(f"부품 {part['id']}: slots[{k}] 폭·높이는 양수여야 한다")
+        if not filled_at(cx, cy):
+            raise ValueError(f"부품 {part['id']}: slots[{k}] at_px={s['at_px']} 의 중심이 빈 픽셀 위다 — 절개할 종이가 없다")
+        for j, (hx, hy, hd) in enumerate(holes):   # 슬롯이 구멍을 지우면 그 구멍에 맨 끈은 허공을 가리킨다(#1663 F06)
+            nx, ny = min(max(hx, cx - w / 2), cx + w / 2), min(max(hy, cy - hh / 2), cy + hh / 2)
+            if (nx - hx) ** 2 + (ny - hy) ** 2 < (hd / 2 + 1.0) ** 2:
+                raise ValueError(f"부품 {part['id']}: slots[{k}] 이 holes[{j}] 를 침범한다(구멍 둘레 1mm 안) — 구멍이 사라지거나 찢어진다")
+        slots.append((cx, cy, w, hh))
+    return {"holes": holes, "slots": slots}
+
+
+def resolve_cords(spec):
+    """최상위 `cords` 를 검증한다 — 조감도의 끈이 도안의 구멍과 **같은 말**을 하도록 끝점은 flat 부품의
+    `holes` 중 하나(구멍)이거나 `{"at":[x,y,z]}` 자유점(오늬처럼 끈이 꺾여 닿는 접점)이다. 끈 하나의 양 끝이 모두
+    자유점일 수는 없고, 자유점은 **두 끈이 만나는 접점**이라 다른 끈의 끝점으로 한 번 더 나타나야 한다(끊긴 시위 금지).
+    구멍 끝점의 (id, i) 는 `layout` 이 있으면 거기에 배치돼 있어야 한다(plan/build 가 통과한 뒤 render 만 죽는 경로 차단).
+    반환: [{"from": {"id","i","px"} | {"at"}, "to": {...}, "color": rgb, "d_mm": float}]
+
+    `cords: [{"from": {"id": "bow", "px": [2, 1.5]}, "to": {"at": [15.5, -0.5, 60]}, "color": "#EEEEEE", "d_mm": 1}, ...]`
+    끈은 PDF 에 그리지 않는다(재료는 사용자가 준비) — 조감도에 가는 사각기둥으로만 렌더한다.
+    """
+    parts = {p["id"]: p for p in spec.get("parts", [])}
+    placed = None
+    if spec.get("layout") is not None:
+        placed = {(L["id"], int(L.get("i", 0))) for L in spec["layout"]}
+    out = []; free_points = []
+    for k, cd in enumerate(spec.get("cords", [])):
+        ends = {}
+        for end in ("from", "to"):
+            e = cd.get(end)
+            if isinstance(e, dict) and "at" in e and "id" not in e:        # 자유점(mm) — 오늬처럼 끈이 꺾여 닿는 접점
+                at = e["at"]
+                if not (isinstance(at, (list, tuple)) and len(at) == 3 and all(math.isfinite(float(v)) for v in at)):
+                    raise ValueError(f"cords[{k}].{end}.at 은 [x,y,z] mm 세 수여야 한다")
+                ends[end] = {"at": [float(v) for v in at]}; free_points.append(tuple(round(float(v), 6) for v in at)); continue
+            if not isinstance(e, dict) or "id" not in e or "px" not in e:
+                raise ValueError(f"cords[{k}].{end}: {{\"id\", \"px\": [col,row]}}(구멍) 또는 {{\"at\": [x,y,z]}}(접점) 이 필요하다")
+            p = parts.get(e["id"])
+            if p is None: raise ValueError(f"cords[{k}].{end}: 부품 '{e['id']}' 이 없다")
+            if p.get("type", "box") != "flat":
+                raise ValueError(f"cords[{k}].{end}: 끈은 flat 부품의 구멍에만 맬 수 있다('{e['id']}' 은 {p.get('type', 'box')})")
+            px_ = [float(v) for v in e["px"]]
+            if not any(abs(float(h["at_px"][0]) - px_[0]) < 1e-6 and abs(float(h["at_px"][1]) - px_[1]) < 1e-6
+                       for h in p.get("holes", [])):
+                raise ValueError(f"cords[{k}].{end}: 부품 '{e['id']}' 에 at_px={e['px']} 구멍(holes)이 없다"
+                                 f" — 끈은 도안에 뚫린 구멍에만 맨다(조감도와 도안이 같은 말을 해야 한다)")
+            i = e.get("i", 0)
+            if isinstance(i, bool) or not isinstance(i, int) or not 0 <= i < int(p.get("count", 1)):   # #1663 F08
+                raise ValueError(f"cords[{k}].{end}: i={i!r} — 0 이상 count({p.get('count', 1)}) 미만의 정수여야 한다")
+            if placed is not None and (e["id"], i) not in placed:
+                raise ValueError(f"cords[{k}].{end}: 부품 '{e['id']}'(i={i}) 가 layout 에 없다 — 끈을 놓을 자리가 없다(plan 단계에서 잡는다)")
+            ends[end] = {"id": e["id"], "i": i, "px": px_}
+        if "at" in ends["from"] and "at" in ends["to"]:
+            raise ValueError(f"cords[{k}]: 양 끝이 모두 자유점이다 — 적어도 한쪽은 도안의 구멍이어야 끈이 어딘가에 매인다")
+        d = float(cd.get("d_mm", CORD_D_DEFAULT))
+        if not (math.isfinite(d) and d > 0): raise ValueError(f"cords[{k}]: d_mm={cd.get('d_mm')} — 유한한 양수여야 한다")
+        out.append({"from": ends["from"], "to": ends["to"], "color": hexcol(cd.get("color", CORD_COLOR_DEFAULT)), "d_mm": d})
+    for pt in set(free_points):          # 접점은 두 끈이 만나는 곳이다 — 한 번만 나오면 끈이 거기서 끊겨 있다(#1663 F14 시위 단절)
+        if free_points.count(pt) < 2:
+            raise ValueError(f"cords: 자유점 {list(pt)} 이 끈 하나에만 나타난다 — 접점은 두 끈이 만나야 한다(끊긴 끈)")
+    return out
 
 
 def longest_run(bools):
@@ -347,6 +501,70 @@ BAND_MIN_TAIL = 6.0  # 띠 조각 끝 이음 혀 최소 길이
 
 
 FOLD_ON_DARK = (0.92, 0.92, 0.92)
+
+
+# ---------------------------------------------------------------- tube: 종이를 말아 만드는 관(화살대·기둥·막대)
+TUBE_TAB_DEFAULT = 8.0     # 마지막 바퀴 끝의 풀 띠(mm)
+TUBE_TURNS_DEFAULT = 3     # 겹 수 — 3겹이면 80g 종이도 화살대로 쓸 만큼 뻣뻣하다
+TUBE_NOCK_DEFAULT = 6.0    # 오늬 깊이 표시(mm) — 말고 난 뒤 이 선까지 가위집
+
+
+def tube_geom(part):
+    """tube 부품의 순수 치수(mm). 띠 = 길이 L × (둘레 × 겹 수 + 풀 띠).
+
+    `length_mm`(필수) · `diameter_mm`(필수, 안지름 — 심으로 쓰는 꼬치 굵기) · `turns`(기본 3) · `tab_mm`(풀 띠, 기본 8) ·
+    `nock_mm`(오늬 깊이 표시, 0 이면 없음 · 기본 6) · `color`(단색, 기본 #C8A165).
+    겹이 쌓이며 종이 두께만큼 둘레가 늘지만(80g ≈ 0.1mm/겹 → 3겹 ≈ +0.6mm) 마지막 풀 띠가 그 오차를 삼킨다 — 계수를 지어 넣지 않는다.
+    """
+    def fin(v, what):
+        f = float(v)
+        if not math.isfinite(f): raise ValueError(f"부품 {part['id']}: tube 의 {what} 이 유한한 수가 아니다({v!r})")
+        return f
+    L = fin(part["length_mm"], "length_mm"); d = fin(part["diameter_mm"], "diameter_mm")
+    turns_raw = part.get("turns", TUBE_TURNS_DEFAULT)
+    if isinstance(turns_raw, bool) or not isinstance(turns_raw, int):      # 겹 수는 정수다 — 1.9 를 1 로 접지 않는다(#1663 F07)
+        raise ValueError(f"부품 {part['id']}: tube 의 turns 는 정수여야 한다({turns_raw!r})")
+    turns = turns_raw
+    tab = fin(part.get("tab_mm", TUBE_TAB_DEFAULT), "tab_mm"); nock = fin(part.get("nock_mm", TUBE_NOCK_DEFAULT), "nock_mm")
+    if L <= 0 or d <= 0: raise ValueError(f"부품 {part['id']}: tube 의 length_mm·diameter_mm 는 양수여야 한다")
+    if turns < 1: raise ValueError(f"부품 {part['id']}: tube 의 turns 는 1 이상이어야 한다")
+    if tab <= 0: raise ValueError(f"부품 {part['id']}: tube 의 tab_mm(풀 띠)은 양수여야 한다 — 없으면 관이 풀린다")
+    if nock < 0 or nock >= L / 2: raise ValueError(f"부품 {part['id']}: tube 의 nock_mm 은 0 이상, 길이의 절반 미만이어야 한다")
+    circ = math.pi * d
+    return dict(L=L, d=d, turns=turns, tab=tab, circ=circ, C=circ * turns, nock=nock,
+                color=hexcol(part.get("color", "#C8A165")))
+
+
+def tube_bbox(part):
+    g = tube_geom(part)
+    return g["L"], g["C"] + g["tab"] + LABEL_H
+
+
+def draw_tube(pdf, x0, y0, part, label):
+    """말기 도안 한 장: 위 변이 말기 시작(꼬치를 대는 자리), 아래로 한 바퀴마다 안내 점선, 맨 아래 회색 풀 띠.
+    왼쪽 = 머리(촉), 오른쪽 = 꼬리 — 오늬 표시선은 꼬리 쪽 끝에서 nock_mm 안쪽."""
+    g = tube_geom(part); L, C, tab, circ = g["L"], g["C"], g["tab"], g["circ"]
+    y = y0 + LABEL_H
+    pdf.rect(x0, y, L, C + 0.05, g["color"])
+    dim = (0.35, 0.35, 0.35) if fold_color(g["color"]) == FOLD else (0.9, 0.9, 0.9)
+    for k in range(1, g["turns"]):                        # 바퀴 안내선(접는 선이 아니라 진행 확인용)
+        pdf.line(x0, y + k * circ, x0 + L, y + k * circ, 0.25, dash=(0.8, 1.6), color=dim)
+        if L >= 40: pdf.text(x0 + 1.5, y + k * circ - 0.8, f"{k}바퀴", 4.5, color=dim)
+    tab_y = y + C
+    pdf.rect(x0, tab_y, L, tab, GREY)                      # 풀 띠 — 마지막 바퀴가 이 위에 덮인다
+    pdf.line(x0, tab_y, x0 + L, tab_y, dash=DASH, color=fold_color(g["color"]))
+    if tab >= 5 and L >= 30: pdf.text(x0 + L / 2 - 2, tab_y + tab / 2 + 1.2, "풀", 5, color=(0.45, 0.45, 0.45))
+    if g["nock"] > 0:                                      # 오늬: 말고 난 뒤 이 선까지 **세로**(시위 방향) 가위집 → 시위가 걸린다
+        nx = x0 + L - g["nock"]
+        pdf.line(nx, y, nx, tab_y + tab, 0.3, dash=DASHDOT, color=fold_color(g["color"]))
+    # 안내 문구는 띠 안에 클립한다 — 짧은 관에서 문구가 띠·페이지 밖으로 나가지 않는다(#1663 F10)
+    pdf.clip(x0, y, L, C)
+    if g["nock"] > 0 and C >= 14 and L >= 70: pdf.text(x0 + L - g["nock"] - 22, y + 4.5, "오늬: 말고 나서 가위집 →", 4.5, color=dim)
+    if L >= 90 and C >= 10:
+        pdf.text(x0 + 1.5, y + 4.5, "↑ 이 변에 꼬치를 대고 아래로 말기 · 왼쪽=머리(촉) 오른쪽=꼬리", 4.5, color=dim)
+    pdf.unclip()
+    pdf.rect(x0, y, L, C + tab, None, LINE, 0.4)
+    pdf.text(x0, y0 + LABEL_H - 1.2, label, 7.5, bold=True)
 
 
 def fold_color(bg):
@@ -533,6 +751,7 @@ def expand_parts(spec):
     """count/label 확장 → 배치 아이템 목록 [{kind, bbox, draw-args}]"""
     u = unit_mm(spec); tb_default = spec.get("tab_mm", 6); ppu = spec.get("px_per_unit", 1)
     palettes = spec.get("palettes", {}); textures = spec.get("textures", {})
+    resolve_cords(spec)             # 끈 검증은 배치 단계부터 — plan 도 build 와 같은 계약을 본다(#1663 F08)
     items = []; n = 0
     for part in spec["parts"]:
         cnt = part.get("count", 1)
@@ -553,8 +772,12 @@ def expand_parts(spec):
                 new, nxt = prism_items(spec, part, labels[i], tb, n)
                 items.extend(new); n = nxt - 1
             elif kind == "flat":
+                flat_cutouts(part)            # 구멍·슬릿 검증을 배치 단계(plan)에서 — 빈 픽셀 위 구멍은 PDF 이전에 잡는다
                 W, H = flat_bbox(part)
                 items.append(dict(kind="flat", W=W, H=H, label=label, part=part, id=part["id"]))
+            elif kind == "tube":
+                W, H = tube_bbox(part)
+                items.append(dict(kind="tube", W=W, H=H, label=label, part=part, id=part["id"]))
             elif kind == "sheet":
                 w, h = [s * u for s in part["size"]]
                 cols, rows = int(round(w / u * ppu)), int(round(h / u * ppu))
@@ -606,13 +829,26 @@ def tile_area():
 
 
 def tile_grid(W, H, overlap=TILE_OVERLAP):
-    """부품 크기 → (열, 행, 가로 보폭, 세로 보폭). 보폭은 겹침을 뺀 순증분이다."""
+    """부품 크기 → (열, 행, 가로 보폭, 세로 보폭). 보폭은 겹침을 뺀 순증분이다.
+
+    장수(열·행)는 인쇄 영역이 정하고, **그 장수 안에서 보폭을 균등 재분배**한다(#1679).
+    왼쪽부터 꽉 채우면 마지막 장이 잘린 조각이 되는데(268mm → 194 + 84), 장수는 어차피
+    같으므로 손해 없이 반반(139 + 139)으로 나눌 수 있다. 부품이 인쇄 영역을 살짝만 넘을 때
+    마지막 장이 십수 mm 짜리 종잇조각이 되던 것도 같은 계산이 막는다.
+    """
     aw, ah = tile_area()
-    sw, sh = aw - overlap, ah - overlap
-    if sw <= 0 or sh <= 0: raise ValueError("겹침 여백이 인쇄 영역보다 크다")
-    cols = 1 if W <= aw else int(math.ceil((W - overlap) / sw))
-    rows = 1 if H <= ah else int(math.ceil((H - overlap) / sh))
+    if aw - overlap <= 0 or ah - overlap <= 0: raise ValueError("겹침 여백이 인쇄 영역보다 크다")
+    cols = 1 if W <= aw else int(math.ceil((W - overlap) / (aw - overlap)))
+    rows = 1 if H <= ah else int(math.ceil((H - overlap) / (ah - overlap)))
+    # 균등: 타일 폭 = 보폭 + 겹침. cols 장이 겹침을 유지하며 W 를 정확히 덮는다.
+    sw = (W - overlap) / cols if cols > 1 else aw - overlap
+    sh = (H - overlap) / rows if rows > 1 else ah - overlap
     return cols, rows, sw, sh
+
+
+def tile_size(W, H, cols, rows, sw, sh, overlap=TILE_OVERLAP):
+    """그 부품의 타일 한 장이 실제로 담는 크기. 클립·겹침선·정렬 십자의 기준이다."""
+    return (sw + overlap if cols > 1 else W, sh + overlap if rows > 1 else H)
 
 
 def oversize(it):
@@ -643,17 +879,20 @@ def layout_pages(items, spec, reserve_first=0.0):
         if n > TILE_MAX_PAGES:
             raise ValueError(f"부품 '{it['label']}' 이 타일 {n}장으로 쪼개진다(상한 {TILE_MAX_PAGES})"
                              f" — unit_mm 또는 px_mm 을 줄여라")
+        tw, th = tile_size(it["W"], it["H"], cols, rows, sw, sh)
         for r in range(rows):
             for c in range(cols):
                 pages.append({"kind": "tile", "item": it, "row": r, "col": c, "rows": rows, "cols": cols,
-                              "ox": c * sw, "oy": r * sh, "index": r * cols + c + 1, "total": n})
+                              "ox": c * sw, "oy": r * sh, "tw": tw, "th": th,
+                              "index": r * cols + c + 1, "total": n})
     flush()
     return pages
 
 
 def draw_tile(pdf, page, draw_item):
     """타일 한 장 — 부품을 오프셋만큼 밀어 그리고 인쇄 영역 밖을 잘라낸다."""
-    aw, ah = tile_area()
+    aw, ah = page.get("tw"), page.get("th")     # 타일 실제 크기 — 인쇄 영역이 아니다(#1679)
+    if aw is None or ah is None: aw, ah = tile_area()
     x0, y0 = MARGIN, MARGIN
     pdf.clip(x0, y0, aw, ah)
     draw_item(pdf, x0 - page["ox"], y0 - page["oy"], page["item"])
@@ -745,6 +984,7 @@ def draw_item(pdf, x, y, it):
     elif it["kind"] == "prism_face": draw_prism_face(pdf, x, y, it["geom"], it["label"])
     elif it["kind"] == "band": draw_band(pdf, x, y, it["piece"], it["thickness"], it["tb"], it["tail"], it["label"], it["key"])
     elif it["kind"] == "flat": draw_flat(pdf, x, y, it["part"], it["label"])
+    elif it["kind"] == "tube": draw_tube(pdf, x, y, it["part"], it["label"])
     else: draw_sheet(pdf, x, y, it["w"], it["h"], it["grid"], it["tb"], it["label"], it["tabs"])
 
 
@@ -765,6 +1005,19 @@ def build(spec, out_path):
         notes = notes + ["", "옆면 띠 이어 붙이기",
                          "· 점선은 접는 선입니다 — 촘촘한 점선(－ － －)은 산접기(바깥으로), 점-선 무늬(－ · －)는 골접기(안쪽으로)",
                          "· 띠 조각 끝의 회색 '이음' 자리는 다음 조각을 그 위에 겹쳐 붙이는 자리입니다"]
+    if any(it["kind"] == "tube" for it in items):
+        notes = notes + ["", "종이 말아 관(대) 만들기",
+                         "· 관 띠는 마분지가 아니라 일반 복사지(80g) 에 인쇄합니다 — 두꺼운 종이는 지름 6mm 로 말리지 않습니다",
+                         "· 위 변에 나무 꼬치(또는 빨대)를 대고 그림이 바깥으로 오게 아래쪽으로 팽팽히 말아 갑니다. 점선은 한 바퀴마다의 확인선입니다",
+                         "· 마지막 회색 '풀' 띠에 목공풀·양면테이프로 감아 눌러 붙입니다. 심(꼬치)을 뺄지 둘지는 위 조립 안내를 따르세요",
+                         "· '오늬' 점-선은 꼬리 쪽 끝 표시입니다 — 다 말고 나서 그 선까지 세로로(활을 세웠을 때 위아래 방향) 가위집을 한 번 내면 시위가 걸리는 홈이 됩니다"]
+    cords = resolve_cords(spec)   # 렌더 여부와 무관하게 검증 — 끈이 구멍 없는 자리를 가리키면 PDF 를 만들지 않는다
+    if any(p.get("holes") or p.get("slots") for p in spec["parts"] if p.get("type") == "flat"):
+        notes = notes + ["", "구멍·절개",
+                         "· 실선 원(○, 가운데 십자)은 펀치나 송곳으로 뚫고, 실선 네모는 칼로 오려 냅니다",
+                         "· 앞·뒤 두 장을 맞대기 전에 각 장에 따로 뚫으세요 — 붙인 뒤에는 두 겹이라 뚫기 어렵습니다"]
+    if cords:
+        notes = notes + ["· 끈(시위 등)은 도안에 없습니다 — 안내의 재료를 위·아래 구멍에 통과시켜 뒤에서 매듭짓습니다. 조감도의 가는 선이 그 자리입니다"]
     try:
         pages = layout_pages(items, spec)
     except ValueError as e:
@@ -814,16 +1067,28 @@ def tile_page(drawings):
     푸터 문구("(row1 col1)")로 재면 **그것을 설명하는 안내문이 실린 쪽**까지 타일로 오인해
     검사를 건너뛴다(실측). 판정은 도형으로 한다.
     """
-    marks = set()
+    # 십자 = 같은 중점에서 만나는 **가로 5mm + 세로 5mm 두 선**. 한쪽만 보면 같은 길이의
+    # 접는 선·자르는 선이 걸려 일반 쪽을 타일로 오인하고, 그 쪽은 기하 검사를 통째로
+    # 건너뛴다(#1679 구현 중 실측 — 거짓 양성 2건).
+    hor, ver = set(), set()
     for x in drawings:
         for it in x["items"]:
             if it[0] != "l": continue
             a, b = it[1], it[2]
-            if abs(abs(a.x - b.x) + abs(a.y - b.y) - 5.0 * MM) > 0.5: continue
-            marks.add((round((a.x + b.x) / 2 / MM, 1), round((a.y + b.y) / 2 / MM, 1)))   # pymupdf 는 top-left 기준
+            dx, dy = abs(a.x - b.x), abs(a.y - b.y)
+            if abs(dx + dy - 5.0 * MM) > 0.5: continue
+            mid = (round((a.x + b.x) / 2 / MM, 1), round((a.y + b.y) / 2 / MM, 1))   # pymupdf 는 top-left 기준
+            (hor if dx > dy else ver).add(mid)
+    marks = hor & ver
+    # 십자는 **그 타일의 크기**에 따라 자리가 달라진다(#1679 균등 분할) — 고정 좌표로 재면
+    # 타일 쪽을 못 알아보고 기하 검사를 태운다. 왼아래는 항상 (MARGIN, MARGIN) 이므로
+    # 거기서 시작하는 직사각형을 이루는가로 판정한다.
     aw, ah = tile_area()
-    need = [(MARGIN, MARGIN), (MARGIN + aw, MARGIN), (MARGIN, MARGIN + ah), (MARGIN + aw, MARGIN + ah)]
-    return all(any(abs(m[0] - p[0]) < 0.4 and abs(m[1] - p[1]) < 0.4 for m in marks) for p in need)
+    near = lambda a, b: abs(a - b) < 0.4
+    if not any(near(x, MARGIN) and near(y, MARGIN) for x, y in marks): return False
+    xs = [x for x, y in marks if near(y, MARGIN) and MARGIN + 15 <= x <= MARGIN + aw + 0.5]
+    ys = [y for x, y in marks if near(x, MARGIN) and MARGIN + 15 <= y <= MARGIN + ah + 0.5]
+    return any(any(near(x, x1) and near(y, y1) for x, y in marks) for x1 in xs for y1 in ys)
 
 
 def verify(pdf_path):
@@ -839,7 +1104,7 @@ def verify(pdf_path):
             report.append(f"p{i + 1}: 타일 쪽 — 검사 제외(잘라 이어 붙이는 쪽)"); continue
         for x in drawings:
             f = x.get("fill"); r = x["rect"]
-            if not f or r.width > 500: continue
+            if not f or r.width > (PW - 2 * MARGIN + 1) * MM: continue   # 인쇄 폭보다 넓은 것(쪽 배경)만 제외 — 194mm 관 띠는 검사한다(#1663 F07)
             if all(abs(v - 0.87) < 0.012 for v in f): tabs.append(r)
             elif r.width >= 15 and r.height >= 15: faces.append(r)
         bad = 0 if rot else sum(1 for t in tabs for fc in faces if (t & fc).width > 1 and (t & fc).height > 1)

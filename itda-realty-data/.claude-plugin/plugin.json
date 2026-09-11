@@ -1,7 +1,7 @@
 {
   "name": "itda-realty-data",
   "description": "부동산 데이터 스킬팩 — 국토부 실거래·부동산원 가격지수·KOSIS 공급·전세가율·법원경매를 공식 소스로 수집하고 파생 통계·스크리닝을 낸다.",
-  "version": "9.2.1",
+  "version": "9.3.0",
   "author": {
     "name": "스킬.잇다",
     "url": "https://github.com/itda-skills"

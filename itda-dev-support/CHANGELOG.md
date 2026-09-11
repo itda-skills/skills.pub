@@ -2,6 +2,12 @@
 
 이 플러그인의 주요 변경 사항을 기록합니다. 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [SemVer](https://semver.org/)를 따릅니다.
 
+## [0.17.0] - 2026-09-11
+
+### Added
+
+- `claude-usage` · `codex-usage` (#1683) — 이 머신에 로그인된 Claude Code·Codex CLI 계정의 사용량(5시간·주간 창 사용률·리셋 시각·플랜)을 저장된 OAuth 자격증명으로 직접 조회해 JSON 으로 낸다. `--max N` 게이트(exit 0 통과 · 1 초과 · 2 조회 실패 = fail-closed). 계약은 sheriff `Core/UsageStatus.swift` 실측을 옮겼다 — Claude 는 키체인·파일 중 만료가 늦은 토큰, Codex 는 `chatgpt.com/backend-api/wham/usage`(codex 바이너리 불요, 창은 자리가 아니라 길이로 판정). 구 `skills/scripts/codex_usage.py`(app-server 경유)는 codex-usage 로 통합·삭제.
+
 ## [0.16.0] - 2026-09-06
 
 ### Changed
@@ -12,6 +18,8 @@
 
 ### Added
 
+- `windows-remote-lab` — hyve 루트 `.claude/skills/` 에서 이 플러그인으로 편입 (#1669). 로컬 네트워크의 Windows 11 실머신(Surface Book 2)을 `ssh surface` 로 원격 조작해 Windows 실런타임 검증·헤드리스 Office COM 자동화·파일 push/pull 을 완결하는 로컬 운영 스킬. 형제 `windows-parallels-lab` 과 `[책임 경계]` 로 상호 지목하고, 폐기된 `windows-vm-lab`(VMware) 참조를 현행 Parallels 판으로 정정했다.
+- `windows-parallels-lab` — hyve 루트 `.claude/skills/` 에서 이 플러그인으로 편입 (#1669). macOS Parallels Desktop 의 자동화 전용 Win11 클론(win11-parlab)을 `prlctl exec` 로 제어해 Windows 실런타임 검증·문서 렌더링 그라운드 트루스를 얻는 로컬 운영 스킬. 다른 저장소에서도 `~/.claude/skills/` 링크(`link-skills.sh`)로 쓴다. 경로 참조(docs/agent-snippets 등) 갱신.
 - `web-automation` v0.4.10 — REPL ref 액션 계약 3줄 (#1633 Phase 2 착지): refs 는 `e1`/`f1e1`(프레임 접두) 토큰이고 `locator(ref).click|fill` 이 셀렉터 없이 요소에 닿는다는 것, 가림은 `e.code === "hit_target_obscured"` + `blocker` 로 **typed 실패**하고 우회는 `{mode:'dom'}` 명시 opt-in(`degraded:"dom"`)이라는 것, 엔진 능력은 `session.info().engine_capabilities` 로 **호출 전에** 판별한다는 것(WebView2 는 `registry_ref:false` → `unsupported_engine`, 그때는 레거시 selector 레시피). 전환 안내 절 제목도 Phase 1 → Phase 2 착지로.
 - `web-automation` v0.4.9 — REPL 전환 안내 1절 (#1633 Phase 1): `web` 프리셋이 `web_browse.repl` 단일 도구로 갈아타는 중이고, 이 문서의 22 액션은 `web-legacy` 프리셋(`web_browse_legacy` 도메인)에서 그대로 성립함을 명시. REPL 계약 2건(값은 명시 `return` 만·console 은 봉투로 회수) 예고. 전면 재작성은 Phase 4.
 - `web-automation` v0.4.8 — description `[책임 경계]` 슬롯 + `## 이 스킬을 쓰지 않을 때` 표 파일럿 (#1620): 동명 스킬 `itda-taxhero:web-automation` 과의 경계(사이트 무관 정본 ↔ 세무 포털 특화)를 상호 지목.

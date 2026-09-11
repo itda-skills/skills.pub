@@ -16,7 +16,7 @@ metadata:
   author: "스킬.잇다 <dev@itda.work>"
   category: "play"
   status: "active"
-  version: "0.4.0"
+  version: "0.9.0"
   created_at: "2026-09-02"
   tags: "papercraft, paper toy, paper model, minecraft, kids, craft, pdf, printable, play, box, prism, sword, tiled print"
 ---
@@ -41,7 +41,7 @@ python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # 정문
 
 > 설치 정문은 `install_skill_deps.py` 다(#1630) — 이 환경(venv·PEP 668 관리형·권한 부족)에 맞는 pip 인자를 스스로 고르고 실행한 명령을 보여 준다. `--check` 는 상태만, `--all` 은 선택 의존까지, `--dry-run` 은 명령만. 관리형(PEP 668)이면 정문이 `--user --break-system-packages` 를 스스로 고른다.
 
-한글 폰트는 스크립트가 알아서 고릅니다 — 시스템 TrueType 한글 폰트(Linux 나눔고딕·macOS AppleGothic·Windows 맑은고딕)가 있으면 그것을, 없으면 동봉 `assets/fonts/NanumGothic-Regular.ttf` 를 씁니다(어느 것을 썼는지 stderr 한 줄). Cowork 의 Noto Sans CJK `.ttc` 와 macOS AppleSDGothicNeo 는 CFF 아웃라인이라 reportlab 이 못 쓰므로 건너뜁니다.
+한글 폰트는 스크립트가 알아서 고릅니다 — 시스템 TrueType 한글 폰트(Linux 나눔고딕·macOS AppleGothic·Windows 맑은고딕)가 있으면 그것을, 없으면 NanumGothic Regular(OFL)를 `~/.cache/itda-skills/fonts/` 로 한 번 내려받아 씁니다(sha256 검증 · 어느 것을 썼는지 stderr 한 줄 · `PAPERCRAFT_FONT=/경로/폰트.ttf` 로 직접 지정 가능). Cowork 의 Noto Sans CJK `.ttc` 와 macOS AppleSDGothicNeo 는 CFF 아웃라인이라 reportlab 이 못 쓰므로 건너뜁니다.
 
 ## 작업 흐름
 
@@ -85,6 +85,7 @@ python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # 정문
 | `prism` | **픽셀 그림을 두께 방향으로 압출한 입체**(검·곡괭이·표지판) | 앞면 + 뒷면(미러) + 옆면 띠 N조각 |
 | `flat` | 두께 없는 평면 장식(귀·꼬리·안테나) | 앞뒤 2장 맞대기 |
 | `sheet` | 한 면짜리 시트(포털·창문·바닥판) | 한 장 + 사방 날개 |
+| `tube` | **종이를 말아 만드는 관**(화살대·깃대·가는 기둥) | 띠 한 장(길이 × 둘레·겹 수 + 풀 띠) + 바퀴 확인선 + 오늬 표시 |
 
 **아이템류는 `flat` 이 아니라 `prism` 이다** — `flat` 은 종이 두 장이라 옆면이 없다. `prism` 은 실루엣 둘레를
 펼친 띠가 따로 나오고, 접는 선이 볼록(점선)·오목(점-선)으로 구분된다. 대각선 스프라이트는 `"rotate": -45` 로
@@ -92,6 +93,21 @@ python3 "$SKILL_DIR/scripts/install_skill_deps.py"          # 정문
 
 **부품 하나가 A4 를 넘으면 자동으로 여러 장에 나눠 찍는다** — 겹침 10mm + 모서리 정렬 십자 + 하단
 `1/4 (row1 col1)` 라벨. 다 이어 붙인 뒤에 오린다. 원하지 않으면 `"tile": false`(그러면 종전대로 에러 + 최대 unit 안내).
+장수는 인쇄 영역이 정하고 **그 안에서 균등하게** 나뉜다(#1679) — 26cm 정사각 지도는 194+84 가 아니라
+139+139 두 장이다. 왼쪽부터 꽉 채우면 마지막 장이 잘린 조각이 되는데, 장수는 어차피 같으므로 손해가 없다.
+
+**서로 닿는 부품은 결속시킨다(활과 화살, 매달기)** — "걸쳐 놓으면 완성"은 도안이 아니다. `flat` 의 `holes`(펀치 구멍)·
+`slots`(mm 절개)와 최상위 `cords`(구멍 → 접점 → 구멍을 잇는 끈 — 조감도에만 렌더, 재료는 사용자 준비)로 **두 점 고정**을
+만든다. **같은 평면에 놓인 막대는 판의 구멍을 지날 수 없다**(판에 수직인 부품만 `.` 한 칸 구멍) — 판 앞면에 눕힌 화살은
+**종이 고리**(슬릿 2개 + 띠)로 붙잡고, 오늬는 시위 방향(세로)으로 열리게 화살을 눕힌다. 표준형은
+`assets/examples/bow_arrow.json`(시위 끈: 고리 + 대 끝 홈에 시위)과 `bow_arrow_paper_string.json`(종이 시위: 고리만).
+결속 게이트는 좌표 포함이 아니라 **고체 교차 0·접촉 실재**를 잰다(`tests/test_bow_geometry.py`). `references/design-guide.md` §6.
+
+**쏘는 활은 "강체 활 + 고무줄 + 말아 만든 화살대"다** — 이 스케일의 종이 활은 휘어 탄성을 내지 못한다. 활 `flat`(2겹 사이
+나무젓가락 심, 양 끝 `holes` 에 고무줄) + 앞면 **받침 선반**(`flat` 1행 + `tab: bottom`) + 화살대 `tube`(지름 6·길이 = 활의
+0.7배·3겹 일반지, 세로 오늬 표시) + 깃 `flat` 2장(관 위·앞). 화살은 활 평면 안에서 앞으로 놓인다(수직이 아니다). 촉은 도안이
+아니라 **지우개 조각·스펀지 끼우기 안내**이고 안전 문구(사람·얼굴 조준 금지)는 `assembly` 필수. **인쇄·조립·발사는 미실측**
+이며 문서에 그렇게 쓴다. 표준형 `assets/examples/bow_arrow_shooter.json`(24cm), `references/design-guide.md` §7.
 
 **"마지막 면을 안에서 못 누른다" 문제는 부품 옵션 두 개로 해결합니다** — 기본으로 쓰세요:
 - `"open": "bottom"|"top"` — 다른 부품에 붙는 면(머리 바닥, 다리 윗면, 팔 어깨)을 뚜껑 없이 뚫고 개구부에 안쪽 날개 4개를 둡니다. 상대 부품 위에 **눌러 얹는 동작이 곧 풀칠 압력**이 되고, 뚜껑 하나가 사라집니다. 해당 면 텍스처는 생략.
@@ -120,12 +136,12 @@ PDF에는 종이 요령이 자동으로 들어갑니다. 핵심은 180~220 g 마
 - `scripts/papercraft.py` — build / verify / plan / render CLI. reportlab 필수, PyMuPDF 있으면 검증·미리보기·조감도 쪽 첨부.
 - `scripts/prism.py` — prism 부품의 순수 기하(외곽 추적·세그먼트·띠 전개·날개 겹침 판정). PDF 를 만들지 않으므로 단위 테스트가 여기서 둘레·코너·색을 직접 잰다.
 - `scripts/render3d.py` — 조립 완성 조감도 렌더러(등각 투영, Pillow). 텍스처는 `papercraft.py` 의 같은 함수를 쓰므로 인쇄면과 픽셀 단위로 동일. 풀 날개·종이 두께는 렌더하지 않는다.
-- `scripts/fontpick.py` — 한글 폰트 해석기(시스템 TrueType 우선 → 동봉 폴백). `python3 scripts/fontpick.py` 로 어느 폰트가 잡히는지 확인.
+- `scripts/fontpick.py` — 한글 폰트 해석기(시스템 TrueType 우선 → 캐시 → 내려받기). `python3 scripts/fontpick.py` 로 어느 폰트가 잡히는지 확인.
 - `references/spec-format.md` — JSON 스펙 전체 키와 텍스처 문법, `layout` 배치.
 - `references/design-guide.md` — 마인크래프트 유닛 표, 주제별 분해 예, 페이지 수 계산, 검토 체크리스트.
 - `references/paper-guide.md` — 종이·접착·보강 가이드.
-- `assets/examples/` — steve.json(캐릭터), nether_portal.json(sheet·블록 텍스처), robot.json(비-마인크래프트, flat 부품), diamond_sword.json(prism·회전 배치). 새 주제는 가장 비슷한 예를 복사해 고치는 것이 빠릅니다.
-- `assets/fonts/` — 동봉 폴백 폰트 NanumGothic Regular(OFL). 시스템 한글 TrueType 이 없을 때만 쓰이며 굵은체는 같은 폰트로 대체.
+- `assets/examples/` — steve.json(캐릭터), nether_portal.json(sheet·블록 텍스처), robot.json(비-마인크래프트, flat 부품), diamond_sword.json(prism·회전 배치), bow_arrow.json(결속 — 눕힌 prism 화살·종이 고리 슬릿·펀치 구멍·오늬에서 꺾이는 시위 끈)·bow_arrow_paper_string.json(종이 시위 변형 — 고리만)·bow_arrow_shooter.json(발사용 — tube 화살대·고무줄·받침 선반·위/앞 깃). 새 주제는 가장 비슷한 예를 복사해 고치는 것이 빠릅니다.
+- 폴백 폰트는 동봉하지 않습니다 — 시스템 한글 TrueType 이 없을 때만 NanumGothic Regular(OFL)를 캐시로 내려받고, 굵은체는 같은 폰트로 대체합니다.
 
 ## 이 스킬을 쓰지 않을 때
 

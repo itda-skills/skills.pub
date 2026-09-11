@@ -14,6 +14,7 @@ import logging
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,11 @@ _TIMEOUT = 15
 # 엔드포인트
 _SEARCH_URL = "https://kosis.kr/openapi/statisticsSearch.do"
 _DATA_URL = "https://kosis.kr/openapi/Param/statisticsParameterData.do"
+# SDMX Generic 네임스페이스 — objL1 부재 통계표의 정본 전송 형식(아래 주석 참조)
+_SDMX_NS = {
+    "generic": "http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic",
+    "message": "http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message",
+}
 _LIST_URL = "https://kosis.kr/openapi/statisticsList.do"
 # 메타자료(통계표 구조) — 통계자료와 동일 endpoint, method=getMeta (매뉴얼 §2.5)
 _META_URL = "https://kosis.kr/openapi/statisticsData.do"
@@ -287,6 +293,395 @@ def search_statistics(
     return []
 
 
+# --- 분류축 슬롯(objL 번호) 해석 ---
+#
+# KOSIS 통계표의 분류축은 getMeta type=ITM 의 OBJ_ID_SN(분류 일련번호)이 지목하는
+# objL 슬롯으로만 호출된다. 대부분의 표는 OBJ_ID_SN=1 부터 시작하지만 **항상 그렇지
+# 않다** — 한국보건산업진흥원(orgId 358) 표들은 첫 축이 OBJ_ID_SN=2 라 objL1 을 보내면
+# KOSIS 가 오류 21(잘못된 요청 변수)로 거부한다(#1684 실측 2026-09-11).
+#
+# 더 고약한 것은 그 표들의 **JSON 직렬화**다. objL2 로 정확히 호출하면 오류는 사라지지만
+# JSON 은 빈 배열 `[]` 을 돌려준다(C1 이 없는 표를 JSON 빌더가 비워 버린다). 같은 요청의
+# SDMX(Generic)에는 데이터가 전부 들어 있다 — 그래서 슬롯 1 이 없는 표는 SDMX 가 정본
+# 전송 형식이다. 실측 대조(#1684):
+#   358/DT_358004_008 slots=[2]    json=0건  sdmx=54건
+#   358/DT_358004_007 slots=[2,3]  json=0건  sdmx=70건
+#   358/DT_358004_001 slots=[1,2]  json=190건 sdmx=190건   ← 기관이 아니라 표 단위 성질
+#   101/DT_1K41014    slots=[1]    json=84건  sdmx=84건
+_ITEM_AXIS_IDS = ("ITEM",)
+
+
+def _axis_sort_key(axis: dict[str, Any]) -> int:
+    return int(axis.get("slot") or 0)
+
+
+def get_table_axes(
+    api_key: str,
+    org_id: str,
+    tbl_id: str,
+) -> dict[str, Any]:
+    """통계표의 분류축 구조(objL 슬롯)와 항목 코드를 해석.
+
+    getMeta type=ITM 응답의 OBJ_ID_SN 을 그대로 objL 슬롯으로 쓴다 — 추측하지 않는다.
+
+    Args:
+        api_key: KOSIS 인증키.
+        org_id: 기관 코드.
+        tbl_id: 통계표 ID.
+
+    Returns:
+        {
+          "table_name": str,
+          "items": [{"id", "name", "unit_id", "unit_name"}],
+          "axes": [{"slot": int, "obj_id", "obj_name",
+                    "values": [{"code", "name", "parent"}]}],  # slot 오름차순
+        }
+    """
+    rows = get_table_meta(api_key, org_id, tbl_id, meta_type="ITM")
+
+    items: list[dict[str, str]] = []
+    axis_map: dict[str, dict[str, Any]] = {}
+
+    for row in rows:
+        obj_id = row.get("OBJ_ID", "") or ""
+        if obj_id in _ITEM_AXIS_IDS or row.get("OBJ_NM") == "항목":
+            items.append({
+                "id": row.get("ITM_ID", "") or "",
+                "name": row.get("ITM_NM", "") or "",
+                "unit_id": row.get("UNIT_ID", "") or "",
+                "unit_name": row.get("UNIT_NM", "") or "",
+            })
+            continue
+        axis = axis_map.setdefault(obj_id, {
+            "slot": int(row.get("OBJ_ID_SN") or 0) or None,
+            "obj_id": obj_id,
+            "obj_name": row.get("OBJ_NM", "") or "",
+            "values": [],
+        })
+        axis["values"].append({
+            "code": row.get("ITM_ID", "") or "",
+            "name": row.get("ITM_NM", "") or "",
+            "parent": row.get("UP_ITM_ID", "") or "",
+        })
+
+    axes = list(axis_map.values())
+    # OBJ_ID_SN 이 비어 오는 표는 등장 순서를 슬롯으로 본다(관측 불가 → 보수적 기본값).
+    for idx, axis in enumerate(axes, start=1):
+        if not axis["slot"]:
+            axis["slot"] = idx
+    axes.sort(key=_axis_sort_key)
+
+    table_name = ""
+    try:
+        tbl_meta = get_table_meta(api_key, org_id, tbl_id, meta_type="TBL")
+        if tbl_meta:
+            table_name = tbl_meta[0].get("TBL_NM", "") or ""
+    except KOSISAPIError:
+        table_name = ""
+
+    return {"table_name": table_name, "items": items, "axes": axes}
+
+
+def _describe_axes(structure: dict[str, Any]) -> str:
+    """분류축 구조를 사용자 안내 문장으로."""
+    axes = structure.get("axes") or []
+    if not axes:
+        return "이 통계표에는 분류축이 없습니다."
+    parts = []
+    for axis in axes:
+        sample = ", ".join(v["code"] for v in axis["values"][:4])
+        more = " …" if len(axis["values"]) > 4 else ""
+        parts.append(
+            f"objL{axis['slot']}={axis['obj_name']}({axis['obj_id']}) 예: {sample}{more}"
+        )
+    return " / ".join(parts)
+
+
+def _build_data_params(
+    org_id: str,
+    tbl_id: str,
+    itm_id: str,
+    slot_values: dict[int, str],
+    prd_se: str,
+    start_prd_de: str,
+    end_prd_de: str,
+    new_est_prd_cnt: int | None,
+) -> dict[str, str]:
+    """통계자료 요청 파라미터 조립 (objL 슬롯은 호출자가 확정해 넘긴다)."""
+    params: dict[str, str] = {
+        "method": "getList",
+        "orgId": org_id,
+        "tblId": tbl_id,
+        "itmId": itm_id,
+        "prdSe": prd_se,
+        "format": "json",
+        "jsonVD": "Y",
+    }
+    # objL 은 값이 있는 슬롯만 — 빈 문자열 전송 시 KOSIS 가 오류 21 로 거부한다.
+    for slot in sorted(slot_values):
+        value = slot_values[slot]
+        if value:
+            params[f"objL{slot}"] = value
+
+    if new_est_prd_cnt is not None:
+        params["newEstPrdCnt"] = str(new_est_prd_cnt)
+    else:
+        if start_prd_de:
+            params["startPrdDe"] = start_prd_de
+        if end_prd_de:
+            params["endPrdDe"] = end_prd_de
+    return params
+
+
+def _parse_sdmx_generic(
+    xml_text: str,
+    structure: dict[str, Any],
+    org_id: str,
+    tbl_id: str,
+) -> list[dict[str, Any]]:
+    """SDMX Generic 응답을 KOSIS JSON 행 스키마로 환원.
+
+    SeriesKey 는 코드만 싣는다(FREQ/ITEM/C_<OBJ_ID>) — 이름·단위는 getMeta 원본
+    (structure)에서만 채운다. 추측하지 않는다(data-accuracy).
+    """
+    root = ET.fromstring(xml_text)
+
+    axes = sorted(structure.get("axes") or [], key=_axis_sort_key)
+    # C_<OBJ_ID> → (출력 열 번호 C1..Cn, 축 메타)
+    axis_by_key = {f"C_{a['obj_id']}": (i, a) for i, a in enumerate(axes, start=1)}
+    name_by_axis = {
+        a["obj_id"]: {v["code"]: v["name"] for v in a["values"]} for a in axes
+    }
+    item_by_id = {i["id"]: i for i in (structure.get("items") or [])}
+    # 단위명은 getMeta 가 준 UNIT_ID→UNIT_NM 대응에서만 채운다 — SDMX 는 단위 코드만 싣고,
+    # 대응이 없으면 이름을 지어내지 않고 코드만 남긴다(data-accuracy).
+    unit_name_by_id = {
+        i["unit_id"]: i["unit_name"]
+        for i in (structure.get("items") or [])
+        if i.get("unit_id") and i.get("unit_name")
+    }
+    table_name = structure.get("table_name", "")
+
+    rows: list[dict[str, Any]] = []
+    for series in root.iter(f"{{{_SDMX_NS['generic']}}}Series"):
+        key_el = series.find(f"{{{_SDMX_NS['generic']}}}SeriesKey")
+        keys: dict[str, str] = {}
+        if key_el is not None:
+            for val in key_el.findall(f"{{{_SDMX_NS['generic']}}}Value"):
+                keys[val.get("id", "")] = val.get("value", "")
+
+        itm_id = keys.get("ITEM", "")
+        item = item_by_id.get(itm_id, {})
+        base: dict[str, Any] = {
+            "ORG_ID": org_id,
+            "TBL_ID": tbl_id,
+            "TBL_NM": table_name,
+            "ITM_ID": itm_id,
+            "ITM_NM": item.get("name", ""),
+            "UNIT_ID": item.get("unit_id", ""),
+            "UNIT_NM": item.get("unit_name", ""),
+            "PRD_SE": keys.get("FREQ", ""),
+        }
+        for key_id, code in keys.items():
+            mapped = axis_by_key.get(key_id)
+            if mapped is None:
+                continue
+            col, axis = mapped
+            base[f"C{col}"] = code
+            base[f"C{col}_NM"] = name_by_axis[axis["obj_id"]].get(code, "")
+            base[f"C{col}_OBJ_NM"] = axis["obj_name"]
+
+        for obs in series.findall(f"{{{_SDMX_NS['generic']}}}Obs"):
+            dim = obs.find(f"{{{_SDMX_NS['generic']}}}ObsDimension")
+            val = obs.find(f"{{{_SDMX_NS['generic']}}}ObsValue")
+            chn = obs.find(f"{{{_SDMX_NS['generic']}}}LstChnDe")
+            row = dict(base)
+            row["PRD_DE"] = dim.get("value", "") if dim is not None else ""
+            row["DT"] = val.get("value", "") if val is not None else ""
+            row["LST_CHN_DE"] = chn.get("value", "") if chn is not None else ""
+            # 단위는 관측치 단위(Attributes UNIT)가 항목 단위보다 정확하다
+            # (예: 358/DT_358004_007 은 매출현황별 축에 따라 단위가 갈린다).
+            attrs = obs.find(f"{{{_SDMX_NS['generic']}}}Attributes")
+            if attrs is not None:
+                for aval in attrs.findall(f"{{{_SDMX_NS['generic']}}}Value"):
+                    if aval.get("id") == "UNIT":
+                        unit_id = aval.get("value", "")
+                        if unit_id:
+                            row["UNIT_ID"] = unit_id
+                            row["UNIT_NM"] = unit_name_by_id.get(
+                                unit_id, row.get("UNIT_NM", "") or "",
+                            )
+            rows.append(row)
+
+    return rows
+
+
+def _request_sdmx(url: str, params: dict[str, str]) -> str:
+    """SDMX(XML) 응답을 원문 문자열로 받는다 — 오류 응답은 KOSISAPIError 로 승격."""
+    query = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+    try:
+        with urllib.request.urlopen(f"{url}?{query}", timeout=_TIMEOUT) as resp:
+            text = resp.read().decode("utf-8")
+    except urllib.error.URLError as exc:
+        raise KOSISAPIError(f"네트워크 오류: {exc}") from exc
+
+    if "<err>" in text:
+        try:
+            root = ET.fromstring(text)
+            err_code = (root.findtext("err") or "").strip()
+            err_msg = (root.findtext("errMsg") or "").strip()
+        except ET.ParseError:
+            err_code, err_msg = "", text[:200]
+        hint_msg, _cat = _classify_kosis_error(err_code)
+        raise KOSISAPIError(
+            f"KOSIS API 오류 ({err_code}): {err_msg} | {hint_msg}",
+            error_code=err_code or None,
+        )
+    return text
+
+
+def get_statistics_data_ex(
+    api_key: str,
+    org_id: str,
+    tbl_id: str,
+    itm_id: str = "ALL",
+    obj_l1: str = "ALL",
+    obj_l2: str = "",
+    obj_l3: str = "",
+    obj_l4: str = "",
+    prd_se: str = "Y",
+    start_prd_de: str = "",
+    end_prd_de: str = "",
+    new_est_prd_cnt: int | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """통계자료 조회 + 진단 정보.
+
+    obj_l1~obj_l4 는 **통계표의 1~4번째 분류축**(논리 순서)이다. 실제 objL 슬롯은
+    getMeta 의 OBJ_ID_SN 이 정하며, 필요할 때만 해석한다(정상 표는 추가 호출 0).
+
+    Returns:
+        (행 목록, 진단 dict). 진단:
+        {"transport": "json"|"sdmx", "axis_slots": [int], "resolved": bool,
+         "axes": [{"slot","obj_id","obj_name"}], "notes": [str]}
+    """
+    logical = [obj_l1 or "ALL", obj_l2, obj_l3, obj_l4]
+    while len(logical) > 1 and not logical[-1]:
+        logical.pop()
+
+    notes: list[str] = []
+
+    def _json_call(slot_values: dict[int, str]) -> list[dict[str, Any]]:
+        params = _build_data_params(
+            org_id, tbl_id, itm_id, slot_values,
+            prd_se, start_prd_de, end_prd_de, new_est_prd_cnt,
+        )
+        params["apiKey"] = api_key
+        data = _request(_DATA_URL, params)
+        return data if isinstance(data, list) else []
+
+    naive_slots = {i: v for i, v in enumerate(logical, start=1)}
+    # 1차 시도는 논리 순서 = objL 슬롯(대다수 통계표의 사실). 정상 표는 여기서 끝나
+    # 추가 호출이 0 이다. 슬롯이 어긋난 표는 KOSIS 가 오류 20/21 로 거부하므로,
+    # 그때만 getMeta 로 실제 슬롯을 실측해 재시도한다(추측 금지).
+    try:
+        rows = _json_call(naive_slots)
+        return rows, {
+            "transport": "json",
+            "axis_slots": sorted(s for s, v in naive_slots.items() if v),
+            "resolved": False,
+            "axes": [],
+            "notes": notes,
+        }
+    except KOSISAPIError as exc:
+        if exc.error_code not in ("20", "21"):
+            raise
+        naive_error: KOSISAPIError = exc
+        notes.append(
+            f"기본 슬롯(objL1~) 호출이 오류 {exc.error_code} 로 거부돼 "
+            "통계표 분류축 구조(getMeta OBJ_ID_SN)를 실측해 재시도했습니다."
+        )
+
+    # --- 구조 재확인 (objL 슬롯 실측) ---
+    try:
+        structure = get_table_axes(api_key, org_id, tbl_id)
+    except KOSISAPIError as exc:
+        raise KOSISAPIError(
+            f"{naive_error} | 분류축 구조 조회도 실패했습니다({exc}). "
+            f"`info --org-id {org_id} --tbl-id {tbl_id}` 로 축을 직접 확인하세요.",
+            error_code=naive_error.error_code,
+        ) from exc
+
+    axes = structure["axes"]
+    if not axes:
+        raise KOSISAPIError(
+            f"{naive_error} | 이 통계표({org_id}/{tbl_id})의 분류축 메타(getMeta type=ITM)가 "
+            "비어 있습니다 — KOSIS 사이트에서 통계표 제공 상태를 확인하세요.",
+            error_code=naive_error.error_code,
+        )
+
+    # 논리 순서 값 → 실제 슬롯 (부족분은 ALL)
+    slot_values: dict[int, str] = {}
+    for idx, axis in enumerate(axes):
+        value = logical[idx] if idx < len(logical) else ""
+        slot_values[int(axis["slot"])] = value or "ALL"
+
+    slots = sorted(slot_values)
+    axis_summary = [
+        {"slot": int(a["slot"]), "obj_id": a["obj_id"], "obj_name": a["obj_name"]}
+        for a in axes
+    ]
+
+    if slots and slots[0] == 1:
+        # 슬롯 1 이 있는 표 — JSON 이 정상 동작한다.
+        try:
+            rows = _json_call(slot_values)
+        except KOSISAPIError as exc:
+            if exc.error_code == "21":
+                raise KOSISAPIError(
+                    f"{exc} | 이 통계표의 분류축은 {_describe_axes(structure)} 입니다. "
+                    f"`info --org-id {org_id} --tbl-id {tbl_id}` 로 코드를 확인하세요.",
+                    error_code=exc.error_code,
+                ) from exc
+            raise
+        if not rows:
+            notes.append("KOSIS 가 빈 응답을 돌려줬습니다 — 조회 조건(시점·분류값)을 확인하세요.")
+        return rows, {
+            "transport": "json", "axis_slots": slots, "resolved": True,
+            "axes": axis_summary, "notes": notes,
+        }
+
+    # 슬롯 1 이 없는 표 — KOSIS JSON 직렬화가 빈 배열을 내므로 SDMX 가 정본이다.
+    notes.append(
+        f"이 통계표의 첫 분류축이 objL{slots[0]} 입니다(objL1 없음). "
+        "KOSIS JSON 은 이런 표에 빈 응답을 돌려주므로 SDMX(Generic) 경로로 조회했습니다."
+    )
+    params = _build_data_params(
+        org_id, tbl_id, itm_id, slot_values,
+        prd_se, start_prd_de, end_prd_de, new_est_prd_cnt,
+    )
+    params["format"] = "sdmx"
+    params["type"] = "Generic"
+    params.pop("jsonVD", None)
+    params["apiKey"] = api_key
+    try:
+        xml_text = _request_sdmx(_DATA_URL, params)
+    except KOSISAPIError as exc:
+        if exc.error_code in ("20", "21"):
+            raise KOSISAPIError(
+                f"{exc} | 이 통계표의 분류축은 {_describe_axes(structure)} 입니다. "
+                f"`info --org-id {org_id} --tbl-id {tbl_id}` 로 코드를 확인하세요.",
+                error_code=exc.error_code,
+            ) from exc
+        raise
+    rows = _parse_sdmx_generic(xml_text, structure, org_id, tbl_id)
+    if not rows:
+        notes.append("SDMX 응답에도 관측값이 없습니다 — 조회 조건(시점·분류값)을 확인하세요.")
+    return rows, {
+        "transport": "sdmx", "axis_slots": slots, "resolved": True,
+        "axes": axis_summary, "notes": notes,
+    }
+
+
 def get_statistics_data(
     api_key: str,
     org_id: str,
@@ -308,10 +703,10 @@ def get_statistics_data(
         org_id: 기관 코드 (예: "101" = 통계청).
         tbl_id: 통계표 ID (예: "DT_1B04005N").
         itm_id: 항목 ID ("ALL" 또는 "T2+T3" 등).
-        obj_l1: 1차 분류값 ("ALL" 또는 특정 코드).
-        obj_l2: 2차 분류값.
-        obj_l3: 3차 분류값 (3중 이상 분류 통계표).
-        obj_l4: 4차 분류값 (4중 분류 통계표).
+        obj_l1: 1번째 분류축 값 ("ALL" 또는 특정 코드).
+        obj_l2: 2번째 분류축 값.
+        obj_l3: 3번째 분류축 값.
+        obj_l4: 4번째 분류축 값.
         prd_se: 수록주기 ("Y"=연, "M"=월, "Q"=분기).
         start_prd_de: 시작 시점 (예: "2020").
         end_prd_de: 종료 시점 (예: "2024").
@@ -321,38 +716,13 @@ def get_statistics_data(
         통계 데이터 목록. 각 항목:
         {TBL_NM, C1, C1_NM, ITM_ID, ITM_NM, UNIT_NM, PRD_DE, DT, ...}
     """
-    params: dict[str, str] = {
-        "method": "getList",
-        "apiKey": api_key,
-        "orgId": org_id,
-        "tblId": tbl_id,
-        "itmId": itm_id,
-        "objL1": obj_l1,
-        "prdSe": prd_se,
-        "format": "json",
-        "jsonVD": "Y",
-    }
-
-    # objL2~L4: 값이 있을 때만 포함 (빈 문자열 전송 시 KOSIS가 거부)
-    if obj_l2:
-        params["objL2"] = obj_l2
-    if obj_l3:
-        params["objL3"] = obj_l3
-    if obj_l4:
-        params["objL4"] = obj_l4
-
-    if new_est_prd_cnt is not None:
-        params["newEstPrdCnt"] = str(new_est_prd_cnt)
-    else:
-        if start_prd_de:
-            params["startPrdDe"] = start_prd_de
-        if end_prd_de:
-            params["endPrdDe"] = end_prd_de
-
-    data = _request(_DATA_URL, params)
-    if isinstance(data, list):
-        return data
-    return []
+    rows, _diag = get_statistics_data_ex(
+        api_key, org_id, tbl_id, itm_id=itm_id,
+        obj_l1=obj_l1, obj_l2=obj_l2, obj_l3=obj_l3, obj_l4=obj_l4,
+        prd_se=prd_se, start_prd_de=start_prd_de, end_prd_de=end_prd_de,
+        new_est_prd_cnt=new_est_prd_cnt,
+    )
+    return rows
 
 
 def parse_value(dt_str: str) -> float | None:
@@ -395,7 +765,7 @@ def summarize_data(
         if value is None:
             continue
 
-        results.append({
+        entry = {
             "period": row.get("PRD_DE", ""),
             "item_name": row.get("ITM_NM", ""),
             "item_name_eng": row.get("ITM_NM_ENG", ""),
@@ -406,7 +776,12 @@ def summarize_data(
             "table_name": row.get("TBL_NM", ""),
             "org_id": row.get("ORG_ID", ""),
             "tbl_id": row.get("TBL_ID", ""),
-        })
+        }
+        # 2중 분류표(예: 358/DT_358004_007)는 C2 가 있어야 행이 식별된다.
+        if row.get("C2_NM") or row.get("C2"):
+            entry["category2"] = row.get("C2_NM", "")
+            entry["category2_code"] = row.get("C2", "")
+        results.append(entry)
 
     return results
 

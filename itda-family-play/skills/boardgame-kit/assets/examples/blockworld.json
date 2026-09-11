@@ -1,0 +1,389 @@
+{
+  "title": "블록 월드 한 바퀴",
+  "subtitle": "곡괭이를 들고 광산을 모아 보자",
+  "ruleset": "monopoly",
+  "target_minutes": 35,
+  "players": {
+    "min": 2,
+    "max": 4,
+    "simulate": 4
+  },
+  "victory": {
+    "kind": "target_wealth",
+    "value": 320
+  },
+  "rules": {
+    "bankruptcy": "sell_off",
+    "sell_ratio": 0.5
+  },
+  "money": {
+    "start": 160,
+    "salary": 10,
+    "unit": "에메랄드",
+    "denominations": [
+      1,
+      5,
+      10,
+      50
+    ]
+  },
+  "theme": {
+    "card": "#7A5C3A",
+    "back": "#2F4A2A"
+  },
+  "board": {
+    "tiles": 2
+  },
+  "track": {
+    "cells": [
+      {
+        "kind": "start",
+        "name": "스폰 지점",
+        "note": "지날 때마다 10에메랄드"
+      },
+      {
+        "kind": "property",
+        "name": "잔디 언덕",
+        "group": "흙",
+        "color": "#8B6A45",
+        "price": 10,
+        "rents": [
+          2,
+          10,
+          25
+        ],
+        "build_cost": 5
+      },
+      {
+        "kind": "property",
+        "name": "자작나무 숲",
+        "group": "흙",
+        "color": "#8B6A45",
+        "price": 10,
+        "rents": [
+          2,
+          10,
+          25
+        ],
+        "build_cost": 5
+      },
+      {
+        "kind": "chance",
+        "name": "보물 상자"
+      },
+      {
+        "kind": "property",
+        "name": "동굴 입구",
+        "group": "돌",
+        "color": "#9A9A9A",
+        "price": 14,
+        "rents": [
+          3,
+          14,
+          35
+        ],
+        "build_cost": 7
+      },
+      {
+        "kind": "property",
+        "name": "채석장",
+        "group": "돌",
+        "color": "#9A9A9A",
+        "price": 14,
+        "rents": [
+          3,
+          14,
+          35
+        ],
+        "build_cost": 7
+      },
+      {
+        "kind": "tax",
+        "name": "모루 수리",
+        "amount": 10
+      },
+      {
+        "kind": "jail",
+        "name": "동굴에 갇힘",
+        "note": "한 번 쉬어요"
+      },
+      {
+        "kind": "property",
+        "name": "석탄 광산",
+        "group": "석탄",
+        "color": "#2E2E2E",
+        "price": 18,
+        "rents": [
+          4,
+          18,
+          45
+        ],
+        "build_cost": 9
+      },
+      {
+        "kind": "property",
+        "name": "화로 집",
+        "group": "석탄",
+        "color": "#2E2E2E",
+        "price": 18,
+        "rents": [
+          4,
+          18,
+          45
+        ],
+        "build_cost": 9
+      },
+      {
+        "kind": "chance",
+        "name": "보물 상자"
+      },
+      {
+        "kind": "property",
+        "name": "철 광산",
+        "group": "철",
+        "color": "#A8BFCF",
+        "price": 22,
+        "rents": [
+          4,
+          22,
+          55
+        ],
+        "build_cost": 11
+      },
+      {
+        "kind": "property",
+        "name": "대장간",
+        "group": "철",
+        "color": "#A8BFCF",
+        "price": 22,
+        "rents": [
+          4,
+          22,
+          55
+        ],
+        "build_cost": 11
+      },
+      {
+        "kind": "free",
+        "name": "마을",
+        "note": "쉬어가요"
+      },
+      {
+        "kind": "free",
+        "name": "모닥불",
+        "note": "잠깐 쉬어요"
+      },
+      {
+        "kind": "property",
+        "name": "금 광산",
+        "group": "금",
+        "color": "#F2C744",
+        "price": 28,
+        "rents": [
+          6,
+          28,
+          70
+        ],
+        "build_cost": 14
+      },
+      {
+        "kind": "property",
+        "name": "사막 사원",
+        "group": "금",
+        "color": "#F2C744",
+        "price": 28,
+        "rents": [
+          6,
+          28,
+          70
+        ],
+        "build_cost": 14
+      },
+      {
+        "kind": "chance",
+        "name": "보물 상자"
+      },
+      {
+        "kind": "property",
+        "name": "레드스톤 광산",
+        "group": "레드스톤",
+        "color": "#C0392B",
+        "price": 34,
+        "rents": [
+          7,
+          34,
+          85
+        ],
+        "build_cost": 17
+      },
+      {
+        "kind": "property",
+        "name": "장치실",
+        "group": "레드스톤",
+        "color": "#C0392B",
+        "price": 34,
+        "rents": [
+          7,
+          34,
+          85
+        ],
+        "build_cost": 17
+      },
+      {
+        "kind": "tax",
+        "name": "모루 수리",
+        "amount": 10
+      },
+      {
+        "kind": "go_jail",
+        "name": "크리퍼!",
+        "note": "동굴로 도망가요"
+      },
+      {
+        "kind": "property",
+        "name": "청금석 광산",
+        "group": "청금석",
+        "color": "#2E5FA3",
+        "price": 42,
+        "rents": [
+          8,
+          42,
+          105
+        ],
+        "build_cost": 21
+      },
+      {
+        "kind": "property",
+        "name": "마법 부여대",
+        "group": "청금석",
+        "color": "#2E5FA3",
+        "price": 42,
+        "rents": [
+          8,
+          42,
+          105
+        ],
+        "build_cost": 21
+      },
+      {
+        "kind": "chance",
+        "name": "보물 상자"
+      },
+      {
+        "kind": "property",
+        "name": "다이아 광산",
+        "group": "다이아",
+        "color": "#4FD8D0",
+        "price": 50,
+        "rents": [
+          10,
+          50,
+          125
+        ],
+        "build_cost": 25
+      },
+      {
+        "kind": "property",
+        "name": "요새",
+        "group": "다이아",
+        "color": "#4FD8D0",
+        "price": 50,
+        "rents": [
+          10,
+          50,
+          125
+        ],
+        "build_cost": 25
+      },
+      {
+        "kind": "free",
+        "name": "마을",
+        "note": "쉬어가요"
+      }
+    ]
+  },
+  "cards": {
+    "golden_key": [
+      {
+        "text": "주민과 거래에 성공했어요. 20에메랄드 받으세요",
+        "effect": "gain",
+        "value": 20
+      },
+      {
+        "text": "밤이 되었어요. 스폰 지점으로 돌아가 월급을 받으세요",
+        "effect": "move_to",
+        "value": 0
+      },
+      {
+        "text": "지도를 주웠어요. 두 칸 앞으로",
+        "effect": "move_rel",
+        "value": 2
+      },
+      {
+        "text": "곡괭이가 부러졌어요. 10에메랄드 내세요",
+        "effect": "pay",
+        "value": 10
+      },
+      {
+        "text": "크리퍼가 나타났어요! 동굴로 도망가세요",
+        "effect": "to_jail",
+        "value": 0
+      },
+      {
+        "text": "사다리를 만들었어요. 동굴을 바로 빠져나와요",
+        "effect": "jail_free",
+        "value": 0
+      },
+      {
+        "text": "길을 잃었어요. 한 칸 뒤로",
+        "effect": "move_rel",
+        "value": -1
+      },
+      {
+        "text": "동굴에서 금을 캤어요. 10에메랄드 받으세요",
+        "effect": "gain",
+        "value": 10
+      },
+      {
+        "text": "농작물을 수확했어요. 20에메랄드 받으세요",
+        "effect": "gain",
+        "value": 20
+      },
+      {
+        "text": "엔더맨과 눈이 마주쳤어요. 5에메랄드 내세요",
+        "effect": "pay",
+        "value": 5
+      },
+      {
+        "text": "네더 포털을 찾았어요. 세 칸 앞으로",
+        "effect": "move_rel",
+        "value": 3
+      },
+      {
+        "text": "상자에서 보물을 찾았어요. 15에메랄드 받으세요",
+        "effect": "gain",
+        "value": 15
+      },
+      {
+        "text": "닭이 알을 낳았어요. 5에메랄드 받으세요",
+        "effect": "gain",
+        "value": 5
+      },
+      {
+        "text": "횃불을 만드느라 썼어요. 5에메랄드 내세요",
+        "effect": "pay",
+        "value": 5
+      },
+      {
+        "text": "광차를 탔어요. 한 칸 앞으로",
+        "effect": "move_rel",
+        "value": 1
+      },
+      {
+        "text": "용암을 피해 돌아갔어요. 두 칸 뒤로",
+        "effect": "move_rel",
+        "value": -2
+      }
+    ]
+  }
+}

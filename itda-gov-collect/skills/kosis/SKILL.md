@@ -15,9 +15,9 @@ metadata:
   category: "domain"
   status: "active"
   recommended: true
-  version: "0.11.3"
+  version: "0.12.0"
   created_at: "2026-03-29"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-11"
   tags: "KOSIS, statistics, population, market"
 ---
 
@@ -72,6 +72,25 @@ KOSIS_API_KEY=발급받은_키
 2. `info --type ITM`(신규) 로 그 통계표의 **분류(objL)·항목(itmId) 코드 발견**
 3. `data` 로 발견한 코드를 넣어 조회 (3~4중 분류는 `--obj3`/`--obj4`)
 4. 필요 시 `meta`(작성목적·법적근거)·`indicator`(지표 개념) 로 맥락 보강
+
+### 분류축 슬롯(objL)은 통계표마다 다르다 — `--obj1` 은 "1번째 축"이라는 뜻
+
+`--obj1`~`--obj4` 는 **그 통계표의 1~4번째 분류축**을 가리킨다. 실제 KOSIS 파라미터 번호
+(`objL1`·`objL2`…)는 `info --type ITM` 응답의 `OBJ_ID_SN` 이 정하며, **1 부터 시작하지 않는
+통계표가 있다**. 예: 한국보건산업진흥원(`--org-id 358`)의 `DT_358004_008` 은 첫 축이 `objL2` 라
+`objL1` 로 부르면 KOSIS 가 오류 21 로 거부한다.
+
+스킬이 이것을 자동 처리한다 — 오류 20/21 이 나면 `getMeta` 로 실제 슬롯을 실측해 재시도하고,
+**첫 축이 `objL1` 이 아닌 표는 SDMX(Generic) 경로로 조회**한다(그런 표는 KOSIS **JSON** 이 빈
+배열을 돌려주기 때문 — 2026-09-11 실측 #1684). 어느 경로로 받았는지는 `data` 응답의 `source`·
+`axis_slots`·`notes` 에 표시된다(정상 표는 `source: "json"`, 추가 호출 0).
+
+```bash
+# 첫 축이 objL2 인 표 — 사용자는 그대로 --obj1 을 쓴다
+python3 "$SKILL_DIR/scripts/collect_stats.py" data --org-id 358 --tbl-id DT_358004_008 \
+  --item T001 --obj1 A02 --recent 3 --format table
+#   → source=sdmx, axis_slots=[2], notes 에 전환 사유 표시
+```
 
 ## Prerequisites
 
@@ -172,8 +191,10 @@ python3 "$SKILL_DIR/scripts/collect_stats.py" region --org-id 101 --tbl-id DT_1Y
 | `--start` | 시작 기간 (예: 2020) | — |
 | `--end` | 종료 기간 (예: 2024) | — |
 | `--item` | 항목 코드 | `ALL` |
-| `--obj1`~`--obj4` | 1~4차 분류값 (3~4중 분류표 지원) | `ALL`/생략 |
+| `--obj1`~`--obj4` | 1~4**번째 분류축**의 값 (실제 `objL` 번호는 스킬이 `OBJ_ID_SN` 으로 해석) | `ALL`/생략 |
 | `--format` | `json` / `table` | `json` |
+
+`data` JSON 응답에는 `source`(`json`|`sdmx`)·`axis_slots`(실제 objL 번호)·`notes`(전환 사유) 가 함께 실린다.
 
 ### info 서브커맨드 (통계표 구조·코드 발견)
 
@@ -241,6 +262,7 @@ kosis/
 | `KOSIS_API_KEY가 설정되지 않았습니다` | API 키 미설정 | `.env`(작업 폴더 루트)에 `KOSIS_API_KEY=키` 추가(권장) — 스킬이 자동 탐색. "Claude 지침"도 동작하나 컨텍스트에 노출. 개발자는 셸 환경변수도 가능 |
 | `통계표를 찾을 수 없습니다` | org-id/tbl-id 오류 | `search` 서브커맨드로 ID 재확인 |
 | `데이터가 없습니다` | 기간 또는 항목 오류 | period/item 옵션 확인 |
+| `KOSIS API 오류 (21)` | 분류축 슬롯·분류값 코드 불일치 | 메시지에 실제 분류축(`objL2=…`)이 함께 나온다 — `info --org-id … --tbl-id … --type ITM` 으로 코드 확인 후 `--obj1`~`--obj4` 재지정 |
 
 ### 정본 err 코드 (KOSIS API §1.4.2)
 
@@ -249,7 +271,7 @@ kosis/
 | 10 | 인증키 누락 | 활용신청 URL 확인 |
 | 11 | 인증키 기간만료 | 마이페이지에서 기간 연장 |
 | 20 | 필수요청변수 누락 | 인자 형식 확인 |
-| 21 | 잘못된 요청변수 | 인자 값 확인 |
+| 21 | 잘못된 요청변수 | 인자 값 확인 (스킬이 분류축 슬롯을 실측해 1회 자동 재시도하며, 그래도 실패하면 실제 축 목록을 메시지에 싣는다) |
 | 30 | 조회결과 없음 | 조회조건(기간/항목) 조정 |
 | 31 | 조회결과 초과 | 호출건수 조정(분할 호출) |
 | 40 | 호출가능건수 제한 | KOSIS 관리자 문의 또는 호출 빈도 조정 |

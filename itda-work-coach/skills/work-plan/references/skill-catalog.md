@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 105개 스킬 / 19개 팩.
+총 110개 스킬 / 19개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 | 책임 경계 |
 |--------|-----------|-----------|------------|----|-----------|
@@ -39,9 +39,13 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | morning-brief | 오늘 일정과 미회신 메일을 모아 아침 브리핑 HTML 한 장을 그리는 스킬입니다(calendar·email 소스). | 없음 | "아침 브리핑 만들어줘", "/morning-brief", "Sections: 환율" | itda-day-organize | 본 스킬은 아침 브리핑 페이지 전담 — itda-day-organize:calendar 는 일정, itda-day-organize:email 은 메일, itda-content-create:html-report 는 보고서 HTML. |
 | weather-here | 현재 위치 또는 지정 지역의 날씨를 한국어로 빠르게 조회하는 스킬입니다. | 없음 | "날씨 알려줘", "지금 여기 날씨 어때", "부산 날씨 알려줘" | itda-day-organize | — |
 | changelog | Orca(onorca.dev)·Claude Code·Codex CLI·herdr 의 최근 릴리즈를 모아 버전별 한국어 요약으로 만들고 Orca 내장 브라우저 탭… | 없음 | "orca 업데이트 뭐 바뀌었어", "claude code 새 버전 뭐가 달라졌나", "codex cli 최근 릴리즈 요약" | itda-dev-support | — |
+| claude-usage | 이 머신에 로그인된 Claude Code 계정의 사용량(5시간·7일 창 사용률, 모델별 주간 한도, 리셋 시각, 플랜)을 저장된 OAuth 자격증명으로 직접 조… | 없음 | "claude 사용량 얼마나 남았어", "클로드 코드 한도 확인해줘", "5시간 창 리셋 언제야" | itda-dev-support | 본 스킬은 Claude Code 구독 사용량 전담 — itda-dev-support:codex-usage 는 Codex CLI 사용량. |
 | cloudflare-tunnel | 포트포워딩 없이 Cloudflare Tunnel로 내 서비스(원격 데스크톱·SSH·웹)를 안전하게 노출/접근하도록 셋업하는 스킬입니다. | CLOUDFLARE_API_TOKEN | "집 윈도우에 RDP 터널 깔아줘", "cloudflare tunnel로 ssh 열어줘", "터널 라우트에 access 걸어줘" | itda-dev-support | — |
+| codex-usage | 이 머신에 로그인된 Codex CLI(ChatGPT 계정)의 사용량(5시간·주간 창 사용률, 리셋 시각, 플랜)을 ~/.codex/auth.json 토큰으로 직… | 없음 | "codex 사용량 얼마나 남았어", "코덱스 한도 확인해줘", "codex 리셋 언제야" | itda-dev-support | 본 스킬은 Codex CLI 구독 사용량 전담 — itda-dev-support:claude-usage 는 Claude Code 사용량. |
 | harness | 하네스를 구성합니다. | 없음 | "하네스 구성해줘", "하네스 구축해줘", "하네스 설계 도와줘" | itda-dev-support | — |
 | orca-coach | Orca(온오르카) 기능 활용 코치. | 없음 | "orca로 뭘 할 수 있어?", "이 작업에 orca 기능 뭐 쓰면 좋을까?", "orca 활용 아이디어 줘" | itda-dev-support | — |
+| windows-parallels-lab | macOS Parallels Desktop 의 자동화 전용 Windows 11 클론(win11-parlab)을 제어해 Windows 실런타임(COM/Office… | 없음 | "윈도우에서 실행해서 확인해줘", "hwpx 가 한글에서 안 깨지는지 봐줘", "게스트 화면 캡처해줘" | itda-dev-support | 되돌릴 수 있는 Parallels 클론 전담 — itda-dev-support:windows-remote-lab 은 SSH 로 붙는 Windows 실머신. |
+| windows-remote-lab | macOS 에서 로컬 네트워크의 Windows 11 실머신(Surface Book 2)을 `ssh surface` 로 원격 조작해 Windows 실런타임 검증·… | 없음 | "윈도우 실기에서 돌려봐줘", "실제 Excel COM 으로 계산해줘", "이 파일 윈도우로 보내줘" | itda-dev-support | 본 스킬은 SSH 로 붙는 Windows 실머신 전담 — itda-dev-support:windows-parallels-lab 은 되돌릴 수 있는 Parallels 클론. |
 | book-pdf | 책·문서 스캔을 경량·균일한 단일 PDF로 만드는 스킬입니다. | 없음 | "책 사진을 PDF로 만들어줘", "스캔 이미지 묶어줘", "스캔 PDF 용량 줄여줘" | itda-egg | — |
 | coupang | 쿠팡 상품 검색·리뷰·가격·유사상품·평판을 조회하는 스킬입니다. | 없음 | "방울토마토 검색해줘", "에어팟 프로 리뷰 모아줘", "이 상품 가격 알려줘" | itda-egg | — |
 | daiso | 다이소 상품 검색·가격·매장 찾기·매장별 재고·진열 위치를 로그인 없이 조회하는 스킬입니다. | 없음 | "다이소 수납박스 검색", "이 상품 강남역 근처 다이소에 재고 있어?", "강남 다이소 매장 찾아줘" | itda-egg | — |
@@ -58,6 +62,7 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | market-scan | 외부 시장·산업 자료를 찾아 의사결정용으로 구조화하는 시장조사 스킬입니다. | DART_API_KEY, ECOS_API_KEY, EXA_API_KEY, KOSIS_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "OO 시장 조사해줘", "시장 규모랑 경쟁사 알려줘", "신사업 진입할 만한지 분석해줘" | itda-evidence-verify | — |
 | meeting-reliability | 회의 녹취·기록에서 "확인 / 확인 필요 / 예외"를 근거와 함께 정확히 가르는 신뢰성 검수 스킬입니다. | 없음 | "확인 / 확인 필요 / 예외", "이 녹취 결정사항 표로 정리해줘", "회의록 신뢰성 검수해줘" | itda-evidence-verify | — |
 | pptx-diff | PPTX 발표자료 두 버전의 차이를 슬라이드·도형·텍스트 단위로 비교해 한국어로 요약하는 스킬입니다. | 없음 | "이 pptx 두 버전 비교해줘", "덱 뭐가 바뀌었어?", "발표자료 개정본 리뷰해줘" | itda-evidence-verify | — |
+| boardgame-kit | 주사위로 이동하며 땅을 사는 **부루마블형 보드게임**을 주제에 맞게 만들어 인쇄용 PDF 한 벌(게임판·카드·놀이돈·말 13쪽)로 냅니다. | 없음 | "보드게임 만들어줘", "우리 가족 부루마블", "제주도 여행 보드게임" | itda-family-play | 인쇄용 보드게임 한 벌 전담 — 종이 입체 모형은 itda-family-play:papercraft-box, 도트 그림 변환은 itda-family-play:pixel-art, 그림 생성은 itda-content-create:imagegen. |
 | papercraft-box | 마인크래프트 캐릭터·블록·아이템(검·곡괭이), 로봇, 동물처럼 상자 조합이나 픽셀 그림을 두껍게 세운 형태를 A4 에 인쇄해 오리고 접어 조립하는 papercr… | 없음 | "페이퍼크래프트 만들어줘", "크리퍼 papercraft pdf", "마인크래프트 다이아몬드 검 만들어줘" | itda-family-play | papercraft 전개도 PDF 전담 — 도트 그림 변환은 itda-family-play:pixel-art, 새 그림 생성은 itda-content-create:imagegen. |
 | pixel-art | 이미지 파일을 픽셀 아트(도트 그림)로 변환하는 스킬입니다. | 없음 | "이 이미지 픽셀아트로 만들어줘", "도트 그림으로", "8비트 스타일로" | itda-family-play | — |
 | airport-airline-stats | 인천공항 항공사별 월별 통계(운항·여객·화물)를 LLM-친화 JSON으로 조회하는 스킬입니다. | 없음 | "2025년 3월 인천공항 항공사별 통계 알려줘", "지난달 국제선 여객기 통계 뽑아줘", "T1 터미널 항공사별 운항 횟수 조회해줘" | itda-gov-collect | — |
@@ -150,9 +155,13 @@ exchange-rate         → itda-day-organize/skills/exchange-rate/
 morning-brief         → itda-day-organize/skills/morning-brief/
 weather-here          → itda-day-organize/skills/weather-here/
 changelog             → itda-dev-support/skills/changelog/
+claude-usage          → itda-dev-support/skills/claude-usage/
 cloudflare-tunnel     → itda-dev-support/skills/cloudflare-tunnel/
+codex-usage           → itda-dev-support/skills/codex-usage/
 harness               → itda-dev-support/skills/harness/
 orca-coach            → itda-dev-support/skills/orca-coach/
+windows-parallels-lab → itda-dev-support/skills/windows-parallels-lab/
+windows-remote-lab    → itda-dev-support/skills/windows-remote-lab/
 book-pdf              → itda-egg/skills/book-pdf/
 coupang               → itda-egg/skills/coupang/
 daiso                 → itda-egg/skills/daiso/
@@ -169,6 +178,7 @@ investigate           → itda-evidence-verify/skills/investigate/
 market-scan           → itda-evidence-verify/skills/market-scan/
 meeting-reliability   → itda-evidence-verify/skills/meeting-reliability/
 pptx-diff             → itda-evidence-verify/skills/pptx-diff/
+boardgame-kit         → itda-family-play/skills/boardgame-kit/
 papercraft-box        → itda-family-play/skills/papercraft-box/
 pixel-art             → itda-family-play/skills/pixel-art/
 airport-airline-stats → itda-gov-collect/skills/airport-airline-stats/

@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "대한민국 직장인·공공업무·투자자를 위한 Claude Code 스킬 마켓플레이스",
-    "version": "9.2.1",
+    "version": "9.3.0",
     "language": "ko"
   },
   "plugins": [
@@ -78,7 +78,7 @@
     {
       "name": "itda-dev-support",
       "source": "./itda-dev-support",
-      "description": "개발 환경 지원 스킬팩 — Cloudflare Tunnel 노출(cloudflare-tunnel), 에이전트·스킬 하네스 설계(harness), 개발도구 릴리즈 요약(changelog), Orca 활용 코칭(orca-coach)."
+      "description": "개발 환경 지원 스킬팩 — Cloudflare Tunnel 노출(cloudflare-tunnel), 에이전트·스킬 하네스 설계(harness), 개발도구 릴리즈 요약(changelog), Orca 활용 코칭(orca-coach), Parallels Windows 랩 제어(windows-parallels-lab), Windows 실기 SSH 랩(windows-remote-lab), Claude Code·Codex 사용량 조회(claude-usage·codex-usage)."
     },
     {
       "name": "itda-org-mmaa",

@@ -88,15 +88,17 @@ def cmd_data(args: argparse.Namespace) -> int:
         if args.end:
             kwargs["end_prd_de"] = args.end
 
-    raw_data = kosis_api.get_statistics_data(**kwargs)
+    raw_data, diag = kosis_api.get_statistics_data_ex(**kwargs)
     summarized = kosis_api.summarize_data(raw_data)
 
     if args.format == "table":
-        _print_data_table(summarized)
+        _print_data_table(summarized, diag)
     else:
         print(json.dumps(
             {"status": "ok", "org_id": args.org_id, "tbl_id": args.tbl_id,
-             "count": len(summarized), "data": summarized},
+             "count": len(summarized), "source": diag.get("transport", "json"),
+             "axis_slots": diag.get("axis_slots", []),
+             "notes": diag.get("notes", []), "data": summarized},
             ensure_ascii=False, separators=(",", ":"),
         ))
     return 0
@@ -213,10 +215,18 @@ def _print_search_table(results: list[dict[str, Any]], keyword: str) -> None:
     print()
 
 
-def _print_data_table(data: list[dict[str, Any]]) -> None:
+def _print_data_table(
+    data: list[dict[str, Any]],
+    diag: dict[str, Any] | None = None,
+) -> None:
     """통계 데이터를 테이블로 출력."""
+    notes = (diag or {}).get("notes") or []
     if not data:
         print("\n(데이터 없음)\n")
+        for note in notes:
+            print(f"  · {note}")
+        if notes:
+            print()
         return
 
     # 테이블명 출력
@@ -228,13 +238,20 @@ def _print_data_table(data: list[dict[str, Any]]) -> None:
     print("-" * 66)
     for row in data:
         period = row.get("period", "")
-        cat = (row.get("category", "") or "")[:13]
+        cat = row.get("category", "") or ""
+        if row.get("category2"):
+            cat = f"{cat}/{row['category2']}"
+        cat = cat[:13]
         item = (row.get("item_name", "") or "")[:18]
         val = row.get("value")
         unit = row.get("unit", "")
         val_str = f"{val:,.0f}" if val is not None else "-"
         print(f"{period:<10} {cat:<15} {item:<20} {val_str:>15} {unit:<6}")
     print()
+    for note in notes:
+        print(f"  · {note}")
+    if notes:
+        print()
 
 
 def _print_info_table(rows: list[dict[str, Any]], meta_type: str) -> None:
