@@ -1,5 +1,11 @@
 # Changelog — xlsx-design
 
+## [0.3.5] — 2026-09-13 (이슈 #1690)
+
+### Changed
+
+- `[책임 경계]` 추가 · "이 스킬을 쓰지 않을 때" 절 신설 — 수식 캐시값 재계산은 `itda-data-analysis:xlsx-recalc` 로 안내.
+
 ## [0.3.4] — 2026-07-26 (이슈 #1283)
 
 ### Changed

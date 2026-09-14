@@ -2,7 +2,8 @@
 name: data-audit
 description: >
   엑셀·스프레드시트의 수식 오류와 흔한 실수를 훑어 위험한 셀을 짚어주는 감사 스킬입니다. #REF!·하드코드(=A1*1.05)·범위 누락(off-by-one)·복붙으로 뭉개진 수식·순환참조·깨진 시트 링크를 찾습니다. "이 시트 감사해줘", "수식 검토해줘", "수식 오류 찾아줘", "QA해줘", "복붙하다 뭐 깨졌는지 봐줘", "모델에 뭔가 이상해"처럼 말하면 됩니다.
-  보고 우선 — 확인 없이 셀을 바꾸지 않습니다. 파일 감사는 openpyxl 크로스플랫폼(Office 불필요), Windows+Office 에선 "열어둔 엑셀에서 위험한 셀을 하이라이트+코멘트로 실시간 지적"(office_audit MCP)도 됩니다.
+  보고 우선(확인 없이 셀 미변경). 파일은 openpyxl 크로스플랫폼, Windows+Office 에선 열어둔 엑셀에 실시간 하이라이트·코멘트(office_audit MCP).
+  [책임 경계] 본 스킬은 수식 오류·실수 감사 전담 — 캐시값이 빈 파일의 재계산은 itda-data-analysis:xlsx-recalc.
 license: MIT
 compatibility: "Python 3.10+"
 user-invocable: true
@@ -10,12 +11,12 @@ allowed-tools: Read, Bash, Glob, Grep, mcp__workspace__bash
 argument-hint: "[xlsx 경로 또는 감사 요청]"
 metadata:
   author: "Chinseok"
-  version: "0.2.2"
+  version: "0.2.3"
   category: "data-tidy"
   status: "experimental"
   recommended: false
   created_at: "2026-07-07"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-13"
   tags: "xlsx, audit, formula, spreadsheet, openpyxl, qa, hardcode, incubating, com, live-annotation"
 ---
 
@@ -79,6 +80,13 @@ openpyxl(파일) 대신 hyve MCP 도구 **`office_audit.audit`** 를 호출한�
 | Warning | 수식 내 하드코드(`=A1*1.05`) · 이웃과 다른 수식 · off-by-one 범위 · 복붙으로 값이 된 수식 · 단위/스케일 급변 |
 | Info | 숨긴 행·시트(override·stale 계산 은닉 가능) |
 
+## 이 스킬을 쓰지 않을 때
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| openpyxl 로 만든 파일이라 수식 캐시값이 비어 있다(값 기반 검사 전 재계산) | `itda-data-analysis:xlsx-recalc` |
+| 수식 구조가 아니라 합계·원장 대조로 값이 맞는지 검산 | `itda-data-analysis:data-verify` |
+| 데이터로 디자인된 엑셀을 새로 만들기 | `itda-content-create:xlsx-design` |
+
 ## 범위 외
 - 재무모델 무결성: BS balance·cash tie-out·재무제표 3표 정합, DCF/LBO/3-statement/Merger/Comps 모델별 버그 (#952 스코프 아웃)
 - Excel 애드인(Office JS) 경로 — 본 스킬은 파일 기반 openpyxl.
@@ -86,7 +94,7 @@ openpyxl(파일) 대신 hyve MCP 도구 **`office_audit.audit`** 를 호출한�
 ## 정확성 한계 (openpyxl 재계산)
 openpyxl은 수식을 **재계산하지 않는다**. `#REF!`·`#DIV/0!` 같은 **동적 에러 값**은 파일에 마지막 저장된 캐시값 기준으로만 읽힌다.
 한 번도 Excel/LibreOffice로 열어 계산·저장된 적 없는 파일은 이 캐시가 비어 놓칠 수 있다 —
-필요하면 `libreoffice --headless --convert-to xlsx <file>` 로 재계산 후 감사한다.
+필요하면 `itda-data-analysis:xlsx-recalc` 로 재계산한 새 파일을 감사한다(LibreOffice 단독, 격리 프로필·timeout).
 수식 **문자열** 기반 검사(하드코드·off-by-one·순환참조·깨진 링크·복붙)는 이 한계와 무관하게 동작한다.
 (COM 실시간 경로[office_audit MCP]는 열린 워크북의 실제 계산값을 읽으므로 이 캐시 한계가 없다.)
 

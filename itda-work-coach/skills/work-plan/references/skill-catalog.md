@@ -8,7 +8,7 @@
 DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 (`ground_check.skill_dir_exists` 가 아래 경로 매핑으로 실존 확인).
 
-총 110개 스킬 / 19개 팩.
+총 108개 스킬 / 18개 팩.
 
 | 스킬명 | 한 줄 요약 | 필요한 키 | 트리거 예시 | 팩 | 책임 경계 |
 |--------|-----------|-----------|------------|----|-----------|
@@ -24,15 +24,16 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | imagekit | 이미지 조회·리사이즈·여백 크롭·DPI 변경·포맷 변환·회전을 단일 CLI로 처리하는 스킬입니다. | 없음 | "이미지 크기 줄여줘", "여백 크롭해줘", "PNG를 JPG로 변환해줘" | itda-content-create | — |
 | pptx-design | 콘텐츠 마크다운과 수치 데이터로 16:9 PPTX 발표자료를 크로스플랫폼(macOS/Linux, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "삼성전자 주가전망 ppt 만들어줘", "이 DESIGN.md로 발표자료 디자인해줘", "md 내용으로 슬라이드 덱 생성" | itda-content-create | — |
 | pptx-shrink | 기존 PPTX 파일의 용량을 줄이는 스킬입니다. | 없음 | "이 ppt 용량 줄여줘", "발표자료가 커서 메일로 못 보내", "pptx 압축해줘" | itda-content-create | 본 스킬은 기존 pptx 용량 축소 전담 — itda-content-create:imagekit 은 낱개 이미지, itda-content-create:pptx-design 은 덱 신규 생성, itda-evidence-verify:pptx-diff 는 버전 비교. |
-| xlsx-design | 수치 데이터로 디자인된 Excel 통합문서(.xlsx)를 크로스플랫폼(macOS/Linux/Windows, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "NovaTech 실적 엑셀로 만들어줘", "이 프리셋으로 대시보드 시트 디자인해줘", "데이터로 디자인된 xlsx 생성" | itda-content-create | — |
+| xlsx-design | 수치 데이터로 디자인된 Excel 통합문서(.xlsx)를 크로스플랫폼(macOS/Linux/Windows, Office 불필요)으로 신규 생성하는 스킬입니다. | 없음 | "NovaTech 실적 엑셀로 만들어줘", "이 프리셋으로 대시보드 시트 디자인해줘", "데이터로 디자인된 xlsx 생성" | itda-content-create | 본 스킬은 디자인된 xlsx 신규 생성 전담 — 이미 있는 xlsx 의 수식 캐시값 재계산은 itda-data-analysis:xlsx-recalc. |
 | aspect-sentiment | 한국어 텍스트의 측면별 감정·상태를 Claude가 직접 추출하는 ABSA(측면 기반 감정분석) 스킬입니다. | 없음 | "이 리뷰들 측면별 감정 뽑아줘", "상담 로그 측면 분석", "배송·품질 따로 긍부정 분류" | itda-cs-analysis | — |
 | cs-intent | 한국어 CS 상담·문의 텍스트를 "왜 연락했나"(인텐트/문의유형)로 분류하는 스킬입니다. | 없음 | "왜 연락했나", "이 문의 유형 분류해줘", "상담 인텐트 뽑아줘" | itda-cs-analysis | — |
 | iaa-builder | CS 분류 라벨의 어노테이터 간 일치도(IAA)를 Cohen·Fleiss κ로 측정하는 스킬입니다. | 없음 | "이 라벨링 일치도 재줘", "Cohen 카파 계산", "골드셋 만들어줘" | itda-cs-analysis | — |
 | data-ask | CSV 를 한국어로 물으면 실제로 계산해 답하는 질문 스킬입니다. | 없음 | "지역별 환불율", "월별 매출 추이", "재구매 비중" | itda-data-analysis | — |
-| data-audit | 엑셀·스프레드시트의 수식 오류와 흔한 실수를 훑어 위험한 셀을 짚어주는 감사 스킬입니다. | 없음 | "이 시트 감사해줘", "수식 검토해줘", "수식 오류 찾아줘" | itda-data-analysis | — |
+| data-audit | 엑셀·스프레드시트의 수식 오류와 흔한 실수를 훑어 위험한 셀을 짚어주는 감사 스킬입니다. | 없음 | "이 시트 감사해줘", "수식 검토해줘", "수식 오류 찾아줘" | itda-data-analysis | 본 스킬은 수식 오류·실수 감사 전담 — 캐시값이 빈 파일의 재계산은 itda-data-analysis:xlsx-recalc. |
 | data-compass | 처음 보는 데이터 앞에서 뭘 시켜야 할지 모르는 사람을 위한 데이터 분석 내비게이터(순수 코치)입니다. | 없음 | "분석 지도", "이렇게 말해보세요", "이 데이터 분석 어떻게 시작해?" | itda-data-analysis | — |
 | data-prep | 엉망인 CSV·엑셀을 진단하고 원본은 그대로 둔 채 깔끔한 정돈본을 새 파일로 만들어주는 스킬입니다. | 없음 | "이 엑셀 정리해줘", "제목 행이 위에 있는데 정리해줘", "소계 행 빼고 깔끔하게" | itda-data-analysis | — |
 | data-verify | 엑셀·CSV의 숫자가 실제로 맞는지 검수하는 스킬입니다. | 없음 | "이 숫자 틀렸어요", "이 수치 맞는지 검수해줘", "합계 검산해줘" | itda-data-analysis | — |
+| xlsx-recalc | openpyxl 등으로 만든 xlsx 는 수식만 있고 계산값이 비어 미리보기·pandas·다른 스킬에서 빈칸으로 보입니다. | 없음 | "엑셀 수식 값 채워줘", "xlsx 재계산해줘", "openpyxl 로 만든 파일 합계가 빈칸이야" | itda-data-analysis | 본 스킬은 수식 캐시값 재계산 전담 — itda-data-analysis:data-audit 는 수식 오류 감사, itda-content-create:xlsx-design 은 xlsx 신규 생성. |
 | calendar | 아이클라우드·네이버(및 커스텀 CalDAV) 캘린더에서 일정을 조회·검색·추가·수정·삭제하고 빈 시간을 찾아주는 스킬입니다. | ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "내일 3시 회의 추가해줘", "이번 주 일정 보여줘", "다음 주에 1시간 빈 시간 찾아줘" | itda-day-organize | 본 스킬은 일정 CRUD·빈 시간 탐색 전담 — 아침 브리핑 페이지(오늘 일정+미회신 메일 한 장)는 itda-day-organize:morning-brief, 메일 읽기·발송은 itda-day-organize:email. |
 | email | 네이버·Gmail·다음/카카오·아이클라우드·커스텀 SMTP/IMAP에서 멀티 계정으로 메일을 보내고 받는 스킬입니다. | DAUM_APP_PASSWORD, DAUM_EMAIL, GOOGLE_APP_PASSWORD, GOOGLE_EMAIL, ICLOUD_APP_PASSWORD, ICLOUD_EMAIL, NAVER_APP_PASSWORD, NAVER_EMAIL | "메일 보내줘", "받은편지함 확인해줘", "아이클라우드 메일 읽어줘" | itda-day-organize | 본 스킬은 메일 읽기·발송·초안·미회신 판정 전담 — 아침 브리핑 페이지(오늘 일정+미회신 요청 한 장)는 itda-day-organize:morning-brief, 일정 조회·추가는 itda-day-organize:calendar. |
 | exchange-rate | 원화 기준 일별·월 평균 기준 환율을 조회하는 스킬입니다. | 없음 | "오늘 달러 환율 알려줘", "이번 달 엔화 평균 환율 보여줘", "EUR 환율 조회해줘" | itda-day-organize | — |
@@ -62,9 +63,6 @@ DP-1 Hybrid: 정적 생성 목록 + 호출 시 sanity check
 | market-scan | 외부 시장·산업 자료를 찾아 의사결정용으로 구조화하는 시장조사 스킬입니다. | DART_API_KEY, ECOS_API_KEY, EXA_API_KEY, KOSIS_API_KEY, NAVER_SEARCH_CLIENT_ID, NAVER_SEARCH_CLIENT_SECRET, PERPLEXITY_API_KEY, SERPER_API_KEY, TAVILY_API_KEY | "OO 시장 조사해줘", "시장 규모랑 경쟁사 알려줘", "신사업 진입할 만한지 분석해줘" | itda-evidence-verify | — |
 | meeting-reliability | 회의 녹취·기록에서 "확인 / 확인 필요 / 예외"를 근거와 함께 정확히 가르는 신뢰성 검수 스킬입니다. | 없음 | "확인 / 확인 필요 / 예외", "이 녹취 결정사항 표로 정리해줘", "회의록 신뢰성 검수해줘" | itda-evidence-verify | — |
 | pptx-diff | PPTX 발표자료 두 버전의 차이를 슬라이드·도형·텍스트 단위로 비교해 한국어로 요약하는 스킬입니다. | 없음 | "이 pptx 두 버전 비교해줘", "덱 뭐가 바뀌었어?", "발표자료 개정본 리뷰해줘" | itda-evidence-verify | — |
-| boardgame-kit | 주사위로 이동하며 땅을 사는 **부루마블형 보드게임**을 주제에 맞게 만들어 인쇄용 PDF 한 벌(게임판·카드·놀이돈·말 13쪽)로 냅니다. | 없음 | "보드게임 만들어줘", "우리 가족 부루마블", "제주도 여행 보드게임" | itda-family-play | 인쇄용 보드게임 한 벌 전담 — 종이 입체 모형은 itda-family-play:papercraft-box, 도트 그림 변환은 itda-family-play:pixel-art, 그림 생성은 itda-content-create:imagegen. |
-| papercraft-box | 마인크래프트 캐릭터·블록·아이템(검·곡괭이), 로봇, 동물처럼 상자 조합이나 픽셀 그림을 두껍게 세운 형태를 A4 에 인쇄해 오리고 접어 조립하는 papercr… | 없음 | "페이퍼크래프트 만들어줘", "크리퍼 papercraft pdf", "마인크래프트 다이아몬드 검 만들어줘" | itda-family-play | papercraft 전개도 PDF 전담 — 도트 그림 변환은 itda-family-play:pixel-art, 새 그림 생성은 itda-content-create:imagegen. |
-| pixel-art | 이미지 파일을 픽셀 아트(도트 그림)로 변환하는 스킬입니다. | 없음 | "이 이미지 픽셀아트로 만들어줘", "도트 그림으로", "8비트 스타일로" | itda-family-play | — |
 | airport-airline-stats | 인천공항 항공사별 월별 통계(운항·여객·화물)를 LLM-친화 JSON으로 조회하는 스킬입니다. | 없음 | "2025년 3월 인천공항 항공사별 통계 알려줘", "지난달 국제선 여객기 통계 뽑아줘", "T1 터미널 항공사별 운항 횟수 조회해줘" | itda-gov-collect | — |
 | bai-notice | 감사원 통합공지 게시판을 내부 JSON API로 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "감사원 공지 확인해줘", "감사원 통합공지 최근 10건 보여줘", "감사원에서 채용 공고 찾아줘" | itda-gov-collect | — |
 | customs-notice | 관세청 공지사항 게시판을 수집해 마크다운 표로 정리하는 스킬입니다. | 없음 | "관세청 공지 확인해줘", "관세청 공지사항 최근 10건 보여줘", "관세청에서 원산지 관련 공지 찾아줘" | itda-gov-collect | — |
@@ -149,6 +147,7 @@ data-audit            → itda-data-analysis/skills/data-audit/
 data-compass          → itda-data-analysis/skills/data-compass/
 data-prep             → itda-data-analysis/skills/data-prep/
 data-verify           → itda-data-analysis/skills/data-verify/
+xlsx-recalc           → itda-data-analysis/skills/xlsx-recalc/
 calendar              → itda-day-organize/skills/calendar/
 email                 → itda-day-organize/skills/email/
 exchange-rate         → itda-day-organize/skills/exchange-rate/
@@ -178,9 +177,6 @@ investigate           → itda-evidence-verify/skills/investigate/
 market-scan           → itda-evidence-verify/skills/market-scan/
 meeting-reliability   → itda-evidence-verify/skills/meeting-reliability/
 pptx-diff             → itda-evidence-verify/skills/pptx-diff/
-boardgame-kit         → itda-family-play/skills/boardgame-kit/
-papercraft-box        → itda-family-play/skills/papercraft-box/
-pixel-art             → itda-family-play/skills/pixel-art/
 airport-airline-stats → itda-gov-collect/skills/airport-airline-stats/
 bai-notice            → itda-gov-collect/skills/bai-notice/
 customs-notice        → itda-gov-collect/skills/customs-notice/

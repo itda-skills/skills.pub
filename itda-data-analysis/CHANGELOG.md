@@ -1,5 +1,17 @@
 # Changelog — itda-data
 
+## [0.21.0] - 2026-09-13
+
+### Added
+
+- **xlsx-recalc v0.1.0** (신규 스킬, #1690): openpyxl 등이 만든 캐시값 없는 xlsx 를 LibreOffice(24.8 이상) 단독으로 재계산.
+  대체 엔진 7종이 모두 에러 없이 틀린 값을 내 1차 엔진은 두지 않았다. 계산 전 외부 링크 값 캐시·AF_UNIX·LibreOffice 버전을 확인하고,
+  계산 후 타입별 캐시·수식 보존·외부 링크 파트 보존을 검증하며 LibreOffice 재직렬화 셀을 보고한다(stdlib, 바이너리 동봉 없음).
+
+### Changed
+
+- **data-audit v0.2.3**: `[책임 경계]` 추가 · 캐시값이 빈 파일의 재계산 안내를 xlsx-recalc 로 교체.
+
 ## [0.20.0] - 2026-09-06
 
 ### Changed

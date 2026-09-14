@@ -3,6 +3,12 @@
 이 파일은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [3.16.1] - 2026-09-13
+
+### Changed
+
+- `xlsx-design` v0.3.5 — `[책임 경계]` 추가(수식 캐시값 재계산은 `itda-data-analysis:xlsx-recalc`, #1690).
+
 ## [3.16.0] - 2026-09-06
 
 ### Changed

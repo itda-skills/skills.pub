@@ -4,6 +4,7 @@ description: >
   수치 데이터로 디자인된 Excel 통합문서(.xlsx)를 크로스플랫폼(macOS/Linux/Windows, Office 불필요)으로 신규 생성하는 스킬입니다.
   design-core 디자인 토큰(팔레트·표 스타일·조건부서식·차트 팔레트·숫자서식)을 해석해 헤더·zebra·KPI·차트에 반영하고, 한글 셀은 안전 폰트로 보장합니다.
   "NovaTech 실적 엑셀로 만들어줘", "이 프리셋으로 대시보드 시트 디자인해줘", "데이터로 디자인된 xlsx 생성"처럼 말하면 됩니다.
+  [책임 경계] 본 스킬은 디자인된 xlsx 신규 생성 전담 — 이미 있는 xlsx 의 수식 캐시값 재계산은 itda-data-analysis:xlsx-recalc.
 license: Apache-2.0
 compatibility: "Python 3.10+"
 user-invocable: true
@@ -11,12 +12,12 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion, mcp__wo
 argument-hint: "<데이터.json> [콘텐츠.md] [프리셋 또는 DESIGN.md 경로] [출력.xlsx]"
 metadata:
   author: "스킬.잇다"
-  version: "0.3.4"
+  version: "0.3.5"
   category: "document"
   status: "beta"
   recommended: true
   created_at: "2026-06-29"
-  updated_at: "2026-07-26"
+  updated_at: "2026-09-13"
   tags: "xlsx, excel, spreadsheet, design-md, report"
 ---
 
@@ -178,6 +179,13 @@ py -3 "$env:SKILL_DIR\scripts\verify.py" <생성.xlsx> --tokens tokens.txt
 | `$SKILL_DIR/scripts/sheetkit.py` | 공개 헬퍼 API | `import sheetkit as sk` |
 | `scripts/verify.py` | 빈문서/토큰/한글폰트/구조/렌더 + HARD GATE | `python3 "$SKILL_DIR/scripts/verify.py" <xlsx> [--tokens t.txt] [--no-render]` (Win: `py -3 "$env:SKILL_DIR\scripts\verify.py" …`) |
 | `scripts/render.py` | Excel COM(Win)/LibreOffice 렌더 → PDF → PNG | `python3 "$SKILL_DIR/scripts/render.py" <xlsx> [out_dir] [--dpi N]` (Win: `py -3 "$env:SKILL_DIR\scripts\render.py" …`) |
+
+## 이 스킬을 쓰지 않을 때
+
+| 상황 | 대신 쓸 스킬 |
+|---|---|
+| 이미 만든 xlsx 의 수식 계산값이 비어 다른 도구에서 빈칸으로 보인다 | `itda-data-analysis:xlsx-recalc` |
+| 기존 엑셀의 수식 오류·하드코드를 감사 | `itda-data-analysis:data-audit` |
 
 ## 에러 처리
 

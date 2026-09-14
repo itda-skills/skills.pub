@@ -1,5 +1,0 @@
-# boardgame-kit 의존성
-reportlab>=4.0        # PDF 생성(필수). TrueType(glyf) 폰트만 지원 — CFF 폰트는 fontpick 이 건너뛴다.
-PyMuPDF>=1.23.0       # verify(산출 PDF 쪽수·용지 대조) 용. 없으면 build 만 되고 verify 는 못 쓴다.
-# Pillow 는 선언하지 않는다 — 이 스킬은 PIL 을 직접 import 하지 않고, 칸·카드 이미지 삽입은
-# reportlab 의 drawImage 를 지난다(reportlab 이 Requires-Dist 로 끌어온다).
